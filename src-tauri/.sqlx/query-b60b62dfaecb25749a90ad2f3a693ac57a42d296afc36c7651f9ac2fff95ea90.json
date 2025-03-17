@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO models_group (group_name) VALUES (?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "b60b62dfaecb25749a90ad2f3a693ac57a42d296afc36c7651f9ac2fff95ea90"
+}

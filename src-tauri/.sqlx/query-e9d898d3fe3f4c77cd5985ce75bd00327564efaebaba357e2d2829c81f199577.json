@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE labels SET label_name = ?, label_color = ? WHERE label_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e9d898d3fe3f4c77cd5985ce75bd00327564efaebaba357e2d2829c81f199577"
+}

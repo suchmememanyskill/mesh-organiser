@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n\t\t\tlabel_id as id, \n\t\t\tlabel_name as name, \n\t\t\tlabel_color as color, \n\t\t\t(SELECT COUNT(*) FROM models_labels WHERE models_labels.label_id = labels.label_id) AS model_count,\n\t\t\t(SELECT COUNT(*) FROM models_group_labels WHERE models_group_labels.label_id = labels.label_id) AS group_count\n\t\t  FROM labels",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "color",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "model_count",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "group_count",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "83f433ef0195bdeee71b200ac3c6a3fab1f9dc5a5c28b725d722bdcebed18479"
+}

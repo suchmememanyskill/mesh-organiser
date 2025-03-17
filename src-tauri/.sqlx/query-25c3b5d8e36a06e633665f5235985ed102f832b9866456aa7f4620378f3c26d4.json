@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT models.model_id, model_name, model_sha256, model_url, model_desc, model_added, model_group_id, labels.label_id, label_name, label_color \n         FROM models \n         INNER JOIN models_labels ON models.model_id = models_labels.model_id \n         INNER JOIN labels ON models_labels.label_id = labels.label_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "model_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "model_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "model_sha256",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "model_url",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "model_desc",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "model_added",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "model_group_id",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "label_id",
+        "ordinal": 7,
+        "type_info": "Integer"
+      },
+      {
+        "name": "label_name",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "label_color",
+        "ordinal": 9,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "25c3b5d8e36a06e633665f5235985ed102f832b9866456aa7f4620378f3c26d4"
+}
