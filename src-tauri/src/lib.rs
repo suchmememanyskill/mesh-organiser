@@ -1,10 +1,8 @@
 use sqlx::Connection;
 use tauri::Manager;
 mod db;
-
-struct AppState {
-    db: db::db::Db,
-}
+mod configuration;
+mod service;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -18,9 +16,18 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
-                let db = db::db::setup_db(&app).await;
+                let config = configuration::Configuration {
+                    data_path : String::from(app.path().app_data_dir().expect("failed to get data_dir").to_str().unwrap()),
+                    ..Default::default()
+                };
+
+                let db = db::db::setup_db(&config).await;
                 
-                app.manage(AppState { db })
+                app.manage(service::app_state::AppState 
+                { 
+                    db: db,
+                    configuration: config,
+                })
             });
             Ok(())
         })

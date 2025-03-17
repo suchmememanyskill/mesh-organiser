@@ -3,13 +3,15 @@ use tauri::State;
 use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, prelude::FromRow, sqlite::SqlitePoolOptions, Pool, Sqlite};
-use std::fs::OpenOptions;
+use std::{fs::OpenOptions, path::PathBuf};
 use tauri::{App, Manager as _};
+
+use crate::{configuration::Configuration, service::app_state::AppState};
 
 pub type Db = Pool<Sqlite>;
 
-pub async fn setup_db(app: &App) -> Db {
-    let mut path = app.path().app_data_dir().expect("failed to get data_dir");
+pub async fn setup_db(configuration : &Configuration) -> Db {
+    let mut path = PathBuf::from(configuration.data_path.clone());
  
     match std::fs::create_dir_all(path.clone()) {
         Ok(_) => {}
