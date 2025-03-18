@@ -9,6 +9,7 @@ CREATE TABLE models (
     model_id INTEGER PRIMARY KEY,
     model_name TEXT NOT NULL,
     model_sha256 TEXT NOT NULL,
+    model_filetype TEXT NOT NULL,
     model_url TEXT NULL,
     model_desc TEXT NULL,
     model_added TEXT NOT NULL,

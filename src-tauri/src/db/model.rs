@@ -12,6 +12,8 @@ pub struct Model {
     pub name : String,
     #[sqlx(rename = "model_sha256")]
     pub sha256 : String,
+    #[sqlx(rename = "model_filetype")]
+    pub filetype : String,
     #[sqlx(rename = "model_url")]
     pub link : Option<String>,
     #[sqlx(rename = "model_desc")]
@@ -27,7 +29,7 @@ pub struct Model {
 pub async fn get_models(db : &super::db::Db) -> Vec<Model>
 {
     let rows = sqlx::query!(
-        "SELECT models.model_id, model_name, model_sha256, model_url, model_desc, model_added, model_group_id, labels.label_id, label_name, label_color 
+        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_group_id, labels.label_id, label_name, label_color 
          FROM models 
          INNER JOIN models_labels ON models.model_id = models_labels.model_id 
          INNER JOIN labels ON models_labels.label_id = labels.label_id"
@@ -45,6 +47,7 @@ pub async fn get_models(db : &super::db::Db) -> Vec<Model>
                 id: row.model_id,
                 name : row.model_name,
                 sha256 : row.model_sha256,
+                filetype : row.model_filetype,
                 link : row.model_url,
                 description : row.model_desc,
                 added : row.model_added,
@@ -70,7 +73,7 @@ pub async fn get_models_by_id(ids : Vec<i64>, db : &super::db::Db) -> Vec<Model>
     // Build an IN clause from the ids
     let in_query = ids.iter().map(ToString::to_string).collect::<Vec<String>>().join(",");
     let formatted_query = format!(
-        "SELECT models.model_id, model_name, model_sha256, model_url, model_desc, model_added, model_group_id, 
+        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_group_id, 
                 labels.label_id, label_name, label_color 
          FROM models 
          INNER JOIN models_labels ON models.model_id = models_labels.model_id 
@@ -87,6 +90,7 @@ pub async fn get_models_by_id(ids : Vec<i64>, db : &super::db::Db) -> Vec<Model>
         let model_id: i64 = row.get("model_id");
         let model_name: String = row.get("model_name");
         let model_sha256: String = row.get("model_sha256");
+        let model_filetype: String = row.get("model_filetype");
         let model_url: Option<String> = row.get("model_url");
         let model_desc: Option<String> = row.get("model_desc");
         let model_added: String = row.get("model_added");
@@ -99,6 +103,7 @@ pub async fn get_models_by_id(ids : Vec<i64>, db : &super::db::Db) -> Vec<Model>
             id: model_id,
             name: model_name,
             sha256: model_sha256,
+            filetype: model_filetype,
             link: model_url,
             description: model_desc,
             added: model_added,
@@ -118,15 +123,16 @@ pub async fn get_models_by_id(ids : Vec<i64>, db : &super::db::Db) -> Vec<Model>
     return model_map.into_values().collect()
 }
 
-pub async fn add_model(name: &str, sha256: &str, db: &super::db::Db) -> i64 
+pub async fn add_model(name: &str, sha256: &str, filetype : &str, db: &super::db::Db) -> i64 
 {
     let now = chrono::Utc::now().to_rfc3339();
     let result = sqlx::query!(
-        "INSERT INTO models (model_name, model_sha256, model_added)
-         VALUES (?, ?, ?)",
+        "INSERT INTO models (model_name, model_sha256, model_added, model_filetype)
+         VALUES (?, ?, ?, ?)",
          name,
          sha256,
-         now
+         now,
+         filetype,
     )
     .execute(db)
     .await
