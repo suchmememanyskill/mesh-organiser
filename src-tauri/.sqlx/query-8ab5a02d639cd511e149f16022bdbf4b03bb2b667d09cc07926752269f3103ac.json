@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT model_id FROM models WHERE model_sha256 = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "model_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8ab5a02d639cd511e149f16022bdbf4b03bb2b667d09cc07926752269f3103ac"
+}

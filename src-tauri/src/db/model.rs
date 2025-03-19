@@ -167,3 +167,20 @@ pub async fn delete_model(id: i64, db: &super::db::Db)
     .await
     .expect("Failed to delete model");
 }
+
+pub async fn get_model_id_via_sha256(sha256 : &str, db : &super::db::Db) -> Option<i64>
+{
+    let result = sqlx::query!(
+        "SELECT model_id FROM models WHERE model_sha256 = ?", sha256)
+        .fetch_optional(db)
+        .await;
+
+    let mut unwrapped_result = result.unwrap();
+
+    if unwrapped_result.is_some()
+    {
+        return Some(unwrapped_result.take().unwrap().model_id);
+    }
+
+    return None;
+}
