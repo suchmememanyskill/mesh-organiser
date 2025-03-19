@@ -7,4 +7,8 @@ pub enum ApplicationError
     FileSystemFault(#[from] std::io::Error),
     #[error("Failed to close worker thread")]
     ThreadJoinError(#[from] tokio::task::JoinError),
+    #[error("Failed to read or write zip file")]
+    ZipError(#[from] zip::result::ZipError),
+    #[error("Internal error")]
+    InternalError,
 }
