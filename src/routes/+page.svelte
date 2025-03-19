@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { open } from '@tauri-apps/plugin-dialog';
 
   let name = $state("");
   let greetMsg = $state("");
@@ -8,6 +9,36 @@
     event.preventDefault();
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     greetMsg = await invoke("greet", { name });
+  }
+
+  async function handle_open_file()
+  {
+    const file = await open({
+      multiple: false,
+      directory: false,
+    });
+
+    if (file)
+    {
+      console.log(file);
+      const res = await invoke("add_model", { path: file });
+      console.log(res);
+    }
+  }
+
+  async function handle_open_folder()
+  {
+    const dir = await open({
+      multiple: false,
+      directory: true,
+    });
+
+    if (dir)
+    {
+      console.log(dir);
+      const res = await invoke("add_model", { path: dir });
+      console.log(res);
+    }
   }
 </script>
 
@@ -32,6 +63,9 @@
     <button type="submit">Greet</button>
   </form>
   <p>{greetMsg}</p>
+
+  <button onclick={handle_open_file}>Open File</button>
+  <button onclick={handle_open_folder}>Open Folder</button>
 </main>
 
 <style>

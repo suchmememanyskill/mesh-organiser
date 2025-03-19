@@ -23,14 +23,6 @@ CREATE TABLE labels (
     label_color INTEGER NOT NULL
 );
 
-CREATE TABLE models_group_labels (
-    id INTEGER PRIMARY KEY,
-    label_id INTEGER NOT NULL,
-    group_id INTEGER NOT NULL,
-    FOREIGN KEY (label_id) REFERENCES labels(label_id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES models_group(group_id) ON DELETE CASCADE
-);
-
 CREATE TABLE models_labels (
     id INTEGER PRIMARY KEY,
     label_id INTEGER NOT NULL,

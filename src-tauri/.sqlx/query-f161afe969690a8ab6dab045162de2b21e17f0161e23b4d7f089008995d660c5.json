@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_group_id, labels.label_id, label_name, label_color \n         FROM models \n         INNER JOIN models_labels ON models.model_id = models_labels.model_id \n         INNER JOIN labels ON models_labels.label_id = labels.label_id",
+  "query": "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, \n                labels.label_id, label_name, label_color,\n                models_group.group_id, group_name\n         FROM models \n         LEFT JOIN models_labels ON models.model_id = models_labels.model_id \n         INNER JOIN labels ON models_labels.label_id = labels.label_id\n         LEFT JOIN models_group ON models.model_group_id = models_group.group_id",
   "describe": {
     "columns": [
       {
@@ -34,14 +34,14 @@
         "type_info": "Text"
       },
       {
-        "name": "model_added",
+        "name": "model_group_id",
         "ordinal": 6,
-        "type_info": "Text"
+        "type_info": "Integer"
       },
       {
-        "name": "model_group_id",
+        "name": "model_added",
         "ordinal": 7,
-        "type_info": "Integer"
+        "type_info": "Text"
       },
       {
         "name": "label_id",
@@ -57,6 +57,16 @@
         "name": "label_color",
         "ordinal": 10,
         "type_info": "Integer"
+      },
+      {
+        "name": "group_id",
+        "ordinal": 11,
+        "type_info": "Integer"
+      },
+      {
+        "name": "group_name",
+        "ordinal": 12,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -69,12 +79,14 @@
       false,
       true,
       true,
-      false,
       true,
       false,
       false,
-      false
+      false,
+      false,
+      false,
+      true
     ]
   },
-  "hash": "45349d02a9a84638ab5675a187951bbd200f1272992758f0bc61ae06a1d7f9f0"
+  "hash": "f161afe969690a8ab6dab045162de2b21e17f0161e23b4d7f089008995d660c5"
 }

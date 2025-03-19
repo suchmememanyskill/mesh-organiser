@@ -1,14 +1,39 @@
+use serde::{Serialize, Serializer, ser::SerializeStruct};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ApplicationError 
-{
+pub enum ApplicationError {
     #[error("Failed to open or read file")]
     FileSystemFault(#[from] std::io::Error),
-    #[error("Failed to close worker thread")]
-    ThreadJoinError(#[from] tokio::task::JoinError),
     #[error("Failed to read or write zip file")]
     ZipError(#[from] zip::result::ZipError),
     #[error("Internal error")]
     InternalError,
+}
+
+impl Serialize for ApplicationError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("ApplicationError", 3)?;
+        match self {
+            ApplicationError::FileSystemFault(inner) => {
+                state.serialize_field("error_type", "FileSystemFault")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            },
+            ApplicationError::ZipError(inner) => {
+                state.serialize_field("error_type", "ZipError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            },
+            ApplicationError::InternalError => {
+                state.serialize_field("error_type", "InternalError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", "")?;
+            },
+        }
+        state.end()
+    }
 }

@@ -26,7 +26,8 @@ sqlx = { version = "0.8.3", features = ["sqlite", "runtime-tokio", "chrono"] }
 futures = "0.3.31"
 sha2 = "0.10"
 thiserror = "2.0.12"
-tokio = {version = "0.2.11", features = ["full"] }
 chrono = "0.4.40"
 zip = { version = "2.2"}
 active-win-pos-rs = "0.9"
+winreg = "0.55"
+tauri-plugin-dialog = "2"
