@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum SupportedSlicers {
     PrusaSlicer,
     Cura,
@@ -5,6 +6,7 @@ pub enum SupportedSlicers {
     OrcaSlicer,
 }
 
+#[derive(Clone)]
 pub struct Configuration {
     pub data_path: String,
     pub prusa_deep_link: bool,

@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use error::ApplicationError;
 use service::{
@@ -20,11 +20,14 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn add_model(
+async fn add_model(
     path: &str,
     state: State<'_, AppState>,
 ) -> Result<CreationResult, ApplicationError> {
-    let result = model_service::import_path(path, &state)?;
+    let path_clone = String::from(path);
+    let state_clone = state.real_clone();
+
+    let result = tauri::async_runtime::spawn_blocking(move || model_service::import_path(&path_clone, &state_clone)).await.unwrap()?;
 
     Ok(result)
 }
@@ -50,7 +53,7 @@ pub fn run() {
                 let db = db::db::setup_db(&config).await;
 
                 app.manage(AppState {
-                    db: db,
+                    db: Arc::new(db),
                     configuration: config,
                 })
             });

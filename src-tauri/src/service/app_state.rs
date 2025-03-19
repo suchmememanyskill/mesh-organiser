@@ -1,9 +1,10 @@
 use crate::configuration;
 use crate::db;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 pub struct AppState {
-    pub db: db::db::Db,
+    pub db: Arc<db::db::Db>,
     pub configuration: configuration::Configuration,
 }
 
@@ -17,5 +18,12 @@ impl AppState {
         }
 
         String::from(path_buff.to_str().unwrap())
+    }
+
+    pub fn real_clone(&self) -> AppState {
+        AppState {
+            db: Arc::clone(&self.db),
+            configuration: self.configuration.clone(),
+        }
     }
 }
