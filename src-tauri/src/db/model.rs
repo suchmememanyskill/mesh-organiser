@@ -40,7 +40,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
                 models_group.group_id, group_name
          FROM models 
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
-         INNER JOIN labels ON models_labels.label_id = labels.label_id
+         LEFT JOIN labels ON models_labels.label_id = labels.label_id
          LEFT JOIN models_group ON models.model_group_id = models_group.group_id"
     )
     .fetch_all(db)
@@ -48,7 +48,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
 
     let mut model_map: HashMap<i64, Model> = HashMap::new();
 
-    for row in rows.unwrap() {
+    for mut row in rows.unwrap() {
         let entry = model_map.entry(row.model_id).or_insert(Model {
             id: row.model_id,
             name: row.model_name,
@@ -70,8 +70,8 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
         if !entry.labels.iter().any(|f| f.id == (row.label_id)) {
             entry.labels.push(Label {
                 id: row.label_id,
-                name: row.label_name,
-                color: row.label_color as u32,
+                name: row.label_name.take().unwrap(),
+                color: row.label_color.take().unwrap() as u32,
             });
         }
     }
