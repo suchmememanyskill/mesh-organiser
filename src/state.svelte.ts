@@ -155,8 +155,6 @@ export async function updateState() : Promise<void>
     let raw_models : RawModel[] = await invoke("get_models");
     let raw_labels : RawLabel[] = await invoke("get_labels");
 
-    console.log(raw_models);
-
     let model_groups = extractGroups(raw_models);
 
     let labels : LabelEntry[] = raw_labels.map(raw_label => {
@@ -169,6 +167,9 @@ export async function updateState() : Promise<void>
             total : groups.reduce((acc, entry) => acc + entry.total, 0),
         };
     });
+
+    console.log(model_groups);
+    console.log(labels);
 
     models.labels = labels;
     models.entries = model_groups;

@@ -2,6 +2,7 @@
   import { invoke } from "@tauri-apps/api/core";
   import { open } from '@tauri-apps/plugin-dialog';
   import { models, updateState } from '../state.svelte';
+  import { Button } from "$lib/components/ui/button/index.js";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -108,6 +109,7 @@
   <button onclick={handle_open_file}>Open File</button>
   <button onclick={handle_open_folder}>Open Folder</button>
   <button onclick={get_models}>Get Models</button>
+  <Button>Click me</Button>
 </main>
 
 <style>
