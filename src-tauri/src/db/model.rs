@@ -67,6 +67,12 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
             labels: Vec::new(),
         });
 
+        // Hack as silly little sql library doesn't understand that this is optional
+        if row.label_id <= 0
+        {
+            continue;
+        }
+
         if !entry.labels.iter().any(|f| f.id == (row.label_id)) {
             entry.labels.push(Label {
                 id: row.label_id,
@@ -115,9 +121,9 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         let model_added: String = row.get("model_added");
         let group_id: Option<i64> = row.get("group_id");
         let group_name: Option<String> = row.get("group_name");
-        let label_id: i64 = row.get("label_id");
-        let label_name: String = row.get("label_name");
-        let label_color: i64 = row.get("label_color");
+        let mut label_id: Option<i64> = row.get("label_id");
+        let mut label_name: Option<String> = row.get("label_name");
+        let mut label_color: Option<i64> = row.get("label_color");
 
         let entry = model_map.entry(model_id).or_insert(Model {
             id: model_id,
@@ -137,11 +143,18 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
             labels: Vec::new(),
         });
 
-        if !entry.labels.iter().any(|f| f.id == label_id) {
+        if (label_id.is_none())
+        {
+            continue;
+        }
+
+        let label_id_unwrapped = label_id.take().unwrap();
+
+        if !entry.labels.iter().any(|f| f.id == label_id_unwrapped) {
             entry.labels.push(label::Label {
-                id: label_id,
-                name: label_name,
-                color: label_color as u32,
+                id: label_id_unwrapped,
+                name: label_name.take().unwrap(),
+                color: label_color.take().unwrap() as u32,
             });
         }
     }

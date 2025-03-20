@@ -4,6 +4,7 @@
 
   let name = $state("");
   let greetMsg = $state("");
+  let lastTimeTaken = $state("");
 
   async function greet(event: Event) {
     event.preventDefault();
@@ -20,9 +21,12 @@
 
     if (file)
     {
+      const startTime = performance.now();
       console.log(file);
       const res = await invoke("add_model", { path: file });
       console.log(res);
+      const endTime = performance.now();
+      lastTimeTaken = `Time taken: ${(endTime - startTime) / 1000}s for ${JSON.stringify(res)}`;
     }
   }
 
@@ -35,9 +39,12 @@
 
     if (dir)
     {
+      const startTime = performance.now();
       console.log(dir);
       const res = await invoke("add_model", { path: dir });
       console.log(res);
+      const endTime = performance.now();
+      lastTimeTaken = `Time taken: ${(endTime - startTime) / 1000}s for ${JSON.stringify(res)}`;
     }
   }
 </script>
@@ -63,7 +70,7 @@
     <button type="submit">Greet</button>
   </form>
   <p>{greetMsg}</p>
-
+  <p>{lastTimeTaken}</p>
   <button onclick={handle_open_file}>Open File</button>
   <button onclick={handle_open_folder}>Open Folder</button>
 </main>

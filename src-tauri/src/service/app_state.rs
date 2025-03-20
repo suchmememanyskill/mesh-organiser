@@ -20,6 +20,17 @@ impl AppState {
         String::from(path_buff.to_str().unwrap())
     }
 
+    pub fn get_image_dir(&self) -> String {
+        let mut path_buff = PathBuf::from(self.configuration.data_path.clone());
+        path_buff.push("images");
+
+        if !path_buff.exists() {
+            std::fs::create_dir_all(path_buff.clone()).expect("Failed to create image directory");
+        }
+
+        String::from(path_buff.to_str().unwrap())
+    }
+
     pub fn real_clone(&self) -> AppState {
         AppState {
             db: Arc::clone(&self.db),

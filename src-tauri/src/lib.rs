@@ -6,7 +6,7 @@ use service::{
     model_service::{self, CreationResult},
 };
 use sqlx::Connection;
-use tauri::{Manager, State};
+use tauri::{Manager, State, AppHandle};
 mod configuration;
 mod db;
 mod error;
@@ -23,11 +23,14 @@ fn greet(name: &str) -> String {
 async fn add_model(
     path: &str,
     state: State<'_, AppState>,
+    app_handle: AppHandle,
 ) -> Result<CreationResult, ApplicationError> {
     let path_clone = String::from(path);
     let state_clone = state.real_clone();
 
     let result = tauri::async_runtime::spawn_blocking(move || model_service::import_path(&path_clone, &state_clone)).await.unwrap()?;
+
+    service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, false).await?;
 
     Ok(result)
 }
@@ -37,6 +40,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
                 let config = configuration::Configuration {
