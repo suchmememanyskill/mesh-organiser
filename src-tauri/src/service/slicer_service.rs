@@ -60,7 +60,7 @@ impl Slicer {
     #[cfg(target_os = "windows")]
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
         if !self.is_installed() {
-            return Err(ApplicationError::InternalError);
+            return Err(ApplicationError::InternalError(String::from("Slicer not installed")));
         }
 
         let slicer_path = match *self {

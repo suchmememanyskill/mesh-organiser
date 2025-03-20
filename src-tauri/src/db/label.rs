@@ -1,15 +1,16 @@
+use serde::Serialize;
 use sqlx;
 use sqlx::Row;
 use tauri::async_runtime::block_on;
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Serialize)]
 pub struct Label {
     #[sqlx(rename = "label_id")]
     pub id: i64,
     #[sqlx(rename = "label_name")]
     pub name: String,
     #[sqlx(rename = "label_color")]
-    pub color: u32,
+    pub color: i64,
 }
 
 #[derive(sqlx::FromRow)]
@@ -20,18 +21,17 @@ pub struct LabelExtended {
     pub model_count: i64,
 }
 
-pub fn get_labels_sync(db: &super::db::Db) -> Vec<LabelExtended> {
+pub fn get_labels_sync(db: &super::db::Db) -> Vec<Label> {
     block_on(get_labels(db))
 }
 
-pub async fn get_labels(db: &super::db::Db) -> Vec<LabelExtended> {
+pub async fn get_labels(db: &super::db::Db) -> Vec<Label> {
     let rows = sqlx::query_as!(
-		LabelExtended,
+		Label,
 		r#"SELECT 
 			label_id as id, 
 			label_name as name, 
-			label_color as color, 
-			(SELECT COUNT(*) FROM models_labels WHERE models_labels.label_id = labels.label_id) AS model_count
+			label_color as color
 		  FROM labels"#
 	)
 	.fetch_all(db)

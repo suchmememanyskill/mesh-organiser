@@ -28,7 +28,7 @@ pub fn import_path(
         return import_models_from_dir(path, &name, &app_state);
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
         return import_models_from_zip(path, &name, &app_state);
-    } else if path_buff.extension().is_some() {
+    } else if is_supported_extension(&path_buff) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
         let mut file = File::open(&path_buff)?;
@@ -41,7 +41,7 @@ pub fn import_path(
         });
     }
 
-    return Err(ApplicationError::InternalError);
+    return Err(ApplicationError::InternalError(String::from("Unsupported file type")));
 }
 
 fn import_models_from_dir(
@@ -94,7 +94,13 @@ fn import_models_from_zip(
             None => continue,
         };
 
+        if !is_supported_extension(&outpath)
+        {
+            continue;
+        }
+
         if file.is_file() {
+            
             let file_name = util::prettify_file_name(&outpath);
             let extension = outpath.extension().unwrap().to_str().unwrap();
             let file_size = file.size() as usize;
@@ -173,7 +179,14 @@ where
         _ => file_type,
     };
 
-    let id = model::add_model_sync(name, &hash, file_type_store, &app_state.db);
+    let id = model::add_model_sync(name, &hash, file_type_store, file_size as i64, &app_state.db);
 
     return Ok(id);
+}
+
+fn is_supported_extension(path: &PathBuf) -> bool {
+    match path.extension() {
+        Some(ext) => ext == "stl" || ext == "obj" || ext == "3mf",
+        None => false,
+    }
 }

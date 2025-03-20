@@ -13,6 +13,7 @@ CREATE TABLE models (
     model_url TEXT NULL,
     model_desc TEXT NULL,
     model_added TEXT NOT NULL,
+    model_size INTEGER NOT NULL,
     model_group_id INTEGER NULL,
     FOREIGN KEY(model_group_id) REFERENCES models_group(group_id) ON DELETE SET NULL
 );

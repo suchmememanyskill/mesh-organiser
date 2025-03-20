@@ -35,6 +35,20 @@ async fn add_model(
     Ok(result)
 }
 
+#[tauri::command]
+async fn get_models(state: State<'_, AppState>) -> Result<Vec<db::model::Model>, ApplicationError> {
+    let models = db::model::get_models(&state.db).await;
+
+    Ok(models)
+}
+
+#[tauri::command]
+async fn get_labels(state: State<'_, AppState>) -> Result<Vec<db::label::Label>, ApplicationError> {
+    let labels = db::label::get_labels(&state.db).await;
+
+    Ok(labels)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -63,7 +77,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, add_model])
+        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,3 +1,4 @@
+use serde::Serialize;
 use sqlx;
 use sqlx::Row;
 use std::collections::HashMap;
@@ -9,12 +10,13 @@ use super::{
 
 use tauri::async_runtime::block_on;
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Serialize)]
 pub struct ModelGroup {
     #[sqlx(rename = "group_id")]
     pub id: i64,
     #[sqlx(rename = "group_name")]
     pub name: String,
+    // TODO: Add creation time
 }
 
 /*

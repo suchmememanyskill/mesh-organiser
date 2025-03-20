@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { open } from '@tauri-apps/plugin-dialog';
+  import { models, updateState } from '../state.svelte';
 
   let name = $state("");
   let greetMsg = $state("");
@@ -47,6 +48,38 @@
       lastTimeTaken = `Time taken: ${(endTime - startTime) / 1000}s for ${JSON.stringify(res)}`;
     }
   }
+
+  import { listen } from '@tauri-apps/api/event'
+
+  listen('tauri://drag-drop', async event => {
+    console.log(event)
+
+    if (!event)
+    {
+      return;
+    }
+
+    let payload : any = event.payload;
+
+    if (!payload || !payload.paths || !payload.paths.length)
+    {
+      return;
+    }
+
+    const startTime = performance.now();
+      for (let i = 0; i < payload.paths.length; i++)
+      {
+        const res = await invoke("add_model", { path: payload.paths[i] });
+        console.log(res);
+      }
+      const endTime = performance.now();
+      lastTimeTaken = `Time taken: ${(endTime - startTime) / 1000}s. Added ${payload.paths.length} files.`;
+  })
+
+  async function get_models()
+  {
+      await updateState();
+  }
 </script>
 
 <main class="container">
@@ -71,8 +104,10 @@
   </form>
   <p>{greetMsg}</p>
   <p>{lastTimeTaken}</p>
+  <p>Models: { JSON.stringify(models.entries) }</p>
   <button onclick={handle_open_file}>Open File</button>
   <button onclick={handle_open_folder}>Open Folder</button>
+  <button onclick={get_models}>Get Models</button>
 </main>
 
 <style>

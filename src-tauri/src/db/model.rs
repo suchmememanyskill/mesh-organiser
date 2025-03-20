@@ -1,12 +1,13 @@
 use super::label::Label;
 use super::model_group::ModelGroup;
 use super::{label, model_group};
+use serde::Serialize;
 use sqlx::Row;
 use sqlx::{self, types::chrono};
 use std::collections::HashMap;
 use tauri::async_runtime::block_on;
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Serialize)]
 pub struct Model {
     #[sqlx(rename = "model_id")]
     pub id: i64,
@@ -16,6 +17,8 @@ pub struct Model {
     pub sha256: String,
     #[sqlx(rename = "model_filetype")]
     pub filetype: String,
+    #[sqlx(rename = "model_size")]
+    pub size: i64,
     #[sqlx(rename = "model_url")]
     pub link: Option<String>,
     #[sqlx(rename = "model_desc")]
@@ -35,7 +38,7 @@ pub fn get_models_sync(db: &super::db::Db) -> Vec<Model>
 
 pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
     let rows = sqlx::query!(
-        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, 
+        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, model_size,
                 labels.label_id, label_name, label_color,
                 models_group.group_id, group_name
          FROM models 
@@ -57,6 +60,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
             link: row.model_url,
             description: row.model_desc,
             added: row.model_added,
+            size: row.model_size,
             group: match row.model_group_id {
                 Some(id) => Some(ModelGroup {
                     id: id,
@@ -77,7 +81,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
             entry.labels.push(Label {
                 id: row.label_id,
                 name: row.label_name.take().unwrap(),
-                color: row.label_color.take().unwrap() as u32,
+                color: row.label_color.take().unwrap(),
             });
         }
     }
@@ -98,7 +102,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         .collect::<Vec<String>>()
         .join(",");
     let formatted_query = format!(
-        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, 
+        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_size,
                 labels.label_id, label_name, label_color,
                 models_group.group_id, group_name
          FROM models 
@@ -119,6 +123,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         let model_url: Option<String> = row.get("model_url");
         let model_desc: Option<String> = row.get("model_desc");
         let model_added: String = row.get("model_added");
+        let model_size : i64 = row.get("model_size");
         let group_id: Option<i64> = row.get("group_id");
         let group_name: Option<String> = row.get("group_name");
         let mut label_id: Option<i64> = row.get("label_id");
@@ -133,6 +138,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
             link: model_url,
             description: model_desc,
             added: model_added,
+            size: model_size,
             group: match group_id {
                 Some(id) => Some(ModelGroup {
                     id: id,
@@ -143,7 +149,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
             labels: Vec::new(),
         });
 
-        if (label_id.is_none())
+        if label_id.is_none()
         {
             continue;
         }
@@ -154,7 +160,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
             entry.labels.push(label::Label {
                 id: label_id_unwrapped,
                 name: label_name.take().unwrap(),
-                color: label_color.take().unwrap() as u32,
+                color: label_color.take().unwrap(),
             });
         }
     }
@@ -162,20 +168,21 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
     return model_map.into_values().collect();
 }
 
-pub fn add_model_sync(name: &str, sha256: &str, filetype: &str, db: &super::db::Db) -> i64
+pub fn add_model_sync(name: &str, sha256: &str, filetype: &str, size : i64, db: &super::db::Db) -> i64
 {
-    block_on(add_model(name, sha256, filetype, db))
+    block_on(add_model(name, sha256, filetype, size, db))
 }
 
-pub async fn add_model(name: &str, sha256: &str, filetype: &str, db: &super::db::Db) -> i64 {
+pub async fn add_model(name: &str, sha256: &str, filetype: &str, size : i64, db: &super::db::Db) -> i64 {
     let now = chrono::Utc::now().to_rfc3339();
     let result = sqlx::query!(
-        "INSERT INTO models (model_name, model_sha256, model_added, model_filetype)
-         VALUES (?, ?, ?, ?)",
+        "INSERT INTO models (model_name, model_sha256, model_added, model_filetype, model_size)
+         VALUES (?, ?, ?, ?, ?)",
         name,
         sha256,
         now,
         filetype,
+        size,
     )
     .execute(db)
     .await
