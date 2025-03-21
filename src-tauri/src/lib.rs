@@ -68,6 +68,57 @@ async fn get_configuration(state: State<'_, AppState>) -> Result<configuration::
     Ok(state.configuration.clone())
 }
 
+#[tauri::command]
+async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
+    db::model::delete_model(model_id, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn add_label(
+    label_name: &str,
+    label_color: i64,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::create_label(label_name, label_color, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn ungroup(
+    group_id: i64,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::model_group::remove_group(group_id, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn edit_group(
+    group_id: i64,
+    group_name: &str,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::model_group::edit_group(group_id, group_name, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_labels_on_model(
+    label_ids: Vec<i64>,
+    model_id: i64,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::remove_labels_from_model(model_id, &state.db).await;
+    db::label::set_labels_on_model(label_ids, model_id, &state.db).await;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -97,7 +148,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels, edit_model])
+        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels, edit_model, delete_model, add_label, ungroup, edit_group, set_labels_on_model])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

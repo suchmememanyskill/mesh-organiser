@@ -58,6 +58,30 @@ pub async fn set_label_on_models(label_id: i64, model_ids: Vec<i64>, db: &super:
     }
 }
 
+pub async fn set_labels_on_model(label_ids: Vec<i64>, model_id: i64, db: &super::db::Db) {
+    for label_id in label_ids {
+        sqlx::query!(
+            "INSERT INTO models_labels (label_id, model_id) VALUES (?, ?)",
+            label_id,
+            model_id
+        )
+        .execute(db)
+        .await
+        .expect("Failed to add label to model");
+    }
+}
+
+pub async fn remove_labels_from_model(model_id : i64, db: &super::db::Db)
+{
+    sqlx::query!(
+        "DELETE FROM models_labels WHERE model_id = ?",
+        model_id
+    )
+    .execute(db)
+    .await
+    .expect("Failed to remove labels from model");
+}
+
 pub fn remove_label_from_models_sync(label_id: i64, model_ids: Vec<i64>, db: &super::db::Db) {
     block_on(remove_label_from_models(label_id, model_ids, db))
 }

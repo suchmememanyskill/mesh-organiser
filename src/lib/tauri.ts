@@ -1,0 +1,56 @@
+import { invoke } from "@tauri-apps/api/core";
+import type { RawModel, RawLabel, RawGroup, Model, Group, Label } from "./model";
+
+export async function getModels() : Promise<RawModel[]>
+{
+    let raw_models : RawModel[] = await invoke("get_models");
+
+    return raw_models;
+}
+
+export async function getLabels() : Promise<RawLabel[]>
+{
+    let raw_labels : RawLabel[] = await invoke("get_labels");
+
+    return raw_labels;
+}
+
+export async function editModel(model : Model) : Promise<void>
+{
+    await invoke("edit_model", {  
+        modelId: model.id,
+        modelName: model.name,
+        modelDescription: model.description,
+        modelUrl: model.link
+    });
+}
+
+export async function deleteModel(model : Model) : Promise<void>
+{
+    await invoke("delete_model", { modelId: model.id });
+}
+
+export async function createLabel(name : string, color : string) : Promise<void>
+{
+    let colorHex = color.replace("#", "");
+    let colorNumber = parseInt(colorHex, 16);
+
+    await invoke("add_label", { labelName: name, labelColor: colorNumber });
+}
+
+export async function ungroup(group : Group) : Promise<void>
+{
+    await invoke("ungroup", { groupId: group.id });
+}
+
+export async function editGroup(group : Group) : Promise<void>
+{
+    await invoke("edit_group", { groupId: group.id, groupName: group.name });
+}
+
+export async function setLabelsOnModel(labels : Label[], model : Model) : Promise<void>
+{
+    let labelIds = labels.map(label => label.id);
+
+    await invoke("set_labels_on_model", { modelId: model.id, labelIds: labelIds });
+}

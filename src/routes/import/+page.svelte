@@ -15,9 +15,10 @@
     import LoaderCircle from "@lucide/svelte/icons/loader-circle";
     import File from "@lucide/svelte/icons/file";
     import Folder from "@lucide/svelte/icons/folder";
-    import type { Group, Model } from "../../state.svelte";
-    import { models, updateState } from "../../state.svelte";
+    import type { Group, Model } from "$lib/model";
+    import { data, updateState } from "$lib/data.svelte";
     import EditModel from "$lib/components/edit/model.svelte";
+    import EditGroup from "$lib/components/edit/group.svelte";
 
     let imported_group: Group | null = $state.raw(null);
     let imported_models: Model[] | null = $state.raw(null);
@@ -53,7 +54,7 @@
         let model_ids = results.map((res) => res.model_ids).flat();
 
         if (group_id) {
-            let group_entry = models.entries.find((entry) => entry.group?.id === group_id) || null;
+            let group_entry = data.grouped_entries.find((entry) => entry.group?.id === group_id) || null;
 
             if (group_entry && group_entry.group) {
                 imported_group = group_entry.group;
@@ -63,7 +64,7 @@
         else 
         {
             imported_group = null;
-            imported_models = models.entries.map((entry) => entry.models).flat().filter((model) => model_ids.includes(model.id));
+            imported_models = data.entries.map((entry) => entry.model).filter((entry) => model_ids.includes(entry.id));
         }
     }
 
@@ -172,13 +173,16 @@
 
     <Button onclick={test}></Button>-->
 
-        <div class="flex flex-wrap flex-row w-full justify-center gap-4">
-            {#each imported_models as item}
-                <div class="min-w-80 max-w-96 grow">
-                    <EditModel model={item} />
-                </div>
-                
-            {/each}
+        <div class="flex flex-col items-center gap-8">
+            {#if imported_group}
+                <EditGroup group={imported_group} />
+            {/if}
+    
+            <div class="flex flex-wrap flex-row w-full justify-center gap-4">
+                {#each imported_models as item}
+                    <EditModel model={item} class="min-w-80 max-w-96 flex-grow" /> 
+                {/each}
+            </div>
         </div>
     {/if}
 </div>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { open } from '@tauri-apps/plugin-dialog';
-  import { models, updateState } from '../state.svelte';
+  import { data, updateState } from '../lib/data.svelte';
   import { Button } from "$lib/components/ui/button/index.js";
 
   let name = $state("");
@@ -106,7 +106,7 @@
   </form>
   <p>{greetMsg}</p>
   <p>{lastTimeTaken}</p>
-  <p>Models: { JSON.stringify(models.entries) }</p>
+  <p>Models: { JSON.stringify(data.entries) }</p>
   <button onclick={handle_open_file}>Open File</button>
   <button onclick={handle_open_folder}>Open Folder</button>
   <button onclick={get_models}>Get Models</button>
