@@ -5,6 +5,7 @@
     import Tag from "@lucide/svelte/icons/tag";
     import FolderInput from "@lucide/svelte/icons/folder-input";
     import Boxes from "@lucide/svelte/icons/boxes";
+    import Box from "@lucide/svelte/icons/box";
     import Settings from "@lucide/svelte/icons/settings";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { Input } from "$lib/components/ui/input/index.js";
@@ -63,13 +64,24 @@
                     <Sidebar.MenuItem>
                         <Sidebar.MenuButton>
                             {#snippet child({ props })}
-                                <a href="/" {...props}>
-                                    <Boxes />
+                                <a href="/model" {...props}>
+                                    <Box />
                                     <span>Models</span>
                                 </a>
                             {/snippet}
                         </Sidebar.MenuButton>
                         <Sidebar.MenuBadge>{data.entries.length}</Sidebar.MenuBadge>
+                    </Sidebar.MenuItem>
+                    <Sidebar.MenuItem>
+                        <Sidebar.MenuButton>
+                            {#snippet child({ props })}
+                                <a href="/" {...props}>
+                                    <Boxes />
+                                    <span>Groups</span>
+                                </a>
+                            {/snippet}
+                        </Sidebar.MenuButton>
+                        <Sidebar.MenuBadge>{data.grouped_entries.length}</Sidebar.MenuBadge>
                     </Sidebar.MenuItem>
                     <Sidebar.MenuItem>
                         <Sidebar.MenuButton>
@@ -94,11 +106,8 @@
                         <span class="sr-only">New label</span>
                         <Plus />
                     </Sidebar.GroupAction>
-                    
                 {/snippet}
-              
-              </Popover.Trigger
-            >
+            </Popover.Trigger>
             <Popover.Content class="w-80">
               <div class="grid gap-4">
                 <div class="grid gap-2">
@@ -124,7 +133,7 @@
                     <Sidebar.MenuItem>
                         <Sidebar.MenuButton>
                             {#snippet child({ props })}
-                                <a href="#" {...props}>
+                                <a href="/label/{labelEntry.label.id}" {...props}>
                                     <Tag style={`color: ${labelEntry.label.color};`} />
                                     <span>{labelEntry.label.name}</span>
                                 </a>

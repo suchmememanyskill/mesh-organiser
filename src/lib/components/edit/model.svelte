@@ -26,32 +26,18 @@
     import Button from "../ui/button/button.svelte";
     import CardFooter from "../ui/card/card-footer.svelte";
     import { toReadableSize } from "$lib/utils";
+    import ModelImg from "$lib/components/view/model-img.svelte";
 
-    const props: { model: Model; class?: ClassValue } = $props();
-    let typed_model = $state(props.model as Model);
+    const props: { model: Model; class?: ClassValue, full_image?: boolean } = $props();
+    let last_model_id = -1;
     let img_src = $state("");
     let deleted = $state(false);
-
-    let value = $state(props.model.labels.map((l) => l.id.toString()));
-    let selected_labels = $derived(
-        value.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l)
-    );
-
-    let first_time_model_save = true;
-    let first_time_label_save = true;
 
     const save_model_debounced = debounce(async (edited_model: Model) => {
         console.log("Saving model");
         console.log(edited_model);
         await editModel(edited_model);
-        await updateState();
-    }, 1000);
-
-    const save_labels_debounced = debounce(async (labels : string[]) => {
-        console.log("Saving labels");
-        console.log(labels);
-        let typed_labels = data.labels.filter((l) => labels.includes(l.label.id.toString())).map((l) => l.label);
-        await setLabelsOnModel(typed_labels, props.model);
+        await setLabelsOnModel(edited_model.labels, edited_model);
         await updateState();
     }, 1000);
 
@@ -60,52 +46,41 @@
         const filePath = await join(
             appDataDirPath,
             "images",
-            typed_model.sha256 + ".png",
+            props.model.sha256 + ".png",
         );
         const assetUrl = convertFileSrc(filePath);
         img_src = assetUrl;
     });
 
     $effect(() => {
-        let snapshot = $state.snapshot(typed_model);
+        let snapshot = $state.snapshot(props.model);
 
-        if (first_time_model_save) {
-            first_time_model_save = false;
+        if (!snapshot.name) {
             return;
         }
 
-        if (!snapshot.name) {
+        if (last_model_id !== snapshot.id) {
+            last_model_id = snapshot.id;
             return;
         }
 
         save_model_debounced(snapshot);
     });
 
-    $effect(() => {
-        let snapshot = $state.snapshot(value);
-
-        if (first_time_label_save) {
-            first_time_label_save = false;
-            return;
-        }
-
-        save_labels_debounced(snapshot);
-    });
-
     async function onDelete() {
-        await deleteModel(typed_model);
+        await deleteModel(props.model);
         await updateState();
         deleted = true;
     }
 
     async function onOpen()
     {
-        await openInSlicer([typed_model]);
+        await openInSlicer([props.model]);
     }
 
     function openLink()
     {
-        window.open(typed_model.link);
+        window.open(props.model.link);
     }
 </script>
 
@@ -116,11 +91,7 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <img
-                src={img_src}
-                alt="Image of {typed_model.name}"
-                class="h-36 w-36 m-auto"
-            />
+            <ModelImg model={props.model} class="{props.full_image ? "h-full w-full" : "h-36 w-36" } m-auto" />
             <div class="absolute right-0 mr-8">
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
@@ -134,8 +105,8 @@
                 </DropdownMenu.Root>
             </div>
             <div class="flex flex-wrap gap-2 justify-center min-h-6">
-                {#each selected_labels as label}
-                    <LabelBadge label={label!.label} />
+                {#each props.model.labels as label}
+                    <LabelBadge label={label!} />
                 {/each}
             </div>
         </CardHeader>
@@ -147,12 +118,12 @@
                         <Input
                             id="name"
                             placeholder="Name of the model"
-                            bind:value={typed_model.name}
+                            bind:value={props.model.name}
                         />
                     </div>
                     <div class="flex flex-col space-y-1.5">
                         <Label for="link">
-                            {#if typed_model.link}
+                            {#if props.model.link}
                                 <a onclick={openLink} class="text-primary hover:underline">Link/Url</a>
                             {:else}
                                 Link/Url
@@ -161,7 +132,7 @@
                         <Input
                             id="link"
                             placeholder="Where did this model come from?"
-                            bind:value={typed_model.link}
+                            bind:value={props.model.link}
                         />
                     </div>
                     <div class="flex flex-col space-y-1.5">
@@ -169,12 +140,15 @@
                         <Input
                             id="description"
                             placeholder="Description of the model"
-                            bind:value={typed_model.description}
+                            bind:value={props.model.description}
                         />
                     </div>
                     <div class="flex flex-col space-y-1.5">
                         <Label>Labels</Label>
-                        <Select.Root type="multiple" name="favoriteFruit" bind:value>
+                        <Select.Root type="multiple" name="labels" bind:value={
+                            () => props.model.labels.map((l) => l.id.toString()),
+                            (val) => props.model.labels = val.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l).map((l) => l?.label!)
+                        }>
                             <Select.Trigger>
                                 <span>Select some labels</span>
                             </Select.Trigger>
@@ -201,9 +175,9 @@
                                 <div>Filetype</div>
                             </div>
                             <div class="text-right space-y-1">
-                                <div>{typed_model.added.toLocaleDateString()}</div>
-                                <div>{toReadableSize(typed_model.size)}</div>
-                                <div>{typed_model.filetype}</div>
+                                <div>{props.model.added.toLocaleDateString()}</div>
+                                <div>{toReadableSize(props.model.size)}</div>
+                                <div>{props.model.filetype}</div>
                             </div>
                         </div>
                     </div>

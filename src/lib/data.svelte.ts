@@ -7,7 +7,6 @@ export const data = $state({
     labels : [] as LabelEntry[]
 });
 
-
 function convertModel(raw : RawModel) : Model
 {
     return {
