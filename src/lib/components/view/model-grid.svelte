@@ -28,9 +28,9 @@
     });
 
     const sizes = {
-        Small: "w-60",
-        Medium: "w-80",
-        Large: "w-100",
+        Small: "w-40",
+        Medium: "w-60",
+        Large: "w-80",
     };
 
     const size = $derived(sizes[currentFilter.size]);
