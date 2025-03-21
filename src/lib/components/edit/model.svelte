@@ -124,7 +124,6 @@
                     <div class="flex flex-col space-y-1.5">
                         <Label for="link">
                             {#if props.model.link}
-                                <a href={props.model.link} target="_blank"  class="text-primary hover:underline">Link/Url</a>
                                 <a onclick={openLink} class="text-primary hover:underline">Link/Url</a>
                             {:else}
                                 Link/Url
