@@ -66,6 +66,11 @@ body>div.sauce
   height: 100%;
 }
 
+body.sauce
+{
+  pointer-events: all !important;
+}
+
 @layer base {
   * {
     @apply border-border;
