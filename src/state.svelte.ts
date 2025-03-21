@@ -69,9 +69,27 @@ export interface LabelEntry
     total : number;
 }
 
+export enum SupportedSlicers {
+    PrusaSlicer = "PrusaSlicer",
+    Cura = "Cura",
+    BambuStudio = "BambuStudio",
+    OrcaSlicer = "OrcaSlicer",
+}
+
+export interface Configuration {
+    dataPath: string;
+    modelPath: string;
+    prusaDeepLink: boolean;
+    curaDeepLink: boolean;
+    bambuDeepLink: boolean;
+    orcaDeepLink: boolean;
+    slicer: SupportedSlicers;
+    createPopupOnModelImport: boolean;
+}
+
 export const models = $state({
     entries : [] as GroupedEntry[],
-    labels : [] as LabelEntry[],
+    labels : [] as LabelEntry[]
 });
 
 

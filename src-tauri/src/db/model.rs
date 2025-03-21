@@ -191,12 +191,12 @@ pub async fn add_model(name: &str, sha256: &str, filetype: &str, size : i64, db:
     result.last_insert_rowid()
 }
 
-pub fn edit_model_sync(id: i64, name: &str, link: &str, description: &str, db: &super::db::Db)
+pub fn edit_model_sync(id: i64, name: &str, link: Option<&str>, description: Option<&str>, db: &super::db::Db)
 {
     block_on(edit_model(id, name, link, description, db))
 }
 
-pub async fn edit_model(id: i64, name: &str, link: &str, description: &str, db: &super::db::Db) {
+pub async fn edit_model(id: i64, name: &str, link: Option<&str>, description: Option<&str>, db: &super::db::Db) {
     sqlx::query!(
         "UPDATE models
          SET model_name = ?, model_url = ?, model_desc = ?

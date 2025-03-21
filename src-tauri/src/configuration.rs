@@ -1,4 +1,6 @@
-#[derive(Clone)]
+use serde::Serialize;
+
+#[derive(Clone, Serialize)]
 pub enum SupportedSlicers {
     PrusaSlicer,
     Cura,
@@ -6,9 +8,10 @@ pub enum SupportedSlicers {
     OrcaSlicer,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct Configuration {
     pub data_path: String,
+    pub model_path: String,
     pub prusa_deep_link: bool,
     pub cura_deep_link: bool,
     pub bambu_deep_link: bool,
@@ -21,6 +24,7 @@ impl Default for Configuration {
     fn default() -> Self {
         Configuration {
             data_path: String::from(""),
+            model_path: String::from(""),
             prusa_deep_link: false,
             cura_deep_link: false,
             bambu_deep_link: false,

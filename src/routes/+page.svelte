@@ -51,7 +51,7 @@
   }
 
   import { listen } from '@tauri-apps/api/event'
-
+/*
   listen('tauri://drag-drop', async event => {
     console.log(event)
 
@@ -76,6 +76,7 @@
       const endTime = performance.now();
       lastTimeTaken = `Time taken: ${(endTime - startTime) / 1000}s. Added ${payload.paths.length} files.`;
   })
+  */
 
   async function get_models()
   {

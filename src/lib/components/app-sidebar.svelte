@@ -1,75 +1,63 @@
 <script lang="ts">
-    import Calendar from "@lucide/svelte/icons/calendar";
-    import House from "@lucide/svelte/icons/house";
-    import Inbox from "@lucide/svelte/icons/inbox";
-    import Search from "@lucide/svelte/icons/search";
-    import Settings from "@lucide/svelte/icons/settings";
-    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-
     import Sun from "@lucide/svelte/icons/sun";
     import Moon from "@lucide/svelte/icons/moon";
     import Plus from "@lucide/svelte/icons/plus";
     import Tag from "@lucide/svelte/icons/tag";
+    import FolderInput from "@lucide/svelte/icons/folder-input";
+    import Boxes from "@lucide/svelte/icons/boxes";
+    import Settings from "@lucide/svelte/icons/settings";
+    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+
     import { models } from '../../state.svelte';
 
     import { resetMode, setMode } from "mode-watcher";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
-
-    // Menu items.
-    const items = [
-        {
-            title: "Import",
-            url: "#",
-            icon: House,
-        },
-        {
-            title: "Inbox",
-            url: "#",
-            icon: Inbox,
-        },
-        {
-            title: "Calendar",
-            url: "#",
-            icon: Calendar,
-        },
-        {
-            title: "Search",
-            url: "#",
-            icon: Search,
-        },
-        {
-            title: "Settings",
-            url: "#",
-            icon: Settings,
-        },
-    ];
 </script>
 
 <Sidebar.Root>
     <Sidebar.Content>
         <Sidebar.Group>
-            <Sidebar.GroupLabel>Application</Sidebar.GroupLabel>
+            <Sidebar.GroupLabel>Mesh Organiser</Sidebar.GroupLabel>
             <Sidebar.GroupContent>
                 <Sidebar.Menu>
-                    {#each items as item (item.title)}
-                        <Sidebar.MenuItem>
-                            <Sidebar.MenuButton>
-                                {#snippet child({ props })}
-                                    <a href={item.url} {...props}>
-                                        <item.icon />
-                                        <span>{item.title}</span>
-                                    </a>
-                                {/snippet}
-                            </Sidebar.MenuButton>
-                        </Sidebar.MenuItem>
-                    {/each}
+                    <Sidebar.MenuItem>
+                        <Sidebar.MenuButton>
+                            {#snippet child({ props })}
+                                <a href="/import" {...props}>
+                                    <FolderInput />
+                                    <span>Import</span>
+                                </a>
+                            {/snippet}
+                        </Sidebar.MenuButton>
+                    </Sidebar.MenuItem>
+                    <Sidebar.MenuItem>
+                        <Sidebar.MenuButton>
+                            {#snippet child({ props })}
+                                <a href="/" {...props}>
+                                    <Boxes />
+                                    <span>Models</span>
+                                </a>
+                            {/snippet}
+                        </Sidebar.MenuButton>
+                        <Sidebar.MenuBadge>{models.entries.reduce((acc, entry) => acc + entry.total, 0)}</Sidebar.MenuBadge>
+                    </Sidebar.MenuItem>
+                    <Sidebar.MenuItem>
+                        <Sidebar.MenuButton>
+                            {#snippet child({ props })}
+                                <a href="#" {...props}>
+                                    <Settings />
+                                    <span>Settings</span>
+                                </a>
+                            {/snippet}
+                        </Sidebar.MenuButton>
+                    </Sidebar.MenuItem>
                 </Sidebar.Menu>
             </Sidebar.GroupContent>
         </Sidebar.Group>
         	
     <Sidebar.Group>
-        <Sidebar.GroupLabel>Projects</Sidebar.GroupLabel>
+        <Sidebar.GroupLabel>Labels</Sidebar.GroupLabel>
         <Sidebar.GroupAction title="Add Project">
         <Plus /> <span class="sr-only">Add Project</span>
         </Sidebar.GroupAction>

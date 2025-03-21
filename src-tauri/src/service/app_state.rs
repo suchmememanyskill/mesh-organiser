@@ -10,7 +10,7 @@ pub struct AppState {
 
 impl AppState {
     pub fn get_model_dir(&self) -> String {
-        let mut path_buff = PathBuf::from(self.configuration.data_path.clone());
+        let mut path_buff = PathBuf::from(self.configuration.model_path.clone());
         path_buff.push("models");
 
         if !path_buff.exists() {

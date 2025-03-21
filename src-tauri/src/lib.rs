@@ -43,10 +43,29 @@ async fn get_models(state: State<'_, AppState>) -> Result<Vec<db::model::Model>,
 }
 
 #[tauri::command]
+async fn edit_model(
+    model_id : i64,
+    model_name : &str,
+    model_url : Option<&str>,
+    model_description : Option<&str>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError>
+{
+    db::model::edit_model(model_id, model_name, model_url, model_description, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_labels(state: State<'_, AppState>) -> Result<Vec<db::label::Label>, ApplicationError> {
     let labels = db::label::get_labels(&state.db).await;
 
     Ok(labels)
+}
+
+#[tauri::command]
+async fn get_configuration(state: State<'_, AppState>) -> Result<configuration::Configuration, ApplicationError> {
+    Ok(state.configuration.clone())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -57,14 +76,15 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
+                let app_data_path = String::from(app.path()
+                    .app_data_dir()
+                    .expect("failed to get data_dir")
+                    .to_str()
+                    .unwrap());
+
                 let config = configuration::Configuration {
-                    data_path: String::from(
-                        app.path()
-                            .app_data_dir()
-                            .expect("failed to get data_dir")
-                            .to_str()
-                            .unwrap(),
-                    ),
+                    data_path: String::from(&app_data_path),
+                    model_path: String::from(&app_data_path),
                     ..Default::default()
                 };
 
@@ -77,7 +97,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels])
+        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels, edit_model])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
