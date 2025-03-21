@@ -19,13 +19,13 @@
     import { data, updateState } from "$lib/data.svelte";
     import EditModel from "$lib/components/edit/model.svelte";
     import EditGroup from "$lib/components/edit/group.svelte";
+    import { openInSlicer } from "$lib/tauri";
 
     let imported_group: Group | null = $state.raw(null);
     let imported_models: Model[] | null = $state.raw(null);
     let busy: boolean = $state(false);
 
-    interface AddModelResult 
-    {
+    interface AddModelResult {
         group_id?: number;
         model_ids: number[];
     }
@@ -38,7 +38,10 @@
         let results: AddModelResult[] = [];
 
         for (let i = 0; i < paths.length; i++) {
-            const res : AddModelResult = await invoke("add_model", { path: paths[i] });
+            // TODO: put in tauri.ts
+            const res: AddModelResult = await invoke("add_model", {
+                path: paths[i],
+            });
 
             if (!res) {
                 console.error("Failed to import model at path:", paths[i]);
@@ -54,17 +57,20 @@
         let model_ids = results.map((res) => res.model_ids).flat();
 
         if (group_id) {
-            let group_entry = data.grouped_entries.find((entry) => entry.group?.id === group_id) || null;
+            let group_entry =
+                data.grouped_entries.find(
+                    (entry) => entry.group?.id === group_id,
+                ) || null;
 
             if (group_entry && group_entry.group) {
                 imported_group = group_entry.group;
                 imported_models = group_entry.models;
             }
-        }
-        else 
-        {
+        } else {
             imported_group = null;
-            imported_models = data.entries.map((entry) => entry.model).filter((entry) => model_ids.includes(entry.id));
+            imported_models = data.entries
+                .map((entry) => entry.model)
+                .filter((entry) => model_ids.includes(entry.id));
         }
     }
 
@@ -118,11 +124,6 @@
         });
     });
 
-    function test()
-    {
-        console.log(JSON.stringify(imported_models));
-    }
-
     onDestroy(() => {
         if (destroy_listener) {
             destroy_listener();
@@ -133,6 +134,19 @@
         console.log("Imported models:", imported_models);
         console.log("Imported group:", imported_group);
     });
+
+    function clearCurrentModel() {
+        imported_group = null;
+        imported_models = null;
+    }
+
+    function openAllInSlicer() {
+        if (!imported_models) {
+            return;
+        }
+
+        openInSlicer(imported_models);
+    }
 </script>
 
 <div class="flex justify-center m-4">
@@ -167,20 +181,21 @@
             </CardContent>
         </Card>
     {:else}
-    <!--
-    <p>{ JSON.stringify(imported_group) }</p>
-    <p>{ JSON.stringify(imported_models) }</p>
-
-    <Button onclick={test}></Button>-->
-
         <div class="flex flex-col items-center gap-8">
+            <div class="flex flex-row gap-5 justify-center">
+                <Button onclick={openAllInSlicer}>Open all in slicer</Button>
+                <Button onclick={clearCurrentModel}>Add another model</Button>
+            </div>
             {#if imported_group}
                 <EditGroup group={imported_group} />
             {/if}
-    
+
             <div class="flex flex-wrap flex-row w-full justify-center gap-4">
                 {#each imported_models as item}
-                    <EditModel model={item} class="min-w-80 max-w-96 flex-grow" /> 
+                    <EditModel
+                        model={item}
+                        class="min-w-80 max-w-96 flex-grow"
+                    />
                 {/each}
             </div>
         </div>

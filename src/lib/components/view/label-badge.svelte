@@ -5,4 +5,4 @@
     const props: { label : Label } = $props();
 </script>
 
-<Badge style={`border-color: ${props.label.color};`} variant="outline">{props.label.name}</Badge>
+<Badge style={`border-color: ${props.label.color};`} class="h-fit" variant="outline">{props.label.name}</Badge>

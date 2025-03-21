@@ -54,3 +54,10 @@ export async function setLabelsOnModel(labels : Label[], model : Model) : Promis
 
     await invoke("set_labels_on_model", { modelId: model.id, labelIds: labelIds });
 }
+
+export async function openInSlicer(models : Model[]) : Promise<void>
+{
+    let modelIds = models.map(model => model.id);
+
+    await invoke("open_in_slicer", { modelIds: modelIds });
+}

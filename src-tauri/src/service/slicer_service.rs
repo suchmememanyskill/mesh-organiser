@@ -5,12 +5,14 @@ use crate::db::model::Model;
 use super::app_state::AppState;
 use crate::error::ApplicationError;
 use chrono::Utc;
+use serde::Serialize;
 use std::process::Command;
 #[cfg(target_os = "windows")]
 use winreg::*;
 
 // TODO: Make all of this async
 
+#[derive(Clone, Serialize)]
 pub enum Slicer {
     PrusaSlicer,
     OrcaSlicer,
@@ -69,16 +71,23 @@ impl Slicer {
                 "SOFTWARE\\Prusa3D\\PrusaSlicer\\Settings",
                 "InstallPath",
             ),
-            Slicer::BambuStudio => get_registry_key(
+            Slicer::BambuStudio => match get_registry_key(
                 winreg::enums::HKEY_LOCAL_MACHINE,
                 "SOFTWARE\\Bambulab\\Bambu Studio",
                 "InstallPath",
-            ),
-            Slicer::OrcaSlicer => get_registry_key(
+            )
+            {
+                Some(s) => Some(String::from(PathBuf::from(s).join("bambu-studio.exe").to_str().unwrap())),
+                None => None
+            },
+            Slicer::OrcaSlicer => match get_registry_key(
                 winreg::enums::HKEY_LOCAL_MACHINE,
                 "SOFTWARE\\WOW6432Node\\SoftFever\\OrcaSlicer",
                 "",
-            ),
+            ) {
+                Some(s) => Some(String::from(PathBuf::from(s).join("orca-slicer.exe").to_str().unwrap())),
+                None => None
+            },
             Slicer::Cura => {
                 None // TODO
             }
@@ -96,6 +105,12 @@ impl Slicer {
             .iter()
             .map(|f| get_path_from_model(&temp_dir, f, &app_state).unwrap())
             .collect();
+
+        println!("Opening in slicer: {:?}", paths);
+
+        if paths.len() == 0 {
+            return Err(ApplicationError::InternalError(String::from("No models to open")));
+        }
 
         let mut command = Command::new(slicer_path)
             .args(paths)

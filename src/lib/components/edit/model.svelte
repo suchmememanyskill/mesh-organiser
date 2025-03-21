@@ -17,12 +17,15 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel } from "$lib/tauri";
+    import { editModel, deleteModel, setLabelsOnModel, openInSlicer } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { updateState, data } from "$lib/data.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
+    import Button from "../ui/button/button.svelte";
+    import CardFooter from "../ui/card/card-footer.svelte";
+    import { toReadableSize } from "$lib/utils";
 
     const props: { model: Model; class?: ClassValue } = $props();
     let typed_model = $state(props.model as Model);
@@ -94,6 +97,16 @@
         await updateState();
         deleted = true;
     }
+
+    async function onOpen()
+    {
+        await openInSlicer([typed_model]);
+    }
+
+    function openLink()
+    {
+        window.open(typed_model.link);
+    }
 </script>
 
 {#if deleted}
@@ -120,7 +133,7 @@
                     </DropdownMenu.Content>
                 </DropdownMenu.Root>
             </div>
-            <div class="flex flex-wrap gap-2 justify-center">
+            <div class="flex flex-wrap gap-2 justify-center min-h-6">
                 {#each selected_labels as label}
                     <LabelBadge label={label!.label} />
                 {/each}
@@ -138,7 +151,13 @@
                         />
                     </div>
                     <div class="flex flex-col space-y-1.5">
-                        <Label for="link">Link/Url</Label>
+                        <Label for="link">
+                            {#if typed_model.link}
+                                <a onclick={openLink} class="text-primary hover:underline">Link/Url</a>
+                            {:else}
+                                Link/Url
+                            {/if}
+                        </Label>
                         <Input
                             id="link"
                             placeholder="Where did this model come from?"
@@ -170,6 +189,23 @@
                               </Select.Group>
                             </Select.Content>
                           </Select.Root>
+                    </div>
+                    <div class="flex flex-col space-y-1.5">
+                        <Button onclick={onOpen}>Open in slicer</Button>
+                    </div>
+                    <div class="flex flex-col space-y-1.5">
+                        <div class="grid grid-cols-2 text-sm">
+                            <div class="text-left space-y-1">
+                                <div>Date added</div>
+                                <div>Size</div>
+                                <div>Filetype</div>
+                            </div>
+                            <div class="text-right space-y-1">
+                                <div>{typed_model.added.toLocaleDateString()}</div>
+                                <div>{toReadableSize(typed_model.size)}</div>
+                                <div>{typed_model.filetype}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </CardDescription>

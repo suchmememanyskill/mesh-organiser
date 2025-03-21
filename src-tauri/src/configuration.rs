@@ -1,12 +1,6 @@
 use serde::Serialize;
 
-#[derive(Clone, Serialize)]
-pub enum SupportedSlicers {
-    PrusaSlicer,
-    Cura,
-    BambuStudio,
-    OrcaSlicer,
-}
+use crate::service::slicer_service::Slicer;
 
 #[derive(Clone, Serialize)]
 pub struct Configuration {
@@ -16,7 +10,7 @@ pub struct Configuration {
     pub cura_deep_link: bool,
     pub bambu_deep_link: bool,
     pub orca_deep_link: bool,
-    pub slicer: SupportedSlicers,
+    pub slicer: Slicer,
     pub create_popup_on_model_import: bool,
 }
 
@@ -29,7 +23,7 @@ impl Default for Configuration {
             cura_deep_link: false,
             bambu_deep_link: false,
             orca_deep_link: false,
-            slicer: SupportedSlicers::OrcaSlicer,
+            slicer: Slicer::OrcaSlicer,
             create_popup_on_model_import: false,
         }
     }

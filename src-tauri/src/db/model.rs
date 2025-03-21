@@ -107,7 +107,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
                 models_group.group_id, group_name
          FROM models 
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
-         INNER JOIN labels ON models_labels.label_id = labels.label_id 
+         LEFT JOIN labels ON models_labels.label_id = labels.label_id 
          LEFT JOIN models_group ON models.model_group_id = models_group.group_id
          WHERE models.model_id IN ({})", in_query);
 

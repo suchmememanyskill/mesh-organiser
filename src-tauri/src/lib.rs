@@ -119,8 +119,29 @@ async fn set_labels_on_model(
     Ok(())
 }
 
+#[tauri::command]
+async fn open_in_slicer(
+    model_ids : Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    let models = db::model::get_models_by_id(model_ids, &state.db).await;
+
+    state.configuration.slicer.open(models, &state)?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    for entry in std::fs::read_dir(&std::env::temp_dir()).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_dir() && path.file_name().unwrap().to_str().unwrap().starts_with("meshorganiser_open_action_") {
+            println!("Removing temporary path {:?}", path);
+            std::fs::remove_dir_all(&path).unwrap();
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
@@ -148,7 +169,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels, edit_model, delete_model, add_label, ungroup, edit_group, set_labels_on_model])
+        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels, edit_model, delete_model, add_label, ungroup, edit_group, set_labels_on_model, open_in_slicer])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
