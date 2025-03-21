@@ -31,7 +31,7 @@
             modelId: edited_model.id,
             modelName: edited_model.name,
             modelDescription: edited_model.description,
-            modelLink: edited_model.link
+            modelUrl: edited_model.link
         });
     }, 1000);
 
