@@ -34,19 +34,22 @@ pub async fn generate_thumbnails(models: Vec<Model>, app_state: &AppState, app_h
         })
         .collect();
 
-    let mut command = app_handle.shell().sidecar("mesh-thumbnail").unwrap();
+    for paths_slice in paths.chunks(100)
+    {
+        let mut command = app_handle.shell().sidecar("mesh-thumbnail").unwrap();
 
-    command = command
-        .arg("--rotatey").arg("25")
-        .arg("--format").arg("png")
-        .arg("--outdir").arg(image_path.to_str().unwrap());
-
-    if overwrite {
-        command = command.arg("--overwrite");
+        command = command
+            .arg("--rotatey").arg("25")
+            .arg("--format").arg("png")
+            .arg("--outdir").arg(image_path.to_str().unwrap());
+    
+        if overwrite {
+            command = command.arg("--overwrite");
+        }
+    
+        command = command.args(paths_slice);
+        let output = command.output().await?;
     }
-
-    command = command.args(paths);
-    let output = command.output().await?;
     
     /*
     let stdout = String::from_utf8(output.stdout).unwrap();

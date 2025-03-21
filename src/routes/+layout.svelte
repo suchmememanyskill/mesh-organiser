@@ -8,10 +8,12 @@
 </script>
 
 <ModeWatcher />
-<Sidebar.Provider>
+<Sidebar.Provider class="w-full h-full">
     <AppSidebar />
-    <main class="w-full">
-        <Sidebar.Trigger />
-        {@render children?.()}
+    <main class="w-full h-full flex flex-row">
+        <Sidebar.Trigger class="aspect-square" />
+        <div class="flex-grow">
+            {@render children?.()}
+        </div>
     </main>
 </Sidebar.Provider>

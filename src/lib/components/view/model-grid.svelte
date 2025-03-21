@@ -9,6 +9,8 @@
     const props: { models: Model[] } = $props();
     let selected = $state.raw<Model[]>([]);
 
+    let scrollContainer : HTMLElement;
+
     interface SearchFilters {
         search: string;
         order:
@@ -19,13 +21,25 @@
             | "size-asc"
             | "size-desc";
         size: "Small" | "Medium" | "Large";
+        limit: number;
     }
 
     const currentFilter = $state<SearchFilters>({
         search: "",
         order: "name-asc",
         size: "Small",
+        limit: 100,
     });
+
+    function handleScroll()
+    {
+        if (scrollContainer && currentFilter.limit < filteredCollection.length) {
+            const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+            if (scrollTop + clientHeight >= scrollHeight) {
+                currentFilter.limit += 100;
+            }
+        }
+    }
 
     const sizes = {
         Small: "w-40",
@@ -147,8 +161,8 @@
     }
 </script>
 
-<div class="flex flex-row">
-    <div class="flex flex-col gap-5 flex-grow">
+<div class="flex flex-row h-full">
+    <div class="flex flex-col gap-1 flex-grow">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
             <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search..." />
     
@@ -184,17 +198,21 @@
                 </Select.Content>
             </Select.Root>
         </div>
-        <div class="flex flex-row justify-center gap-5 flex-wrap">
-            {#each filteredCollection as model (model.id)}
+        <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
+            {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
                 <div onclick="{() => onclick(model)}">
                     <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
                 </div>
             {/each}
         </div>
     </div> 
-    {#if selected.length >= 2}
-        <div class="w-[400px] min-w-[400px] m-8">TODO: Multi modal window</div>
-    {:else if selected.length === 1}
-        <ModelEdit model={selected[0]} class="w-[400px] min-w-[400px] m-8" full_image={true} />
+    {#if selected.length > 0}
+        <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto">
+            {#if selected.length >= 2}
+                <div class="sticky top-20">TODO: Multi modal window</div>
+            {:else if selected.length === 1}
+                <ModelEdit class="sticky top-8" model={selected[0]} full_image={true} />
+            {/if}
+        </div>
     {/if}
 </div>

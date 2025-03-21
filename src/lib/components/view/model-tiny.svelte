@@ -19,6 +19,6 @@
         <h2 class="whitespace-nowrap w-100 overflow-hidden font-bold">{props.model.name}</h2>
     </CardHeader>
     <CardContent>
-        <ModelImg model={props.model} class="w-full h-full" />
+        <ModelImg model={props.model} class="w-full aspect-square" />
     </CardContent>
 </Card>
