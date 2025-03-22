@@ -2615,6 +2615,7 @@ dependencies = [
  "active-win-pos-rs",
  "chrono",
  "futures",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",

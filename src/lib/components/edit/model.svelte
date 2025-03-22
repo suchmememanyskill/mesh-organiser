@@ -61,6 +61,7 @@
 
         if (last_model_id !== snapshot.id) {
             last_model_id = snapshot.id;
+            deleted = false;
             return;
         }
 

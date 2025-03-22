@@ -20,6 +20,7 @@ pub struct CreationResult {
 pub fn import_path(path: &str, app_state: &AppState) -> Result<CreationResult, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff);
+    println!("Before: {}, After: {}", path, name);
 
     if path_buff.is_dir() {
         return import_models_from_dir(path, &name, &app_state);
