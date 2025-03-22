@@ -121,7 +121,7 @@
                 <Label>Add/Remove labels</Label>
                 <div class="grid grid-cols-2 gap-4">
                     <DropdownMenu.Root>
-                        <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} flex-grow">
+                        <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} flex-grow" disabled={data.labels.length <= 0}>
                            <Tag /> Add label
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Content side="bottom" align="start">
