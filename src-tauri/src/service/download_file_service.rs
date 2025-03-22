@@ -21,7 +21,13 @@ pub async fn download_file(url: &str) -> Result<String, ApplicationError> {
 
     fs::create_dir_all(&temp_dir)?;
 
-    let file_name = url.split('/').last().unwrap_or("downloaded_file");
+    let mut file_name = url.split('/').last().unwrap_or("downloaded_file");
+
+    if url.contains("makerworld") {
+        file_name = url.split("name=").last().unwrap_or("downloaded_file");
+    }
+
+    // TODO: Thingiverse is special for no reason
 
     let file_path = temp_dir.join(file_name);
     let mut file = File::create(&file_path)?;
