@@ -21,9 +21,8 @@
     import { buttonVariants } from "$lib/components/ui/button/index.js";
 
     const props: { group: Group; class?: ClassValue } = $props();
-    const tracked_group = $state(props.group);
+    const tracked_group = $derived(props.group);
     let deleted = $state(false);
-    let first_time = true;
 
     async function onUngroup() {
         await ungroup($state.snapshot(tracked_group));
@@ -38,20 +37,11 @@
         await updateState();
     }, 1000);
 
-    $effect(() => {
+    function onUpdateGroup()
+    {
         let snapshot = $state.snapshot(tracked_group);
-
-        if (first_time) {
-            first_time = false;
-            return;
-        }
-
-        if (!snapshot.name) {
-            return;
-        }
-
         save_group_debounced(snapshot);
-    });
+    }
 </script>
 
 {#if deleted}
@@ -61,7 +51,7 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <CardTitle>Group</CardTitle>
+            <CardTitle class="mr-10">Group '{tracked_group.name}'</CardTitle>
             <div class="absolute right-0 top-5 mr-8">
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
@@ -83,6 +73,7 @@
                         <Input
                             id="name"
                             placeholder="Name of the model"
+                            oninput={onUpdateGroup}
                             bind:value={tracked_group.name}
                         />
                     </div>

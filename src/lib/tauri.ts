@@ -122,3 +122,16 @@ export async function removeDeadGroups() : Promise<void>
 {
     await invoke("remove_dead_groups");
 }
+
+export async function editLabel(label : Label) : Promise<void>
+{
+    let colorHex = label.color.replace("#", "");
+    let colorNumber = parseInt(colorHex, 16);
+
+    await invoke("edit_label", { labelId: label.id, labelName: label.name, labelColor: colorNumber });
+}
+
+export async function deleteLabel(label : Label) : Promise<void>
+{
+    await invoke("delete_label", { labelId: label.id });
+}

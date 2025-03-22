@@ -150,7 +150,7 @@
         </div>
         <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
             {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
-                <div onclick="{() => selected = group}">
+                <div onclick="{() => selected == group ? selected = null : selected = group}">
                     <GroupTiny group={group} class="{size} pointer-events-none select-none {selected?.group?.id === group.group.id ? "border-primary" : "" }" />
                 </div>
             {/each}

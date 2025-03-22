@@ -184,6 +184,28 @@ async fn remove_label_from_models(
 }
 
 #[tauri::command]
+async fn edit_label(
+    label_id: i64,
+    label_name: &str,
+    label_color: i64,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::edit_label(label_id, label_name, label_color, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn delete_label(
+    label_id: i64,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::delete_label(label_id, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn open_in_slicer(
     model_ids: Vec<i64>,
     state: State<'_, AppState>,
@@ -382,6 +404,8 @@ pub fn run() {
             add_models_to_group,
             remove_models_from_group,
             remove_dead_groups,
+            edit_label,
+            delete_label,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
