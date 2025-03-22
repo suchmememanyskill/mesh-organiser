@@ -10,6 +10,8 @@
     "opener:default",
     "dialog:default",
     "dialog:default",
-    "deep-link:default"
+    "deep-link:default",
+    "shell:allow-open",
+    "shell:default"
   ]
 }

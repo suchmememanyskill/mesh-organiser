@@ -76,11 +76,6 @@
         await openInSlicer([model]);
     }
 
-    function openLink()
-    {
-        window.open(model.link);
-    }
-
     async function onOpenInFolder()
     {
         await openInFolder([model]);
@@ -143,7 +138,7 @@
                     <div class="flex flex-col space-y-1.5">
                         <Label for="link">
                             {#if model.link}
-                                <a onclick={openLink} class="text-primary hover:underline">Link/Url</a>
+                                <a href="{model.link}" target="_blank" class="text-primary hover:underline">Link/Url</a>
                             {:else}
                                 Link/Url
                             {/if}

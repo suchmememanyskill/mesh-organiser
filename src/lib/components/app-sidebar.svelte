@@ -11,6 +11,7 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import * as Popover from "$lib/components/ui/popover/index.js";
+    import CircleHelp from "@lucide/svelte/icons/circle-help";
 
     import { data } from '$lib/data.svelte';
 
@@ -89,6 +90,16 @@
                                 <a href="/" {...props}>
                                     <Settings />
                                     <span>Settings</span>
+                                </a>
+                            {/snippet}
+                        </Sidebar.MenuButton>
+                    </Sidebar.MenuItem>
+                    <Sidebar.MenuItem>
+                        <Sidebar.MenuButton>
+                            {#snippet child({ props })}
+                                <a href="/credits" {...props}>
+                                    <CircleHelp />
+                                    <span>Credits</span>
                                 </a>
                             {/snippet}
                         </Sidebar.MenuButton>
