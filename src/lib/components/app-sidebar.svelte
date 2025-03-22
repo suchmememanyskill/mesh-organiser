@@ -75,7 +75,7 @@
                     <Sidebar.MenuItem>
                         <Sidebar.MenuButton>
                             {#snippet child({ props })}
-                                <a href="/" {...props}>
+                                <a href="/group" {...props}>
                                     <Boxes />
                                     <span>Groups</span>
                                 </a>

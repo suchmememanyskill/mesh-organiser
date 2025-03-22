@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Model } from "$lib/model";
+    import type { Model, GroupedEntry } from "$lib/model";
     import ModelTiny from "$lib/components/view/model-tiny.svelte";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
@@ -7,9 +7,13 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import { onDestroy } from "svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
+    import GroupTiny from "./group-tiny.svelte";
+    import EditMultiModel from "$lib/components/edit/multi-model.svelte";
+    import EditGroup from "$lib/components/edit/group.svelte";
+    import { buttonVariants } from "$lib/components/ui/button";
 
-    const props: { models: Model[] } = $props();
-    let selected = $state.raw<Model[]>([]);
+    const props: { groups: GroupedEntry[] } = $props();
+    let selected = $state.raw<GroupedEntry|null>(null);
 
     let scrollContainer : HTMLElement;
 
@@ -19,9 +23,7 @@
             | "date-asc"
             | "date-desc"
             | "name-asc"
-            | "name-desc"
-            | "size-asc"
-            | "size-desc";
+            | "name-desc";
         size: "Small" | "Medium" | "Large";
         limit: number;
     }
@@ -56,8 +58,6 @@
         "date-desc": "Date (Desc)",
         "name-asc": "Name (Asc)",
         "name-desc": "Name (Desc)",
-        "size-asc": "Size (Asc)",
-        "size-desc": "Size (Desc)",
     };
 
     const readableOrder = $derived(readableOrders[currentFilter.order]);
@@ -65,114 +65,48 @@
     const filteredCollection = $derived.by(() => {
         let search_lower = currentFilter.search.toLowerCase();
 
-        return props.models
+        return props.groups
             .filter(
-                (model) =>
-                    model.name
+                (group) =>
+                    group.group.name
                         .toLowerCase()
-                        .includes(search_lower) ||
-                    model.description
-                        ?.toLowerCase()
-                        .includes(search_lower) ||
-                    (instanceOfModelWithGroup(model) 
-                        && model.group?.name.toLowerCase()
-                            .includes(search_lower)),
+                        .includes(search_lower)
             )
             .sort((a, b) => {
                 switch (currentFilter.order) {
                     case "date-asc":
                         return (
-                            new Date(a.added).getTime() -
-                            new Date(b.added).getTime()
+                            new Date(a.group.createdAt).getTime() -
+                            new Date(b.group.createdAt).getTime()
                         );
                     case "date-desc":
                         return (
-                            new Date(b.added).getTime() -
-                            new Date(a.added).getTime()
+                            new Date(b.group.createdAt).getTime() -
+                            new Date(a.group.createdAt).getTime()
                         );
                     case "name-asc":
-                        return a.name.localeCompare(b.name);
+                        return a.group.name.localeCompare(b.group.name);
                     case "name-desc":
-                        return b.name.localeCompare(a.name);
-                    case "size-asc":
-                        return a.size - b.size;
-                    case "size-desc":
-                        return b.size - a.size;
+                        return b.group.name.localeCompare(a.group.name);
                     default:
                         return 0;
                 }
             })
     });
 
-    let is_shift_pressed = false;
-    let is_control_pressed = false;
-
-    function onKeyDown(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = true;
-        } else if (event.key === "Control") {
-            is_control_pressed = true;
-        }
-    }
-
-    function onKeyUp(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = false;
-        } else if (event.key === "Control") {
-            is_control_pressed = false;
-        }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-
-    onDestroy(() => {
-        window.removeEventListener("keydown", onKeyDown);
-        window.removeEventListener("keyup", onKeyUp);
-    });
-
-    async function onclick(model: Model) {
-
-        if (is_shift_pressed && selected.length === 1)
-        {
-            let start = filteredCollection.indexOf(selected[0]);
-            let end = filteredCollection.indexOf(model);
-
-            if (start === -1 || end === -1)
-            {
-                return;
-            }
-
-            if (start > end)
-            {
-                [start, end] = [end, start];
-            }
-
-            selected = filteredCollection.slice(start, end + 1);
-        }
-        else if (is_control_pressed)
-        {
-            if (selected.some(x => x.id === model.id))
-            {
-                selected = selected.filter(x => x.id !== model.id);
-            }
-            else
-            {
-                selected = [...selected, model];
-            }
-        }
-        else
-        {
-            selected = [model];
-        }
-    }
 
     $effect(() => {
-        const current_models = $state.snapshot(props.models);
+        const current_groups = $state.snapshot(props.groups);
 
         setTimeout(() => {
-            selected = selected.filter(x => current_models.some(y => y.id === x.id));
-            console.log("Filtered out deleted models");
+            if (selected && !current_groups.some(x => x.group.id === selected!.group.id)) {
+                console.log("Deselecting group");
+                selected = null;
+            }
+            else 
+            {
+                console.log("Update received, selected group still exists");
+            }
 	    }, 0);
     })
 </script>
@@ -215,20 +149,18 @@
             </Select.Root>
         </div>
         <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
-                <div onclick="{() => onclick(model)}">
-                    <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
+            {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                <div onclick="{() => selected = group}">
+                    <GroupTiny group={group} class="{size} pointer-events-none select-none {selected?.group?.id === group.group.id ? "border-primary" : "" }" />
                 </div>
             {/each}
         </div>
     </div> 
-    {#if selected.length > 0}
-        <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto hide-scrollbar">
-            {#if selected.length >= 2}
-                <MultiModelEdit models={selected} />
-            {:else if selected.length === 1}
-                <ModelEdit model={selected[0]} full_image={true} />
-            {/if}
+    {#if selected}
+        <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
+            <EditGroup group={selected.group} />
+            <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected.group.id}">View models individually</a>
+            <EditMultiModel models={selected.models} />
         </div>
     {/if}
 </div>
