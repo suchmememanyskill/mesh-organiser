@@ -13,7 +13,7 @@
     import { buttonVariants } from "$lib/components/ui/button";
 
     const props: { groups: GroupedEntry[] } = $props();
-    let selected = $state.raw<GroupedEntry|null>(null);
+    let selected = $state.raw<GroupedEntry[]>([]);
 
     let scrollContainer : HTMLElement;
 
@@ -95,37 +95,88 @@
     });
 
 
-    function onClick(groupedEntry : GroupedEntry, event : any)
-    {
-        if (selected == groupedEntry)
+    let is_shift_pressed = false;
+    let is_control_pressed = false;
+
+    function onKeyDown(event: KeyboardEvent) {
+        if (event.key === "Shift") {
+            is_shift_pressed = true;
+        } else if (event.key === "Control") {
+            is_control_pressed = true;
+        }
+    }
+
+    function onKeyUp(event: KeyboardEvent) {
+        if (event.key === "Shift") {
+            is_shift_pressed = false;
+        } else if (event.key === "Control") {
+            is_control_pressed = false;
+        }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+
+    onDestroy(() => {
+        window.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("keyup", onKeyUp);
+    });
+
+    async function onClick(group: GroupedEntry, event : any) {
+        if (is_shift_pressed && selected.length === 1)
         {
-            selected = null;
+            let start = filteredCollection.indexOf(selected[0]);
+            let end = filteredCollection.indexOf(group);
+
+            if (start === -1 || end === -1)
+            {
+                return;
+            }
+
+            if (start > end)
+            {
+                [start, end] = [end, start];
+            }
+
+            selected = filteredCollection.slice(start, end + 1);
+        }
+        else if (is_control_pressed)
+        {
+            if (selected.some(x => x.group.id == group.group.id))
+            {
+                selected = selected.filter(x => x.group.id !== group.group.id);
+            }
+            else
+            {
+                selected = [...selected, group];
+            }
         }
         else
         {
-            selected = groupedEntry;
+            if (selected.length === 1 && selected[0].group.id === group.group.id)
+            {
+                selected = [];
+            }
+            else
+            {
+                selected = [group];
 
-            setTimeout(() => {
-                event.target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center',
-                });
-            }, 30);
-        }        
+                setTimeout(() => {
+                    event.target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }, 30);
+            }
+        }
     }
 
     $effect(() => {
         const current_groups = $state.snapshot(props.groups);
 
         setTimeout(() => {
-            if (selected && !current_groups.some(x => x.group.id === selected!.group.id)) {
-                console.log("Deselecting group");
-                selected = null;
-            }
-            else 
-            {
-                console.log("Update received, selected group still exists");
-            }
+            selected = selected.filter(x => current_groups.some(y => y.group.id === x.group.id));
+            console.log("Filtered out deleted models");
 	    }, 0);
     })
 </script>
@@ -170,16 +221,24 @@
         <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
             {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
                 <div onclick="{(e) => onClick(group, e)}">
-                    <GroupTiny group={group} class="{size} pointer-events-none select-none {selected?.group?.id === group.group.id ? "border-primary" : "" }" />
+                    <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
                 </div>
             {/each}
         </div>
     </div> 
-    {#if selected}
+    {#if selected.length >= 2}
         <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-            <EditGroup group={selected.group} />
-            <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected.group.id}">View models individually</a>
-            <EditMultiModel models={selected.models} />
+            <EditMultiModel models={selected.map(x => x.models).flat()} />
+        </div>
+    {:else if selected.length === 1 && selected[0].group.id >= 0}
+        <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
+            <EditGroup group={selected[0].group} />
+            <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models individually</a>
+            <EditMultiModel models={selected[0].models} />
+        </div>
+    {:else if selected.length === 1}
+        <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
+            <ModelEdit model={selected[0].models[0]} full_image={true} />
         </div>
     {/if}
 </div>

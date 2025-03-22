@@ -43,6 +43,7 @@ function convertLabel(raw : RawLabel) : Label
 
 function extractGroups(models : RawModel[]) : GroupedEntry[]
 {
+    let looseModels : Model[] = [];
     let groups : Map<number, GroupedEntry> = new Map();
 
     models.forEach(raw => {
@@ -67,9 +68,32 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
             group.models.push(model);
             group.total += 1;
         }
+        else 
+        {
+            looseModels.push(convertModel(raw));
+        }
     });
 
-    return [...groups.values()];
+    let ret = [...groups.values()];
+
+    // TODO: make this optional
+    
+    if (true)
+    {
+        looseModels.forEach(model => {
+            ret.push({
+                group: {
+                    id: Math.random() * Number.MAX_SAFE_INTEGER * -1,
+                    name: model.name,
+                    createdAt: model.added,
+                },
+                models: [model],
+                total: 1,
+            });
+        });
+    }
+
+    return ret;
 }
 
 function extractModels(models : RawModel[]) : ModelWithGroup[]
