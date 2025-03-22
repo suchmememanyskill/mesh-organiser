@@ -19,10 +19,10 @@ impl Default for Configuration {
         Configuration {
             data_path: String::from(""),
             model_path: String::from(""),
-            prusa_deep_link: false,
-            cura_deep_link: false,
-            bambu_deep_link: false,
-            orca_deep_link: false,
+            prusa_deep_link: true,
+            cura_deep_link: true,
+            bambu_deep_link: true,
+            orca_deep_link: true,
             slicer: Slicer::OrcaSlicer,
             create_popup_on_model_import: false,
         }

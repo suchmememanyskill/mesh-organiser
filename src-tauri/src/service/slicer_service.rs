@@ -62,7 +62,9 @@ impl Slicer {
     #[cfg(target_os = "windows")]
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
         if !self.is_installed() {
-            return Err(ApplicationError::InternalError(String::from("Slicer not installed")));
+            return Err(ApplicationError::InternalError(String::from(
+                "Slicer not installed",
+            )));
         }
 
         let slicer_path = match *self {
@@ -75,18 +77,21 @@ impl Slicer {
                 winreg::enums::HKEY_LOCAL_MACHINE,
                 "SOFTWARE\\Bambulab\\Bambu Studio",
                 "InstallPath",
-            )
-            {
-                Some(s) => Some(String::from(PathBuf::from(s).join("bambu-studio.exe").to_str().unwrap())),
-                None => None
+            ) {
+                Some(s) => Some(String::from(
+                    PathBuf::from(s).join("bambu-studio.exe").to_str().unwrap(),
+                )),
+                None => None,
             },
             Slicer::OrcaSlicer => match get_registry_key(
                 winreg::enums::HKEY_LOCAL_MACHINE,
                 "SOFTWARE\\WOW6432Node\\SoftFever\\OrcaSlicer",
                 "",
             ) {
-                Some(s) => Some(String::from(PathBuf::from(s).join("orca-slicer.exe").to_str().unwrap())),
-                None => None
+                Some(s) => Some(String::from(
+                    PathBuf::from(s).join("orca-slicer.exe").to_str().unwrap(),
+                )),
+                None => None,
             },
             Slicer::Cura => {
                 None // TODO
@@ -109,7 +114,9 @@ impl Slicer {
         println!("Opening in slicer: {:?}", paths);
 
         if paths.len() == 0 {
-            return Err(ApplicationError::InternalError(String::from("No models to open")));
+            return Err(ApplicationError::InternalError(String::from(
+                "No models to open",
+            )));
         }
 
         let mut command = Command::new(slicer_path)

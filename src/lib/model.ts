@@ -89,3 +89,8 @@ export interface Configuration {
     slicer: SupportedSlicers;
     createPopupOnModelImport: boolean;
 }
+
+export interface InitialState
+{
+    deep_link_url?: string;
+}

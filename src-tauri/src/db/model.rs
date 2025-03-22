@@ -31,8 +31,7 @@ pub struct Model {
     pub labels: Vec<label::Label>,
 }
 
-pub fn get_models_sync(db: &super::db::Db) -> Vec<Model>
-{
+pub fn get_models_sync(db: &super::db::Db) -> Vec<Model> {
     block_on(get_models(db))
 }
 
@@ -72,8 +71,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
         });
 
         // Hack as silly little sql library doesn't understand that this is optional
-        if row.label_id <= 0
-        {
+        if row.label_id <= 0 {
             continue;
         }
 
@@ -89,8 +87,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
     return model_map.into_values().collect();
 }
 
-pub fn get_models_by_id_sync(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model>
-{
+pub fn get_models_by_id_sync(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
     block_on(get_models_by_id(ids, db))
 }
 
@@ -123,7 +120,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         let model_url: Option<String> = row.get("model_url");
         let model_desc: Option<String> = row.get("model_desc");
         let model_added: String = row.get("model_added");
-        let model_size : i64 = row.get("model_size");
+        let model_size: i64 = row.get("model_size");
         let group_id: Option<i64> = row.get("group_id");
         let group_name: Option<String> = row.get("group_name");
         let mut label_id: Option<i64> = row.get("label_id");
@@ -149,8 +146,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
             labels: Vec::new(),
         });
 
-        if label_id.is_none()
-        {
+        if label_id.is_none() {
             continue;
         }
 
@@ -168,12 +164,23 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
     return model_map.into_values().collect();
 }
 
-pub fn add_model_sync(name: &str, sha256: &str, filetype: &str, size : i64, db: &super::db::Db) -> i64
-{
+pub fn add_model_sync(
+    name: &str,
+    sha256: &str,
+    filetype: &str,
+    size: i64,
+    db: &super::db::Db,
+) -> i64 {
     block_on(add_model(name, sha256, filetype, size, db))
 }
 
-pub async fn add_model(name: &str, sha256: &str, filetype: &str, size : i64, db: &super::db::Db) -> i64 {
+pub async fn add_model(
+    name: &str,
+    sha256: &str,
+    filetype: &str,
+    size: i64,
+    db: &super::db::Db,
+) -> i64 {
     let now = chrono::Utc::now().to_rfc3339();
     let result = sqlx::query!(
         "INSERT INTO models (model_name, model_sha256, model_added, model_filetype, model_size)
@@ -191,12 +198,23 @@ pub async fn add_model(name: &str, sha256: &str, filetype: &str, size : i64, db:
     result.last_insert_rowid()
 }
 
-pub fn edit_model_sync(id: i64, name: &str, link: Option<&str>, description: Option<&str>, db: &super::db::Db)
-{
+pub fn edit_model_sync(
+    id: i64,
+    name: &str,
+    link: Option<&str>,
+    description: Option<&str>,
+    db: &super::db::Db,
+) {
     block_on(edit_model(id, name, link, description, db))
 }
 
-pub async fn edit_model(id: i64, name: &str, link: Option<&str>, description: Option<&str>, db: &super::db::Db) {
+pub async fn edit_model(
+    id: i64,
+    name: &str,
+    link: Option<&str>,
+    description: Option<&str>,
+    db: &super::db::Db,
+) {
     sqlx::query!(
         "UPDATE models
          SET model_name = ?, model_url = ?, model_desc = ?
@@ -211,8 +229,7 @@ pub async fn edit_model(id: i64, name: &str, link: Option<&str>, description: Op
     .expect("Failed to update model");
 }
 
-pub fn delete_model_sync(id: i64, db: &super::db::Db)
-{
+pub fn delete_model_sync(id: i64, db: &super::db::Db) {
     block_on(delete_model(id, db))
 }
 
@@ -223,8 +240,7 @@ pub async fn delete_model(id: i64, db: &super::db::Db) {
         .expect("Failed to delete model");
 }
 
-pub fn get_model_id_via_sha256_sync(sha256: &str, db: &super::db::Db) -> Option<i64>
-{
+pub fn get_model_id_via_sha256_sync(sha256: &str, db: &super::db::Db) -> Option<i64> {
     block_on(get_model_id_via_sha256(sha256, db))
 }
 

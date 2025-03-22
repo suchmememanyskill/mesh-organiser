@@ -65,12 +65,8 @@ pub async fn get_groups_by_id(ids : Vec<u32>, db : &super::db::Db) -> Vec<ModelG
 }
 */
 
-pub fn set_group_id_on_models_sync(
-	group_id: Option<i64>,
-	model_ids: Vec<i64>,
-	db: &super::db::Db,
-) {
-	block_on(set_group_id_on_models(group_id, model_ids, db))
+pub fn set_group_id_on_models_sync(group_id: Option<i64>, model_ids: Vec<i64>, db: &super::db::Db) {
+    block_on(set_group_id_on_models(group_id, model_ids, db))
 }
 
 pub async fn set_group_id_on_models(
@@ -98,7 +94,7 @@ pub async fn set_group_id_on_models(
 }
 
 pub fn add_empty_group_sync(group_name: &str, db: &super::db::Db) -> i64 {
-	block_on(add_empty_group(group_name, db))
+    block_on(add_empty_group(group_name, db))
 }
 
 pub async fn add_empty_group(group_name: &str, db: &super::db::Db) -> i64 {
@@ -112,9 +108,8 @@ pub async fn add_empty_group(group_name: &str, db: &super::db::Db) -> i64 {
     return result.unwrap().last_insert_rowid();
 }
 
-
 pub fn edit_group_sync(group_id: i64, group_name: &str, db: &super::db::Db) {
-	block_on(edit_group(group_id, group_name, db))
+    block_on(edit_group(group_id, group_name, db))
 }
 
 pub async fn edit_group(group_id: i64, group_name: &str, db: &super::db::Db) {
@@ -129,7 +124,7 @@ pub async fn edit_group(group_id: i64, group_name: &str, db: &super::db::Db) {
 }
 
 pub fn remove_group_sync(group_id: i64, db: &super::db::Db) {
-	block_on(remove_group(group_id, db))
+    block_on(remove_group(group_id, db))
 }
 
 pub async fn remove_group(group_id: i64, db: &super::db::Db) {

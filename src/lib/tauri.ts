@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { RawModel, RawLabel, RawGroup, Model, Group, Label } from "./model";
+import type { RawModel, RawLabel, RawGroup, Model, Group, Label, InitialState } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -60,4 +60,14 @@ export async function openInSlicer(models : Model[]) : Promise<void>
     let modelIds = models.map(model => model.id);
 
     await invoke("open_in_slicer", { modelIds: modelIds });
+}
+
+export async function getInitialState() : Promise<InitialState>
+{
+    return await invoke("get_initial_state");
+}
+
+export async function downloadFile(url : string) : Promise<string>
+{
+    return await invoke("download_file", { url: url });
 }

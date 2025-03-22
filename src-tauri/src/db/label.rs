@@ -27,16 +27,16 @@ pub fn get_labels_sync(db: &super::db::Db) -> Vec<Label> {
 
 pub async fn get_labels(db: &super::db::Db) -> Vec<Label> {
     let rows = sqlx::query_as!(
-		Label,
-		r#"SELECT 
+        Label,
+        r#"SELECT 
 			label_id as id, 
 			label_name as name, 
 			label_color as color
 		  FROM labels"#
-	)
-	.fetch_all(db)
-	.await
-	.expect("Failed to get labels");
+    )
+    .fetch_all(db)
+    .await
+    .expect("Failed to get labels");
 
     return rows;
 }
@@ -71,15 +71,11 @@ pub async fn set_labels_on_model(label_ids: Vec<i64>, model_id: i64, db: &super:
     }
 }
 
-pub async fn remove_labels_from_model(model_id : i64, db: &super::db::Db)
-{
-    sqlx::query!(
-        "DELETE FROM models_labels WHERE model_id = ?",
-        model_id
-    )
-    .execute(db)
-    .await
-    .expect("Failed to remove labels from model");
+pub async fn remove_labels_from_model(model_id: i64, db: &super::db::Db) {
+    sqlx::query!("DELETE FROM models_labels WHERE model_id = ?", model_id)
+        .execute(db)
+        .await
+        .expect("Failed to remove labels from model");
 }
 
 pub fn remove_label_from_models_sync(label_id: i64, model_ids: Vec<i64>, db: &super::db::Db) {

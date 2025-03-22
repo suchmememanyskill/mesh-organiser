@@ -26,7 +26,7 @@
 
     const currentFilter = $state<SearchFilters>({
         search: "",
-        order: "name-asc",
+        order: "date-desc",
         size: "Small",
         limit: 100,
     });
@@ -50,12 +50,12 @@
     const size = $derived(sizes[currentFilter.size]);
 
     const readableOrders = {
-        "date-asc": "Date (Ascending)",
-        "date-desc": "Date (Descending)",
-        "name-asc": "Name (Ascending)",
-        "name-desc": "Name (Descending)",
-        "size-asc": "Size (Ascending)",
-        "size-desc": "Size (Descending)",
+        "date-asc": "Date (Asc)",
+        "date-desc": "Date (Desc)",
+        "name-asc": "Name (Asc)",
+        "name-desc": "Name (Desc)",
+        "size-asc": "Size (Asc)",
+        "size-desc": "Size (Desc)",
     };
 
     const readableOrder = $derived(readableOrders[currentFilter.order]);

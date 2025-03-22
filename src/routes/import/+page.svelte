@@ -20,6 +20,7 @@
     import EditModel from "$lib/components/edit/model.svelte";
     import EditGroup from "$lib/components/edit/group.svelte";
     import { openInSlicer } from "$lib/tauri";
+    import { page } from '$app/state';
 
     let imported_group: Group | null = $state.raw(null);
     let imported_models: Model[] | null = $state.raw(null);
@@ -31,6 +32,7 @@
     }
 
     async function handle_import(paths?: string[]) {
+        busy = true;
         if (!paths || paths.length === 0) {
             return;
         }
@@ -72,6 +74,7 @@
                 .map((entry) => entry.model)
                 .filter((entry) => model_ids.includes(entry.id));
         }
+        busy = false;
     }
 
     async function handle_open(multiple: boolean, directory: boolean) {
@@ -92,7 +95,6 @@
         }
 
         await handle_import(result);
-        busy = false;
     }
 
     async function handle_open_file() {
@@ -118,9 +120,8 @@
             if (!payload || !payload.paths || !payload.paths.length) {
                 return;
             }
-            busy = true;
+
             await handle_import(payload.paths);
-            busy = false;
         });
     });
 
@@ -128,11 +129,6 @@
         if (destroy_listener) {
             destroy_listener();
         }
-    });
-
-    $effect(() => {
-        console.log("Imported models:", imported_models);
-        console.log("Imported group:", imported_group);
     });
 
     function clearCurrentModel() {
@@ -147,6 +143,19 @@
 
         openInSlicer(imported_models);
     }
+
+    $effect(() => 
+    {
+        const possiblePath = page.url.searchParams.get("path");
+
+        if (!possiblePath)
+        {
+            return;
+        }
+
+        handle_import([possiblePath]);
+    })
+
 </script>
 
 <div class="flex justify-center m-4">

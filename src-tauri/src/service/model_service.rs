@@ -17,10 +17,7 @@ pub struct CreationResult {
     pub model_ids: Vec<i64>,
 }
 
-pub fn import_path(
-    path: &str,
-    app_state: &AppState,
-) -> Result<CreationResult, ApplicationError> {
+pub fn import_path(path: &str, app_state: &AppState) -> Result<CreationResult, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff);
 
@@ -41,7 +38,9 @@ pub fn import_path(
         });
     }
 
-    return Err(ApplicationError::InternalError(String::from("Unsupported file type")));
+    return Err(ApplicationError::InternalError(String::from(
+        "Unsupported file type",
+    )));
 }
 
 fn import_models_from_dir(
@@ -94,13 +93,11 @@ fn import_models_from_zip(
             None => continue,
         };
 
-        if !is_supported_extension(&outpath)
-        {
+        if !is_supported_extension(&outpath) {
             continue;
         }
 
         if file.is_file() {
-            
             let file_name = util::prettify_file_name(&outpath);
             let extension = outpath.extension().unwrap().to_str().unwrap();
             let file_size = file.size() as usize;
@@ -179,7 +176,13 @@ where
         _ => file_type,
     };
 
-    let id = model::add_model_sync(name, &hash, file_type_store, file_size as i64, &app_state.db);
+    let id = model::add_model_sync(
+        name,
+        &hash,
+        file_type_store,
+        file_size as i64,
+        &app_state.db,
+    );
 
     return Ok(id);
 }

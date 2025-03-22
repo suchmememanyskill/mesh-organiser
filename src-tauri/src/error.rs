@@ -1,4 +1,4 @@
-use serde::{Serialize, Serializer, ser::SerializeStruct};
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -11,6 +11,8 @@ pub enum ApplicationError {
     InternalError(String),
     #[error("Failed to launch thumbnail generator")]
     SidecarError(#[from] tauri_plugin_shell::Error),
+    #[error("Failed to download file")]
+    DownloadError(#[from] reqwest::Error),
 }
 
 impl Serialize for ApplicationError {
@@ -24,22 +26,27 @@ impl Serialize for ApplicationError {
                 state.serialize_field("error_type", "FileSystemFault")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
-            },
+            }
             ApplicationError::ZipError(inner) => {
                 state.serialize_field("error_type", "ZipError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
-            },
+            }
             ApplicationError::InternalError(s) => {
                 state.serialize_field("error_type", "InternalError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", s)?;
-            },
+            }
             ApplicationError::SidecarError(inner) => {
                 state.serialize_field("error_type", "SidecarError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
-            },
+            }
+            ApplicationError::DownloadError(inner) => {
+                state.serialize_field("error_type", "DownloadError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            }
         }
         state.end()
     }

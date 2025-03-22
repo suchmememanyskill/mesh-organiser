@@ -1,11 +1,20 @@
+use serde::Serialize;
+
 use crate::configuration;
 use crate::db;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+#[derive(Clone, Serialize)]
+pub struct InitialState 
+{
+    pub deep_link_url : Option<String>,
+}
+
 pub struct AppState {
     pub db: Arc<db::db::Db>,
     pub configuration: configuration::Configuration,
+    pub initial_state: InitialState,
 }
 
 impl AppState {
@@ -35,6 +44,7 @@ impl AppState {
         AppState {
             db: Arc::clone(&self.db),
             configuration: self.configuration.clone(),
+            initial_state: self.initial_state.clone(),
         }
     }
 }

@@ -2,16 +2,20 @@ use std::sync::{Arc, Mutex};
 
 use error::ApplicationError;
 use service::{
-    app_state::AppState,
+    app_state::{AppState, InitialState},
     model_service::{self, CreationResult},
+    download_file_service
 };
 use sqlx::Connection;
-use tauri::{Manager, State, AppHandle};
+use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_deep_link::DeepLinkExt;
+use urlencoding::decode;
 mod configuration;
 mod db;
 mod error;
 mod service;
 mod util;
+
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -28,7 +32,11 @@ async fn add_model(
     let path_clone = String::from(path);
     let state_clone = state.real_clone();
 
-    let result = tauri::async_runtime::spawn_blocking(move || model_service::import_path(&path_clone, &state_clone)).await.unwrap()?;
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        model_service::import_path(&path_clone, &state_clone)
+    })
+    .await
+    .unwrap()?;
 
     service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, false).await?;
 
@@ -44,14 +52,20 @@ async fn get_models(state: State<'_, AppState>) -> Result<Vec<db::model::Model>,
 
 #[tauri::command]
 async fn edit_model(
-    model_id : i64,
-    model_name : &str,
-    model_url : Option<&str>,
-    model_description : Option<&str>,
+    model_id: i64,
+    model_name: &str,
+    model_url: Option<&str>,
+    model_description: Option<&str>,
     state: State<'_, AppState>,
-) -> Result<(), ApplicationError>
-{
-    db::model::edit_model(model_id, model_name, model_url, model_description, &state.db).await;
+) -> Result<(), ApplicationError> {
+    db::model::edit_model(
+        model_id,
+        model_name,
+        model_url,
+        model_description,
+        &state.db,
+    )
+    .await;
 
     Ok(())
 }
@@ -64,7 +78,9 @@ async fn get_labels(state: State<'_, AppState>) -> Result<Vec<db::label::Label>,
 }
 
 #[tauri::command]
-async fn get_configuration(state: State<'_, AppState>) -> Result<configuration::Configuration, ApplicationError> {
+async fn get_configuration(
+    state: State<'_, AppState>,
+) -> Result<configuration::Configuration, ApplicationError> {
     Ok(state.configuration.clone())
 }
 
@@ -87,10 +103,7 @@ async fn add_label(
 }
 
 #[tauri::command]
-async fn ungroup(
-    group_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
+async fn ungroup(group_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
     db::model_group::remove_group(group_id, &state.db).await;
 
     Ok(())
@@ -121,7 +134,7 @@ async fn set_labels_on_model(
 
 #[tauri::command]
 async fn open_in_slicer(
-    model_ids : Vec<i64>,
+    model_ids: Vec<i64>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     let models = db::model::get_models_by_id(model_ids, &state.db).await;
@@ -131,28 +144,83 @@ async fn open_in_slicer(
     Ok(())
 }
 
+#[tauri::command]
+async fn get_initial_state(state: State<'_, AppState>) -> Result<InitialState, ApplicationError> {
+    Ok(state.initial_state.clone())
+}
+
+#[tauri::command]
+async fn download_file(url : &str) -> Result<String, ApplicationError> 
+{
+    let response = download_file_service::download_file(url).await?;
+
+    Ok(response)
+}
+
+fn extract_deep_link(data : &str) -> Option<String>
+{
+    let possible_starts = vec!["bambustudio://open/?file=", "cura://open/?file=", "prusaslicer://open/?file=", "orcaslicer://open/?file="];
+
+    for start in possible_starts
+    {
+        if data.starts_with(start)
+        {
+            let encoded = data[start.len()..].to_string();
+            let decode = decode(&encoded).unwrap();
+
+            return Some(String::from(decode));
+        }
+    }
+
+    None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     for entry in std::fs::read_dir(&std::env::temp_dir()).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
-        if path.is_dir() && path.file_name().unwrap().to_str().unwrap().starts_with("meshorganiser_open_action_") {
+        if path.is_dir()
+            && path
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .starts_with("meshorganiser_")
+        {
             println!("Removing temporary path {:?}", path);
             std::fs::remove_dir_all(&path).unwrap();
         }
     }
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
+            println!("a new app instance was opened with {argv:?} and the deep link event was already triggered");
+
+            if argv.len() == 2
+            {
+                let deep_link = extract_deep_link(&argv[1]);
+
+                if let Some(deep_link) = deep_link
+                {
+                    _app.emit("deep-link", deep_link).unwrap();
+                }
+            }
+            
+          }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
-                let app_data_path = String::from(app.path()
-                    .app_data_dir()
-                    .expect("failed to get data_dir")
-                    .to_str()
-                    .unwrap());
+                let app_data_path = String::from(
+                    app.path()
+                        .app_data_dir()
+                        .expect("failed to get data_dir")
+                        .to_str()
+                        .unwrap(),
+                );
 
                 let config = configuration::Configuration {
                     data_path: String::from(&app_data_path),
@@ -162,14 +230,66 @@ pub fn run() {
 
                 let db = db::db::setup_db(&config).await;
 
+                if config.bambu_deep_link
+                {
+                    app.deep_link().register("bambustudio").unwrap();
+                }
+
+                if config.cura_deep_link
+                {
+                    app.deep_link().register("cura").unwrap();
+                }
+
+                if config.prusa_deep_link
+                {
+                    app.deep_link().register("prusaslicer").unwrap();
+                }
+
+                if config.orca_deep_link
+                {
+                    app.deep_link().register("orcaslicer").unwrap();
+                }
+
+                let mut initial_state = InitialState {
+                    deep_link_url: None,
+                };
+
+                let argv = std::env::args();
+
+                if argv.len() == 2
+                {
+                    let arg = argv.skip(1).next().unwrap();
+                    let deep_link = extract_deep_link(&arg);
+    
+                    if let Some(deep_link) = deep_link
+                    {
+                        initial_state.deep_link_url = Some(deep_link);
+                    }
+                }
+
                 app.manage(AppState {
                     db: Arc::new(db),
                     configuration: config,
+                    initial_state: initial_state,
                 })
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, add_model, get_models, get_labels, edit_model, delete_model, add_label, ungroup, edit_group, set_labels_on_model, open_in_slicer])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            add_model,
+            get_models,
+            get_labels,
+            edit_model,
+            delete_model,
+            add_label,
+            ungroup,
+            edit_group,
+            set_labels_on_model,
+            open_in_slicer,
+            get_initial_state,
+            download_file
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
