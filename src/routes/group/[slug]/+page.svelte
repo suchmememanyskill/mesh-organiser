@@ -16,7 +16,7 @@
     <div class="w-full h-full flex flex-col">
         <EditGroup class="my-3 mx-4" group={group.group} />
         <div class="overflow-hidden">
-            <ModelGrid models={entries!} />
+            <ModelGrid models={entries!} default_show_multiselect_all={true} />
         </div>
     </div>
 {:else}

@@ -11,9 +11,8 @@
     import { Input } from "$lib/components/ui/input";
 
     import type { Model, Group, ModelWithGroup } from "$lib/model";
-    import { appDataDir, join } from "@tauri-apps/api/path";
-    import { convertFileSrc } from "@tauri-apps/api/core";
-    import { onMount } from "svelte";
+    import FolderOpen from "@lucide/svelte/icons/folder-open";
+    import Slice from "@lucide/svelte/icons/slice";
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
@@ -28,9 +27,8 @@
     import { toReadableSize, instanceOfModelWithGroup } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
 
-    const props: { model: Model|ModelWithGroup; class?: ClassValue, full_image?: boolean } = $props();
+    const props: { model: Model|ModelWithGroup;  class?: ClassValue, full_image?: boolean } = $props();
     let last_model_id = -1;
-    let img_src = $state("");
     let deleted = $state(false);
 
     let model : Model = $derived(props.model);
@@ -50,17 +48,6 @@
         await setLabelsOnModel(edited_model.labels, edited_model);
         await updateState();
     }, 1000);
-
-    onMount(async () => {
-        const appDataDirPath = await appDataDir();
-        const filePath = await join(
-            appDataDirPath,
-            "images",
-            model.sha256 + ".png",
-        );
-        const assetUrl = convertFileSrc(filePath);
-        img_src = assetUrl;
-    });
 
     $effect(() => {
         let snapshot = $state.snapshot(model);
@@ -128,7 +115,7 @@
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
                         <DropdownMenu.Item onclick={onUngroup} disabled={!group}>
-                            <span>Ungroup</span>
+                            <span>Remove from current group</span>
                         </DropdownMenu.Item>
                         <DropdownMenu.Item onclick={onDelete}>
                             <span>Delete model</span>
@@ -197,8 +184,8 @@
                           </Select.Root>
                     </div>
                     <div class="flex flex-row gap-5">
-                        <Button class="flex-grow" onclick={onOpenInFolder}>Open in folder</Button>
-                        <Button class="flex-grow" onclick={onOpenInSlicer}>Open in slicer</Button>
+                        <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
+                        <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
                     </div>
                     <div class="flex flex-col space-y-1.5">
                         <div class="grid grid-cols-2 text-sm">

@@ -8,51 +8,35 @@
     } from "$lib/components/ui/card";
 
     import { Label } from "$lib/components/ui/label";
-    import { Input } from "$lib/components/ui/input";
 
-    import type { Model, Group, ModelWithGroup, Label as LLabel } from "$lib/model";
-    import { appDataDir, join } from "@tauri-apps/api/path";
-    import { convertFileSrc } from "@tauri-apps/api/core";
-    import { onMount } from "svelte";
-    import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-    import ReplaceAll from "@lucide/svelte/icons/replace-all";
+    import type { Model,  Label as LLabel } from "$lib/model";
     import { goto } from '$app/navigation';
 
-    import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, setLabelOnModels, removeLabelFromModels, addEmptyGroup, addModelsToGroup, removeModelsFromGroup } from "$lib/tauri";
+    import { deleteModel, openInSlicer, openInFolder, setLabelOnModels, removeLabelFromModels, addEmptyGroup, addModelsToGroup, removeModelsFromGroup } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-    import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { updateState, data } from "$lib/data.svelte";
-    import * as Select from "$lib/components/ui/select/index.js";
-    import LabelBadge from "$lib/components/view/label-badge.svelte";
     import Button, { buttonVariants } from "$lib/components/ui/button/button.svelte";
-    import CardFooter from "$lib/components/ui/card/card-footer.svelte";
-    import { toReadableSize, instanceOfModelWithGroup } from "$lib/utils";
-    import ModelImg from "$lib/components/view/model-img.svelte";
+    import { instanceOfModelWithGroup } from "$lib/utils";
     import { toast } from "svelte-sonner";
 
-    interface ModelWithCheckbox
-    {
-        model: Model;
-        checked: boolean;
-    }
+    import Tag from "@lucide/svelte/icons/tag";
+    import DiamondMinus from "@lucide/svelte/icons/diamond-minus";
+    import FolderOpen from "@lucide/svelte/icons/folder-open";
+    import Slice from "@lucide/svelte/icons/slice";
+    import Group from "@lucide/svelte/icons/group";
+    import Ungroup from "@lucide/svelte/icons/ungroup";
+    import Trash2 from "@lucide/svelte/icons/trash-2";
 
-    const props: { models: Model[]; class?: ClassValue } = $props();
+    const props: { models: Model[], class?: ClassValue } = $props();
 
-    let models : ModelWithCheckbox[] = $state([]);
-    let availableLabels = $derived(models.map(x => x.model.labels).flat().filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i));
-    let filtered_models = $derived(models.filter(x => x.checked).map(x => x.model));
+    const models : Model[] = $derived(props.models);
 
-    $effect(() => {
-        const m = $state.snapshot(props.models);
-        console.log("State changed: ", m);
-        models = props.models.map(x => ({ model: x, checked: true }));
-    });
+    let availableLabels = $derived(models.map(x => x.labels).flat().filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i));
 
     async function setLabelOnAllModels(label : LLabel)
     {
-        const affected_models = filtered_models;
+        const affected_models = models;
 
         affected_models.forEach(x => x.labels.push(label));
 
@@ -63,7 +47,7 @@
 
     async function removeLabelFromAllModels(label : LLabel)
     {
-        const affected_models = filtered_models;
+        const affected_models = models;
 
         affected_models.forEach(x => x.labels = x.labels.filter(l => l.id !== label.id));
 
@@ -74,17 +58,17 @@
 
     async function onOpenInSlicer()
     {
-        await openInSlicer(filtered_models);
+        await openInSlicer(models);
     }
 
     async function onOpenInFolder()
     {
-        await openInFolder(filtered_models);
+        await openInFolder(models);
     }
 
     async function onNewGroup()
     {
-        const affected_models = filtered_models;
+        const affected_models = models;
 
         const group = await addEmptyGroup("New group");
 
@@ -96,11 +80,9 @@
 
     async function onRemoveGroup()
     {
-        const affected_models = filtered_models;
-        
         let removed = 0;
 
-        for (const model of affected_models)
+        for (const model of models)
         {
             if(instanceOfModelWithGroup(model) && model.group)
             {
@@ -115,7 +97,7 @@
 
     async function onDelete()
     {
-        const affected_models = filtered_models;
+        const affected_models = models;
 
         await Promise.all(affected_models.map(async x => {
             await deleteModel(x);
@@ -136,28 +118,11 @@
         </CardHeader>
         <CardContent class="flex flex-col gap-8">
             <div class="flex flex-col gap-4">
-                    <div class="flex flex-row gap-4">
-                        <Checkbox bind:checked={
-                            () => models.every(x => x.checked),
-                            (val) => models.forEach(x => x.checked = val)
-                        } />
-                        <ReplaceAll />
-                        <p>Check all</p>
-                    </div>
-                {#each models as model}
-                    <div class="flex flex-row gap-4">
-                        <Checkbox bind:checked={model.checked} />
-                        <ModelImg class="w-[24px]" model={model.model} />
-                        <p class="block whitespace-nowrap text-ellipsis overflow-x-hidden">{model.model.name}</p>
-                    </div>
-                {/each}
-            </div>
-            <div class="flex flex-col gap-4">
                 <Label>Add/Remove labels</Label>
                 <div class="grid grid-cols-2 gap-4">
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} flex-grow">
-                            Add label
+                           <Tag /> Add label
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Content side="bottom" align="start">
                             {#each data.labels as label}
@@ -169,7 +134,7 @@
                     </DropdownMenu.Root>
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} flex-grow" disabled={availableLabels.length <= 0}>
-                            Remove label
+                           <DiamondMinus /> Remove label
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Content side="bottom" align="start">
                             {#each availableLabels as label}
@@ -182,29 +147,29 @@
                 </div>
             </div>
             <div class="flex flex-col gap-4">
-                <Label>Open in</Label>
+                <Label>Open</Label>
                 <div class="grid grid-cols-2 gap-4">
-                    <Button class="flex-grow" onclick={onOpenInFolder}>Open in folder</Button>
-                    <Button class="flex-grow" onclick={onOpenInSlicer}>Open in slicer</Button>
+                    <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
+                    <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
                 </div>
             </div>
             <div class="flex flex-col gap-4">
-                <Label>Set/Unset Group</Label>
+                <Label>Set/Unset group</Label>
                 <div class="grid grid-cols-2 gap-4">
-                    <Button onclick={onNewGroup} class="flex-grow">New group</Button>
+                    <Button onclick={onNewGroup} class="flex-grow"><Group /> New group</Button>
                     <Button onclick={onRemoveGroup} class="flex-grow" disabled={!models.some(x => {
-                        if(instanceOfModelWithGroup(x.model))
+                        if(instanceOfModelWithGroup(x))
                         {
-                            return !!x.model.group;
+                            return !!x.group;
                         }
 
                         return false;
-                    })}>Remove from group</Button>
+                    })}><Ungroup /> Remove from group</Button>
                 </div>
             </div>
             <div class="flex flex-col gap-4">
                 <Label>Delete</Label>
-                <Button onclick={onDelete} class="flex-grow">Delete selected models</Button>
+                <Button onclick={onDelete} variant="outline" class="flex-grow"><Trash2 /> Delete selected models</Button>
             </div>
         </CardContent>
     </Card>

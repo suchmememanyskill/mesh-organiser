@@ -8,7 +8,7 @@
     import { onDestroy } from "svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
 
-    const props: { models: Model[] } = $props();
+    const props: { models: Model[]; default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
 
     let scrollContainer : HTMLElement;
@@ -163,7 +163,14 @@
         }
         else
         {
-            selected = [model];
+            if (selected.length === 1 && selected[0].id === model.id)
+            {
+                selected = [];
+            }
+            else
+            {
+                selected = [model];
+            }
         }
     }
 
@@ -222,12 +229,14 @@
             {/each}
         </div>
     </div> 
-    {#if selected.length > 0}
+    {#if selected.length > 0 || props.default_show_multiselect_all}
         <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto hide-scrollbar">
             {#if selected.length >= 2}
                 <MultiModelEdit models={selected} />
             {:else if selected.length === 1}
                 <ModelEdit model={selected[0]} full_image={true} />
+            {:else}
+                <MultiModelEdit models={filteredCollection} />
             {/if}
         </div>
     {/if}

@@ -52,27 +52,6 @@
 
         save_group_debounced(snapshot);
     });
-
-    async function openAllInSlicer()
-    {
-        let models = data.grouped_entries.find((group) => group.group.id === tracked_group.id)?.models;
-
-        if (models)
-        {
-            await openInSlicer(models);
-        }
-    }
-
-    async function onOpenInFolder()
-    {
-        let models = data.grouped_entries.find((group) => group.group.id === tracked_group.id)?.models;
-
-        if (models)
-        {
-            await openInFolder(models);
-        }
-    }
-
 </script>
 
 {#if deleted}
@@ -82,22 +61,7 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <div class="flex flex-row justify-between mr-16">
-                <CardTitle>Group</CardTitle>
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} h-7">
-                        Open all in
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content side="bottom" align="start">
-                        <DropdownMenu.Item onclick={openAllInSlicer}>
-                            <span>Slicer</span>
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item onclick={onOpenInFolder}>
-                            <span>Folder</span>
-                        </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
-            </div>
+            <CardTitle>Group</CardTitle>
             <div class="absolute right-0 top-5 mr-8">
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
