@@ -1,13 +1,14 @@
 use std::env;
 use std::fs::{self, File};
 use std::io::Write;
-use chrono::Utc;
+use chrono::{format, Utc};
 
 use crate::error::ApplicationError;
 
 pub async fn download_file(url: &str) -> Result<String, ApplicationError> {
     let response = reqwest::get(url).await?;
-    
+    let mut nonsense = String::from("");
+
     if !response.status().is_success() {
         return Err(ApplicationError::InternalError(format!("Failed to download file from url: {}. Status code {}.", url, response.status())));
     }
@@ -21,13 +22,26 @@ pub async fn download_file(url: &str) -> Result<String, ApplicationError> {
 
     fs::create_dir_all(&temp_dir)?;
 
-    let mut file_name = url.split('/').last().unwrap_or("downloaded_file");
+    let mut file_name = url.split('/').last().unwrap_or("model");
 
     if url.contains("makerworld") {
-        file_name = url.split("name=").last().unwrap_or("downloaded_file");
+        file_name = url.split("name=").last().unwrap_or("model");
     }
 
-    // TODO: Thingiverse is special for no reason
+    // TODO: Make this better
+    if url.contains("thingiverse") {
+        let id = url.split(":").last().unwrap_or("model");
+        let extension;
+        
+        if bytes[0] == 0x50 && bytes[1] == 0x4B {
+            extension = "3mf";
+        } else {
+            extension = "stl";
+        }
+
+        nonsense = format!("Thingiverse_{}.{}", id, extension);
+        file_name = &nonsense;
+    }
 
     let file_path = temp_dir.join(file_name);
     let mut file = File::create(&file_path)?;
