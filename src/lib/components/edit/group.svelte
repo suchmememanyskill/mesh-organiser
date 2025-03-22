@@ -18,7 +18,7 @@
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { data, updateState } from "$lib/data.svelte";
-    import Button from "../ui/button/button.svelte";
+    import { buttonVariants } from "$lib/components/ui/button/index.js";
 
     const props: { group: Group; class?: ClassValue } = $props();
     const tracked_group = $state(props.group);
@@ -84,7 +84,19 @@
         <CardHeader class="relative">
             <div class="flex flex-row justify-between mr-16">
                 <CardTitle>Group</CardTitle>
-                <Button onclick={openAllInSlicer} class="h-7">Open all in slicer</Button>
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} h-7">
+                        Open all in
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content side="bottom" align="start">
+                        <DropdownMenu.Item onclick={openAllInSlicer}>
+                            <span>Slicer</span>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item onclick={onOpenInFolder}>
+                            <span>Folder</span>
+                        </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
             </div>
             <div class="absolute right-0 top-5 mr-8">
                 <DropdownMenu.Root>
@@ -92,10 +104,6 @@
                         <Ellipsis />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
-                        <DropdownMenu.Item onclick={onOpenInFolder}>
-                            <span>Open in folder</span>
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Separator />
                         <DropdownMenu.Item onclick={onUngroup}>
                             <span>Ungroup models</span>
                         </DropdownMenu.Item>

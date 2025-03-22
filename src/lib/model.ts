@@ -59,10 +59,9 @@ export interface GroupedEntry
     total : number;
 }
 
-export interface ModelWithGroup
+export interface ModelWithGroup extends Model
 {
     group? : Group;
-    model : Model;
 }
 
 export interface LabelEntry
