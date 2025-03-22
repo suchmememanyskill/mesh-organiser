@@ -71,3 +71,10 @@ export async function downloadFile(url : string) : Promise<string>
 {
     return await invoke("download_file", { url: url });
 }
+
+export async function openInFolder(models : Model[]) : Promise<void>
+{
+    let modelIds = models.map(model => model.id);
+
+    await invoke("open_in_folder", { modelIds: modelIds });
+}

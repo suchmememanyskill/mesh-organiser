@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{env::temp_dir, sync::{Arc, Mutex}};
 
 use error::ApplicationError;
 use service::{
@@ -157,6 +157,21 @@ async fn download_file(url : &str) -> Result<String, ApplicationError>
     Ok(response)
 }
 
+#[tauri::command]
+async fn open_in_folder(
+    model_ids : Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError>
+{
+    let models = db::model::get_models_by_id(model_ids, &state.db).await;
+
+    let (temp_dir, paths) = service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
+
+    crate::util::open_folder_in_explorer(temp_dir.to_str().unwrap());
+
+    Ok(())
+}
+
 fn extract_deep_link(data : &str) -> Option<String>
 {
     let possible_starts = vec!["bambustudio://open/?file=", "cura://open/?file=", "prusaslicer://open/?file=", "orcaslicer://open/?file="];
@@ -301,7 +316,8 @@ pub fn run() {
             set_labels_on_model,
             open_in_slicer,
             get_initial_state,
-            download_file
+            download_file,
+            open_in_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

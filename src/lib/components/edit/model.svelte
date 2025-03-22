@@ -17,7 +17,7 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel, openInSlicer } from "$lib/tauri";
+    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { updateState, data } from "$lib/data.svelte";
@@ -25,17 +25,13 @@
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import Button from "../ui/button/button.svelte";
     import CardFooter from "../ui/card/card-footer.svelte";
-    import { toReadableSize } from "$lib/utils";
+    import { toReadableSize, instanceOfModelWithGroup } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
 
     const props: { model: Model|ModelWithGroup; class?: ClassValue, full_image?: boolean } = $props();
     let last_model_id = -1;
     let img_src = $state("");
     let deleted = $state(false);
-
-    function instanceOfModelWithGroup(object: any): object is ModelWithGroup {
-        return 'group' in object;
-    }
 
     let model : Model = $derived(props.model);
 
@@ -88,7 +84,7 @@
         deleted = true;
     }
 
-    async function onOpen()
+    async function onOpenInSlicer()
     {
         await openInSlicer([model]);
     }
@@ -96,6 +92,11 @@
     function openLink()
     {
         window.open(model.link);
+    }
+
+    async function onOpenInFolder()
+    {
+        await openInFolder([model]);
     }
 </script>
 
@@ -179,8 +180,9 @@
                             </Select.Content>
                           </Select.Root>
                     </div>
-                    <div class="flex flex-col space-y-1.5">
-                        <Button onclick={onOpen}>Open in slicer</Button>
+                    <div class="flex flex-row gap-5">
+                        <Button class="flex-grow" onclick={onOpenInFolder}>Open in folder</Button>
+                        <Button class="flex-grow" onclick={onOpenInSlicer}>Open in slicer</Button>
                     </div>
                     <div class="flex flex-col space-y-1.5">
                         <div class="grid grid-cols-2 text-sm">

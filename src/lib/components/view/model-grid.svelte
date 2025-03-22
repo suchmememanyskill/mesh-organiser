@@ -5,6 +5,7 @@
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
     import { onDestroy } from "svelte";
+    import { instanceOfModelWithGroup } from "$lib/utils";
 
     const props: { models: Model[] } = $props();
     let selected = $state.raw<Model[]>([]);
@@ -60,16 +61,21 @@
 
     const readableOrder = $derived(readableOrders[currentFilter.order]);
 
-    const filteredCollection = $derived(
-        props.models
+    const filteredCollection = $derived.by(() => {
+        let search_lower = currentFilter.search.toLowerCase();
+
+        return props.models
             .filter(
                 (model) =>
                     model.name
                         .toLowerCase()
-                        .includes(currentFilter.search.toLowerCase()) ||
+                        .includes(search_lower) ||
                     model.description
                         ?.toLowerCase()
-                        .includes(currentFilter.search.toLowerCase()),
+                        .includes(search_lower) ||
+                    (instanceOfModelWithGroup(model) 
+                        && model.group?.name.toLowerCase()
+                            .includes(search_lower)),
             )
             .sort((a, b) => {
                 switch (currentFilter.order) {
@@ -94,8 +100,8 @@
                     default:
                         return 0;
                 }
-            }),
-    );
+            })
+    });
 
     let is_shift_pressed = false;
     let is_control_pressed = false;

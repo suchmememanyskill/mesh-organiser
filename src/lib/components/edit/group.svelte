@@ -14,7 +14,7 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { ungroup, editGroup, openInSlicer } from "$lib/tauri";
+    import { ungroup, editGroup, openInSlicer, openInFolder } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { data, updateState } from "$lib/data.svelte";
@@ -63,6 +63,16 @@
         }
     }
 
+    async function onOpenInFolder()
+    {
+        let models = data.grouped_entries.find((group) => group.group.id === tracked_group.id)?.models;
+
+        if (models)
+        {
+            await openInFolder(models);
+        }
+    }
+
 </script>
 
 {#if deleted}
@@ -82,6 +92,10 @@
                         <Ellipsis />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
+                        <DropdownMenu.Item onclick={onOpenInFolder}>
+                            <span>Open in folder</span>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Separator />
                         <DropdownMenu.Item onclick={onUngroup}>
                             <span>Ungroup models</span>
                         </DropdownMenu.Item>

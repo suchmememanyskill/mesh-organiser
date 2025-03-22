@@ -1,6 +1,7 @@
 use std::{fs::File, path::PathBuf};
 
 use crate::db::model::Model;
+use crate::service::export_service::export_to_temp_folder;
 
 use super::app_state::AppState;
 use crate::error::ApplicationError;
@@ -99,17 +100,8 @@ impl Slicer {
         }
         .take()
         .unwrap();
-
-        let temp_dir = std::env::temp_dir().join(format!(
-            "meshorganiser_open_action_{}",
-            Utc::now().timestamp_nanos_opt().unwrap()
-        ));
-        std::fs::create_dir(&temp_dir)?;
-
-        let paths: Vec<PathBuf> = models
-            .iter()
-            .map(|f| get_path_from_model(&temp_dir, f, &app_state).unwrap())
-            .collect();
+    
+        let (temp_dir, paths) = export_to_temp_folder(models, app_state, true, "open")?;
 
         println!("Opening in slicer: {:?}", paths);
 
@@ -150,30 +142,5 @@ fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
     match value {
         Ok(s) => return Some(s.to_str().unwrap().to_string()),
         Err(_) => return None,
-    }
-}
-
-// TODO: Split this off into another file, also copy .3mf/.obj, rename them to their actual names, and make a function 'Open in folder'
-fn get_path_from_model(
-    temp_dir: &PathBuf,
-    model: &Model,
-    app_state: &AppState,
-) -> Result<PathBuf, ApplicationError> {
-    let base_dir = PathBuf::from(app_state.get_model_dir());
-
-    if model.filetype == "stl.zip" {
-        let zip_path = base_dir.join(format!("{}.stl.zip", model.sha256));
-        let file = File::open(zip_path)?;
-
-        let target = temp_dir.join(format!("{}_{}.stl", model.name, model.sha256));
-        let mut archive = zip::ZipArchive::new(file)?;
-        let mut file = archive.by_index(0)?;
-        let mut target_file = File::create(&target)?;
-
-        std::io::copy(&mut file, &mut target_file)?;
-        Ok(target)
-    } else {
-        let file_path = base_dir.join(format!("{}.{}", model.sha256, model.filetype));
-        Ok(file_path)
     }
 }

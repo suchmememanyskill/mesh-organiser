@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { ModelWithGroup } from "./model";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -27,4 +28,8 @@ export function toReadableSize(size : number) {
 	}
 
 	return `${size.toFixed(2)} ${units[unitIndex]}`;
+}
+
+export function instanceOfModelWithGroup(object: any): object is ModelWithGroup {
+	return 'group' in object;
 }
