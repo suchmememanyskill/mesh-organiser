@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM models_group\n            WHERE group_id NOT IN \n                (SELECT DISTINCT model_group_id \n                    FROM models \n                    WHERE model_group_id IS NOT NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "899e9ff1391ba281e4919ff3fee94f654ebe0b701c51e98c230307809553250e"
+}

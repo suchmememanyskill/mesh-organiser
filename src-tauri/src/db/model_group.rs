@@ -16,7 +16,8 @@ pub struct ModelGroup {
     pub id: i64,
     #[sqlx(rename = "group_name")]
     pub name: String,
-    // TODO: Add creation time
+    #[sqlx(rename = "group_created")]
+    pub created: String,
 }
 
 /*
@@ -98,9 +99,11 @@ pub fn add_empty_group_sync(group_name: &str, db: &super::db::Db) -> i64 {
 }
 
 pub async fn add_empty_group(group_name: &str, db: &super::db::Db) -> i64 {
+    let now = chrono::Utc::now().to_rfc3339();
     let result = sqlx::query!(
-        "INSERT INTO models_group (group_name) VALUES (?)",
-        group_name
+        "INSERT INTO models_group (group_name, group_created) VALUES (?, ?)",
+        group_name,
+        now
     )
     .execute(db)
     .await;
@@ -132,4 +135,17 @@ pub async fn remove_group(group_id: i64, db: &super::db::Db) {
         .execute(db)
         .await
         .expect("Failed to delete group");
+}
+
+pub async fn remove_dead_groups(db: &super::db::Db) {
+    sqlx::query!(
+        "DELETE FROM models_group
+            WHERE group_id NOT IN 
+                (SELECT DISTINCT model_group_id 
+                    FROM models 
+                    WHERE model_group_id IS NOT NULL)"
+    )
+    .execute(db)
+    .await
+    .expect("Failed to delete dead groups");
 }

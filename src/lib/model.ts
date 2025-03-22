@@ -9,6 +9,7 @@ export interface RawGroup
 {
     id : number;
     name : string;
+    created : string;
 }
 
 export interface RawModel 

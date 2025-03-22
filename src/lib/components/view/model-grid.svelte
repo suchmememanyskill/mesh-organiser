@@ -2,6 +2,7 @@
     import type { Model } from "$lib/model";
     import ModelTiny from "$lib/components/view/model-tiny.svelte";
     import ModelEdit from "$lib/components/edit/model.svelte";
+    import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
     import { onDestroy } from "svelte";
@@ -165,6 +166,14 @@
             selected = [model];
         }
     }
+
+    $effect(() => {
+        const current_models = $state.snapshot(props.models);
+
+        setTimeout(() => {
+            selected = selected.filter(x => current_models.some(y => y.id === x.id));
+	    }, 0);
+    })
 </script>
 
 <div class="flex flex-row h-full">
@@ -215,9 +224,9 @@
     {#if selected.length > 0}
         <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto">
             {#if selected.length >= 2}
-                <div class="sticky top-20">TODO: Multi modal window</div>
+                <MultiModelEdit models={selected} />
             {:else if selected.length === 1}
-                <ModelEdit class="sticky top-8" model={selected[0]} full_image={true} />
+                <ModelEdit model={selected[0]} full_image={true} />
             {/if}
         </div>
     {/if}

@@ -78,3 +78,47 @@ export async function openInFolder(models : Model[]) : Promise<void>
 
     await invoke("open_in_folder", { modelIds: modelIds });
 }
+
+export async function setLabelOnModels(models : Model[], label : Label) : Promise<void>
+{
+    let modelIds = models.map(model => model.id);
+
+    await invoke("set_label_on_models", { modelIds: modelIds, labelId: label.id });
+}
+
+export async function removeLabelFromModels(models : Model[], label : Label) : Promise<void>
+{
+    let modelIds = models.map(model => model.id);
+
+    await invoke("remove_label_from_models", { modelIds: modelIds, labelId: label.id });
+}
+
+export async function addEmptyGroup(group_name : string) : Promise<Group>
+{
+    let group_id : number = await invoke("add_group", { groupName: group_name });
+
+    return {
+        id: group_id,
+        name: group_name,
+        createdAt: new Date()
+    }
+}
+
+export async function addModelsToGroup(models : Model[], group : Group) : Promise<void>
+{
+    let modelIds = models.map(model => model.id);
+
+    await invoke("add_models_to_group", { modelIds: modelIds, groupId: group.id });
+}
+
+export async function removeModelsFromGroup(models : Model[], group : Group) : Promise<void>
+{
+    let modelIds = models.map(model => model.id);
+
+    await invoke("remove_models_from_group", { modelIds: modelIds, groupId: group.id });
+}
+
+export async function removeDeadGroups() : Promise<void>
+{
+    await invoke("remove_dead_groups");
+}

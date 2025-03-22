@@ -17,7 +17,7 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder } from "$lib/tauri";
+    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { updateState, data } from "$lib/data.svelte";
@@ -98,6 +98,19 @@
     {
         await openInFolder([model]);
     }
+
+    async function onUngroup()
+    {
+        if (group) 
+        {
+            await removeModelsFromGroup([model], group);
+            if (instanceOfModelWithGroup(model)) {
+                model.group = undefined;
+            }
+        } 
+
+        await updateState();
+    }
 </script>
 
 {#if deleted}
@@ -114,6 +127,9 @@
                         <Ellipsis />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
+                        <DropdownMenu.Item onclick={onUngroup} disabled={!group}>
+                            <span>Ungroup</span>
+                        </DropdownMenu.Item>
                         <DropdownMenu.Item onclick={onDelete}>
                             <span>Delete model</span>
                         </DropdownMenu.Item>

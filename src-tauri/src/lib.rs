@@ -103,6 +103,34 @@ async fn add_label(
 }
 
 #[tauri::command]
+async fn add_group(group_name: &str, state: State<'_, AppState>) -> Result<i64, ApplicationError> {
+    let id = db::model_group::add_empty_group(group_name, &state.db).await;
+
+    Ok(id)
+}
+
+#[tauri::command]
+async fn add_models_to_group(
+    group_id: i64,
+    model_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::model_group::set_group_id_on_models(Some(group_id), model_ids, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn remove_models_from_group(
+    model_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::model_group::set_group_id_on_models(None, model_ids, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn ungroup(group_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
     db::model_group::remove_group(group_id, &state.db).await;
 
@@ -128,6 +156,29 @@ async fn set_labels_on_model(
 ) -> Result<(), ApplicationError> {
     db::label::remove_labels_from_model(model_id, &state.db).await;
     db::label::set_labels_on_model(label_ids, model_id, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_label_on_models(
+    label_id: i64,
+    model_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::remove_label_from_models(label_id, model_ids.clone(), &state.db).await;
+    db::label::add_label_on_models(label_id, model_ids, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn remove_label_from_models(
+    label_id: i64,
+    model_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::remove_label_from_models(label_id, model_ids, &state.db).await;
 
     Ok(())
 }
@@ -168,6 +219,13 @@ async fn open_in_folder(
     let (temp_dir, paths) = service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
 
     crate::util::open_folder_in_explorer(temp_dir.to_str().unwrap());
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn remove_dead_groups(state: State<'_, AppState>) -> Result<(), ApplicationError> {
+    db::model_group::remove_dead_groups(&state.db).await;
 
     Ok(())
 }
@@ -317,7 +375,13 @@ pub fn run() {
             open_in_slicer,
             get_initial_state,
             download_file,
-            open_in_folder
+            open_in_folder,
+            set_label_on_models,
+            remove_label_from_models,
+            add_group,
+            add_models_to_group,
+            remove_models_from_group,
+            remove_dead_groups,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

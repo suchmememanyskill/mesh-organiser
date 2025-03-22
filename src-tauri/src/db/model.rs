@@ -39,7 +39,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
     let rows = sqlx::query!(
         "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, model_size,
                 labels.label_id, label_name, label_color,
-                models_group.group_id, group_name
+                models_group.group_id, group_name, group_created
          FROM models 
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
          LEFT JOIN labels ON models_labels.label_id = labels.label_id
@@ -64,6 +64,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
                 Some(id) => Some(ModelGroup {
                     id: id,
                     name: row.group_name.unwrap(),
+                    created: row.group_created.unwrap(),
                 }),
                 None => None,
             },
@@ -101,7 +102,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
     let formatted_query = format!(
         "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_size,
                 labels.label_id, label_name, label_color,
-                models_group.group_id, group_name
+                models_group.group_id, group_name, group_created
          FROM models 
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
          LEFT JOIN labels ON models_labels.label_id = labels.label_id 
@@ -123,6 +124,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         let model_size: i64 = row.get("model_size");
         let group_id: Option<i64> = row.get("group_id");
         let group_name: Option<String> = row.get("group_name");
+        let group_created: Option<String> = row.get("group_created");
         let mut label_id: Option<i64> = row.get("label_id");
         let mut label_name: Option<String> = row.get("label_name");
         let mut label_color: Option<i64> = row.get("label_color");
@@ -140,6 +142,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
                 Some(id) => Some(ModelGroup {
                     id: id,
                     name: group_name.unwrap(),
+                    created: group_created.unwrap(),
                 }),
                 None => None,
             },

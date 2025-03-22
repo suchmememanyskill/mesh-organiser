@@ -41,11 +41,11 @@ pub async fn get_labels(db: &super::db::Db) -> Vec<Label> {
     return rows;
 }
 
-pub fn set_label_on_models_sync(label_id: i64, model_ids: Vec<i64>, db: &super::db::Db) {
-    block_on(set_label_on_models(label_id, model_ids, db))
+pub fn add_label_on_models_sync(label_id: i64, model_ids: Vec<i64>, db: &super::db::Db) {
+    block_on(add_label_on_models(label_id, model_ids, db))
 }
 
-pub async fn set_label_on_models(label_id: i64, model_ids: Vec<i64>, db: &super::db::Db) {
+pub async fn add_label_on_models(label_id: i64, model_ids: Vec<i64>, db: &super::db::Db) {
     for model_id in model_ids {
         sqlx::query!(
             "INSERT INTO models_labels (label_id, model_id) VALUES (?, ?)",

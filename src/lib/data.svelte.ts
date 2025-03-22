@@ -23,12 +23,12 @@ function convertModel(raw : RawModel) : Model
     };
 }
 
-function convertGroup(raw : RawGroup, raw_model : RawModel) : Group
+function convertGroup(raw : RawGroup) : Group
 {
     return {
         id : raw.id,
         name : raw.name,
-        createdAt : new Date(raw_model.added),
+        createdAt : new Date(raw.created),
     };
 }
 
@@ -43,7 +43,6 @@ function convertLabel(raw : RawLabel) : Label
 
 function extractGroups(models : RawModel[]) : GroupedEntry[]
 {
-    let looseModels : Model[] = [];
     let groups : Map<number, GroupedEntry> = new Map();
 
     models.forEach(raw => {
@@ -52,7 +51,7 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
             if (!groups.has(raw.group.id))
             {
                 groups.set(raw.group.id, {
-                    group : convertGroup(raw.group, raw),
+                    group : convertGroup(raw.group),
                     models : [],
                     total : 0,
                 });
@@ -60,12 +59,13 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
 
             let group = groups.get(raw.group.id)!;
 
-            group.models.push(convertModel(raw));
+            let model : ModelWithGroup = {
+                group: group.group,
+                ...convertModel(raw),
+            };
+
+            group.models.push(model);
             group.total += 1;
-        }
-        else 
-        {
-            looseModels.push(convertModel(raw));
         }
     });
 
@@ -79,7 +79,7 @@ function extractModels(models : RawModel[]) : ModelWithGroup[]
 
         if (raw.group)
         {
-            group = convertGroup(raw.group, raw);
+            group = convertGroup(raw.group);
         }
 
         return {

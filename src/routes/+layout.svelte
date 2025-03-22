@@ -5,7 +5,7 @@
     import { ModeWatcher } from "mode-watcher";
     import { onMount } from "svelte";
     import { listen } from '@tauri-apps/api/event';
-    import { getInitialState, downloadFile } from "$lib/tauri";
+    import { getInitialState, downloadFile, removeDeadGroups } from "$lib/tauri";
     import { Toaster } from "$lib/components/ui/sonner/index.js";
     import { toast } from "svelte-sonner";
     import { goto } from '$app/navigation';
@@ -54,6 +54,8 @@
                 description: reason.error_inner_message
             });
         });
+
+        await removeDeadGroups();
     });
 
 </script>

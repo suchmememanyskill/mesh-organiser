@@ -2,7 +2,8 @@
 
 CREATE TABLE models_group (
     group_id INTEGER PRIMARY KEY,
-    group_name TEXT NOT NULL
+    group_name TEXT NOT NULL,
+    group_created TEXT NOT NULL
 );
 
 CREATE TABLE models (
