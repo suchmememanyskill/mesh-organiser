@@ -175,8 +175,10 @@ fn extract_deep_link(data : &str) -> Option<String>
     None
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+fn remove_temp_paths()
+{
+    let threshold = std::time::Duration::from_secs(5 * 60);
+    let now = std::time::SystemTime::now();
     for entry in std::fs::read_dir(&std::env::temp_dir()).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
@@ -188,10 +190,21 @@ pub fn run() {
                 .unwrap()
                 .starts_with("meshorganiser_")
         {
-            println!("Removing temporary path {:?}", path);
-            std::fs::remove_dir_all(&path).unwrap();
+            if let Ok(metadata) = std::fs::metadata(&path) {
+                if let Ok(modified) = metadata.modified() {
+                    if now.duration_since(modified).unwrap_or(std::time::Duration::ZERO) >= threshold {
+                        println!("Removing temporary path {:?}", path);
+                        std::fs::remove_dir_all(&path).unwrap();
+                    }
+                }
+            }
         }
     }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    remove_temp_paths();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {

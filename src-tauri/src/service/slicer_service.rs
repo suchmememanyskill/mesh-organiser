@@ -165,7 +165,7 @@ fn get_path_from_model(
         let zip_path = base_dir.join(format!("{}.stl.zip", model.sha256));
         let file = File::open(zip_path)?;
 
-        let target = temp_dir.join(format!("{}.stl", model.sha256));
+        let target = temp_dir.join(format!("{}_{}.stl", model.name, model.sha256));
         let mut archive = zip::ZipArchive::new(file)?;
         let mut file = archive.by_index(0)?;
         let mut target_file = File::create(&target)?;
