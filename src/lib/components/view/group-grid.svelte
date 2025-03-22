@@ -95,6 +95,25 @@
     });
 
 
+    function onClick(groupedEntry : GroupedEntry, event : any)
+    {
+        if (selected == groupedEntry)
+        {
+            selected = null;
+        }
+        else
+        {
+            selected = groupedEntry;
+
+            setTimeout(() => {
+                event.target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                });
+            }, 30);
+        }        
+    }
+
     $effect(() => {
         const current_groups = $state.snapshot(props.groups);
 
@@ -150,7 +169,7 @@
         </div>
         <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
             {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
-                <div onclick="{() => selected == group ? selected = null : selected = group}">
+                <div onclick="{(e) => onClick(group, e)}">
                     <GroupTiny group={group} class="{size} pointer-events-none select-none {selected?.group?.id === group.group.id ? "border-primary" : "" }" />
                 </div>
             {/each}

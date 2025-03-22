@@ -131,8 +131,7 @@
         window.removeEventListener("keyup", onKeyUp);
     });
 
-    async function onclick(model: Model) {
-
+    async function onClick(model: Model, event : any) {
         if (is_shift_pressed && selected.length === 1)
         {
             let start = filteredCollection.indexOf(selected[0]);
@@ -170,6 +169,13 @@
             else
             {
                 selected = [model];
+
+                setTimeout(() => {
+                    event.target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }, 30);
             }
         }
     }
@@ -223,7 +229,7 @@
         </div>
         <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
             {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
-                <div onclick="{() => onclick(model)}">
+                <div onclick="{(e) => onClick(model, e)}">
                     <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
                 </div>
             {/each}
