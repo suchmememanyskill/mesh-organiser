@@ -14,10 +14,11 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { ungroup, editGroup } from "$lib/tauri";
+    import { ungroup, editGroup, openInSlicer } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
-    import { updateState } from "$lib/data.svelte";
+    import { data, updateState } from "$lib/data.svelte";
+    import Button from "../ui/button/button.svelte";
 
     const props: { group: Group; class?: ClassValue } = $props();
     const tracked_group = $state(props.group);
@@ -26,6 +27,7 @@
 
     async function onUngroup() {
         await ungroup($state.snapshot(tracked_group));
+        await updateState();
         deleted = true;
     }
 
@@ -51,6 +53,16 @@
         save_group_debounced(snapshot);
     });
 
+    async function openAllInSlicer()
+    {
+        let models = data.grouped_entries.find((group) => group.group.id === tracked_group.id)?.models;
+
+        if (models)
+        {
+            await openInSlicer(models);
+        }
+    }
+
 </script>
 
 {#if deleted}
@@ -60,8 +72,11 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <CardTitle>Group</CardTitle>
-            <div class="absolute right-0 mr-8">
+            <div class="flex flex-row justify-between mr-16">
+                <CardTitle>Group</CardTitle>
+                <Button onclick={openAllInSlicer} class="h-7">Open all in slicer</Button>
+            </div>
+            <div class="absolute right-0 top-5 mr-8">
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
                         <Ellipsis />

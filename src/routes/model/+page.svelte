@@ -3,4 +3,4 @@
     import { data } from "$lib/data.svelte";
 </script>
 
-<ModelGrid models={data.entries.map(x => x.model)} />
+<ModelGrid models={data.entries} />

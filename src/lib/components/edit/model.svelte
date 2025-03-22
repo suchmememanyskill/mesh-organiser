@@ -10,7 +10,7 @@
     import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";
 
-    import type { Model } from "$lib/model";
+    import type { Model, Group, ModelWithGroup } from "$lib/model";
     import { appDataDir, join } from "@tauri-apps/api/path";
     import { convertFileSrc } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
@@ -28,10 +28,24 @@
     import { toReadableSize } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
 
-    const props: { model: Model; class?: ClassValue, full_image?: boolean } = $props();
+    const props: { model: Model|ModelWithGroup; class?: ClassValue, full_image?: boolean } = $props();
     let last_model_id = -1;
     let img_src = $state("");
     let deleted = $state(false);
+
+    function instanceOfModelWithGroup(object: any): object is ModelWithGroup {
+        return 'group' in object;
+    }
+
+    let model : Model = $derived(props.model);
+
+    let group : Group | null = $derived.by(() => {
+        if (instanceOfModelWithGroup(props.model)) {
+            return props.model.group ?? null;
+        }
+
+        return null;
+    });
 
     const save_model_debounced = debounce(async (edited_model: Model) => {
         console.log("Saving model");
@@ -46,14 +60,14 @@
         const filePath = await join(
             appDataDirPath,
             "images",
-            props.model.sha256 + ".png",
+            model.sha256 + ".png",
         );
         const assetUrl = convertFileSrc(filePath);
         img_src = assetUrl;
     });
 
     $effect(() => {
-        let snapshot = $state.snapshot(props.model);
+        let snapshot = $state.snapshot(model);
 
         if (!snapshot.name) {
             return;
@@ -69,19 +83,19 @@
     });
 
     async function onDelete() {
-        await deleteModel(props.model);
+        await deleteModel(model);
         await updateState();
         deleted = true;
     }
 
     async function onOpen()
     {
-        await openInSlicer([props.model]);
+        await openInSlicer([model]);
     }
 
     function openLink()
     {
-        window.open(props.model.link);
+        window.open(model.link);
     }
 </script>
 
@@ -92,7 +106,7 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <ModelImg model={props.model} class="{props.full_image ? "h-full w-full" : "h-36 w-36" } m-auto" />
+            <ModelImg model={model} class="{props.full_image ? "h-full w-full" : "h-36 w-36" } m-auto" />
             <div class="absolute right-0 mr-8">
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
@@ -106,7 +120,7 @@
                 </DropdownMenu.Root>
             </div>
             <div class="flex flex-wrap gap-2 justify-center min-h-6">
-                {#each props.model.labels as label}
+                {#each model.labels as label}
                     <LabelBadge label={label!} />
                 {/each}
             </div>
@@ -119,12 +133,12 @@
                         <Input
                             id="name"
                             placeholder="Name of the model"
-                            bind:value={props.model.name}
+                            bind:value={model.name}
                         />
                     </div>
                     <div class="flex flex-col space-y-1.5">
                         <Label for="link">
-                            {#if props.model.link}
+                            {#if model.link}
                                 <a onclick={openLink} class="text-primary hover:underline">Link/Url</a>
                             {:else}
                                 Link/Url
@@ -133,7 +147,7 @@
                         <Input
                             id="link"
                             placeholder="Where did this model come from?"
-                            bind:value={props.model.link}
+                            bind:value={model.link}
                         />
                     </div>
                     <div class="flex flex-col space-y-1.5">
@@ -141,14 +155,14 @@
                         <Input
                             id="description"
                             placeholder="Description of the model"
-                            bind:value={props.model.description}
+                            bind:value={model.description}
                         />
                     </div>
                     <div class="flex flex-col space-y-1.5">
                         <Label>Labels</Label>
                         <Select.Root type="multiple" name="labels" bind:value={
-                            () => props.model.labels.map((l) => l.id.toString()),
-                            (val) => props.model.labels = val.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l).map((l) => l?.label!)
+                            () => model.labels.map((l) => l.id.toString()),
+                            (val) => model.labels = val.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l).map((l) => l?.label!)
                         }>
                             <Select.Trigger>
                                 <span>Select some labels</span>
@@ -174,11 +188,17 @@
                                 <div>Date added</div>
                                 <div>Size</div>
                                 <div>Filetype</div>
+                                <div>Group</div>
                             </div>
                             <div class="text-right space-y-1">
-                                <div>{props.model.added.toLocaleDateString()}</div>
-                                <div>{toReadableSize(props.model.size)}</div>
-                                <div>{props.model.filetype}</div>
+                                <div>{model.added.toLocaleDateString()}</div>
+                                <div>{toReadableSize(model.size)}</div>
+                                <div>{model.filetype}</div>
+                                {#if group}
+                                    <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
+                                {:else}
+                                    <div>None</div>
+                                {/if}
                             </div>
                         </div>
                     </div>

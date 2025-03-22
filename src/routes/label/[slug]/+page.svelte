@@ -5,7 +5,7 @@
 
     let entries = $derived.by(() => {
         let slug = parseInt(page.params.slug);
-        return data.entries.filter(x => x.model.labels.some(y => y.id === slug)).map(x => x.model);
+        return data.entries.filter(x => x.labels.some(y => y.id === slug));
     });
 </script>
 

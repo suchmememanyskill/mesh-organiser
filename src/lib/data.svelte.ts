@@ -7,6 +7,7 @@ export const data = $state({
     labels : [] as LabelEntry[]
 });
 
+
 function convertModel(raw : RawModel) : Model
 {
     return {
@@ -71,14 +72,19 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
     return [...groups.values()];
 }
 
-function extractModels(models : RawModel[], grouped_entries : GroupedEntry[]) : ModelWithGroup[]
+function extractModels(models : RawModel[]) : ModelWithGroup[]
 {
     return models.map(raw => {
-        let group = grouped_entries.find(group => group.models.some(model => model.id === raw.id));
+        let group = undefined;
+
+        if (raw.group)
+        {
+            group = convertGroup(raw.group, raw);
+        }
 
         return {
             group : group,
-            model : convertModel(raw),
+            ...convertModel(raw),
         };
     });
 }
@@ -89,11 +95,11 @@ export async function updateState() : Promise<void>
     let raw_labels = await getLabels();
 
     let model_groups = extractGroups(raw_models);
-    let models = extractModels(raw_models, model_groups);
+    let models = extractModels(raw_models);
 
     let labels : LabelEntry[] = raw_labels.map(raw_label => {
         let label = convertLabel(raw_label);
-        let filtered_models = models.filter(model => model.model.labels.some(l => l.id === label.id));
+        let filtered_models = models.filter(model => model.labels.some(l => l.id === label.id));
 
         return {
             label : label,

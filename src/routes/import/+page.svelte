@@ -71,7 +71,6 @@
         } else {
             imported_group = null;
             imported_models = data.entries
-                .map((entry) => entry.model)
                 .filter((entry) => model_ids.includes(entry.id));
         }
         busy = false;
@@ -208,7 +207,7 @@
                 <Button onclick={clearCurrentModel}>Add another model</Button>
             </div>
             {#if imported_group}
-                <EditGroup group={imported_group} />
+                <EditGroup class="w-full" group={imported_group} />
             {/if}
 
             <div class="flex flex-wrap flex-row w-full justify-center gap-4">

@@ -61,7 +61,7 @@ export interface GroupedEntry
 
 export interface ModelWithGroup
 {
-    group? : GroupedEntry;
+    group? : Group;
     model : Model;
 }
 
