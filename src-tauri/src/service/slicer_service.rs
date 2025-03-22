@@ -153,6 +153,7 @@ fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
     }
 }
 
+// TODO: Split this off into another file, also copy .3mf/.obj, rename them to their actual names, and make a function 'Open in folder'
 fn get_path_from_model(
     temp_dir: &PathBuf,
     model: &Model,

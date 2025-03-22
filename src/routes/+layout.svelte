@@ -12,6 +12,13 @@
 
     let { children } = $props();
 
+    interface Error
+    {
+        error_inner_message: string,
+        error_message: string,
+        error_type: string
+    }
+
     function getFileFromUrl(url: string) {
         const url_parts = url.split('/');
         return url_parts[url_parts.length - 1];
@@ -36,6 +43,17 @@
         {
             await handleDownload(state.deep_link_url);
         }
+
+        window.onerror = function (message, source, lineno, colno, error) {
+            toast.error(`Error: ${message}`);
+        };
+
+        addEventListener("unhandledrejection", (event) => {
+            let reason : Error = event.reason;
+            toast.error(reason.error_message, {
+                description: reason.error_inner_message
+            });
+        });
     });
 
 </script>

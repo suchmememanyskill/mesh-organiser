@@ -2,17 +2,22 @@ use std::env;
 use std::fs::{self, File};
 use std::io::Write;
 use chrono::{format, Utc};
+use urlencoding::decode;
 
 use crate::error::ApplicationError;
 
 pub async fn download_file(url: &str) -> Result<String, ApplicationError> {
     let response = reqwest::get(url).await?;
-    let mut nonsense = String::from("");
 
     if !response.status().is_success() {
         return Err(ApplicationError::InternalError(format!("Failed to download file from url: {}. Status code {}.", url, response.status())));
     }
     
+    let redirect_url_filename = match response.url().path_segments() {
+        Some(segments) => String::from(decode(segments.last().unwrap_or("model.stl")).unwrap()),
+        None => String::from("model.stl"),
+    };
+
     let bytes = response.bytes().await?;
     
     let temp_dir = env::temp_dir().join(format!(
@@ -22,25 +27,14 @@ pub async fn download_file(url: &str) -> Result<String, ApplicationError> {
 
     fs::create_dir_all(&temp_dir)?;
 
-    let mut file_name = url.split('/').last().unwrap_or("model");
+    let mut file_name = url.split('/').last().unwrap_or("model.stl");
 
     if url.contains("makerworld") {
-        file_name = url.split("name=").last().unwrap_or("model");
+        file_name = url.split("name=").last().unwrap_or("model.stl");
     }
 
-    // TODO: Make this better
     if url.contains("thingiverse") {
-        let id = url.split(":").last().unwrap_or("model");
-        let extension;
-        
-        if bytes[0] == 0x50 && bytes[1] == 0x4B {
-            extension = "3mf";
-        } else {
-            extension = "stl";
-        }
-
-        nonsense = format!("Thingiverse_{}.{}", id, extension);
-        file_name = &nonsense;
+        file_name = &redirect_url_filename;
     }
 
     let file_path = temp_dir.join(file_name);

@@ -16,9 +16,12 @@ pub fn prettify_file_name(file: &PathBuf) -> String {
 
     file_name = file_name
         .replace("_", " ")
-        .replace("-", " ");
+        .replace("-", " ")
+        .replace("+", " ");
 
     file_name = String::from(remove_whitespace.replace_all(&file_name, " "));
+
+    file_name = String::from(file_name.trim());
 
     file_name
 }

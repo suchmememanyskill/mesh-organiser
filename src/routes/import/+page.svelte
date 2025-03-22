@@ -80,9 +80,21 @@
     async function handle_open(multiple: boolean, directory: boolean) {
         busy = true;
 
+        let filters = undefined;
+
+        if (!directory) {
+            filters = [
+                {
+                    name: "3D Models",
+                    extensions: ["stl", "obj", "3mf"],
+                },
+            ];
+        }
+
         let result: any = await open({
             multiple: multiple,
             directory: directory,
+            filters: filters,
         });
 
         if (!result) {
