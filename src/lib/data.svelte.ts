@@ -76,7 +76,7 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
 
     let ret = [...groups.values()];
 
-    // TODO: make this optional
+    // TODO: make this a setting
     
     if (true)
     {

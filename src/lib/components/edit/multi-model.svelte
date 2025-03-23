@@ -118,6 +118,7 @@
         </CardHeader>
         <CardContent class="flex flex-col gap-8">
             <div class="flex flex-col gap-4">
+                <!-- TODO: Figure out a better way to do this. This isn't as nice as the single model label add -->
                 <Label>Add/Remove labels</Label>
                 <div class="grid grid-cols-2 gap-4">
                     <DropdownMenu.Root>

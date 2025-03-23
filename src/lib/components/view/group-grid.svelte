@@ -11,6 +11,7 @@
     import EditMultiModel from "$lib/components/edit/multi-model.svelte";
     import EditGroup from "$lib/components/edit/group.svelte";
     import { buttonVariants } from "$lib/components/ui/button";
+    import RightClickModels from "$lib/components/view/right-click-models.svelte";
 
     const props: { groups: GroupedEntry[] } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
@@ -179,6 +180,23 @@
             console.log("Filtered out deleted models");
 	    }, 0);
     })
+
+    function onRightClick(group : GroupedEntry, event : any)
+    {
+        if (selected.some(m => m.group.id === group.group.id))
+        {
+            return;
+        }
+
+        selected = [group];
+
+        setTimeout(() => {
+            event.target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+        }, 30);
+    }
 </script>
 
 <div class="flex flex-row h-full">
@@ -218,12 +236,15 @@
                 </Select.Content>
             </Select.Root>
         </div>
-        <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
-                <div onclick="{(e) => onClick(group, e)}">
-                    <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
-                </div>
-            {/each}
+        
+        <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
+            <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-5 flex-wrap">
+                {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                    <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
+                        <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
+                    </div>
+                {/each}
+            </RightClickModels>
         </div>
     </div> 
     {#if selected.length >= 2}

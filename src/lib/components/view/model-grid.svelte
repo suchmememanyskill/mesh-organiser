@@ -7,6 +7,7 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import { onDestroy } from "svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
+    import RightClickModels from "$lib/components/view/right-click-models.svelte";
 
     const props: { models: Model[]; default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
@@ -188,6 +189,24 @@
             console.log("Filtered out deleted models");
 	    }, 0);
     })
+
+    
+    function onRightClick(model : Model, event : any)
+    {
+        if (selected.some(m => m.id === model.id))
+        {
+            return;
+        }
+
+        selected = [model];
+
+        setTimeout(() => {
+            event.target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+        }, 30);
+    }
 </script>
 
 <div class="flex flex-row h-full">
@@ -227,12 +246,14 @@
                 </Select.Content>
             </Select.Root>
         </div>
-        <div class="flex flex-row justify-center gap-5 flex-wrap overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
-                <div onclick="{(e) => onClick(model, e)}">
-                    <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
-                </div>
-            {/each}
+        <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
+            <RightClickModels models={selected} class="flex flex-row justify-center gap-5 flex-wrap">
+                {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
+                    <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
+                        <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
+                    </div>
+                {/each}
+            </RightClickModels>
         </div>
     </div> 
     {#if selected.length > 0 || props.default_show_multiselect_all}
