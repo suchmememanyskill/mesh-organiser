@@ -61,7 +61,7 @@ pub async fn generate_thumbnails(
 
         command = command.args(paths_slice);
         let output = command.output().await?;
-        app_handle.emit("thumbnail-count", imported_amount);
+        let _ = app_handle.emit("thumbnail-count", imported_amount);
     }
 
     /*

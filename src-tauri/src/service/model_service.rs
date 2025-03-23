@@ -8,7 +8,6 @@ use tauri::{AppHandle, Emitter};
 use std::fs::{read_dir, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use std::sync::Arc;
 use zip;
 use zip::write::SimpleFileOptions;
 
@@ -68,7 +67,7 @@ fn import_models_from_dir(
 
         let id = import_single_model(&mut file, extension, file_size, &file_name, &app_state)?;
         model_ids.push(id);
-        app_handle.emit("import-count", model_ids.len());
+        let _ = app_handle.emit("import-count", model_ids.len());
     }
 
     model_group::set_group_id_on_models_sync(Some(group_id), model_ids.clone(), &app_state.db);
@@ -108,7 +107,7 @@ fn import_models_from_zip(
 
             let id = import_single_model(&mut file, extension, file_size, &file_name, &app_state)?;
             model_ids.push(id);
-            app_handle.emit("import-count", model_ids.len());
+            let _ = app_handle.emit("import-count", model_ids.len());
         }
     }
 

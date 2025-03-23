@@ -257,7 +257,7 @@
         </div>
     </div> 
     {#if selected.length > 0 || props.default_show_multiselect_all}
-        <div class="w-[400px] min-w-[400px] mx-4 my-2 overflow-y-auto hide-scrollbar">
+        <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto hide-scrollbar">
             {#if selected.length >= 2}
                 <MultiModelEdit models={selected} />
             {:else if selected.length === 1}

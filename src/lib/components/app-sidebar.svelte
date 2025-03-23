@@ -97,9 +97,9 @@
                     <Sidebar.MenuItem>
                         <Sidebar.MenuButton>
                             {#snippet child({ props })}
-                                <a href="/credits" {...props}>
+                                <a href="/about" {...props}>
                                     <CircleHelp />
-                                    <span>Credits</span>
+                                    <span>About</span>
                                 </a>
                             {/snippet}
                         </Sidebar.MenuButton>
