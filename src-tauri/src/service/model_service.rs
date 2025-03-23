@@ -4,6 +4,7 @@ use crate::util;
 use crate::{db::model, error::ApplicationError};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
+use tauri::{AppHandle, Emitter};
 use std::fs::{read_dir, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -17,14 +18,14 @@ pub struct CreationResult {
     pub model_ids: Vec<i64>,
 }
 
-pub fn import_path(path: &str, app_state: &AppState) -> Result<CreationResult, ApplicationError> {
+pub fn import_path(path: &str, app_state: &AppState, app_handle: &AppHandle) -> Result<CreationResult, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff);
 
     if path_buff.is_dir() {
-        return import_models_from_dir(path, &name, &app_state);
+        return import_models_from_dir(path, &name, &app_state, &app_handle);
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
-        return import_models_from_zip(path, &name, &app_state);
+        return import_models_from_zip(path, &name, &app_state, &app_handle);
     } else if is_supported_extension(&path_buff) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
@@ -47,6 +48,7 @@ fn import_models_from_dir(
     path: &str,
     group_name: &str,
     app_state: &AppState,
+    app_handle: &AppHandle,
 ) -> Result<CreationResult, ApplicationError> {
     let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     let mut model_ids = Vec::new();
@@ -66,6 +68,7 @@ fn import_models_from_dir(
 
         let id = import_single_model(&mut file, extension, file_size, &file_name, &app_state)?;
         model_ids.push(id);
+        app_handle.emit("import-count", model_ids.len());
     }
 
     model_group::set_group_id_on_models_sync(Some(group_id), model_ids.clone(), &app_state.db);
@@ -80,6 +83,7 @@ fn import_models_from_zip(
     path: &str,
     group_name: &str,
     app_state: &AppState,
+    app_handle: &AppHandle,
 ) -> Result<CreationResult, ApplicationError> {
     let zip_file = File::open(&path)?;
     let mut archive = zip::ZipArchive::new(zip_file)?;
@@ -104,6 +108,7 @@ fn import_models_from_zip(
 
             let id = import_single_model(&mut file, extension, file_size, &file_name, &app_state)?;
             model_ids.push(id);
+            app_handle.emit("import-count", model_ids.len());
         }
     }
 
@@ -112,17 +117,6 @@ fn import_models_from_zip(
     Ok(CreationResult {
         group_id: Some(group_id),
         model_ids: model_ids,
-    })
-}
-
-// TODO: Implement
-pub async fn import_deep_link(
-    url: &str,
-    app_state: &AppState,
-) -> Result<CreationResult, ApplicationError> {
-    Ok(CreationResult {
-        group_id: None,
-        model_ids: Vec::new(),
     })
 }
 

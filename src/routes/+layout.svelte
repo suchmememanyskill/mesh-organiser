@@ -28,7 +28,9 @@
     {
         toast.success(`Downloading model ${getFileFromUrl(url)}`);
         const path = await downloadFile(url);
-        goto("/import?path=" + path);
+        // TODO: make open=true a setting
+        goto("/import?&path=" + path);
+        //goto("/import?open=true&path=" + path);
     }
 
     onMount(async () => {

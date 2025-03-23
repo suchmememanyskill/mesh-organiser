@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
 use crate::error::ApplicationError;
 
@@ -41,7 +41,10 @@ pub async fn generate_thumbnails(
         })
         .collect();
 
+    let mut imported_amount : usize = 0;
+
     for paths_slice in paths.chunks(100) {
+        imported_amount += paths_slice.len();
         let mut command = app_handle.shell().sidecar("mesh-thumbnail").unwrap();
 
         command = command
@@ -58,6 +61,7 @@ pub async fn generate_thumbnails(
 
         command = command.args(paths_slice);
         let output = command.output().await?;
+        app_handle.emit("thumbnail-count", imported_amount);
     }
 
     /*

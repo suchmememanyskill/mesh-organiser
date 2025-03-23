@@ -10,6 +10,7 @@ use sqlx::Connection;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_deep_link::DeepLinkExt;
 use urlencoding::decode;
+use tauri::async_runtime::block_on;
 mod configuration;
 mod db;
 mod error;
@@ -33,12 +34,13 @@ async fn add_model(
     let state_clone = state.real_clone();
 
     let result = tauri::async_runtime::spawn_blocking(move || {
-        model_service::import_path(&path_clone, &state_clone)
+        let result = model_service::import_path(&path_clone, &state_clone, &app_handle);
+        block_on(service::thumbnail_service::generate_all_thumbnails(&state_clone, &app_handle, false))?;
+
+        result
     })
     .await
     .unwrap()?;
-
-    service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, false).await?;
 
     Ok(result)
 }

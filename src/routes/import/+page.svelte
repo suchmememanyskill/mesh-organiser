@@ -24,6 +24,8 @@
 
     let imported_group: Group | null = $state.raw(null);
     let imported_models: Model[] | null = $state.raw(null);
+    let import_count = $state(0);
+    let thumbnail_count = $state(0);
     let busy: boolean = $state(false);
     let direct_open_in_slicer: boolean = false;
 
@@ -34,6 +36,8 @@
 
     async function handle_import(paths?: string[]) {
         busy = true;
+        import_count = 0;
+        thumbnail_count = 0;
         if (!paths || paths.length === 0) {
             return;
         }
@@ -125,6 +129,8 @@
     }
 
     let destroy_listener: UnlistenFn | null = null;
+    let destroy_import_counter: UnlistenFn | null = null;
+    let destroy_thumbnail_counter: UnlistenFn | null = null;
 
     onMount(async () => {
         destroy_listener = await listen("tauri://drag-drop", async (event) => {
@@ -142,11 +148,27 @@
 
             await handle_import(payload.paths);
         });
+
+        destroy_import_counter = await listen<number>("import-count", (e) => {
+            import_count = e.payload;
+        });
+
+        destroy_thumbnail_counter = await listen<number>("thumbnail-count", (e) => {
+            thumbnail_count = e.payload;
+        });
     });
 
     onDestroy(() => {
         if (destroy_listener) {
             destroy_listener();
+        }
+
+        if (destroy_import_counter) {
+            destroy_import_counter();
+        }
+
+        if (destroy_thumbnail_counter) {
+            destroy_thumbnail_counter();
         }
     });
 
@@ -186,7 +208,13 @@
 <div class="flex justify-center m-4">
     {#if busy}
         <div class="flex flex-col items-center gap-2">
-            <h1>Importing model...</h1>
+            {#if thumbnail_count > 0}
+                <h1>Generated {thumbnail_count} thumbnails...</h1>
+            {:else if import_count > 0}
+                <h1>Imported {import_count} models...</h1>
+            {:else}
+                <h1>Importing model...</h1>
+            {/if}
             <div class="animate">
                 <LoaderCircle class="w-10 h-10" />
             </div>
