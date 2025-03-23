@@ -25,6 +25,7 @@
     let imported_group: Group | null = $state.raw(null);
     let imported_models: Model[] | null = $state.raw(null);
     let busy: boolean = $state(false);
+    let direct_open_in_slicer: boolean = false;
 
     interface AddModelResult {
         group_id?: number;
@@ -73,7 +74,14 @@
             imported_models = data.entries
                 .filter((entry) => model_ids.includes(entry.id));
         }
+
+        if (direct_open_in_slicer)
+        {
+            openAllInSlicer();
+        }
+
         busy = false;
+        direct_open_in_slicer = false;
     }
 
     async function handle_open(multiple: boolean, directory: boolean) {
@@ -158,11 +166,17 @@
     $effect(() => 
     {
         const possiblePath = page.url.searchParams.get("path");
+        const direct_open_param = page.url.searchParams.get("open");
 
         if (!possiblePath)
         {
             return;
         }
+
+        if (direct_open_param === "true")
+        {
+            direct_open_in_slicer = true;
+        }        
 
         handle_import([possiblePath]);
     })
