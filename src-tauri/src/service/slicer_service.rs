@@ -5,7 +5,8 @@ use crate::service::export_service::export_to_temp_folder;
 
 use super::app_state::AppState;
 use crate::error::ApplicationError;
-use chrono::Utc;
+use std::fs;
+use std::path::Path;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use strum::EnumIter;
@@ -51,7 +52,7 @@ impl Slicer {
                 .is_some();
             }
             Slicer::Cura => {
-                return false; // TODO
+                return get_cura_path().is_some();
             }
             _ => {
                 return false;
@@ -99,7 +100,7 @@ impl Slicer {
                 None => None,
             },
             Slicer::Cura => {
-                None // TODO
+                Some(String::from(get_cura_path().take().unwrap().to_str().unwrap()))
             }
             _ => {
                 return Err(ApplicationError::InternalError(String::from(
@@ -152,4 +153,28 @@ fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
         Ok(s) => return Some(s.to_str().unwrap().to_string()),
         Err(_) => return None,
     }
+}
+
+#[cfg(target_os = "windows")]
+fn get_cura_path() -> Option<PathBuf> 
+{   
+    let program_files = "C:\\Program Files";
+    if let Ok(entries) = fs::read_dir(program_files) {
+        for entry in entries.flatten() {
+            if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+                if let Some(folder_name) = entry.file_name().to_str() {
+                    if folder_name.starts_with("UltiMaker Cura") {
+                        let exe_path = Path::new(program_files)
+                            .join(folder_name)
+                            .join("UltiMaker-Cura.exe");
+                        if exe_path.exists() {
+                            return Some(exe_path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    None
 }

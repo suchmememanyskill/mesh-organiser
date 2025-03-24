@@ -78,7 +78,7 @@
             console.log("Setting config", edited_configuration);
             await setConfig(edited_configuration);
         },
-        1000,
+        500,
     );
 
     $effect(() => {
