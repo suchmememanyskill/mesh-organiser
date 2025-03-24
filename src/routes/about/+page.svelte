@@ -73,5 +73,5 @@
             </a>
         </p>
     {/each}
-    <p class="mt-2"><Heart /> Written in Tauri and Svelte</p>
+    <p class="flex items-center gap-1"><Heart size="16" /> Written in Tauri and Svelte</p>
 </div>
