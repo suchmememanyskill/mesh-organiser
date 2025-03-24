@@ -1,0 +1,228 @@
+<script lang="ts">
+    import { onDestroy, onMount } from "svelte";
+    import {
+        overwriteImages,
+        setConfig,
+        getAvailableSlicers,
+    } from "$lib/tauri";
+    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+    import { c, updateState } from "$lib/data.svelte";
+    import { debounce } from "$lib/utils";
+    import { Input } from "$lib/components/ui/input/index.js";
+    import type { Configuration, SlicerEntry } from "$lib/model";
+
+    import {
+        Card,
+        CardHeader,
+        CardTitle,
+        CardContent,
+    } from "$lib/components/ui/card";
+    import * as Select from "$lib/components/ui/select/index.js";
+    import { Checkbox, CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import { Label } from "$lib/components/ui/label/index.js";
+    import Button from "$lib/components/ui/button/button.svelte";
+    import CardFooter from "$lib/components/ui/card/card-footer.svelte";
+    import { appDataDir } from "@tauri-apps/api/path";
+    import { open } from "@tauri-apps/plugin-dialog";
+
+    let thumbnail_count = $state(0);
+    let thumbnail_regen_button_enabled = $state(true);
+    let slicers = $state([] as SlicerEntry[]);
+    let app_data_dir = "";
+
+    async function updateAllThumbnails() {
+        thumbnail_regen_button_enabled = false;
+        thumbnail_count = 0;
+        await overwriteImages();
+        thumbnail_count = 0;
+        thumbnail_regen_button_enabled = true;
+    }
+
+    async function openDataDir()
+    {
+        const new_path = await open({
+            multiple: false,
+            directory: true,
+        });
+
+        if (new_path)
+        {
+            c.configuration.data_path = new_path;
+        }
+    }
+
+    async function onInternalStateChange()
+    {
+        await updateState();
+    }
+
+    let destroy_thumbnail_counter: UnlistenFn | null = null;
+
+    onMount(async () => {
+        destroy_thumbnail_counter = await listen<number>(
+            "thumbnail-count",
+            (e) => {
+                thumbnail_count = e.payload;
+            },
+        );
+    });
+
+    onDestroy(() => {
+        if (destroy_thumbnail_counter) {
+            destroy_thumbnail_counter();
+        }
+    });
+
+    const on_save_configuration = debounce(
+        async (edited_configuration: Configuration) => {
+            console.log("Setting config", edited_configuration);
+            await setConfig(edited_configuration);
+        },
+        1000,
+    );
+
+    $effect(() => {
+        const modified_configuration = $state.snapshot(c.configuration);
+        on_save_configuration(modified_configuration);
+    });
+
+    onMount(async () => {
+        slicers = await getAvailableSlicers();
+        app_data_dir = await appDataDir();
+    });
+</script>
+
+<div class="w-full overflow-y-auto hide-scrollbar h-full">
+    <div
+        class="flex flex-col gap-5 w-[500px] mx-auto"
+    >
+        <div class="mt-5">
+            <p>
+                Note: All changed settings with a star (*) will take effect the next
+                time the application starts
+            </p>
+        </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Thumbnail generation</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm">
+                <div class="grid w-full items-center gap-4">
+                    <Button
+                        onclick={updateAllThumbnails}
+                        disabled={!thumbnail_regen_button_enabled}
+                    >
+                        {#if thumbnail_count > 0}
+                            Regenerated {thumbnail_count} thumbnails
+                        {:else}
+                            Regenerate all thumbnails
+                        {/if}
+                    </Button>
+                    <div class="flex flex-col space-y-1.5">
+                        <Label for="color">Color of the thumbnails*</Label>
+                        <div class="flex flex-row gap-2">
+                            <Input
+                                id="color"
+                                placeholder="color"
+                                type="color"
+                                class="flex-grow"
+                                bind:value={c.configuration.thumbnail_color}
+                            />
+                            <Button
+                                onclick={() =>
+                                    (c.configuration.thumbnail_color = "#EEEEEE")}
+                                >Default</Button
+                            >
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                Note: Changing the color will only affect new thumbnails, unless all
+                thumbnails are regenerated.
+            </CardFooter>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Import/Export settings</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-5">
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="preferredSlicer">Preferred slicer*</Label>
+                    <Select.Root
+                        type="single"
+                        name="preferredSlicer"
+                        bind:value={
+                            () => c.configuration.slicer ?? "",
+                            (val) => (c.configuration.slicer = val)
+                        }
+                    >
+                        <Select.Trigger>
+                            {c.configuration.slicer ?? "Select a slicer"}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Group>
+                                <Select.GroupHeading>Available slicers</Select.GroupHeading>
+                                {#each slicers as slicer}
+                                    <Select.Item
+                                        value={slicer.slicer}
+                                        label={slicer.slicer}
+                                        disabled={!slicer.installed}
+                                        >{slicer.slicer} {slicer.installed ? "" : "- Not Installed"}</Select.Item
+                                    >
+                                {/each}
+                            </Select.Group>
+                        </Select.Content>
+                    </Select.Root>
+                </div>
+                
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="path">Model directory*</Label>
+                    <div class="flex flex-row gap-2">
+                        <Input
+                            id="path"
+                            placeholder="path"
+                            type="text"
+                            class="flex-grow"
+                            bind:value={c.configuration.data_path}
+                        />
+                        <Button onclick={openDataDir}>Browse</Button>
+                        <Button
+                            onclick={() =>
+                                (c.configuration.data_path = app_data_dir)}
+                            >Default</Button
+                        >
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Open links from browser</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-5">
+                <CheckboxWithLabel bind:value={c.configuration.prusa_deep_link} label="Bind 'Open in PrusaSlicer' links*" />
+                <CheckboxWithLabel bind:value={c.configuration.cura_deep_link} label="Bind 'Open in Cura' links*" />
+                <CheckboxWithLabel bind:value={c.configuration.bambu_deep_link} label="Bind 'Open in Bambu Studio' links*" />
+                <CheckboxWithLabel bind:value={c.configuration.orca_deep_link} label="Bind 'Open in OrcaSlicer' links*" />
+            </CardContent>
+        </Card>
+
+        <Card class="mb-5">
+            <CardHeader>
+                <CardTitle>Behaviour</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-5">
+                <CheckboxWithLabel bind:value={c.configuration.open_slicer_on_remote_model_import} label="Open slicer after importing from website" />
+                <CheckboxWithLabel bind:value={
+                    () => c.configuration.show_ungrouped_models_in_groups,
+                    (val) => { c.configuration.show_ungrouped_models_in_groups = val; onInternalStateChange(); }
+                } label="Show ungrouped models in groups" />
+                <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
+            </CardContent>
+        </Card>
+    </div>
+</div>

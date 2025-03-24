@@ -6,14 +6,15 @@ use crate::service::export_service::export_to_temp_folder;
 use super::app_state::AppState;
 use crate::error::ApplicationError;
 use chrono::Utc;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::process::Command;
+use strum::EnumIter;
 #[cfg(target_os = "windows")]
 use winreg::*;
 
 // TODO: Make all of this async
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize, EnumIter)]
 pub enum Slicer {
     PrusaSlicer,
     OrcaSlicer,
@@ -51,6 +52,9 @@ impl Slicer {
             }
             Slicer::Cura => {
                 return false; // TODO
+            }
+            _ => {
+                return false;
             }
         }
     }
@@ -96,6 +100,11 @@ impl Slicer {
             },
             Slicer::Cura => {
                 None // TODO
+            }
+            _ => {
+                return Err(ApplicationError::InternalError(String::from(
+                    "Slicer not installed",
+                )));
             }
         }
         .take()

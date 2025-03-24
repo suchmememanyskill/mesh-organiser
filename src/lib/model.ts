@@ -72,25 +72,47 @@ export interface LabelEntry
     total : number;
 }
 
-export enum SupportedSlicers {
-    PrusaSlicer = "PrusaSlicer",
-    Cura = "Cura",
-    BambuStudio = "BambuStudio",
-    OrcaSlicer = "OrcaSlicer",
+export interface Configuration {
+    data_path: string;
+    prusa_deep_link: boolean;
+    cura_deep_link: boolean;
+    bambu_deep_link: boolean;
+    orca_deep_link: boolean;
+    open_slicer_on_remote_model_import: boolean;
+    show_ungrouped_models_in_groups: boolean;
+    slicer: string|null;
+    focus_after_link_import: boolean;
+    thumbnail_color : string;
 }
 
-export interface Configuration {
-    dataPath: string;
-    modelPath: string;
-    prusaDeepLink: boolean;
-    curaDeepLink: boolean;
-    bambuDeepLink: boolean;
-    orcaDeepLink: boolean;
-    slicer: SupportedSlicers;
-    createPopupOnModelImport: boolean;
+export function configurationDefault() : Configuration
+{
+    return {
+        data_path: "",
+        prusa_deep_link: false,
+        cura_deep_link: false,
+        bambu_deep_link: false,
+        orca_deep_link: false,
+        open_slicer_on_remote_model_import: false,
+        show_ungrouped_models_in_groups: true,
+        slicer: null,
+        focus_after_link_import: true,
+        thumbnail_color: "#DDDDDD",
+    }
 }
 
 export interface InitialState
 {
     deep_link_url?: string;
+}
+
+export interface SlicerEntry
+{
+    slicer : string,
+    installed : boolean,
+}
+
+export interface AddModelResult {
+    group_id: number|null;
+    model_ids: number[];
 }

@@ -15,11 +15,11 @@
     import LoaderCircle from "@lucide/svelte/icons/loader-circle";
     import File from "@lucide/svelte/icons/file";
     import Folder from "@lucide/svelte/icons/folder";
-    import type { Group, Model } from "$lib/model";
+    import type { Group, Model, AddModelResult } from "$lib/model";
     import { data, updateState } from "$lib/data.svelte";
     import EditModel from "$lib/components/edit/model.svelte";
     import EditGroup from "$lib/components/edit/group.svelte";
-    import { openInSlicer } from "$lib/tauri";
+    import { openInSlicer, importModel } from "$lib/tauri";
     import { page } from '$app/state';
 
     let imported_group: Group | null = $state.raw(null);
@@ -29,15 +29,8 @@
     let busy: boolean = $state(false);
     let direct_open_in_slicer: boolean = false;
 
-    interface AddModelResult {
-        group_id?: number;
-        model_ids: number[];
-    }
-
     async function handle_import(paths?: string[]) {
         busy = true;
-        import_count = 0;
-        thumbnail_count = 0;
         if (!paths || paths.length === 0) {
             return;
         }
@@ -45,10 +38,9 @@
         let results: AddModelResult[] = [];
 
         for (let i = 0; i < paths.length; i++) {
-            // TODO: put in tauri.ts
-            const res: AddModelResult = await invoke("add_model", {
-                path: paths[i],
-            });
+            import_count = 0;
+            thumbnail_count = 0;
+            const res = await importModel(paths[i]);
 
             if (!res) {
                 console.error("Failed to import model at path:", paths[i]);

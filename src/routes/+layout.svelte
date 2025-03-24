@@ -9,6 +9,8 @@
     import { Toaster } from "$lib/components/ui/sonner/index.js";
     import { toast } from "svelte-sonner";
     import { goto } from '$app/navigation';
+    import { updateState, initConfiguration, c } from '$lib/data.svelte';
+    import { getCurrentWindow } from '@tauri-apps/api/window';
 
     let { children } = $props();
 
@@ -27,10 +29,22 @@
     async function handleDownload(url : string)
     {
         toast.success(`Downloading model ${getFileFromUrl(url)}`);
+        
+        if (c.configuration.focus_after_link_import)
+        {
+            await getCurrentWindow().setFocus();
+        }
+
         const path = await downloadFile(url);
-        // TODO: make open=true a setting
-        goto("/import?&path=" + path);
-        //goto("/import?open=true&path=" + path);
+
+        if (c.configuration.open_slicer_on_remote_model_import)
+        {
+            goto("/import?open=true&path=" + path);
+        }
+        else 
+        {
+            goto("/import?&path=" + path);
+        }
     }
 
     onMount(async () => {
@@ -57,6 +71,8 @@
             });
         });
 
+        await initConfiguration();
+        await updateState();
         await removeDeadGroups();
     });
 

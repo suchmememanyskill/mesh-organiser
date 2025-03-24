@@ -4,7 +4,6 @@
         CardHeader,
         CardTitle,
         CardContent,
-        CardDescription,
     } from "$lib/components/ui/card";
 
     import { Label } from "$lib/components/ui/label";

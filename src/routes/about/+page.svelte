@@ -1,5 +1,6 @@
 <script lang="ts">
     import Link from "@lucide/svelte/icons/link";
+    import Heart from "@lucide/svelte/icons/heart";
     import { onMount } from "svelte";
     import { getVersion } from '@tauri-apps/api/app';
 
@@ -35,7 +36,7 @@
 <div class="container flex flex-col items-center justify-center h-full gap-2">
     <h1 class="font-bold">Mesh Organiser</h1>
     <p class="mb-5">Version {version}</p>
-    <img src="/tauri.svg" class="logo tauri h-40" alt="Tauri Logo" />
+    <img src="/logo.png" class="logo tauri h-40" alt="Mesh Organiser Logo" />
     <div class="h-10" />
     <h1 class="font-bold">Credits</h1>
     <p>
@@ -72,6 +73,5 @@
             </a>
         </p>
     {/each}
-
-    
+    <p class="mt-2"><Heart /> Written in Tauri and Svelte</p>
 </div>

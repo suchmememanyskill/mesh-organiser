@@ -4,7 +4,6 @@
         CardHeader,
         CardTitle,
         CardContent,
-        CardDescription,
     } from "$lib/components/ui/card";
 
     import { Label } from "$lib/components/ui/label";
@@ -59,29 +58,27 @@
             </DropdownMenu.Root>
         </div>
     </CardHeader>
-    <CardContent>
-        <CardDescription>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col space-y-1.5">
-                    <Label for="name">Name</Label>
-                    <Input
-                        id="name"
-                        placeholder="Name of the model"
-                        oninput={onUpdateLabel}
-                        bind:value={tracked_label.name}
-                    />
-                </div>
-                <div class="flex flex-col space-y-1.5">
-                    <Label for="color">Color</Label>
-                    <Input
-                        id="color"
-                        placeholder="Color of the label"
-                        type="color"
-                        oninput={onUpdateLabel}
-                        bind:value={tracked_label.color}
-                    />
-                </div>
+    <CardContent class="text-sm">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col space-y-1.5">
+                <Label for="name">Name</Label>
+                <Input
+                    id="name"
+                    placeholder="Name of the model"
+                    oninput={onUpdateLabel}
+                    bind:value={tracked_label.name}
+                />
             </div>
-        </CardDescription>
+            <div class="flex flex-col space-y-1.5">
+                <Label for="color">Color</Label>
+                <Input
+                    id="color"
+                    placeholder="Color of the label"
+                    type="color"
+                    oninput={onUpdateLabel}
+                    bind:value={tracked_label.color}
+                />
+            </div>
+        </div>
     </CardContent>
 </Card>

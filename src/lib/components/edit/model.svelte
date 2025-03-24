@@ -4,7 +4,6 @@
         CardHeader,
         CardTitle,
         CardContent,
-        CardDescription,
     } from "$lib/components/ui/card";
 
     import { Label } from "$lib/components/ui/label";
@@ -124,86 +123,84 @@
                 {/each}
             </div>
         </CardHeader>
-        <CardContent>
-            <CardDescription>
-                <div class="grid w-full items-center gap-4">
-                    <div class="flex flex-col space-y-1.5">
-                        <Label for="name">Name</Label>
-                        <Input
-                            id="name"
-                            placeholder="Name of the model"
-                            bind:value={model.name}
-                        />
-                    </div>
-                    <div class="flex flex-col space-y-1.5">
-                        <Label for="link">
-                            {#if model.link}
-                                <a href="{model.link}" target="_blank" class="text-primary hover:underline">Link/Url</a>
+        <CardContent class="text-sm">
+            <div class="grid w-full items-center gap-4">
+                <div class="flex flex-row gap-5">
+                    <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
+                    <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="name">Name</Label>
+                    <Input
+                        id="name"
+                        placeholder="Name of the model"
+                        bind:value={model.name}
+                    />
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="link">
+                        {#if model.link}
+                            <a href="{model.link}" target="_blank" class="text-primary hover:underline">Link/Url</a>
+                        {:else}
+                            Link/Url
+                        {/if}
+                    </Label>
+                    <Input
+                        id="link"
+                        placeholder="Where did this model come from?"
+                        bind:value={model.link}
+                    />
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="description">Description</Label>
+                    <Input
+                        id="description"
+                        placeholder="Description of the model"
+                        bind:value={model.description}
+                    />
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <Label>Labels</Label>
+                    <Select.Root type="multiple" name="labels" bind:value={
+                        () => model.labels.map((l) => l.id.toString()),
+                        (val) => model.labels = val.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l).map((l) => l?.label!)
+                    }>
+                        <Select.Trigger>
+                            <span>Select some labels</span>
+                        </Select.Trigger>
+                        <Select.Content>
+                          <Select.Group>
+                            <Select.GroupHeading>Available labels</Select.GroupHeading>
+                            {#each data.labels as label}
+                              <Select.Item value={label.label.id.toString()} label={label.label.name}
+                                >{label.label.name}</Select.Item
+                              >
+                            {/each}
+                          </Select.Group>
+                        </Select.Content>
+                      </Select.Root>
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <div class="grid grid-cols-2 text-sm">
+                        <div class="text-left space-y-1">
+                            <div>Date added</div>
+                            <div>Size</div>
+                            <div>Filetype</div>
+                            <div>Group</div>
+                        </div>
+                        <div class="text-right space-y-1">
+                            <div>{model.added.toLocaleDateString()}</div>
+                            <div>{toReadableSize(model.size)}</div>
+                            <div>{model.filetype}</div>
+                            {#if group}
+                                <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
                             {:else}
-                                Link/Url
+                                <div>None</div>
                             {/if}
-                        </Label>
-                        <Input
-                            id="link"
-                            placeholder="Where did this model come from?"
-                            bind:value={model.link}
-                        />
-                    </div>
-                    <div class="flex flex-col space-y-1.5">
-                        <Label for="description">Description</Label>
-                        <Input
-                            id="description"
-                            placeholder="Description of the model"
-                            bind:value={model.description}
-                        />
-                    </div>
-                    <div class="flex flex-col space-y-1.5">
-                        <Label>Labels</Label>
-                        <Select.Root type="multiple" name="labels" bind:value={
-                            () => model.labels.map((l) => l.id.toString()),
-                            (val) => model.labels = val.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l).map((l) => l?.label!)
-                        }>
-                            <Select.Trigger>
-                                <span>Select some labels</span>
-                            </Select.Trigger>
-                            <Select.Content>
-                              <Select.Group>
-                                <Select.GroupHeading>Available labels</Select.GroupHeading>
-                                {#each data.labels as label}
-                                  <Select.Item value={label.label.id.toString()} label={label.label.name}
-                                    >{label.label.name}</Select.Item
-                                  >
-                                {/each}
-                              </Select.Group>
-                            </Select.Content>
-                          </Select.Root>
-                    </div>
-                    <div class="flex flex-row gap-5">
-                        <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
-                        <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
-                    </div>
-                    <div class="flex flex-col space-y-1.5">
-                        <div class="grid grid-cols-2 text-sm">
-                            <div class="text-left space-y-1">
-                                <div>Date added</div>
-                                <div>Size</div>
-                                <div>Filetype</div>
-                                <div>Group</div>
-                            </div>
-                            <div class="text-right space-y-1">
-                                <div>{model.added.toLocaleDateString()}</div>
-                                <div>{toReadableSize(model.size)}</div>
-                                <div>{model.filetype}</div>
-                                {#if group}
-                                    <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
-                                {:else}
-                                    <div>None</div>
-                                {/if}
-                            </div>
                         </div>
                     </div>
                 </div>
-            </CardDescription>
+            </div>
         </CardContent>
     </Card>
 {/if}

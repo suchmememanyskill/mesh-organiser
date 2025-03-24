@@ -47,13 +47,17 @@ pub async fn generate_thumbnails(
         imported_amount += paths_slice.len();
         let mut command = app_handle.shell().sidecar("mesh-thumbnail").unwrap();
 
+        let color = app_state.configuration.thumbnail_color.replace("#", "").to_uppercase();
+
         command = command
             .arg("--rotatey")
             .arg("25")
             .arg("--format")
             .arg("png")
             .arg("--outdir")
-            .arg(image_path.to_str().unwrap());
+            .arg(image_path.to_str().unwrap())
+            .arg("--color")
+            .arg(color);
 
         if overwrite {
             command = command.arg("--overwrite");

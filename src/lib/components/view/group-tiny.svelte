@@ -4,7 +4,6 @@
         CardHeader,
         CardTitle,
         CardContent,
-        CardDescription,
     } from "$lib/components/ui/card";
 
     import type { Model, GroupedEntry } from "$lib/model";

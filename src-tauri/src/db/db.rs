@@ -11,7 +11,7 @@ use crate::{configuration::Configuration, service::app_state::AppState};
 pub type Db = Pool<Sqlite>;
 
 pub async fn setup_db(configuration: &Configuration) -> Db {
-    let mut path = PathBuf::from(configuration.model_path.clone());
+    let mut path = PathBuf::from(configuration.data_path.clone());
 
     match std::fs::create_dir_all(path.clone()) {
         Ok(_) => {}

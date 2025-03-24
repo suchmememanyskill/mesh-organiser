@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { RawModel, RawLabel, RawGroup, Model, Group, Label, InitialState } from "./model";
+import type { RawModel, RawLabel, RawGroup, Model, Group, Label, InitialState, Configuration, SlicerEntry, AddModelResult } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -134,4 +134,36 @@ export async function editLabel(label : Label) : Promise<void>
 export async function deleteLabel(label : Label) : Promise<void>
 {
     await invoke("delete_label", { labelId: label.id });
+}
+
+export async function getConfig() : Promise<Configuration>
+{
+    return await invoke("get_configuration");
+}
+
+export async function setConfig(config : Configuration) : Promise<void>
+{
+    if (!config.slicer)
+    {
+        config.slicer = null;
+    }
+
+    await invoke("set_configuration", { configuration: config});
+}
+
+export async function getAvailableSlicers() : Promise<SlicerEntry[]>
+{
+    return await invoke("get_slicers");
+}
+
+export async function overwriteImages() : Promise<void>
+{
+    await invoke("overwrite_images");
+}
+
+export async function importModel(path : string) : Promise<AddModelResult>
+{
+    return await invoke("add_model", {
+        path: path,
+    });
 }

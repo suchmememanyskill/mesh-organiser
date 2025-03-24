@@ -1,28 +1,22 @@
 use std::{env::temp_dir, sync::{Arc, Mutex}};
 
 use error::ApplicationError;
+use serde::Serialize;
 use service::{
-    app_state::{AppState, InitialState},
-    model_service::{self, CreationResult},
-    download_file_service
+    app_state::{AppState, InitialState, read_configuration}, download_file_service, model_service::{self, CreationResult}, slicer_service::Slicer
 };
+use configuration::Configuration;
 use sqlx::Connection;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_deep_link::DeepLinkExt;
 use urlencoding::decode;
 use tauri::async_runtime::block_on;
+use strum::IntoEnumIterator;
 mod configuration;
 mod db;
 mod error;
 mod service;
 mod util;
-
-
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 #[tauri::command]
 async fn add_model(
@@ -34,10 +28,11 @@ async fn add_model(
     let state_clone = state.real_clone();
 
     let result = tauri::async_runtime::spawn_blocking(move || {
-        let result = model_service::import_path(&path_clone, &state_clone, &app_handle);
-        block_on(service::thumbnail_service::generate_all_thumbnails(&state_clone, &app_handle, false))?;
+        let result = model_service::import_path(&path_clone, &state_clone, &app_handle)?;
+        let models = db::model::get_models_by_id_sync(result.model_ids.clone(), &state_clone.db);
+        block_on(service::thumbnail_service::generate_thumbnails(models, &state_clone, &app_handle, false))?;
 
-        result
+        Result::<CreationResult, ApplicationError>::Ok(result)
     })
     .await
     .unwrap()?;
@@ -84,6 +79,47 @@ async fn get_configuration(
     state: State<'_, AppState>,
 ) -> Result<configuration::Configuration, ApplicationError> {
     Ok(state.configuration.clone())
+}
+
+#[tauri::command]
+async fn set_configuration(
+    configuration: Configuration,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    state.write_configuration(&configuration);
+
+    Ok(())
+}
+
+#[derive(Serialize)]
+pub struct SlicerEntry
+{
+    slicer : Slicer,
+    installed: bool
+}
+
+#[tauri::command]
+async fn get_slicers() -> Result<Vec<SlicerEntry>, ApplicationError> {
+    Slicer::iter()
+        .map(|f| {
+            let installed = f.is_installed();
+
+            Ok(SlicerEntry {
+                slicer: f,
+                installed: installed,
+            })
+        })
+        .collect()
+}
+
+#[tauri::command]
+async fn overwrite_images(
+    state: State<'_, AppState>,
+    app_handle: AppHandle,
+) -> Result<(), ApplicationError> {
+    service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, true).await?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -214,7 +250,10 @@ async fn open_in_slicer(
 ) -> Result<(), ApplicationError> {
     let models = db::model::get_models_by_id(model_ids, &state.db).await;
 
-    state.configuration.slicer.open(models, &state)?;
+    if let Some(slicer) = &state.configuration.slicer
+    {
+        slicer.open(models, &state)?;
+    }
 
     Ok(())
 }
@@ -256,7 +295,11 @@ async fn remove_dead_groups(state: State<'_, AppState>) -> Result<(), Applicatio
 
 fn extract_deep_link(data : &str) -> Option<String>
 {
-    let possible_starts = vec!["bambustudio://open/?file=", "cura://open/?file=", "prusaslicer://open/?file=", "orcaslicer://open/?file="];
+    let possible_starts = vec!["bambustudio://open/?file=", 
+                                          "cura://open/?file=", 
+                                          "prusaslicer://open/?file=", 
+                                          "orcaslicer://open/?file=",
+                                          "meshorganiser://open/?file="];
 
     for start in possible_starts
     {
@@ -332,11 +375,7 @@ pub fn run() {
                         .unwrap(),
                 );
 
-                let config = configuration::Configuration {
-                    data_path: String::from(&app_data_path),
-                    model_path: String::from(&app_data_path),
-                    ..Default::default()
-                };
+                let config = read_configuration(&app_data_path);
 
                 let db = db::db::setup_db(&config).await;
 
@@ -360,6 +399,8 @@ pub fn run() {
                     app.deep_link().register("orcaslicer").unwrap();
                 }
 
+                app.deep_link().register("meshorganiser").unwrap();
+
                 let mut initial_state = InitialState {
                     deep_link_url: None,
                 };
@@ -381,12 +422,12 @@ pub fn run() {
                     db: Arc::new(db),
                     configuration: config,
                     initial_state: initial_state,
+                    app_data_path: app_data_path,
                 })
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            greet,
             add_model,
             get_models,
             get_labels,
@@ -408,6 +449,10 @@ pub fn run() {
             remove_dead_groups,
             edit_label,
             delete_label,
+            overwrite_images,
+            get_slicers,
+            set_configuration,
+            get_configuration,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

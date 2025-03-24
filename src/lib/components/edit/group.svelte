@@ -4,7 +4,6 @@
         CardHeader,
         CardTitle,
         CardContent,
-        CardDescription,
     } from "$lib/components/ui/card";
 
     import { Label } from "$lib/components/ui/label";
@@ -65,20 +64,18 @@
                 </DropdownMenu.Root>
             </div>
         </CardHeader>
-        <CardContent>
-            <CardDescription>
-                <div class="grid w-full items-center gap-4">
-                    <div class="flex flex-col space-y-1.5">
-                        <Label for="name">Name</Label>
-                        <Input
-                            id="name"
-                            placeholder="Name of the model"
-                            oninput={onUpdateGroup}
-                            bind:value={tracked_group.name}
-                        />
-                    </div>
+        <CardContent class="text-sm">
+            <div class="grid w-full items-center gap-4">
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="name">Name</Label>
+                    <Input
+                        id="name"
+                        placeholder="Name of the model"
+                        oninput={onUpdateGroup}
+                        bind:value={tracked_group.name}
+                    />
                 </div>
-            </CardDescription>
+            </div>
         </CardContent>
     </Card>
 {/if}

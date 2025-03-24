@@ -1,5 +1,5 @@
-import type { RawModel, RawGroup, RawLabel, Group, Label, GroupedEntry, Model, ModelWithGroup, LabelEntry } from "./model";
-import { getLabels, getModels } from "./tauri";
+import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault } from "./model";
+import { getLabels, getModels, getConfig } from "./tauri";
 
 export const data = $state({
     entries : [] as ModelWithGroup[],
@@ -7,6 +7,9 @@ export const data = $state({
     labels : [] as LabelEntry[]
 });
 
+export let c = $state({
+    configuration : configurationDefault()
+});
 
 function convertModel(raw : RawModel) : Model
 {
@@ -76,9 +79,7 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
 
     let ret = [...groups.values()];
 
-    // TODO: make this a setting
-    
-    if (true)
+    if (c.configuration.show_ungrouped_models_in_groups)
     {
         looseModels.forEach(model => {
             ret.push({
@@ -139,4 +140,11 @@ export async function updateState() : Promise<void>
     data.entries = models;
     data.grouped_entries = model_groups;
     data.labels = labels;
+}
+
+export async function initConfiguration() : Promise<void>
+{
+    const config = await getConfig();
+    console.log(config);
+    c.configuration = config;
 }

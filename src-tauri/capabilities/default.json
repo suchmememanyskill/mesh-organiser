@@ -12,6 +12,7 @@
     "dialog:default",
     "deep-link:default",
     "shell:allow-open",
-    "shell:default"
+    "shell:default",
+    "core:window:allow-set-focus"
   ]
 }
