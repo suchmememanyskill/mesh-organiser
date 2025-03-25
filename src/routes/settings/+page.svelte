@@ -4,10 +4,11 @@
         overwriteImages,
         setConfig,
         getAvailableSlicers,
+        computeModelFolderSize,
     } from "$lib/tauri";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-    import { c, updateState } from "$lib/data.svelte";
-    import { debounce } from "$lib/utils";
+    import { c, updateState, data } from "$lib/data.svelte";
+    import { debounce, toReadableSize } from "$lib/utils";
     import { Input } from "$lib/components/ui/input/index.js";
     import type { Configuration, SlicerEntry } from "$lib/model";
 
@@ -25,6 +26,8 @@
     import { appDataDir } from "@tauri-apps/api/path";
     import { open } from "@tauri-apps/plugin-dialog";
 
+    let models_size = $derived(data.entries.map(e => e.size).reduce((partialSum, a) => partialSum + a, 0));
+    let model_dir_size = $state(0);
     let thumbnail_count = $state(0);
     let thumbnail_regen_button_enabled = $state(true);
     let slicers = $state([] as SlicerEntry[]);
@@ -89,6 +92,7 @@
     onMount(async () => {
         slicers = await getAvailableSlicers();
         app_data_dir = await appDataDir();
+        model_dir_size = await computeModelFolderSize();
     });
 </script>
 
@@ -194,6 +198,22 @@
                                 (c.configuration.data_path = app_data_dir)}
                             >Default</Button
                         >
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <Label>Total size of stored models</Label>
+                    <div class="grid grid-cols-2 text-sm">
+                        <div class="text-left space-y-1">
+                            <div>Uncompressed</div>
+                            <div>Compressed (Stored)</div>
+                            <div>Savings</div>
+                        </div>
+                        <div class="text-right space-y-1">
+                            <div>{toReadableSize(models_size)}</div>
+                            <div>{toReadableSize(model_dir_size)}</div>
+                            <div>{Number((models_size - model_dir_size) / models_size * 100).toFixed(1)}%</div>
+                        </div>
                     </div>
                 </div>
             </CardContent>

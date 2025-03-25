@@ -44,3 +44,8 @@ pub fn open_folder_in_explorer(path: &str) {
             .unwrap();
     }
 }
+
+pub fn get_folder_size(path: &str) -> u64 {
+    let path = PathBuf::from(path);
+    std::fs::read_dir(path).unwrap().map(|f| f.unwrap().metadata().unwrap().len()).sum()
+}

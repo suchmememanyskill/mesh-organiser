@@ -6,7 +6,6 @@ use service::{
     app_state::{AppState, InitialState, read_configuration}, download_file_service, model_service::{self, CreationResult}, slicer_service::Slicer
 };
 use configuration::Configuration;
-use sqlx::Connection;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_deep_link::DeepLinkExt;
 use urlencoding::decode;
@@ -293,6 +292,13 @@ async fn remove_dead_groups(state: State<'_, AppState>) -> Result<(), Applicatio
     Ok(())
 }
 
+#[tauri::command]
+async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, ApplicationError> {
+    let size = util::get_folder_size(&state.get_model_dir());
+
+    Ok(size)
+}
+
 fn extract_deep_link(data : &str) -> Option<String>
 {
     let possible_starts = vec!["bambustudio://open/?file=", 
@@ -453,6 +459,7 @@ pub fn run() {
             get_slicers,
             set_configuration,
             get_configuration,
+            compute_model_folder_size,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -167,3 +167,8 @@ export async function importModel(path : string) : Promise<AddModelResult>
         path: path,
     });
 }
+
+export async function computeModelFolderSize() : Promise<number>
+{
+    return await invoke("compute_model_folder_size");
+}
