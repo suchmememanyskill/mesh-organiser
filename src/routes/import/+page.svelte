@@ -237,7 +237,7 @@
             </CardContent>
         </Card>
     {:else}
-        <div class="flex flex-col items-center gap-4 w-full">
+        <div class="flex flex-col w-full gap-1">
             <div class="flex flex-row gap-5 justify-center mt-4">
                 <Button onclick={clearCurrentModel}><Undo2 /> Import another model</Button>
             </div>

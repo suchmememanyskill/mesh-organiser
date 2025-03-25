@@ -5,6 +5,7 @@
     import { convertFileSrc } from "@tauri-apps/api/core";
     import type { ClassValue } from "svelte/elements";
     import Boxes from "@lucide/svelte/icons/boxes";
+    import { c } from "$lib/data.svelte";
 
     let img_src = $state("");
     let load_failed = $state(false);
@@ -32,7 +33,7 @@
 
 <div class={props.class}>
     {#if load_failed}
-        <Boxes class="w-full h-full" />
+        <Boxes class="w-full h-full" style={`color: ${c.configuration.thumbnail_color};`} />
     {:else}
         <img src={img_src} onerror={() => load_failed = true} alt="Image of {props.model.name}" />
     {/if}
