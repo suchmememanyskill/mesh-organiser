@@ -262,19 +262,11 @@
                 <MultiModelEdit models={selected} />
             {:else if selected.length === 1}
                 <ModelEdit model={selected[0]} full_image={true} />
-            {:else}
+            {:else if filteredCollection.length === 1}
+                <ModelEdit model={filteredCollection[0]} full_image={true} />
+            {:else }
                 <MultiModelEdit models={filteredCollection} />
             {/if}
         </div>
     {/if}
 </div>
-
-<style>
-    .hide-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-    .hide-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-</style>

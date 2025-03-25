@@ -253,7 +253,7 @@
         </div>
     {:else if selected.length === 1 && selected[0].group.id >= 0}
         <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-            <EditGroup group={selected[0].group} />
+            <EditGroup group={selected[0].group} settingsVertical={true} />
             <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models individually</a>
             <EditMultiModel models={selected[0].models} />
         </div>

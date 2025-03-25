@@ -11,19 +11,35 @@
         CardContent,
         CardDescription,
     } from "$lib/components/ui/card";
+    import GroupPage from "$lib/components/view/group-page.svelte";
+    import ModelGrid from "$lib/components/view/model-grid.svelte";
 
     import LoaderCircle from "@lucide/svelte/icons/loader-circle";
     import File from "@lucide/svelte/icons/file";
     import Folder from "@lucide/svelte/icons/folder";
-    import type { Group, Model, AddModelResult } from "$lib/model";
+    import Undo2 from "@lucide/svelte/icons/undo-2";
+    import type { Model, AddModelResult, GroupedEntry } from "$lib/model";
     import { data, updateState } from "$lib/data.svelte";
-    import EditModel from "$lib/components/edit/model.svelte";
-    import EditGroup from "$lib/components/edit/group.svelte";
     import { openInSlicer, importModel } from "$lib/tauri";
     import { page } from '$app/state';
 
-    let imported_group: Group | null = $state.raw(null);
-    let imported_models: Model[] | null = $state.raw(null);
+    let imported_group_id : number|null|undefined = $state(null);
+    let imported_model_ids : number[] = $state([]);
+
+    let imported_group: GroupedEntry | undefined = $derived.by(() => {
+        if (!imported_group_id) {
+            return undefined;
+        }
+
+        return data.grouped_entries.find((entry) => entry.group.id === imported_group_id);
+    });
+
+    let imported_models: Model[] = $derived.by(() => {
+        return imported_group 
+            ? imported_group.models 
+            : data.entries.filter((entry) => imported_model_ids.includes(entry.id));
+    });
+
     let import_count = $state(0);
     let thumbnail_count = $state(0);
     let busy: boolean = $state(false);
@@ -41,6 +57,8 @@
             import_count = 0;
             thumbnail_count = 0;
             const res = await importModel(paths[i]);
+            import_count = 0;
+            thumbnail_count = 0;
 
             if (!res) {
                 console.error("Failed to import model at path:", paths[i]);
@@ -52,24 +70,8 @@
 
         await updateState();
 
-        let group_id = results.find((res) => res.group_id)?.group_id;
-        let model_ids = results.map((res) => res.model_ids).flat();
-
-        if (group_id) {
-            let group_entry =
-                data.grouped_entries.find(
-                    (entry) => entry.group?.id === group_id,
-                ) || null;
-
-            if (group_entry && group_entry.group) {
-                imported_group = group_entry.group;
-                imported_models = group_entry.models;
-            }
-        } else {
-            imported_group = null;
-            imported_models = data.entries
-                .filter((entry) => model_ids.includes(entry.id));
-        }
+        imported_group_id = results.find((res) => res.group_id)?.group_id;
+        imported_model_ids = results.map((res) => res.model_ids).flat();
 
         if (direct_open_in_slicer)
         {
@@ -165,8 +167,8 @@
     });
 
     function clearCurrentModel() {
-        imported_group = null;
-        imported_models = null;
+        imported_group_id = null;
+        imported_model_ids = [];
     }
 
     function openAllInSlicer() {
@@ -197,9 +199,9 @@
 
 </script>
 
-<div class="flex justify-center m-4">
+<div class="flex justify-center h-full">
     {#if busy}
-        <div class="flex flex-col items-center gap-2">
+        <div class="flex flex-col items-center gap-2 my-auto">
             {#if thumbnail_count > 0}
                 <h1>Generated {thumbnail_count} thumbnails...</h1>
             {:else if import_count > 0}
@@ -211,8 +213,8 @@
                 <LoaderCircle class="w-10 h-10" />
             </div>
         </div>
-    {:else if imported_models === null}
-        <Card class="max-w-xxl">
+    {:else if imported_models.length <= 0}
+        <Card class="max-w-xxl h-fit my-auto">
             <CardHeader>
                 <CardTitle>Import</CardTitle>
                 <CardDescription>Import 3d models via files</CardDescription>
@@ -235,23 +237,19 @@
             </CardContent>
         </Card>
     {:else}
-        <div class="flex flex-col items-center gap-8">
-            <div class="flex flex-row gap-5 justify-center">
-                <Button onclick={openAllInSlicer}>Open all in slicer</Button>
-                <Button onclick={clearCurrentModel}>Add another model</Button>
+        <div class="flex flex-col items-center gap-4 w-full">
+            <div class="flex flex-row gap-5 justify-center mt-4">
+                <Button onclick={clearCurrentModel}><Undo2 /> Import another model</Button>
             </div>
-            {#if imported_group}
-                <EditGroup class="w-full" group={imported_group} />
+            {#if imported_group?.group}
+                <div class="overflow-hidden">
+                    <GroupPage group={imported_group} />
+                </div>
+            {:else}
+                <div class="overflow-hidden flex-grow w-full">
+                    <ModelGrid models={imported_models} default_show_multiselect_all={true}  />
+                </div>
             {/if}
-
-            <div class="flex flex-wrap flex-row w-full justify-center gap-4">
-                {#each imported_models as item}
-                    <EditModel
-                        model={item}
-                        class="min-w-80 max-w-96 flex-grow"
-                    />
-                {/each}
-            </div>
         </div>
     {/if}
 </div>

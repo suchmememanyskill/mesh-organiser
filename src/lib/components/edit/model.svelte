@@ -21,7 +21,7 @@
     import { updateState, data } from "$lib/data.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
-    import Button from "../ui/button/button.svelte";
+    import { buttonVariants, Button } from "$lib/components/ui/button/index.js";
     import CardFooter from "../ui/card/card-footer.svelte";
     import { toReadableSize, instanceOfModelWithGroup } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
@@ -145,11 +145,16 @@
                             Link/Url
                         {/if}
                     </Label>
-                    <Input
-                        id="link"
-                        placeholder="Where did this model come from?"
-                        bind:value={model.link}
-                    />
+                    <div class="flex flex-row gap-2">
+                        <Input
+                            id="link"
+                            placeholder="Where did this model come from?"
+                            bind:value={model.link}
+                        />
+                        {#if model.link}
+                            <a href="{model.link}" target="_blank" class="{buttonVariants({ variant: "default"})}">Open Link</a>
+                        {/if}
+                    </div>
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <Label for="description">Description</Label>

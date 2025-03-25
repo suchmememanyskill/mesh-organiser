@@ -8,7 +8,7 @@
 
     let authorLinks = [
         {
-            name: "Support on Ko-Fi",
+            name: "Donate on Ko-Fi",
             url: "https://ko-fi.com/suchmememanyskill",
         },
     ];

@@ -13,15 +13,19 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { ungroup, editGroup, openInSlicer, openInFolder } from "$lib/tauri";
+    import { ungroup, editGroup, openInSlicer, openInFolder, editModel } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { data, updateState } from "$lib/data.svelte";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
+    import { onMount } from "svelte";
 
-    const props: { group: Group; class?: ClassValue } = $props();
+    const props: { group: Group; class?: ClassValue; settingsVertical?: boolean } = $props();
     const tracked_group = $derived(props.group);
     let deleted = $state(false);
+    let link = $state("");
+
+    const relevant_group = $derived(data.grouped_entries.find(x => x.group.id === tracked_group.id));    
 
     async function onUngroup() {
         await ungroup($state.snapshot(tracked_group));
@@ -41,6 +45,48 @@
         let snapshot = $state.snapshot(tracked_group);
         save_group_debounced(snapshot);
     }
+
+    const save_link_on_models_debounced = debounce(async (group : Group, link : string) => {
+        console.log("Saving Link on Models");
+
+        const relevant_group = $state.snapshot(data.grouped_entries).find(x => x.group.id === group.id);
+
+        if (!relevant_group)
+        {
+            return;
+        }
+
+        for (let i = 0; i < relevant_group.models.length; i++)
+        {
+            relevant_group.models[i].link = link;
+            await editModel(relevant_group.models[i]);
+        }
+
+        await updateState();
+    }, 1000);
+
+
+    function onUpdateModels()
+    {
+        const snapshot = $state.snapshot(tracked_group);
+        const link_snapshot = $state.snapshot(link);
+        save_link_on_models_debounced(snapshot, link_snapshot);
+    }
+
+    // This isn't very reactive. Oh well
+    onMount(() => {
+        if (!relevant_group)
+        {
+            return;
+        }
+
+        const links = relevant_group.models.map(x => x.link).filter(x => x).filter((value, index, self) => self.indexOf(value) === index);
+
+        if (links.length === 1)
+        {
+            link = links[0]!;
+        }
+    });
 </script>
 
 {#if deleted}
@@ -65,7 +111,7 @@
             </div>
         </CardHeader>
         <CardContent class="text-sm">
-            <div class="grid w-full items-center gap-4">
+            <div class="{props.settingsVertical ? "grid w-full items-center gap-4" : "grid grid-cols-2 gap-4" }">
                 <div class="flex flex-col space-y-1.5">
                     <Label for="name">Name</Label>
                     <Input
@@ -74,6 +120,26 @@
                         oninput={onUpdateGroup}
                         bind:value={tracked_group.name}
                     />
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="link">
+                        {#if link}
+                        <a href="{link}" target="_blank" class="text-primary hover:underline">Link/Url</a>
+                        {:else}
+                            Link/Url
+                        {/if}
+                    </Label>
+                    <div class="flex flex-row gap-2">
+                        <Input
+                            id="link"
+                            placeholder="Where did this model come from?"
+                            oninput={onUpdateModels}
+                            bind:value={link}
+                        />
+                        {#if link}
+                            <a href="{link}" target="_blank" class="{buttonVariants({ variant: "default"})}">Open Link</a>
+                        {/if}
+                    </div>
                 </div>
             </div>
         </CardContent>
