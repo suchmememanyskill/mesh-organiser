@@ -53,29 +53,37 @@ pub fn get_folder_size(path: &str) -> u64 {
 }
 
 pub fn is_zippable_file_extension(extension: &str) -> bool {
-    vec!["stl", "obj", "step"].iter().any(|f| extension.eq(*f))
+    let lowercase = extension.to_lowercase();
+
+    vec!["stl", "obj", "step"].iter().any(|f| lowercase.as_str().eq(*f))
 }
 
 pub fn is_zipped_file_extension(extension: &str) -> bool {
-    vec!["stl.zip", "obj.zip", "step.zip"].iter().any(|f| extension.eq(*f))
+    let lowercase = extension.to_lowercase();
+
+    vec!["stl.zip", "obj.zip", "step.zip"].iter().any(|f| lowercase.as_str().eq(*f))
 }
 
-pub fn convert_extension_to_zip(extension: &str) -> &str {
-    match extension {
+pub fn convert_extension_to_zip(extension: &str) -> String {
+    let lowercase = extension.to_lowercase();
+
+    String::from(match lowercase.as_str() {
         "stl" => "stl.zip",
         "obj" => "obj.zip",
         "step" => "step.zip",
-        _ => extension,
-    }
+        _ => &lowercase,
+    })
 }
 
-pub fn convert_zip_to_extension(extension: &str) -> &str {
-    match extension {
+pub fn convert_zip_to_extension(extension: &str) -> String {
+    let lowercase = extension.to_lowercase();
+
+    String::from(match lowercase.as_str() {
         "stl.zip" => "stl",
         "obj.zip" => "obj",
         "step.zip" => "step",
-        _ => extension,
-    }
+        _ => &lowercase,
+    })
 }
 
 pub fn read_file_as_text(path: &PathBuf) -> Result<String, ApplicationError> {
