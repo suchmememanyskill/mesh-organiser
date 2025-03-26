@@ -1,6 +1,7 @@
 use std::{fs::File, path::PathBuf};
 use crate::{db::model::Model, error::ApplicationError};
 use chrono::Utc;
+use crate::util::{convert_zip_to_extension, is_zipped_file_extension};
 
 use super::app_state::AppState;
 
@@ -35,10 +36,11 @@ fn get_path_from_model(
     let base_dir = PathBuf::from(app_state.get_model_dir());
     let src_file_path = base_dir.join(format!("{}.{}", model.sha256, model.filetype));
 
-    if model.filetype == "stl.zip" {
+    if is_zipped_file_extension(&model.filetype) {
         let file = File::open(src_file_path)?;
+        let extension = convert_zip_to_extension(&model.filetype);
 
-        let target = temp_dir.join(format!("{}_{}.stl", model.name, model.sha256));
+        let target = temp_dir.join(format!("{}_{}.{}", model.name, model.sha256, extension));
         let mut archive = zip::ZipArchive::new(file)?;
         let mut file = archive.by_index(0)?;
         let mut target_file = File::create(&target)?;

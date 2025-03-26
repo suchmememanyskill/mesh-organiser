@@ -66,15 +66,16 @@ pub async fn generate_thumbnails(
         command = command.args(paths_slice);
         let output = command.output().await?;
         let _ = app_handle.emit("thumbnail-count", imported_amount);
+
+        #[cfg(debug_assertions)]
+        {
+            let stdout = String::from_utf8(output.stdout).unwrap();
+            let stderr = String::from_utf8(output.stderr).unwrap();
+        
+            println!("Thumbnail generation output: {}", stdout);
+            println!("Thumbnail generation error: {}", stderr);
+        }
     }
-
-    /*
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let stderr = String::from_utf8(output.stderr).unwrap();
-
-    println!("Thumbnail generation output: {}", stdout);
-    println!("Thumbnail generation error: {}", stderr);
-    */
-
+    
     Ok(())
 }

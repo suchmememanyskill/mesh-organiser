@@ -50,10 +50,28 @@ pub fn get_folder_size(path: &str) -> u64 {
     std::fs::read_dir(path).unwrap().map(|f| f.unwrap().metadata().unwrap().len()).sum()
 }
 
-pub fn zippable_file_extensions() -> Vec<&'static str> {
-    vec!["stl", "obj"]
+pub fn is_zippable_file_extension(extension: &str) -> bool {
+    vec!["stl", "obj", "step"].iter().any(|f| extension.eq(*f))
 }
 
-pub fn zipped_file_extensions() -> Vec<&'static str> {
-    vec!["stl.zip", "obj.zip"]
+pub fn is_zipped_file_extension(extension: &str) -> bool {
+    vec!["stl.zip", "obj.zip", "step.zip"].iter().any(|f| extension.eq(*f))
+}
+
+pub fn convert_extension_to_zip(extension: &str) -> &str {
+    match extension {
+        "stl" => "stl.zip",
+        "obj" => "obj.zip",
+        "step" => "step.zip",
+        _ => extension,
+    }
+}
+
+pub fn convert_zip_to_extension(extension: &str) -> &str {
+    match extension {
+        "stl.zip" => "stl",
+        "obj.zip" => "obj",
+        "step.zip" => "step",
+        _ => extension,
+    }
 }

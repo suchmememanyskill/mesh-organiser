@@ -10,6 +10,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use zip;
 use zip::write::SimpleFileOptions;
+use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 
 #[derive(Serialize)]
 pub struct CreationResult {
@@ -146,33 +147,27 @@ where
         None => (),
     }
 
-    let final_file_name = match file_type {
-        "stl" => PathBuf::from(app_state.get_model_dir()).join(format!("{}.stl.zip", hash)),
-        _ => PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, file_type)),
-    };
+    let new_extension = convert_extension_to_zip(file_type);
+
+    let final_file_name = PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, new_extension));
 
     let mut file_handle = File::create(&final_file_name)?;
 
-    if file_type == "stl" {
+    if is_zippable_file_extension(file_type) {
         let mut zip = zip::ZipWriter::new(file_handle);
         let options =
             SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-        zip.start_file(format!("{}.stl", name), options)?;
+        zip.start_file(format!("{}.{}", name, file_type), options)?;
         zip.write_all(&file_contents)?;
         zip.finish()?;
     } else {
         file_handle.write_all(&file_contents)?;
     }
 
-    let file_type_store = match file_type {
-        "stl" => "stl.zip",
-        _ => file_type,
-    };
-
     let id = model::add_model_sync(
         name,
         &hash,
-        file_type_store,
+        new_extension,
         file_size as i64,
         &app_state.db,
     );
