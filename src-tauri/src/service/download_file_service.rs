@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::{self, File};
 use std::io::Write;
-use chrono::{format, Utc};
+use chrono::Utc;
 use serde::Serialize;
 use urlencoding::decode;
 

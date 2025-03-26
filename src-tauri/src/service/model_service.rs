@@ -158,7 +158,7 @@ where
         val => Vec::with_capacity(val),
     };
 
-    let bytes_read = reader.read_to_end(&mut file_contents)?;
+    let _ = reader.read_to_end(&mut file_contents)?;
 
     let mut hasher = Sha256::new();
     hasher.update(&file_contents);

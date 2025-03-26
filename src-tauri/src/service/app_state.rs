@@ -1,5 +1,4 @@
 use serde::Serialize;
-use tauri::App;
 use tauri::AppHandle;
 use tauri_plugin_deep_link::DeepLinkExt;
 
@@ -7,7 +6,7 @@ use crate::configuration;
 use crate::db;
 use std::path::PathBuf;
 use std::sync::Arc;
-use configuration::{Configuration, Stored_Configuration, stored_to_configuration};
+use configuration::{Configuration, StoredConfiguration, stored_to_configuration};
 use std::sync::Mutex;
 
 #[derive(Clone, Serialize)]
@@ -127,6 +126,6 @@ pub fn read_configuration(app_data_path: &str) -> Configuration {
 
     let json = std::fs::read_to_string(path).expect("Failed to read configuration");
 
-    let stored_configuration : Stored_Configuration = serde_json::from_str(&json).expect("Failed to parse configuration");
+    let stored_configuration : StoredConfiguration = serde_json::from_str(&json).expect("Failed to parse configuration");
     return stored_to_configuration(stored_configuration);
 }

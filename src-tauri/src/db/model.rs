@@ -1,6 +1,6 @@
 use super::label::Label;
 use super::model_group::ModelGroup;
-use super::{label, model_group};
+use super::label;
 use serde::Serialize;
 use sqlx::Row;
 use sqlx::{self, types::chrono};

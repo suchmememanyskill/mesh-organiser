@@ -7,7 +7,6 @@ use crate::error::ApplicationError;
 use super::app_state::AppState;
 use crate::db::model::{self, Model};
 
-use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
 pub async fn generate_all_thumbnails(

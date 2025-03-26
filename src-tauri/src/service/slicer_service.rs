@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::db::model::Model;
 use crate::service::export_service::export_to_temp_folder;
@@ -111,7 +111,7 @@ impl Slicer {
         .take()
         .unwrap();
     
-        let (temp_dir, paths) = export_to_temp_folder(models, app_state, true, "open")?;
+        let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
 
         println!("Opening in slicer: {:?}", paths);
 
@@ -121,7 +121,7 @@ impl Slicer {
             )));
         }
 
-        let mut command = Command::new(slicer_path)
+        Command::new(slicer_path)
             .args(paths)
             .output()
             .expect("failed to execute process");

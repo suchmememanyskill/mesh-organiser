@@ -1,12 +1,8 @@
-use futures::TryStreamExt;
-use serde::{Deserialize, Serialize};
 use sqlx;
-use sqlx::{migrate::MigrateDatabase, prelude::FromRow, sqlite::SqlitePoolOptions, Pool, Sqlite};
-use std::{fs::OpenOptions, path::PathBuf};
-use tauri::State;
-use tauri::{App, Manager as _};
+use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Pool, Sqlite};
+use std::path::PathBuf;
 
-use crate::{configuration::Configuration, service::app_state::AppState};
+use crate::configuration::Configuration;
 
 pub type Db = Pool<Sqlite>;
 

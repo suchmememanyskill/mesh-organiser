@@ -4,7 +4,7 @@ use strum::IntoEnumIterator;
 use crate::service::slicer_service::Slicer;
 
 #[derive(Clone, Deserialize)]
-pub struct Stored_Configuration {
+pub struct StoredConfiguration {
     pub data_path: String,
     pub prusa_deep_link: bool,
     pub cura_deep_link: bool,
@@ -33,7 +33,7 @@ pub struct Configuration {
     pub allow_importing_step : bool,
 }
 
-pub fn stored_to_configuration(configuration : Stored_Configuration) -> Configuration
+pub fn stored_to_configuration(configuration : StoredConfiguration) -> Configuration
 {
     let default = Configuration::default();
 

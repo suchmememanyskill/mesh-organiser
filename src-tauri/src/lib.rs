@@ -1,13 +1,12 @@
-use std::{env::temp_dir, sync::{Arc, Mutex}};
+use std::sync::{Arc, Mutex};
 
 use error::ApplicationError;
-use serde::{de, Serialize};
+use serde::Serialize;
 use service::{
     app_state::{AppState, InitialState, read_configuration}, download_file_service, model_service::{self, CreationResult}, slicer_service::Slicer
 };
 use configuration::Configuration;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tauri_plugin_deep_link::DeepLinkExt;
 use urlencoding::decode;
 use tauri::async_runtime::block_on;
 use strum::IntoEnumIterator;
@@ -283,7 +282,7 @@ async fn open_in_folder(
 {
     let models = db::model::get_models_by_id(model_ids, &state.db).await;
 
-    let (temp_dir, paths) = service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
+    let (temp_dir, _) = service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
 
     crate::util::open_folder_in_explorer(temp_dir.to_str().unwrap());
 

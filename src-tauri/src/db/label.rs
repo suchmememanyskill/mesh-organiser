@@ -1,6 +1,5 @@
 use serde::Serialize;
 use sqlx;
-use sqlx::Row;
 use tauri::async_runtime::block_on;
 
 #[derive(sqlx::FromRow, Serialize)]
@@ -11,14 +10,6 @@ pub struct Label {
     pub name: String,
     #[sqlx(rename = "label_color")]
     pub color: i64,
-}
-
-#[derive(sqlx::FromRow)]
-pub struct LabelExtended {
-    pub id: i64,
-    pub name: String,
-    pub color: i64,
-    pub model_count: i64,
 }
 
 pub fn get_labels_sync(db: &super::db::Db) -> Vec<Label> {
