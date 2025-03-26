@@ -114,7 +114,14 @@ export interface SlicerEntry
     installed : boolean,
 }
 
-export interface AddModelResult {
+export interface AddModelResult 
+{
     group_id: number|null;
     model_ids: number[];
+}
+
+export interface DownloadResult 
+{
+    path : string;
+    source_uri : string|null;
 }

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { RawModel, RawLabel, RawGroup, Model, Group, Label, InitialState, Configuration, SlicerEntry, AddModelResult } from "./model";
+import type { RawModel, RawLabel, RawGroup, Model, Group, Label, InitialState, Configuration, SlicerEntry, AddModelResult, DownloadResult } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -67,7 +67,7 @@ export async function getInitialState() : Promise<InitialState>
     return await invoke("get_initial_state");
 }
 
-export async function downloadFile(url : string) : Promise<string>
+export async function downloadFile(url : string) : Promise<DownloadResult>
 {
     return await invoke("download_file", { url: url });
 }

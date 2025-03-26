@@ -229,6 +229,9 @@
                 <CheckboxWithLabel bind:value={c.configuration.cura_deep_link} label="Bind 'Open in Cura' links" />
                 <CheckboxWithLabel bind:value={c.configuration.bambu_deep_link} label="Bind 'Open in Bambu Studio' links" />
                 <CheckboxWithLabel bind:value={c.configuration.orca_deep_link} label="Bind 'Open in OrcaSlicer' links" />
+                <div>
+                    Note: Don't bind the same link as the slicer you use. This may cause opening links of that type to become inconsistent.
+                </div>
             </CardContent>
         </Card>
 

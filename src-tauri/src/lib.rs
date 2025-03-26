@@ -268,7 +268,7 @@ async fn get_initial_state(state: State<'_, AppState>) -> Result<InitialState, A
 }
 
 #[tauri::command]
-async fn download_file(url : &str) -> Result<String, ApplicationError> 
+async fn download_file(url : &str) -> Result<download_file_service::DownloadResult, ApplicationError> 
 {
     let response = download_file_service::download_file(url).await?;
 

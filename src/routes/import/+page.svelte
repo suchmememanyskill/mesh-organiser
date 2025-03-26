@@ -20,7 +20,7 @@
     import Undo2 from "@lucide/svelte/icons/undo-2";
     import type { Model, AddModelResult, GroupedEntry } from "$lib/model";
     import { data, updateState } from "$lib/data.svelte";
-    import { openInSlicer, importModel } from "$lib/tauri";
+    import { openInSlicer, importModel, editModel } from "$lib/tauri";
     import { page } from '$app/state';
 
     let imported_group_id : number|null|undefined = $state(null);
@@ -45,7 +45,7 @@
     let busy: boolean = $state(false);
     let direct_open_in_slicer: boolean = false;
 
-    async function handle_import(paths?: string[]) {
+    async function handle_import(paths?: string[], source?: string|null) {
         busy = true;
         if (!paths || paths.length === 0) {
             return;
@@ -76,6 +76,15 @@
         if (direct_open_in_slicer)
         {
             openAllInSlicer();
+        }
+
+        if (source)
+        {
+            for (const model of imported_models)
+            {
+                model.link = source;
+                await editModel(model);
+            }
         }
 
         busy = false;
@@ -183,6 +192,7 @@
     {
         const possiblePath = page.url.searchParams.get("path");
         const direct_open_param = page.url.searchParams.get("open");
+        const source_param = page.url.searchParams.get("source");
 
         if (!possiblePath)
         {
@@ -194,7 +204,7 @@
             direct_open_in_slicer = true;
         }        
 
-        handle_import([possiblePath]);
+        handle_import([possiblePath], source_param);
     })
 
 </script>

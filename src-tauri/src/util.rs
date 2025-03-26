@@ -49,3 +49,11 @@ pub fn get_folder_size(path: &str) -> u64 {
     let path = PathBuf::from(path);
     std::fs::read_dir(path).unwrap().map(|f| f.unwrap().metadata().unwrap().len()).sum()
 }
+
+pub fn zippable_file_extensions() -> Vec<&'static str> {
+    vec!["stl", "obj"]
+}
+
+pub fn zipped_file_extensions() -> Vec<&'static str> {
+    vec!["stl.zip", "obj.zip"]
+}

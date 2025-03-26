@@ -35,16 +35,21 @@
             await getCurrentWindow().setFocus();
         }
 
-        const path = await downloadFile(url);
+        const download_result = await downloadFile(url);
+
+        let parts = ["path=" + download_result.path];
 
         if (c.configuration.open_slicer_on_remote_model_import)
         {
-            goto("/import?open=true&path=" + path);
+            parts.push("open=true");
         }
-        else 
+
+        if (download_result.source_uri)
         {
-            goto("/import?&path=" + path);
+            parts.push("source=" + download_result.source_uri);
         }
+
+        goto("/import?" + parts.join("&"));
     }
 
     onMount(async () => {
