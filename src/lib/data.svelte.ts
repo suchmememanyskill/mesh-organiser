@@ -126,9 +126,58 @@ export async function updateState() : Promise<void>
         let label = convertLabel(raw_label);
         let filtered_models = models.filter(model => model.labels.some(l => l.id === label.id));
 
+        let grouped_filtered_models : any = {};
+        let singles = [];
+        let filter_groups : GroupedEntry[] = [];
+
+        for (const model of filtered_models)
+        {
+            if (model.group)
+            {
+                if (!grouped_filtered_models[model.group.id])
+                {
+                    grouped_filtered_models[model.group.id] = []
+                }
+
+                grouped_filtered_models[model.group.id].push(model);
+            }
+            else
+            {
+                singles.push(model);
+            }
+        }
+
+        for (const [key, value] of Object.entries(grouped_filtered_models))
+        {
+            const group_id = parseInt(key);
+            const group = model_groups.find(g => g.group.id === group_id);
+
+            if (group && group.total === (value as Model[]).length)
+            {
+                filter_groups.push(group);
+            }
+            else 
+            {
+                (value as Model[]).forEach(model => singles.push(model));
+            }
+        }
+
+        let singles_as_groups : GroupedEntry[] = singles.map(model => { 
+            return {
+                group : {
+                    id: Math.random() * Number.MAX_SAFE_INTEGER * -1,
+                    name: model.name,
+                    createdAt: model.added,
+                },
+                models : [model],
+                total : 1,
+            }
+        });
+
+
         return {
             label : label,
-            entries : filtered_models,
+            entries : [...filter_groups, ...singles_as_groups],
             total : filtered_models.length,
         };
     });

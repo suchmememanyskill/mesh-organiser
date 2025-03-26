@@ -68,7 +68,7 @@ export interface ModelWithGroup extends Model
 export interface LabelEntry
 {
     label : Label;
-    entries : ModelWithGroup[];
+    entries : GroupedEntry[];
     total : number;
 }
 

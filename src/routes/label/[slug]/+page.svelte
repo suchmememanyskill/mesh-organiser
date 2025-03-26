@@ -1,5 +1,6 @@
 <script lang="ts">
     import ModelGrid from "$lib/components/view/model-grid.svelte";
+    import GroupGrid from "$lib/components/view/group-grid.svelte";
     import type { LabelEntry } from "$lib/model";
     import { data } from "$lib/data.svelte";
     import { page } from '$app/state';
@@ -17,7 +18,7 @@
     <div class="w-full h-full flex flex-col">
         <EditLabel class="my-3 mx-4" label={labelEntry.label} />
         <div class="overflow-hidden">
-            <ModelGrid models={entries} />
+            <GroupGrid groups={entries} />
         </div>
     </div>
 {:else}
