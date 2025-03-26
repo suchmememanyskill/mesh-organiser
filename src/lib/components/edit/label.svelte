@@ -16,6 +16,7 @@
     import { editLabel, deleteLabel } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
+    import Trash2 from "@lucide/svelte/icons/trash-2";
     import { data, updateState } from "$lib/data.svelte";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
 
@@ -52,7 +53,7 @@
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content side="right" align="start">
                     <DropdownMenu.Item onclick={onDeleteLabel}>
-                        <span>Delete label</span>
+                        <Trash2 /> Delete label
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>

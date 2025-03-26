@@ -22,9 +22,10 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import { buttonVariants, Button } from "$lib/components/ui/button/index.js";
-    import CardFooter from "../ui/card/card-footer.svelte";
     import { toReadableSize, instanceOfModelWithGroup } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
+    import Ungroup from "@lucide/svelte/icons/ungroup";
+    import Trash2 from "@lucide/svelte/icons/trash-2";
 
     const props: { model: Model|ModelWithGroup;  class?: ClassValue, full_image?: boolean } = $props();
     let last_model_id = -1;
@@ -109,10 +110,11 @@
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
                         <DropdownMenu.Item onclick={onUngroup} disabled={!group}>
-                            <span>Remove from current group</span>
+                            <Ungroup /> Remove from current group
                         </DropdownMenu.Item>
+                        <DropdownMenu.Separator />
                         <DropdownMenu.Item onclick={onDelete}>
-                            <span>Delete model</span>
+                            <Trash2 /> Delete model
                         </DropdownMenu.Item>
                     </DropdownMenu.Content>
                 </DropdownMenu.Root>

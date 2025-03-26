@@ -19,6 +19,7 @@
     import { data, updateState } from "$lib/data.svelte";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
     import { onMount } from "svelte";
+    import Ungroup from "@lucide/svelte/icons/ungroup";
 
     const props: { group: Group; class?: ClassValue; settingsVertical?: boolean } = $props();
     const tracked_group = $derived(props.group);
@@ -104,7 +105,7 @@
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
                         <DropdownMenu.Item onclick={onUngroup}>
-                            <span>Ungroup models</span>
+                            <Ungroup /> Ungroup models
                         </DropdownMenu.Item>
                     </DropdownMenu.Content>
                 </DropdownMenu.Root>

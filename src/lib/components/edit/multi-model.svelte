@@ -18,6 +18,7 @@
     import Button, { buttonVariants } from "$lib/components/ui/button/button.svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
     import { toast } from "svelte-sonner";
+    import Ellipsis from "@lucide/svelte/icons/ellipsis";
 
     import Tag from "@lucide/svelte/icons/tag";
     import DiamondMinus from "@lucide/svelte/icons/diamond-minus";
@@ -113,7 +114,19 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <CardTitle>{models.length} models</CardTitle>
+            <CardTitle class="mr-10">{models.length} models</CardTitle>
+            <div class="absolute right-0 top-5 mr-8">
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                        <Ellipsis />
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content side="right" align="start">
+                        <DropdownMenu.Item onclick={onDelete}>
+                            <Trash2 /> Delete selected models
+                        </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+            </div>
         </CardHeader>
         <CardContent class="flex flex-col gap-8">
             <div class="flex flex-col gap-4">
@@ -166,10 +179,6 @@
                         return false;
                     })}><Ungroup /> Remove from group</Button>
                 </div>
-            </div>
-            <div class="flex flex-col gap-4">
-                <Label>Delete</Label>
-                <Button onclick={onDelete} variant="outline" class="flex-grow"><Trash2 /> Delete selected models</Button>
             </div>
         </CardContent>
     </Card>
