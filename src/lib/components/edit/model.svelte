@@ -12,6 +12,7 @@
     import type { Model, Group, ModelWithGroup } from "$lib/model";
     import FolderOpen from "@lucide/svelte/icons/folder-open";
     import Slice from "@lucide/svelte/icons/slice";
+    import { Textarea } from "$lib/components/ui/textarea/index.js";
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
@@ -159,14 +160,6 @@
                     </div>
                 </div>
                 <div class="flex flex-col space-y-1.5">
-                    <Label for="description">Description</Label>
-                    <Input
-                        id="description"
-                        placeholder="Description of the model"
-                        bind:value={model.description}
-                    />
-                </div>
-                <div class="flex flex-col space-y-1.5">
                     <Label>Labels</Label>
                     <Select.Root type="multiple" name="labels" bind:value={
                         () => model.labels.map((l) => l.id.toString()),
@@ -186,6 +179,13 @@
                           </Select.Group>
                         </Select.Content>
                       </Select.Root>
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="description">Description</Label>
+                    <Textarea
+                        id="description"
+                        placeholder="Description of the model"
+                        bind:value={model.description} />
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <div class="grid grid-cols-2 text-sm">
