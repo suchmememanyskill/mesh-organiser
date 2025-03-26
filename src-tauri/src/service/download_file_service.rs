@@ -40,12 +40,12 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ApplicationError
 
     if url.contains("makerworld") {
         file_name = url.split("name=").last().unwrap_or("model.stl");
-        source_uri = Some(String::from("https://www.thingiverse.com/"));
+        source_uri = Some(String::from("https://makerworld.com"));
     }
 
     if url.contains("thingiverse") {
         file_name = &redirect_url_filename;
-        source_uri = Some(String::from("https://makerworld.com"));
+        source_uri = Some(String::from("https://www.thingiverse.com/"));
     }
 
     if url.starts_with("https://files.printables.com/media/prints/")
