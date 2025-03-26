@@ -3,6 +3,21 @@ use strum::IntoEnumIterator;
 
 use crate::service::slicer_service::Slicer;
 
+#[derive(Clone, Deserialize)]
+pub struct Stored_Configuration {
+    pub data_path: String,
+    pub prusa_deep_link: bool,
+    pub cura_deep_link: bool,
+    pub bambu_deep_link: bool,
+    pub orca_deep_link: bool,
+    pub open_slicer_on_remote_model_import: bool,
+    pub show_ungrouped_models_in_groups: bool,
+    pub slicer: Option<Slicer>,
+    pub focus_after_link_import: bool,
+    pub thumbnail_color: String,
+    pub allow_importing_step : Option<bool>,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Configuration {
     pub data_path: String,
@@ -15,6 +30,26 @@ pub struct Configuration {
     pub slicer: Option<Slicer>,
     pub focus_after_link_import: bool,
     pub thumbnail_color: String,
+    pub allow_importing_step : bool,
+}
+
+pub fn stored_to_configuration(configuration : Stored_Configuration) -> Configuration
+{
+    let default = Configuration::default();
+
+    Configuration {
+        data_path: configuration.data_path,
+        prusa_deep_link: configuration.prusa_deep_link,
+        cura_deep_link: configuration.cura_deep_link,
+        bambu_deep_link: configuration.bambu_deep_link,
+        orca_deep_link: configuration.orca_deep_link,
+        open_slicer_on_remote_model_import: configuration.open_slicer_on_remote_model_import,
+        show_ungrouped_models_in_groups: configuration.show_ungrouped_models_in_groups,
+        slicer: configuration.slicer,
+        focus_after_link_import: configuration.focus_after_link_import,
+        thumbnail_color: configuration.thumbnail_color,
+        allow_importing_step : configuration.allow_importing_step.unwrap_or(default.allow_importing_step),
+    }
 }
 
 impl Default for Configuration {
@@ -32,6 +67,7 @@ impl Default for Configuration {
             slicer: installed_slicer,
             focus_after_link_import: true,
             thumbnail_color: String::from("#EEEEEE"),
+            allow_importing_step : false,
         }
     }
 }

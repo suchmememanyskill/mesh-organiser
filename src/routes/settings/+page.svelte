@@ -100,14 +100,7 @@
     <div
         class="flex flex-col gap-5 w-[500px] mx-auto"
     >
-        <div class="mt-5">
-            <p>
-                Note: All changed settings with a star (*) will take effect the next
-                time the application starts
-            </p>
-        </div>
-
-        <Card>
+        <Card class="mt-5">
             <CardHeader>
                 <CardTitle>Thumbnail generation</CardTitle>
             </CardHeader>
@@ -124,7 +117,7 @@
                         {/if}
                     </Button>
                     <div class="flex flex-col space-y-1.5">
-                        <Label for="color">Color of the thumbnails*</Label>
+                        <Label for="color">Color of the thumbnails</Label>
                         <div class="flex flex-row gap-2">
                             <Input
                                 id="color"
@@ -142,9 +135,14 @@
                     </div>
                 </div>
             </CardContent>
-            <CardFooter>
-                Note: Changing the color will only affect new thumbnails, unless all
-                thumbnails are regenerated.
+            <CardFooter class="flex flex-col gap-2">
+                <div>
+                    Note: Changing the color will only affect new thumbnails, unless all
+                    thumbnails are regenerated.
+                </div>
+                <div>
+                    Note: Images may not update in the application until the application is restarted.
+                </div>
             </CardFooter>
         </Card>
 
@@ -154,7 +152,7 @@
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
                 <div class="flex flex-col space-y-1.5">
-                    <Label for="preferredSlicer">Preferred slicer*</Label>
+                    <Label for="preferredSlicer">Preferred slicer</Label>
                     <Select.Root
                         type="single"
                         name="preferredSlicer"
@@ -199,6 +197,9 @@
                             >Default</Button
                         >
                     </div>
+                    <div>
+                        Note: Data path is not updated until the application is restarted.
+                    </div>
                 </div>
 
                 <div class="flex flex-col gap-3">
@@ -224,10 +225,10 @@
                 <CardTitle>Open links from browser</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                <CheckboxWithLabel bind:value={c.configuration.prusa_deep_link} label="Bind 'Open in PrusaSlicer' links*" />
-                <CheckboxWithLabel bind:value={c.configuration.cura_deep_link} label="Bind 'Open in Cura' links*" />
-                <CheckboxWithLabel bind:value={c.configuration.bambu_deep_link} label="Bind 'Open in Bambu Studio' links*" />
-                <CheckboxWithLabel bind:value={c.configuration.orca_deep_link} label="Bind 'Open in OrcaSlicer' links*" />
+                <CheckboxWithLabel bind:value={c.configuration.prusa_deep_link} label="Bind 'Open in PrusaSlicer' links" />
+                <CheckboxWithLabel bind:value={c.configuration.cura_deep_link} label="Bind 'Open in Cura' links" />
+                <CheckboxWithLabel bind:value={c.configuration.bambu_deep_link} label="Bind 'Open in Bambu Studio' links" />
+                <CheckboxWithLabel bind:value={c.configuration.orca_deep_link} label="Bind 'Open in OrcaSlicer' links" />
             </CardContent>
         </Card>
 
@@ -242,6 +243,7 @@
                     (val) => { c.configuration.show_ungrouped_models_in_groups = val; onInternalStateChange(); }
                 } label="Show ungrouped models in groups" />
                 <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
+                <CheckboxWithLabel bind:value={c.configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
             </CardContent>
         </Card>
     </div>

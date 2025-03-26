@@ -20,12 +20,13 @@ pub struct CreationResult {
 pub fn import_path(path: &str, app_state: &AppState, app_handle: &AppHandle) -> Result<CreationResult, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff);
+    let is_step_supported = app_state.get_configuration().allow_importing_step;
 
     if path_buff.is_dir() {
         return import_models_from_dir(path, &name, &app_state, &app_handle);
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
         return import_models_from_zip(path, &name, &app_state, &app_handle);
-    } else if is_supported_extension(&path_buff) {
+    } else if is_supported_extension(&path_buff, is_step_supported) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
         let mut file = File::open(&path_buff)?;
@@ -51,14 +52,12 @@ fn import_models_from_dir(
 ) -> Result<CreationResult, ApplicationError> {
     let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     let mut model_ids = Vec::new();
+    let is_step_supported = app_state.get_configuration().allow_importing_step;
 
     for entry in read_dir(path)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file())
-        .filter(|f| match f.extension() {
-            Some(ext) => ext == "stl" || ext == "obj" || ext == "3mf",
-            None => false,
-        })
+        .filter(|f| is_supported_extension(f, is_step_supported))
     {
         let file_name = util::prettify_file_name(&entry);
         let extension = entry.extension().unwrap().to_str().unwrap();
@@ -88,6 +87,7 @@ fn import_models_from_zip(
     let mut archive = zip::ZipArchive::new(zip_file)?;
     let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     let mut model_ids = Vec::new();
+    let is_step_supported = app_state.get_configuration().allow_importing_step;
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
@@ -96,7 +96,7 @@ fn import_models_from_zip(
             None => continue,
         };
 
-        if !is_supported_extension(&outpath) {
+        if !is_supported_extension(&outpath, is_step_supported) {
             continue;
         }
 
@@ -180,9 +180,9 @@ where
     return Ok(id);
 }
 
-fn is_supported_extension(path: &PathBuf) -> bool {
+fn is_supported_extension(path: &PathBuf, is_step_supported : bool) -> bool {
     match path.extension() {
-        Some(ext) => ext == "stl" || ext == "obj" || ext == "3mf",
+        Some(ext) => ext == "stl" || ext == "obj" || ext == "3mf" || (is_step_supported && ext == "step"),
         None => false,
     }
 }

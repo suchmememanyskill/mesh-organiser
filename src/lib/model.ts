@@ -83,6 +83,7 @@ export interface Configuration {
     slicer: string|null;
     focus_after_link_import: boolean;
     thumbnail_color : string;
+    allow_importing_step : boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -98,6 +99,7 @@ export function configurationDefault() : Configuration
         slicer: null,
         focus_after_link_import: true,
         thumbnail_color: "#DDDDDD",
+        allow_importing_step : false,
     }
 }
 

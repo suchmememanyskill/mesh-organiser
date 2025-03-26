@@ -1,7 +1,7 @@
 use std::{env::temp_dir, sync::{Arc, Mutex}};
 
 use error::ApplicationError;
-use serde::Serialize;
+use serde::{de, Serialize};
 use service::{
     app_state::{AppState, InitialState, read_configuration}, download_file_service, model_service::{self, CreationResult}, slicer_service::Slicer
 };
@@ -77,15 +77,20 @@ async fn get_labels(state: State<'_, AppState>) -> Result<Vec<db::label::Label>,
 async fn get_configuration(
     state: State<'_, AppState>,
 ) -> Result<configuration::Configuration, ApplicationError> {
-    Ok(state.configuration.clone())
+    Ok(state.get_configuration())
 }
 
 #[tauri::command]
 async fn set_configuration(
     configuration: Configuration,
     state: State<'_, AppState>,
+    app_handle: AppHandle,
 ) -> Result<(), ApplicationError> {
-    state.write_configuration(&configuration);
+    let deep_link_state_changed = state.write_configuration(&configuration);
+
+    if deep_link_state_changed {
+        state.configure_deep_links(&app_handle);
+    }
 
     Ok(())
 }
@@ -249,7 +254,7 @@ async fn open_in_slicer(
 ) -> Result<(), ApplicationError> {
     let models = db::model::get_models_by_id(model_ids, &state.db).await;
 
-    if let Some(slicer) = &state.configuration.slicer
+    if let Some(slicer) = &state.get_configuration().slicer
     {
         slicer.open(models, &state)?;
     }
@@ -385,28 +390,6 @@ pub fn run() {
 
                 let db = db::db::setup_db(&config).await;
 
-                if config.bambu_deep_link
-                {
-                    app.deep_link().register("bambustudio").unwrap();
-                }
-
-                if config.cura_deep_link
-                {
-                    app.deep_link().register("cura").unwrap();
-                }
-
-                if config.prusa_deep_link
-                {
-                    app.deep_link().register("prusaslicer").unwrap();
-                }
-
-                if config.orca_deep_link
-                {
-                    app.deep_link().register("orcaslicer").unwrap();
-                }
-
-                app.deep_link().register("meshorganiser").unwrap();
-
                 let mut initial_state = InitialState {
                     deep_link_url: None,
                 };
@@ -424,12 +407,16 @@ pub fn run() {
                     }
                 }
 
-                app.manage(AppState {
+                let state = AppState {
                     db: Arc::new(db),
-                    configuration: config,
+                    configuration: Mutex::new(config),
                     initial_state: initial_state,
                     app_data_path: app_data_path,
-                })
+                };
+
+                state.configure_deep_links(&app.handle());
+
+                app.manage(state);
             });
             Ok(())
         })

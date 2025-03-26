@@ -47,7 +47,7 @@ pub async fn generate_thumbnails(
         imported_amount += paths_slice.len();
         let mut command = app_handle.shell().sidecar("mesh-thumbnail").unwrap();
 
-        let color = app_state.configuration.thumbnail_color.replace("#", "").to_uppercase();
+        let color = app_state.get_configuration().thumbnail_color.replace("#", "").to_uppercase();
 
         command = command
             .arg("--rotatey")
