@@ -28,7 +28,7 @@ pub fn export_to_temp_folder(
 }
 
 fn cleanse_name(name : &str) -> String {
-    name
+    String::from(name
         .replace("\\", " ")
         .replace("/", " ")
         .replace(":", " ")
@@ -38,6 +38,7 @@ fn cleanse_name(name : &str) -> String {
         .replace("<", " ")
         .replace(">", " ")
         .replace("|", " ")
+        .trim())
 }
 
 fn get_path_from_model(
