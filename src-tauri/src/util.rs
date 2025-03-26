@@ -1,5 +1,7 @@
-use std::path::PathBuf;
+use std::{io::Read, path::PathBuf};
 use regex::Regex;
+
+use crate::error::ApplicationError;
 
 pub fn prettify_file_name(file: &PathBuf) -> String {
     let extension = file.extension();
@@ -74,4 +76,11 @@ pub fn convert_zip_to_extension(extension: &str) -> &str {
         "step.zip" => "step",
         _ => extension,
     }
+}
+
+pub fn read_file_as_text(path: &PathBuf) -> Result<String, ApplicationError> {
+    let mut file = std::fs::File::open(path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    Ok(contents)
 }

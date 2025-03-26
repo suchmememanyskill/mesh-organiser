@@ -1,6 +1,6 @@
 use super::app_state::AppState;
 use crate::db::model_group;
-use crate::util;
+use crate::util::{self, read_file_as_text};
 use crate::{db::model, error::ApplicationError};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -32,7 +32,7 @@ pub fn import_path(path: &str, app_state: &AppState, app_handle: &AppHandle) -> 
         let size = path_buff.metadata()?.len() as usize;
         let mut file = File::open(&path_buff)?;
 
-        let result = import_single_model(&mut file, extension, size, &name, &app_state)?;
+        let result = import_single_model(&mut file, extension, size, &name, None, &app_state,)?;
 
         return Ok(CreationResult {
             group_id: None,
@@ -54,18 +54,30 @@ fn import_models_from_dir(
     let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     let mut model_ids = Vec::new();
     let is_step_supported = app_state.get_configuration().allow_importing_step;
+    let mut temp_str;
+    let mut link = None;
 
     for entry in read_dir(path)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file())
-        .filter(|f| is_supported_extension(f, is_step_supported))
     {
+        if entry.file_name().take().unwrap() == ".link"
+        {
+            temp_str = read_file_as_text(&entry)?;
+            link = Some(temp_str.as_str());
+        }
+
+        if !is_supported_extension(&entry, is_step_supported)
+        {
+            continue;
+        }
+
         let file_name = util::prettify_file_name(&entry);
         let extension = entry.extension().unwrap().to_str().unwrap();
         let file_size = entry.metadata()?.len() as usize;
         let mut file = File::open(&entry)?;
 
-        let id = import_single_model(&mut file, extension, file_size, &file_name, &app_state)?;
+        let id = import_single_model(&mut file, extension, file_size, &file_name, link, &app_state)?;
         model_ids.push(id);
         let _ = app_handle.emit("import-count", model_ids.len());
     }
@@ -89,6 +101,8 @@ fn import_models_from_zip(
     let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     let mut model_ids = Vec::new();
     let is_step_supported = app_state.get_configuration().allow_importing_step;
+    let mut temp_str;
+    let mut link = None;
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
@@ -96,6 +110,14 @@ fn import_models_from_zip(
             Some(path) => path,
             None => continue,
         };
+
+        if outpath.file_name().take().unwrap() == ".link"
+        {
+            let mut file_contents: Vec<u8> = Vec::new();
+            file.read_to_end(&mut file_contents)?;
+            temp_str = String::from_utf8(file_contents).unwrap();
+            link = Some(temp_str.as_str());
+        }
 
         if !is_supported_extension(&outpath, is_step_supported) {
             continue;
@@ -106,7 +128,7 @@ fn import_models_from_zip(
             let extension = outpath.extension().unwrap().to_str().unwrap();
             let file_size = file.size() as usize;
 
-            let id = import_single_model(&mut file, extension, file_size, &file_name, &app_state)?;
+            let id = import_single_model(&mut file, extension, file_size, &file_name, link, &app_state)?;
             model_ids.push(id);
             let _ = app_handle.emit("import-count", model_ids.len());
         }
@@ -125,6 +147,7 @@ fn import_single_model<W>(
     file_type: &str,
     file_size: usize,
     name: &str,
+    link : Option<&str>,
     app_state: &AppState,
 ) -> Result<i64, ApplicationError>
 where
@@ -169,6 +192,7 @@ where
         &hash,
         new_extension,
         file_size as i64,
+        link,
         &app_state.db,
     );
 

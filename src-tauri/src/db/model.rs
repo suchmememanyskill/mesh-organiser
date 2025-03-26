@@ -172,9 +172,10 @@ pub fn add_model_sync(
     sha256: &str,
     filetype: &str,
     size: i64,
+    link : Option<&str>,
     db: &super::db::Db,
 ) -> i64 {
-    block_on(add_model(name, sha256, filetype, size, db))
+    block_on(add_model(name, sha256, filetype, size, link, db))
 }
 
 pub async fn add_model(
@@ -182,17 +183,19 @@ pub async fn add_model(
     sha256: &str,
     filetype: &str,
     size: i64,
+    link : Option<&str>,
     db: &super::db::Db,
 ) -> i64 {
     let now = chrono::Utc::now().to_rfc3339();
     let result = sqlx::query!(
-        "INSERT INTO models (model_name, model_sha256, model_added, model_filetype, model_size)
-         VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO models (model_name, model_sha256, model_added, model_filetype, model_size, model_url)
+         VALUES (?, ?, ?, ?, ?, ?)",
         name,
         sha256,
         now,
         filetype,
         size,
+        link
     )
     .execute(db)
     .await
