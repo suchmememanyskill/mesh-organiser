@@ -31,6 +31,8 @@ jobs:
 
       - name: setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: download mesh-thumbnail (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
