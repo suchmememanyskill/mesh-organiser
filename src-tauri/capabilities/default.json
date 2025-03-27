@@ -8,8 +8,7 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "dialog:default",
-    "dialog:default",
+    "dialog:allow-open",
     "deep-link:default",
     "shell:allow-open",
     "shell:default",
