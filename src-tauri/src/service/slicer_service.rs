@@ -5,9 +5,9 @@ use crate::service::export_service::export_to_temp_folder;
 
 use super::app_state::AppState;
 use crate::error::ApplicationError;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use serde::{Deserialize, Serialize};
 use std::process::Command;
 use strum::EnumIter;
 #[cfg(target_os = "windows")]
@@ -99,9 +99,9 @@ impl Slicer {
                 )),
                 None => None,
             },
-            Slicer::Cura => {
-                Some(String::from(get_cura_path().take().unwrap().to_str().unwrap()))
-            }
+            Slicer::Cura => Some(String::from(
+                get_cura_path().take().unwrap().to_str().unwrap(),
+            )),
             _ => {
                 return Err(ApplicationError::InternalError(String::from(
                     "Slicer not installed",
@@ -110,7 +110,7 @@ impl Slicer {
         }
         .take()
         .unwrap();
-    
+
         let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
 
         println!("Opening in slicer: {:?}", paths);
@@ -156,8 +156,7 @@ fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
 }
 
 #[cfg(target_os = "windows")]
-fn get_cura_path() -> Option<PathBuf> 
-{   
+fn get_cura_path() -> Option<PathBuf> {
     let program_files = "C:\\Program Files";
     if let Ok(entries) = fs::read_dir(program_files) {
         for entry in entries.flatten() {
@@ -175,6 +174,6 @@ fn get_cura_path() -> Option<PathBuf>
             }
         }
     }
-    
+
     None
 }

@@ -1,15 +1,18 @@
 use std::sync::{Arc, Mutex};
 
+use configuration::Configuration;
 use error::ApplicationError;
 use serde::Serialize;
 use service::{
-    app_state::{AppState, InitialState, read_configuration}, download_file_service, model_service::{self, CreationResult}, slicer_service::Slicer
+    app_state::{read_configuration, AppState, InitialState},
+    download_file_service,
+    model_service::{self, CreationResult},
+    slicer_service::Slicer,
 };
-use configuration::Configuration;
+use strum::IntoEnumIterator;
+use tauri::async_runtime::block_on;
 use tauri::{AppHandle, Emitter, Manager, State};
 use urlencoding::decode;
-use tauri::async_runtime::block_on;
-use strum::IntoEnumIterator;
 mod configuration;
 mod db;
 mod error;
@@ -28,7 +31,12 @@ async fn add_model(
     let result = tauri::async_runtime::spawn_blocking(move || {
         let result = model_service::import_path(&path_clone, &state_clone, &app_handle)?;
         let models = db::model::get_models_by_id_sync(result.model_ids.clone(), &state_clone.db);
-        block_on(service::thumbnail_service::generate_thumbnails(models, &state_clone, &app_handle, false))?;
+        block_on(service::thumbnail_service::generate_thumbnails(
+            models,
+            &state_clone,
+            &app_handle,
+            false,
+        ))?;
 
         Result::<CreationResult, ApplicationError>::Ok(result)
     })
@@ -95,10 +103,9 @@ async fn set_configuration(
 }
 
 #[derive(Serialize)]
-pub struct SlicerEntry
-{
-    slicer : Slicer,
-    installed: bool
+pub struct SlicerEntry {
+    slicer: Slicer,
+    installed: bool,
 }
 
 #[tauri::command]
@@ -237,10 +244,7 @@ async fn edit_label(
 }
 
 #[tauri::command]
-async fn delete_label(
-    label_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
+async fn delete_label(label_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
     db::label::delete_label(label_id, &state.db).await;
 
     Ok(())
@@ -253,8 +257,7 @@ async fn open_in_slicer(
 ) -> Result<(), ApplicationError> {
     let models = db::model::get_models_by_id(model_ids, &state.db).await;
 
-    if let Some(slicer) = &state.get_configuration().slicer
-    {
+    if let Some(slicer) = &state.get_configuration().slicer {
         slicer.open(models, &state)?;
     }
 
@@ -267,8 +270,9 @@ async fn get_initial_state(state: State<'_, AppState>) -> Result<InitialState, A
 }
 
 #[tauri::command]
-async fn download_file(url : &str) -> Result<download_file_service::DownloadResult, ApplicationError> 
-{
+async fn download_file(
+    url: &str,
+) -> Result<download_file_service::DownloadResult, ApplicationError> {
     let response = download_file_service::download_file(url).await?;
 
     Ok(response)
@@ -276,13 +280,13 @@ async fn download_file(url : &str) -> Result<download_file_service::DownloadResu
 
 #[tauri::command]
 async fn open_in_folder(
-    model_ids : Vec<i64>,
+    model_ids: Vec<i64>,
     state: State<'_, AppState>,
-) -> Result<(), ApplicationError>
-{
+) -> Result<(), ApplicationError> {
     let models = db::model::get_models_by_id(model_ids, &state.db).await;
 
-    let (temp_dir, _) = service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
+    let (temp_dir, _) =
+        service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
 
     crate::util::open_folder_in_explorer(temp_dir.to_str().unwrap());
 
@@ -303,18 +307,17 @@ async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, Ap
     Ok(size)
 }
 
-fn extract_deep_link(data : &str) -> Option<String>
-{
-    let possible_starts = vec!["bambustudio://open/?file=", 
-                                          "cura://open/?file=", 
-                                          "prusaslicer://open/?file=", 
-                                          "orcaslicer://open/?file=",
-                                          "meshorganiser://open/?file="];
+fn extract_deep_link(data: &str) -> Option<String> {
+    let possible_starts = vec![
+        "bambustudio://open/?file=",
+        "cura://open/?file=",
+        "prusaslicer://open/?file=",
+        "orcaslicer://open/?file=",
+        "meshorganiser://open/?file=",
+    ];
 
-    for start in possible_starts
-    {
-        if data.starts_with(start)
-        {
+    for start in possible_starts {
+        if data.starts_with(start) {
             let encoded = data[start.len()..].to_string();
             let decode = decode(&encoded).unwrap();
 
@@ -325,8 +328,7 @@ fn extract_deep_link(data : &str) -> Option<String>
     None
 }
 
-fn remove_temp_paths()
-{
+fn remove_temp_paths() {
     let threshold = std::time::Duration::from_secs(5 * 60);
     let now = std::time::SystemTime::now();
     for entry in std::fs::read_dir(&std::env::temp_dir()).unwrap() {
@@ -342,7 +344,11 @@ fn remove_temp_paths()
         {
             if let Ok(metadata) = std::fs::metadata(&path) {
                 if let Ok(modified) = metadata.modified() {
-                    if now.duration_since(modified).unwrap_or(std::time::Duration::ZERO) >= threshold {
+                    if now
+                        .duration_since(modified)
+                        .unwrap_or(std::time::Duration::ZERO)
+                        >= threshold
+                    {
                         println!("Removing temporary path {:?}", path);
                         std::fs::remove_dir_all(&path).unwrap();
                     }
@@ -357,6 +363,7 @@ pub fn run() {
     remove_temp_paths();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
             println!("a new app instance was opened with {argv:?} and the deep link event was already triggered");
 

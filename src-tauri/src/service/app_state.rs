@@ -4,15 +4,14 @@ use tauri_plugin_deep_link::DeepLinkExt;
 
 use crate::configuration;
 use crate::db;
+use configuration::{stored_to_configuration, Configuration, StoredConfiguration};
 use std::path::PathBuf;
 use std::sync::Arc;
-use configuration::{Configuration, StoredConfiguration, stored_to_configuration};
 use std::sync::Mutex;
 
 #[derive(Clone, Serialize)]
-pub struct InitialState 
-{
-    pub deep_link_url : Option<String>,
+pub struct InitialState {
+    pub deep_link_url: Option<String>,
 }
 
 pub struct AppState {
@@ -55,11 +54,15 @@ impl AppState {
         std::fs::write(path, json).expect("Failed to write configuration");
 
         let mut configuration = self.configuration.lock().unwrap();
-        let deep_link_setting_changed = 
-            (configuration.prusa_deep_link != new_configuration.prusa_deep_link &&  new_configuration.prusa_deep_link) ||
-            (configuration.cura_deep_link != new_configuration.cura_deep_link &&  new_configuration.cura_deep_link) ||
-            (configuration.bambu_deep_link != new_configuration.bambu_deep_link &&  new_configuration.bambu_deep_link) ||
-            (configuration.orca_deep_link != new_configuration.orca_deep_link &&  new_configuration.orca_deep_link);
+        let deep_link_setting_changed = (configuration.prusa_deep_link
+            != new_configuration.prusa_deep_link
+            && new_configuration.prusa_deep_link)
+            || (configuration.cura_deep_link != new_configuration.cura_deep_link
+                && new_configuration.cura_deep_link)
+            || (configuration.bambu_deep_link != new_configuration.bambu_deep_link
+                && new_configuration.bambu_deep_link)
+            || (configuration.orca_deep_link != new_configuration.orca_deep_link
+                && new_configuration.orca_deep_link);
 
         configuration.prusa_deep_link = new_configuration.prusa_deep_link;
         configuration.cura_deep_link = new_configuration.cura_deep_link;
@@ -85,27 +88,22 @@ impl AppState {
         self.configuration.lock().unwrap().clone()
     }
 
-    pub fn configure_deep_links(&self, app_handle : &AppHandle)
-    {
+    pub fn configure_deep_links(&self, app_handle: &AppHandle) {
         let config = self.get_configuration();
 
-        if config.bambu_deep_link
-        {
+        if config.bambu_deep_link {
             let _ = app_handle.deep_link().register("bambustudio");
         }
 
-        if config.cura_deep_link
-        {
+        if config.cura_deep_link {
             let _ = app_handle.deep_link().register("cura");
         }
 
-        if config.prusa_deep_link
-        {
+        if config.prusa_deep_link {
             let _ = app_handle.deep_link().register("prusaslicer");
         }
 
-        if config.orca_deep_link
-        {
+        if config.orca_deep_link {
             let _ = app_handle.deep_link().register("orcaslicer");
         }
 
@@ -121,11 +119,12 @@ pub fn read_configuration(app_data_path: &str) -> Configuration {
         return Configuration {
             data_path: String::from(app_data_path),
             ..Default::default()
-        }
+        };
     }
 
     let json = std::fs::read_to_string(path).expect("Failed to read configuration");
 
-    let stored_configuration : StoredConfiguration = serde_json::from_str(&json).expect("Failed to parse configuration");
+    let stored_configuration: StoredConfiguration =
+        serde_json::from_str(&json).expect("Failed to parse configuration");
     return stored_to_configuration(stored_configuration);
 }

@@ -1,5 +1,5 @@
-use std::{io::Read, path::PathBuf};
 use regex::Regex;
+use std::{io::Read, path::PathBuf};
 
 use crate::error::ApplicationError;
 
@@ -28,7 +28,6 @@ pub fn prettify_file_name(file: &PathBuf) -> String {
     file_name
 }
 
-
 pub fn open_folder_in_explorer(path: &str) {
     #[cfg(target_os = "windows")]
     {
@@ -49,19 +48,26 @@ pub fn open_folder_in_explorer(path: &str) {
 
 pub fn get_folder_size(path: &str) -> u64 {
     let path = PathBuf::from(path);
-    std::fs::read_dir(path).unwrap().map(|f| f.unwrap().metadata().unwrap().len()).sum()
+    std::fs::read_dir(path)
+        .unwrap()
+        .map(|f| f.unwrap().metadata().unwrap().len())
+        .sum()
 }
 
 pub fn is_zippable_file_extension(extension: &str) -> bool {
     let lowercase = extension.to_lowercase();
 
-    vec!["stl", "obj", "step"].iter().any(|f| lowercase.as_str().eq(*f))
+    vec!["stl", "obj", "step"]
+        .iter()
+        .any(|f| lowercase.as_str().eq(*f))
 }
 
 pub fn is_zipped_file_extension(extension: &str) -> bool {
     let lowercase = extension.to_lowercase();
 
-    vec!["stl.zip", "obj.zip", "step.zip"].iter().any(|f| lowercase.as_str().eq(*f))
+    vec!["stl.zip", "obj.zip", "step.zip"]
+        .iter()
+        .any(|f| lowercase.as_str().eq(*f))
 }
 
 pub fn convert_extension_to_zip(extension: &str) -> String {

@@ -1,6 +1,6 @@
+use super::label;
 use super::label::Label;
 use super::model_group::ModelGroup;
-use super::label;
 use serde::Serialize;
 use sqlx::Row;
 use sqlx::{self, types::chrono};
@@ -172,7 +172,7 @@ pub fn add_model_sync(
     sha256: &str,
     filetype: &str,
     size: i64,
-    link : Option<&str>,
+    link: Option<&str>,
     db: &super::db::Db,
 ) -> i64 {
     block_on(add_model(name, sha256, filetype, size, link, db))
@@ -183,7 +183,7 @@ pub async fn add_model(
     sha256: &str,
     filetype: &str,
     size: i64,
-    link : Option<&str>,
+    link: Option<&str>,
     db: &super::db::Db,
 ) -> i64 {
     let now = chrono::Utc::now().to_rfc3339();

@@ -15,9 +15,9 @@ pub struct StoredConfiguration {
     pub slicer: Option<Slicer>,
     pub focus_after_link_import: bool,
     pub thumbnail_color: String,
-    pub allow_importing_step : Option<bool>,
-    pub size_option_models : Option<String>,
-    pub size_option_groups : Option<String>,
+    pub allow_importing_step: Option<bool>,
+    pub size_option_models: Option<String>,
+    pub size_option_groups: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -32,13 +32,12 @@ pub struct Configuration {
     pub slicer: Option<Slicer>,
     pub focus_after_link_import: bool,
     pub thumbnail_color: String,
-    pub allow_importing_step : bool,
-    pub size_option_models : String,
-    pub size_option_groups : String,
+    pub allow_importing_step: bool,
+    pub size_option_models: String,
+    pub size_option_groups: String,
 }
 
-pub fn stored_to_configuration(configuration : StoredConfiguration) -> Configuration
-{
+pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
     let default = Configuration::default();
 
     Configuration {
@@ -52,9 +51,15 @@ pub fn stored_to_configuration(configuration : StoredConfiguration) -> Configura
         slicer: configuration.slicer,
         focus_after_link_import: configuration.focus_after_link_import,
         thumbnail_color: configuration.thumbnail_color,
-        allow_importing_step : configuration.allow_importing_step.unwrap_or(default.allow_importing_step),
-        size_option_models : configuration.size_option_models.unwrap_or(default.size_option_models),
-        size_option_groups : configuration.size_option_groups.unwrap_or(default.size_option_groups),
+        allow_importing_step: configuration
+            .allow_importing_step
+            .unwrap_or(default.allow_importing_step),
+        size_option_models: configuration
+            .size_option_models
+            .unwrap_or(default.size_option_models),
+        size_option_groups: configuration
+            .size_option_groups
+            .unwrap_or(default.size_option_groups),
     }
 }
 
@@ -73,9 +78,9 @@ impl Default for Configuration {
             slicer: installed_slicer,
             focus_after_link_import: true,
             thumbnail_color: String::from("#EEEEEE"),
-            allow_importing_step : false,
-            size_option_models : String::from("Grid_Medium"),
-            size_option_groups : String::from("Grid_Medium"),
+            allow_importing_step: false,
+            size_option_models: String::from("Grid_Medium"),
+            size_option_groups: String::from("Grid_Medium"),
         }
     }
 }

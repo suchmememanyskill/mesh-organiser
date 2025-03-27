@@ -1,16 +1,16 @@
 use super::app_state::AppState;
 use crate::db::model_group;
 use crate::util::{self, read_file_as_text};
+use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use crate::{db::model, error::ApplicationError};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use tauri::{AppHandle, Emitter};
 use std::fs::{read_dir, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use tauri::{AppHandle, Emitter};
 use zip;
 use zip::write::SimpleFileOptions;
-use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 
 #[derive(Serialize)]
 pub struct CreationResult {
@@ -18,7 +18,11 @@ pub struct CreationResult {
     pub model_ids: Vec<i64>,
 }
 
-pub fn import_path(path: &str, app_state: &AppState, app_handle: &AppHandle) -> Result<CreationResult, ApplicationError> {
+pub fn import_path(
+    path: &str,
+    app_state: &AppState,
+    app_handle: &AppHandle,
+) -> Result<CreationResult, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff);
     let is_step_supported = app_state.get_configuration().allow_importing_step;
@@ -32,7 +36,7 @@ pub fn import_path(path: &str, app_state: &AppState, app_handle: &AppHandle) -> 
         let size = path_buff.metadata()?.len() as usize;
         let mut file = File::open(&path_buff)?;
 
-        let result = import_single_model(&mut file, extension, size, &name, None, &app_state,)?;
+        let result = import_single_model(&mut file, extension, size, &name, None, &app_state)?;
 
         return Ok(CreationResult {
             group_id: None,
@@ -61,14 +65,12 @@ fn import_models_from_dir(
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file())
     {
-        if entry.file_name().take().unwrap() == ".link"
-        {
+        if entry.file_name().take().unwrap() == ".link" {
             temp_str = read_file_as_text(&entry)?;
             link = Some(temp_str.as_str());
         }
 
-        if !is_supported_extension(&entry, is_step_supported)
-        {
+        if !is_supported_extension(&entry, is_step_supported) {
             continue;
         }
 
@@ -77,7 +79,9 @@ fn import_models_from_dir(
         let file_size = entry.metadata()?.len() as usize;
         let mut file = File::open(&entry)?;
 
-        let id = import_single_model(&mut file, extension, file_size, &file_name, link, &app_state)?;
+        let id = import_single_model(
+            &mut file, extension, file_size, &file_name, link, &app_state,
+        )?;
         model_ids.push(id);
         let _ = app_handle.emit("import-count", model_ids.len());
     }
@@ -111,8 +115,7 @@ fn import_models_from_zip(
             None => continue,
         };
 
-        if outpath.file_name().take().unwrap() == ".link"
-        {
+        if outpath.file_name().take().unwrap() == ".link" {
             let mut file_contents: Vec<u8> = Vec::new();
             file.read_to_end(&mut file_contents)?;
             temp_str = String::from_utf8(file_contents).unwrap();
@@ -128,7 +131,9 @@ fn import_models_from_zip(
             let extension = outpath.extension().unwrap().to_str().unwrap();
             let file_size = file.size() as usize;
 
-            let id = import_single_model(&mut file, extension, file_size, &file_name, link, &app_state)?;
+            let id = import_single_model(
+                &mut file, extension, file_size, &file_name, link, &app_state,
+            )?;
             model_ids.push(id);
             let _ = app_handle.emit("import-count", model_ids.len());
         }
@@ -147,7 +152,7 @@ fn import_single_model<W>(
     file_type: &str,
     file_size: usize,
     name: &str,
-    link : Option<&str>,
+    link: Option<&str>,
     app_state: &AppState,
 ) -> Result<i64, ApplicationError>
 where
@@ -172,7 +177,8 @@ where
 
     let new_extension = convert_extension_to_zip(file_type);
 
-    let final_file_name = PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, &new_extension));
+    let final_file_name =
+        PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, &new_extension));
 
     let mut file_handle = File::create(&final_file_name)?;
 
@@ -199,12 +205,15 @@ where
     return Ok(id);
 }
 
-fn is_supported_extension(path: &PathBuf, is_step_supported : bool) -> bool {
+fn is_supported_extension(path: &PathBuf, is_step_supported: bool) -> bool {
     match path.extension() {
         Some(ext) => {
             let lowercase = ext.to_str().unwrap().to_lowercase();
-            lowercase == "stl" || lowercase == "obj" || lowercase == "3mf" || (is_step_supported && lowercase == "step")
-        },
+            lowercase == "stl"
+                || lowercase == "obj"
+                || lowercase == "3mf"
+                || (is_step_supported && lowercase == "step")
+        }
         None => false,
     }
 }

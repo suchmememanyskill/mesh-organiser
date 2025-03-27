@@ -40,13 +40,17 @@ pub async fn generate_thumbnails(
         })
         .collect();
 
-    let mut imported_amount : usize = 0;
+    let mut imported_amount: usize = 0;
 
     for paths_slice in paths.chunks(100) {
         imported_amount += paths_slice.len();
         let mut command = app_handle.shell().sidecar("mesh-thumbnail").unwrap();
 
-        let color = app_state.get_configuration().thumbnail_color.replace("#", "").to_uppercase();
+        let color = app_state
+            .get_configuration()
+            .thumbnail_color
+            .replace("#", "")
+            .to_uppercase();
 
         command = command
             .arg("--rotatey")
@@ -70,11 +74,11 @@ pub async fn generate_thumbnails(
         {
             let stdout = String::from_utf8(output.stdout).unwrap();
             let stderr = String::from_utf8(output.stderr).unwrap();
-        
+
             println!("Thumbnail generation output: {}", stdout);
             println!("Thumbnail generation error: {}", stderr);
         }
     }
-    
+
     Ok(())
 }

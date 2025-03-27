@@ -1,34 +1,37 @@
+use chrono::Utc;
+use serde::Serialize;
 use std::env;
 use std::fs::{self, File};
 use std::io::Write;
-use chrono::Utc;
-use serde::Serialize;
 use urlencoding::decode;
 
 use crate::error::ApplicationError;
 
 #[derive(Serialize)]
-pub struct DownloadResult
-{
-    pub path : String,
-    pub source_uri : Option<String>,
+pub struct DownloadResult {
+    pub path: String,
+    pub source_uri: Option<String>,
 }
 
 pub async fn download_file(url: &str) -> Result<DownloadResult, ApplicationError> {
     let response = reqwest::get(url).await?;
-    let mut source_uri : Option<String> = None;
+    let mut source_uri: Option<String> = None;
 
     if !response.status().is_success() {
-        return Err(ApplicationError::InternalError(format!("Failed to download file from url: {}. Status code {}.", url, response.status())));
+        return Err(ApplicationError::InternalError(format!(
+            "Failed to download file from url: {}. Status code {}.",
+            url,
+            response.status()
+        )));
     }
-    
+
     let redirect_url_filename = match response.url().path_segments() {
         Some(segments) => String::from(decode(segments.last().unwrap_or("model.stl")).unwrap()),
         None => String::from("model.stl"),
     };
 
     let bytes = response.bytes().await?;
-    
+
     let temp_dir = env::temp_dir().join(format!(
         "meshorganiser_download_action_{}",
         Utc::now().timestamp_nanos_opt().unwrap()
@@ -48,8 +51,7 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ApplicationError
         source_uri = Some(String::from("https://www.thingiverse.com/"));
     }
 
-    if url.starts_with("https://files.printables.com/media/prints/")
-    {
+    if url.starts_with("https://files.printables.com/media/prints/") {
         let id = String::from(url[42..].split("/").next().unwrap());
         source_uri = Some(format!("https://www.printables.com/model/{}", id));
     }
@@ -59,7 +61,7 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ApplicationError
     file.write_all(&bytes)?;
 
     Ok(DownloadResult {
-        path : file_path.to_str().unwrap().to_string(),
-        source_uri
+        path: file_path.to_str().unwrap().to_string(),
+        source_uri,
     })
 }
