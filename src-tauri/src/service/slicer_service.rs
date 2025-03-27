@@ -23,6 +23,17 @@ pub enum Slicer {
     BambuStudio,
 }
 
+fn get_flatpak_slicer_package(slicer : &Slicer) -> String
+{
+    match slicer {
+        Slicer::PrusaSlicer => "com.prusa3d.PrusaSlicer",
+        Slicer::OrcaSlicer => "io.github.softfever.OrcaSlicer",
+        Slicer::Cura => "com.ultimaker.cura",
+        Slicer::BambuStudio => "com.bambulab.BambuStudio",
+    }.to_string()
+}
+
+
 impl Slicer {
     #[cfg(target_os = "windows")]
     pub fn is_installed(&self) -> bool {
@@ -62,7 +73,12 @@ impl Slicer {
 
     #[cfg(target_os = "linux")]
     pub fn is_installed(&self) -> bool {
-        false
+        let output = Command::new("flatpak")
+            .arg("info")
+            .arg(get_flatpak_slicer_package(&slicer))
+            .output()?;
+
+        output.status.success()
     }
 
     #[cfg(target_os = "windows")]
@@ -131,7 +147,30 @@ impl Slicer {
 
     #[cfg(target_os = "linux")]
     fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
-        Err(ApplicationError::InternalError)
+        if !self.is_installed() {
+            return Err(ApplicationError::InternalError(String::from(
+                "Slicer not installed",
+            )));
+        }
+
+        let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
+
+        println!("Opening in slicer: {:?}", paths);
+
+        if paths.len() == 0 {
+            return Err(ApplicationError::InternalError(String::from(
+                "No models to open",
+            )));
+        }
+
+        let _ = Command::new("flatpak")
+            .arg("run")
+            .arg(get_flatpak_slicer_package(&self))
+            .arg("--")
+            .args(paths)
+            .output()?;
+
+        Ok(())
     }
 }
 
