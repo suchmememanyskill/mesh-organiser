@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Model } from "$lib/model";
     import ModelTiny from "$lib/components/view/model-tiny.svelte";
+    import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
     import { Input } from "$lib/components/ui/input";
@@ -8,6 +9,7 @@
     import { onDestroy } from "svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
+    import { c, on_save_configuration } from "$lib/data.svelte";
 
     const props: { models: Model[]; default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
@@ -23,14 +25,12 @@
             | "name-desc"
             | "size-asc"
             | "size-desc";
-        size: "Small" | "Medium" | "Large";
         limit: number;
     }
 
     const currentFilter = $state<SearchFilters>({
         search: "",
         order: "date-desc",
-        size: "Small",
         limit: 100,
     });
 
@@ -45,12 +45,15 @@
     }
 
     const sizes = {
-        Small: "w-40",
-        Medium: "w-60",
-        Large: "w-80",
+        Grid_Small: "w-32 text-sm",
+        Grid_Medium: "w-40",
+        Grid_Large: "w-60",
+        List_Small: "h-10 text-sm",
+        List_Medium: "h-14",
+        List_Large: "h-20 text-lg",
     };
 
-    const size = $derived(sizes[currentFilter.size]);
+    const size = $derived(sizes[c.configuration.size_option_models]);
 
     const readableOrders = {
         "date-asc": "Date (Asc)",
@@ -207,10 +210,16 @@
             });
         }, 30);
     }
+
+    $effect(() => {
+        // TODO: Make this not run on every render
+        const modified_configuration = $state.snapshot(c.configuration);
+        on_save_configuration(modified_configuration);
+    });
 </script>
 
 <div class="flex flex-row h-full">
-    <div class="flex flex-col gap-1 flex-grow">
+    <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
             <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search..." />
     
@@ -230,16 +239,16 @@
                 </Select.Content>
             </Select.Root>
     
-            <Select.Root type="single" name="Size" bind:value={currentFilter.size}>
+            <Select.Root type="single" name="Size" bind:value={c.configuration.size_option_models}>
                 <Select.Trigger class="border-primary">
-                    {currentFilter.size}
+                    {c.configuration.size_option_models.replaceAll("_", " ")}
                 </Select.Trigger>
                 <Select.Content>
                     <Select.Group>
                         <Select.GroupHeading>Size options</Select.GroupHeading>
                         {#each Object.entries(sizes) as size_entry}
-                            <Select.Item value={size_entry[0]} label={size_entry[0]}
-                                >{size_entry[0]}</Select.Item
+                            <Select.Item value={size_entry[0]} label={size_entry[0].replaceAll("_", " ")}
+                                >{size_entry[0].replaceAll("_", " ")}</Select.Item
                             >
                         {/each}
                     </Select.Group>
@@ -247,12 +256,20 @@
             </Select.Root>
         </div>
         <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            <RightClickModels models={selected} class="flex flex-row justify-center gap-5 flex-wrap">
-                {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
-                    <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
-                        <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
-                    </div>
-                {/each}
+            <RightClickModels models={selected} class="flex flex-row justify-center gap-2 flex-wrap">
+                {#if c.configuration.size_option_models.includes("List")}
+                    {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
+                        <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="w-full">
+                            <ModelTinyList {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
+                        </div>
+                    {/each}
+                {:else}
+                    {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
+                        <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
+                            <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
+                        </div>
+                    {/each}
+                {/if}
             </RightClickModels>
         </div>
     </div> 

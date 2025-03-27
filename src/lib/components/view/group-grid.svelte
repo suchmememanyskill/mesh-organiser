@@ -8,10 +8,12 @@
     import { onDestroy } from "svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
     import GroupTiny from "./group-tiny.svelte";
+    import GroupTinyList from "./group-tiny-list.svelte";
     import EditMultiModel from "$lib/components/edit/multi-model.svelte";
     import EditGroup from "$lib/components/edit/group.svelte";
     import { buttonVariants } from "$lib/components/ui/button";
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
+    import { c, on_save_configuration } from "$lib/data.svelte";
 
     const props: { groups: GroupedEntry[] } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
@@ -25,14 +27,12 @@
             | "date-desc"
             | "name-asc"
             | "name-desc";
-        size: "Small" | "Medium" | "Large";
         limit: number;
     }
 
     const currentFilter = $state<SearchFilters>({
         search: "",
         order: "date-desc",
-        size: "Small",
         limit: 100,
     });
 
@@ -47,12 +47,15 @@
     }
 
     const sizes = {
-        Small: "w-40",
-        Medium: "w-60",
-        Large: "w-80",
+        Grid_Small: "w-32 text-sm",
+        Grid_Medium: "w-40",
+        Grid_Large: "w-60",
+        List_Small: "h-10 text-sm",
+        List_Medium: "h-14",
+        List_Large: "h-20 text-lg",
     };
 
-    const size = $derived(sizes[currentFilter.size]);
+    const size = $derived(sizes[c.configuration.size_option_groups]);
 
     const readableOrders = {
         "date-asc": "Date (Asc)",
@@ -197,10 +200,15 @@
             });
         }, 30);
     }
+
+    $effect(() => {
+        const modified_configuration = $state.snapshot(c.configuration);
+        on_save_configuration(modified_configuration);
+    });
 </script>
 
 <div class="flex flex-row h-full">
-    <div class="flex flex-col gap-1 flex-grow">
+    <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
             <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search..." />
     
@@ -220,16 +228,16 @@
                 </Select.Content>
             </Select.Root>
     
-            <Select.Root type="single" name="Size" bind:value={currentFilter.size}>
+            <Select.Root type="single" name="Size" bind:value={c.configuration.size_option_groups}>
                 <Select.Trigger class="border-primary">
-                    {currentFilter.size}
+                    {c.configuration.size_option_groups.replaceAll("_", " ")}
                 </Select.Trigger>
                 <Select.Content>
                     <Select.Group>
                         <Select.GroupHeading>Size options</Select.GroupHeading>
                         {#each Object.entries(sizes) as size_entry}
-                            <Select.Item value={size_entry[0]} label={size_entry[0]}
-                                >{size_entry[0]}</Select.Item
+                            <Select.Item value={size_entry[0]} label={size_entry[0].replaceAll("_", " ")}
+                                >{size_entry[0].replaceAll("_", " ")}</Select.Item
                             >
                         {/each}
                     </Select.Group>
@@ -238,12 +246,20 @@
         </div>
         
         <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-5 flex-wrap">
-                {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
-                    <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
-                        <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
-                    </div>
-                {/each}
+            <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-2 flex-wrap">
+                {#if c.configuration.size_option_groups.includes("List")}
+                    {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="w-full">
+                            <GroupTinyList group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
+                        </div>
+                    {/each}
+                {:else}
+                    {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
+                            <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
+                        </div>
+                    {/each}
+                {/if}
             </RightClickModels>
         </div>
     </div> 

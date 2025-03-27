@@ -1,5 +1,6 @@
 import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault } from "./model";
-import { getLabels, getModels, getConfig } from "./tauri";
+import { getLabels, getModels, getConfig, setConfig } from "./tauri";
+import { debounce } from "./utils";
 
 export const data = $state({
     entries : [] as ModelWithGroup[],
@@ -197,3 +198,11 @@ export async function initConfiguration() : Promise<void>
     console.log(config);
     c.configuration = config;
 }
+
+export const on_save_configuration = debounce(
+    async (edited_configuration: Configuration) => {
+        console.log("Setting config", edited_configuration);
+        await setConfig(edited_configuration);
+    },
+    500,
+);

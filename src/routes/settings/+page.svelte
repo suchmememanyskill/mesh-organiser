@@ -7,8 +7,8 @@
         computeModelFolderSize,
     } from "$lib/tauri";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-    import { c, updateState, data } from "$lib/data.svelte";
-    import { debounce, toReadableSize } from "$lib/utils";
+    import { c, updateState, data, on_save_configuration } from "$lib/data.svelte";
+    import { toReadableSize } from "$lib/utils";
     import { Input } from "$lib/components/ui/input/index.js";
     import type { Configuration, SlicerEntry } from "$lib/model";
 
@@ -76,23 +76,15 @@
         }
     });
 
-    const on_save_configuration = debounce(
-        async (edited_configuration: Configuration) => {
-            console.log("Setting config", edited_configuration);
-            await setConfig(edited_configuration);
-        },
-        500,
-    );
-
-    $effect(() => {
-        const modified_configuration = $state.snapshot(c.configuration);
-        on_save_configuration(modified_configuration);
-    });
-
     onMount(async () => {
         slicers = await getAvailableSlicers();
         app_data_dir = await appDataDir();
         model_dir_size = await computeModelFolderSize();
+    });
+
+    $effect(() => {
+        const modified_configuration = $state.snapshot(c.configuration);
+        on_save_configuration(modified_configuration);
     });
 </script>
 
