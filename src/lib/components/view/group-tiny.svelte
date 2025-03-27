@@ -9,15 +9,19 @@
     import type { Model, GroupedEntry } from "$lib/model";
     import GroupImg from "$lib/components/view/group-img.svelte";
     import type { ClassValue } from "svelte/elements";
+    import { Badge } from "$lib/components/ui/badge/index.js";
 
     const props: { group: GroupedEntry, class?: ClassValue } = $props();
 </script>
 
 <Card class={props.class}>
     <CardHeader>
-        <h2 class="whitespace-nowrap w-100 overflow-hidden font-bold">{props.group.group.name}</h2>
+        <h2 class="whitespace-nowrap w-100 overflow-hidden font-bold text-ellipsis text-center">{props.group.group.name}</h2>
     </CardHeader>
-    <CardContent>
+    <CardContent class="relative">
         <GroupImg model={props.group.models} class="w-full aspect-square" />
+        {#if props.group.total >= 2}
+            <Badge class="absolute bottom-2 right-2">{props.group.total}</Badge>
+        {/if}    
     </CardContent>
 </Card>
