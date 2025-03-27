@@ -11,6 +11,8 @@
     import { goto } from '$app/navigation';
     import { updateState, initConfiguration, c } from '$lib/data.svelte';
     import { getCurrentWindow } from '@tauri-apps/api/window';
+    import { check } from '@tauri-apps/plugin-updater';
+    import { relaunch } from '@tauri-apps/plugin-process';
 
     let { children } = $props();
 
@@ -79,6 +81,31 @@
         await initConfiguration();
         await updateState();
         await removeDeadGroups();
+
+        try 
+        {
+            const update = await check();
+
+            if (update)
+            {
+                if (confirm(`A new version of Mesh Organiser (${update.currentVersion} -> ${update.version}) is available. Do you want to update?`))
+                {
+                    await update.downloadAndInstall((event) => {
+                        switch (event.event) {
+                        case 'Started':
+                            toast.info("Downloading update...");
+                            break;
+                        }
+                    });
+
+                    await relaunch();
+                }
+            }
+        }
+        catch
+        {
+            toast.error("Failed to check for updates");
+        }
     });
 
 </script>

@@ -13,7 +13,7 @@
 
     const props: { models: Model[]; default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
-
+    
     let scrollContainer : HTMLElement;
 
     interface SearchFilters {
