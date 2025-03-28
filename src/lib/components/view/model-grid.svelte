@@ -211,9 +211,17 @@
         }, 30);
     }
 
+    let initial_render = true;
+
     $effect(() => {
-        // TODO: Make this not run on every render
         const modified_configuration = $state.snapshot(c.configuration);
+
+        if (initial_render)
+        {
+            initial_render = false;
+            return;
+        }
+
         on_save_configuration(modified_configuration);
     });
 </script>
@@ -256,7 +264,7 @@
             </Select.Root>
         </div>
         <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            <RightClickModels models={selected} class="flex flex-row justify-center gap-2 flex-wrap">
+            <RightClickModels models={selected} class="flex flex-row justify-center gap-2 flex-wrap outline-0">
                 {#if c.configuration.size_option_models.includes("List")}
                     {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
                         <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="w-full">

@@ -201,9 +201,17 @@
         }, 30);
     }
 
+    let initial_render = true;
+
     $effect(() => {
-        // TODO: Make this not run on every render
         const modified_configuration = $state.snapshot(c.configuration);
+
+        if (initial_render)
+        {
+            initial_render = false;
+            return;
+        }
+
         on_save_configuration(modified_configuration);
     });
 </script>
@@ -247,7 +255,7 @@
         </div>
         
         <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-2 flex-wrap">
+            <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-2 flex-wrap outline-0">
                 {#if c.configuration.size_option_groups.includes("List")}
                     {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
                         <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="w-full">
@@ -264,19 +272,21 @@
             </RightClickModels>
         </div>
     </div> 
-    {#if selected.length >= 2}
+    {#if selected.length >= 1}
         <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-            <EditMultiModel models={selected.map(x => x.models).flat()} />
-        </div>
-    {:else if selected.length === 1 && selected[0].group.id >= 0}
-        <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-            <EditGroup group={selected[0].group} settingsVertical={true} />
-            <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models individually</a>
-            <EditMultiModel models={selected[0].models} />
-        </div>
-    {:else if selected.length === 1}
-        <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-            <ModelEdit model={selected[0].models[0]} full_image={true} />
+            {#if selected.length >= 2}
+                <EditMultiModel models={selected.map(x => x.models).flat()} />
+            {:else if selected.length === 1 && selected[0].group.id >= 0}
+                <EditGroup group={selected[0].group} settingsVertical={true} />
+                {#if selected[0].models.length >= 2}
+                    <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models individually</a>
+                    <EditMultiModel models={selected[0].models} />
+                {:else}
+                    <ModelEdit model={selected[0].models[0]} full_image={true} />
+                {/if}
+            {:else}
+                <ModelEdit model={selected[0].models[0]} full_image={true} />
+            {/if}
         </div>
     {/if}
 </div>

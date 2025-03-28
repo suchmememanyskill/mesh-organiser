@@ -103,6 +103,10 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
+            <div class="grid grid-cols-2 gap-4 mr-12">
+                <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
+                <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
+            </div>
             <ModelImg model={model} class="{props.full_image ? "h-full w-full" : "h-36 w-36" } m-auto" />
             <div class="absolute right-0 mr-8">
                 <DropdownMenu.Root>
@@ -126,12 +130,8 @@
                 {/each}
             </div>
         </CardHeader>
-        <CardContent class="text-sm">
+        <CardContent class="text-sm pt-2">
             <div class="grid w-full items-center gap-4">
-                <div class="flex flex-row gap-5">
-                    <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
-                    <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
-                </div>
                 <div class="flex flex-col space-y-1.5">
                     <Label for="name">Name</Label>
                     <Input

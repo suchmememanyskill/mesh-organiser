@@ -82,8 +82,16 @@
         model_dir_size = await computeModelFolderSize();
     });
 
+    let initial_render = true;
+
     $effect(() => {
         const modified_configuration = $state.snapshot(c.configuration);
+
+        if (initial_render) {
+            initial_render = false;
+            return;
+        }
+        
         on_save_configuration(modified_configuration);
     });
 </script>
