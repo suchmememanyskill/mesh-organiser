@@ -129,10 +129,12 @@
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    const interval = setInterval(handleScroll, 1000);
 
     onDestroy(() => {
         window.removeEventListener("keydown", onKeyDown);
         window.removeEventListener("keyup", onKeyUp);
+        clearInterval(interval);
     });
 
     async function onClick(model: Model, event : any) {
