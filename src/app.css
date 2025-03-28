@@ -82,6 +82,13 @@ body.sauce
   scrollbar-width: none;
 }
 
+.group.toast
+{
+    border-width: 2px;
+    border-color: hsl(var(--secondary) / var(--tw-border-opacity, 1));
+    border-style: solid;
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -18,7 +18,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost",
+      "csp": "default-src 'none' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost; style-src 'self' 'unsafe-hashes' 'sha256-1Snh9dHPncSi4KUm2jnUKD+fHyA4klHj4fHh1pFKLjE=' 'sha256-S8qMpvofolR8Mpjy4kQvEm7m1q8clzU4dfDH0AmvZjo=' 'sha256-uq7elKgbcmdwsZPSRlJIftVHMM7Aei00+N9e40jf/xg=' 'sha256-iaOezIDcQIoxCULa6FBKKuLUu09R7kG+Mlu+JVfU3Rw=';",
       "assetProtocol": {
         "enable": true,
         "scope": [

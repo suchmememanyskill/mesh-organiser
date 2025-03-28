@@ -202,6 +202,7 @@
     }
 
     $effect(() => {
+        // TODO: Make this not run on every render
         const modified_configuration = $state.snapshot(c.configuration);
         on_save_configuration(modified_configuration);
     });
