@@ -152,7 +152,7 @@ impl Slicer {
     }
 
     #[cfg(target_os = "linux")]
-    fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
+    pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
         if !self.is_installed() {
             return Err(ApplicationError::InternalError(String::from(
                 "Slicer not installed",
