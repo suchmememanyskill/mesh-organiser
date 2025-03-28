@@ -9,6 +9,7 @@
     "core:default",
     "opener:default",
     "dialog:allow-open",
+    "dialog:allow-confirm",
     "deep-link:default",
     "shell:allow-open",
     "shell:default",

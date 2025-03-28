@@ -13,6 +13,7 @@
     import { getCurrentWindow } from '@tauri-apps/api/window';
     import { check } from '@tauri-apps/plugin-updater';
     import { relaunch } from '@tauri-apps/plugin-process';
+    import { confirm } from '@tauri-apps/plugin-dialog';
 
     let { children } = $props();
 
@@ -88,7 +89,11 @@
 
             if (update)
             {
-                if (confirm(`A new version of Mesh Organiser (${update.currentVersion} -> ${update.version}) is available. Do you want to update?`))
+                const confirm_update = await confirm(`A new version of Mesh Organiser (v${update.currentVersion} -> v${update.version}) is available. Do you want to update?`,
+                    { title: "Update available" }
+                );
+
+                if (confirm_update)
                 {
                     await update.downloadAndInstall((event) => {
                         switch (event.event) {
