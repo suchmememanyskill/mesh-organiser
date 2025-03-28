@@ -73,12 +73,18 @@ impl Slicer {
 
     #[cfg(target_os = "linux")]
     pub fn is_installed(&self) -> bool {
-        let output = Command::new("flatpak")
-            .arg("info")
-            .arg(get_flatpak_slicer_package(&slicer))
-            .output()?;
-
-        output.status.success()
+        match Command::new("flatpak")
+        .arg("info")
+        .arg(get_flatpak_slicer_package(&self))
+        .output()
+        {
+            Ok(output) => {
+                return output.status.success();
+            }
+            Err(_) => {
+                return false;
+            }
+        }
     }
 
     #[cfg(target_os = "windows")]
