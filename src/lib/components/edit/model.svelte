@@ -103,10 +103,6 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <div class="grid grid-cols-2 gap-4 mr-12">
-                <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
-                <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
-            </div>
             <ModelImg model={model} class="{props.full_image ? "h-full w-full" : "h-36 w-36" } m-auto" />
             <div class="absolute right-0 mr-8">
                 <DropdownMenu.Root>
@@ -124,13 +120,12 @@
                     </DropdownMenu.Content>
                 </DropdownMenu.Root>
             </div>
-            <div class="flex flex-wrap gap-2 justify-center min-h-6">
-                {#each model.labels as label}
-                    <LabelBadge label={label!} />
-                {/each}
-            </div>
         </CardHeader>
-        <CardContent class="text-sm pt-2">
+        <CardContent class="text-sm pt-4">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
+                <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
+            </div>
             <div class="grid w-full items-center gap-4">
                 <div class="flex flex-col space-y-1.5">
                     <Label for="name">Name</Label>
@@ -165,8 +160,16 @@
                         () => model.labels.map((l) => l.id.toString()),
                         (val) => model.labels = val.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l).map((l) => l?.label!)
                     }>
-                        <Select.Trigger>
-                            <span>Select some labels</span>
+                        <Select.Trigger class="h-fit">
+                            {#if model.labels.length <= 0}
+                                Select some labels
+                            {:else}
+                            <div class="flex flex-wrap h-fit justify-start gap-2">
+                                {#each model.labels as label}
+                                    <LabelBadge label={label!} />
+                                {/each}
+                            </div>
+                            {/if}
                         </Select.Trigger>
                         <Select.Content>
                           <Select.Group>
