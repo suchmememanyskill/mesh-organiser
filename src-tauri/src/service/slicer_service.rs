@@ -23,52 +23,10 @@ pub enum Slicer {
     BambuStudio,
 }
 
-fn get_flatpak_slicer_package(slicer : &Slicer) -> String
-{
-    match slicer {
-        Slicer::PrusaSlicer => "com.prusa3d.PrusaSlicer",
-        Slicer::OrcaSlicer => "io.github.softfever.OrcaSlicer",
-        Slicer::Cura => "com.ultimaker.cura",
-        Slicer::BambuStudio => "com.bambulab.BambuStudio",
-    }.to_string()
-}
-
-
 impl Slicer {
     #[cfg(target_os = "windows")]
     pub fn is_installed(&self) -> bool {
-        match *self {
-            Slicer::PrusaSlicer => {
-                return get_registry_key(
-                    winreg::enums::HKEY_LOCAL_MACHINE,
-                    "SOFTWARE\\Prusa3D\\PrusaSlicer\\Settings",
-                    "InstallPath",
-                )
-                .is_some();
-            }
-            Slicer::BambuStudio => {
-                return get_registry_key(
-                    winreg::enums::HKEY_LOCAL_MACHINE,
-                    "SOFTWARE\\Bambulab\\Bambu Studio",
-                    "InstallPath",
-                )
-                .is_some();
-            }
-            Slicer::OrcaSlicer => {
-                return get_registry_key(
-                    winreg::enums::HKEY_LOCAL_MACHINE,
-                    "SOFTWARE\\WOW6432Node\\SoftFever\\OrcaSlicer",
-                    "",
-                )
-                .is_some();
-            }
-            Slicer::Cura => {
-                return get_cura_path().is_some();
-            }
-            _ => {
-                return false;
-            }
-        }
+        get_slicer_path(&self).is_some()
     }
 
     #[cfg(target_os = "linux")]
@@ -95,44 +53,8 @@ impl Slicer {
             )));
         }
 
-        let slicer_path = match *self {
-            Slicer::PrusaSlicer => get_registry_key(
-                winreg::enums::HKEY_LOCAL_MACHINE,
-                "SOFTWARE\\Prusa3D\\PrusaSlicer\\Settings",
-                "InstallPath",
-            ),
-            Slicer::BambuStudio => match get_registry_key(
-                winreg::enums::HKEY_LOCAL_MACHINE,
-                "SOFTWARE\\Bambulab\\Bambu Studio",
-                "InstallPath",
-            ) {
-                Some(s) => Some(String::from(
-                    PathBuf::from(s).join("bambu-studio.exe").to_str().unwrap(),
-                )),
-                None => None,
-            },
-            Slicer::OrcaSlicer => match get_registry_key(
-                winreg::enums::HKEY_LOCAL_MACHINE,
-                "SOFTWARE\\WOW6432Node\\SoftFever\\OrcaSlicer",
-                "",
-            ) {
-                Some(s) => Some(String::from(
-                    PathBuf::from(s).join("orca-slicer.exe").to_str().unwrap(),
-                )),
-                None => None,
-            },
-            Slicer::Cura => Some(String::from(
-                get_cura_path().take().unwrap().to_str().unwrap(),
-            )),
-            _ => {
-                return Err(ApplicationError::InternalError(String::from(
-                    "Slicer not installed",
-                )));
-            }
-        }
-        .take()
-        .unwrap();
-
+        let slicer_pathbuf = get_slicer_path(&self).unwrap();
+        let slicer_path = slicer_pathbuf.to_str().unwrap();
         let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
 
         println!("Opening in slicer: {:?}", paths);
@@ -180,6 +102,17 @@ impl Slicer {
     }
 }
 
+#[cfg(target_os = "linux")]
+fn get_flatpak_slicer_package(slicer : &Slicer) -> String
+{
+    match slicer {
+        Slicer::PrusaSlicer => "com.prusa3d.PrusaSlicer",
+        Slicer::OrcaSlicer => "io.github.softfever.OrcaSlicer",
+        Slicer::Cura => "com.ultimaker.cura",
+        Slicer::BambuStudio => "com.bambulab.BambuStudio",
+    }.to_string()
+}
+
 #[cfg(target_os = "windows")]
 fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
     use std::ffi::OsString;
@@ -201,24 +134,95 @@ fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
 }
 
 #[cfg(target_os = "windows")]
-fn get_cura_path() -> Option<PathBuf> {
-    let program_files = "C:\\Program Files";
-    if let Ok(entries) = fs::read_dir(program_files) {
-        for entry in entries.flatten() {
-            if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
-                if let Some(folder_name) = entry.file_name().to_str() {
-                    if folder_name.starts_with("UltiMaker Cura") {
-                        let exe_path = Path::new(program_files)
-                            .join(folder_name)
-                            .join("UltiMaker-Cura.exe");
-                        if exe_path.exists() {
-                            return Some(exe_path);
+fn get_slicer_path(slicer : &Slicer) -> Option<PathBuf> {
+    match slicer 
+    {
+        Slicer::PrusaSlicer => {
+            let key = get_registry_key(
+                winreg::enums::HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\Prusa3D\\PrusaSlicer\\Settings",
+                "InstallPath",
+            );
+
+            if let Some(key) = key {
+                let path = PathBuf::from(key);
+
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+
+            let path = PathBuf::from("C:\\Program Files\\Prusa3D\\PrusaSlicer\\prusa-slicer.exe");
+
+            if path.exists() {
+                return Some(path);
+            }
+
+            return None;
+        }
+        Slicer::BambuStudio => {
+            if let Some(key) = get_registry_key(
+                winreg::enums::HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\Bambulab\\Bambu Studio",
+                "InstallPath",
+            ) {
+                let path = PathBuf::from(key).join("bambu-studio.exe");
+                
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+                
+            let path = PathBuf::from("C:\\Program Files\\Bambu Studio\\bambu-studio.exe");
+
+            if path.exists() {
+                return Some(path);
+            }
+
+            return None;
+        }
+        Slicer::OrcaSlicer => {
+            if let Some(key) = get_registry_key(
+                winreg::enums::HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\WOW6432Node\\SoftFever\\OrcaSlicer",
+                "",
+            ) {
+                let path = PathBuf::from(key).join("orca-slicer.exe");
+
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+                
+            let path = PathBuf::from("C:\\Program Files\\OrcaSlicer\\orca-slicer.exe");
+
+            if path.exists() {
+                return Some(path);
+            }
+
+            return None;
+        }
+        Slicer::Cura => {
+            let program_files = "C:\\Program Files";
+            if let Ok(entries) = fs::read_dir(program_files) {
+                for entry in entries.flatten() {
+                    if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+                        if let Some(folder_name) = entry.file_name().to_str() {
+                            if folder_name.starts_with("UltiMaker Cura") {
+                                let exe_path = Path::new(program_files)
+                                    .join(folder_name)
+                                    .join("UltiMaker-Cura.exe");
+                                if exe_path.exists() {
+                                    return Some(exe_path);
+                                }
+                            }
                         }
                     }
                 }
             }
+        
+            return None;
         }
+        _ => None,
     }
-
-    None
 }
