@@ -25,6 +25,7 @@
     const tracked_group = $derived(props.group);
     let deleted = $state(false);
     let link = $state("");
+    let link_disabled = $state(false);
 
     const relevant_group = $derived(data.grouped_entries.find(x => x.group.id === tracked_group.id));    
 
@@ -87,6 +88,11 @@
         {
             link = links[0]!;
         }
+        else if (links.length >= 2)
+        {
+            link_disabled = true;
+            link = "Multiple Links";
+        }
     });
 </script>
 
@@ -124,7 +130,7 @@
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <Label for="link">
-                        {#if link}
+                        {#if link && !link_disabled}
                         <a href="{link}" target="_blank" class="text-primary hover:underline">Link/Url</a>
                         {:else}
                             Link/Url
@@ -136,8 +142,9 @@
                             placeholder="Where did this model come from?"
                             oninput={onUpdateModels}
                             bind:value={link}
+                            disabled={link_disabled}
                         />
-                        {#if link}
+                        {#if link && !link_disabled}
                             <a href="{link}" target="_blank" class="{buttonVariants({ variant: "default"})}">Open Link</a>
                         {/if}
                     </div>
