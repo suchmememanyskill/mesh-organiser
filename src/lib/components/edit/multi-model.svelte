@@ -7,15 +7,28 @@
     } from "$lib/components/ui/card";
 
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select/index.js";
+    import LabelBadge from "$lib/components/view/label-badge.svelte";
 
-    import type { Model,  Label as LLabel } from "$lib/model";
-    import { goto } from '$app/navigation';
+    import type { Model, Label as LLabel } from "$lib/model";
+    import { goto } from "$app/navigation";
 
     import type { ClassValue } from "svelte/elements";
-    import { deleteModel, openInSlicer, openInFolder, setLabelOnModels, removeLabelFromModels, addEmptyGroup, addModelsToGroup, removeModelsFromGroup } from "$lib/tauri";
+    import {
+        deleteModel,
+        openInSlicer,
+        openInFolder,
+        setLabelOnModels,
+        removeLabelFromModels,
+        addEmptyGroup,
+        addModelsToGroup,
+        removeModelsFromGroup,
+    } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { updateState, data } from "$lib/data.svelte";
-    import Button, { buttonVariants } from "$lib/components/ui/button/button.svelte";
+    import Button, {
+        buttonVariants,
+    } from "$lib/components/ui/button/button.svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
     import { toast } from "svelte-sonner";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
@@ -28,46 +41,67 @@
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import Trash2 from "@lucide/svelte/icons/trash-2";
 
-    const props: { models: Model[], class?: ClassValue } = $props();
+    const props: { models: Model[]; class?: ClassValue } = $props();
 
-    const models : Model[] = $derived(props.models);
+    const models: Model[] = $derived(props.models);
 
-    let availableLabels = $derived(models.map(x => x.labels).flat().filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i));
+    let availableLabels = $derived(
+        models
+            .map((x) => x.labels)
+            .flat()
+            .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i),
+    );
 
-    async function setLabelOnAllModels(label : LLabel)
-    {
+    async function setLabelOnAllModels(label: LLabel) {
         const affected_models = models;
 
-        affected_models.forEach(x => x.labels.push(label));
+        affected_models.forEach((x) => x.labels.push(label));
 
         await setLabelOnModels(affected_models, label);
         await updateState();
-        toast.success(`Added label ${label.name} to ${affected_models.length} model(s)`);
+        toast.success(
+            `Added label ${label.name} to ${affected_models.length} model(s)`,
+        );
     }
 
-    async function removeLabelFromAllModels(label : LLabel)
-    {
+    async function removeLabelFromAllModels(label: LLabel) {
         const affected_models = models;
 
-        affected_models.forEach(x => x.labels = x.labels.filter(l => l.id !== label.id));
+        affected_models.forEach(
+            (x) => (x.labels = x.labels.filter((l) => l.id !== label.id)),
+        );
 
         await removeLabelFromModels(affected_models, label);
         await updateState();
-        toast.success(`Removed label ${label.name} from ${affected_models.length} model(s)`);
+        toast.success(
+            `Removed label ${label.name} from ${affected_models.length} model(s)`,
+        );
     }
 
-    async function onOpenInSlicer()
-    {
+    async function updateLabels(labels: LLabel[]) {
+        const added_label = labels.find(
+            (x) => !availableLabels.some((l) => l.id === x.id),
+        );
+        const deleted_label = availableLabels.find(
+            (x) => !labels.some((l) => l.id === x.id),
+        );
+
+        if (added_label) {
+            await setLabelOnAllModels(added_label);
+        } else if (deleted_label) {
+            await removeLabelFromAllModels(deleted_label);
+        }
+    }
+
+    async function onOpenInSlicer() {
         await openInSlicer(models);
     }
 
-    async function onOpenInFolder()
-    {
+    async function onOpenInFolder() {
         await openInFolder(models);
     }
 
-    async function onNewGroup()
-    {
+    async function onNewGroup() {
         const affected_models = models;
 
         const group = await addEmptyGroup("New group");
@@ -78,14 +112,11 @@
         goto("/group/" + group.id);
     }
 
-    async function onRemoveGroup()
-    {
+    async function onRemoveGroup() {
         let removed = 0;
 
-        for (const model of models)
-        {
-            if(instanceOfModelWithGroup(model) && model.group)
-            {
+        for (const model of models) {
+            if (instanceOfModelWithGroup(model) && model.group) {
                 removed++;
                 await removeModelsFromGroup([model], model.group);
             }
@@ -95,18 +126,18 @@
         toast.success(`Ungrouped ${removed} model(s)`);
     }
 
-    async function onDelete()
-    {
+    async function onDelete() {
         const affected_models = models;
 
-        await Promise.all(affected_models.map(async x => {
-            await deleteModel(x);
-        }));
+        await Promise.all(
+            affected_models.map(async (x) => {
+                await deleteModel(x);
+            }),
+        );
 
         await updateState();
         toast.success(`Deleted ${affected_models.length} model(s)`);
     }
-
 </script>
 
 {#if models.length <= 0}
@@ -132,52 +163,87 @@
             <div class="flex flex-col gap-4">
                 <Label>Open</Label>
                 <div class="grid grid-cols-2 gap-4">
-                    <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
-                    <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
+                    <Button class="flex-grow" onclick={onOpenInFolder}
+                        ><FolderOpen /> Open in folder</Button
+                    >
+                    <Button class="flex-grow" onclick={onOpenInSlicer}
+                        ><Slice /> Open in slicer</Button
+                    >
                 </div>
             </div>
             <div class="flex flex-col gap-4">
                 <!-- TODO: Figure out a better way to do this. This isn't as nice as the single model label add -->
                 <Label>Add/Remove labels</Label>
-                <div class="grid grid-cols-2 gap-4">
-                    <DropdownMenu.Root>
-                        <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} flex-grow" disabled={data.labels.length <= 0}>
-                           <Tag /> Add label
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content side="bottom" align="start">
+
+                <Select.Root
+                    type="multiple"
+                    name="labels"
+                    bind:value={
+                        () => availableLabels.map((l) => l.id.toString()),
+                        (val) =>
+                            updateLabels(
+                                val
+                                    .map((id) =>
+                                        data.labels.find(
+                                            (l) => l.label.id.toString() === id,
+                                        ),
+                                    )
+                                    .filter((l) => l)
+                                    .map((l) => l?.label!),
+                            )
+                    }
+                >
+                    <Select.Trigger class="h-fit">
+                        {#if availableLabels.length <= 0}
+                            Select some labels
+                        {:else}
+                            <div
+                                class="flex flex-wrap h-fit justify-start gap-2"
+                            >
+                                {#each availableLabels as label}
+                                    <LabelBadge label={label!} />
+                                {/each}
+                            </div>
+                        {/if}
+                    </Select.Trigger>
+                    <Select.Content>
+                        <Select.Group>
+                            <Select.GroupHeading
+                                >Available labels</Select.GroupHeading
+                            >
                             {#each data.labels as label}
-                                <DropdownMenu.Item onclick={() => setLabelOnAllModels(label.label)}>
-                                    <span><Tag style={`color: ${label.label.color};`} class="inline mr-1" /> {label.label.name}</span>
-                                </DropdownMenu.Item>
+                                <Select.Item
+                                    value={label.label.id.toString()}
+                                    label={label.label.name}
+                                    ><Tag
+                                        style={`color: ${label.label.color};`}
+                                        size="18"
+                                        class="mr-3"
+                                    />
+                                    {label.label.name}</Select.Item
+                                >
                             {/each}
-                        </DropdownMenu.Content>
-                    </DropdownMenu.Root>
-                    <DropdownMenu.Root>
-                        <DropdownMenu.Trigger class="{buttonVariants({ variant: "default" })} flex-grow" disabled={availableLabels.length <= 0}>
-                           <DiamondMinus /> Remove label
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content side="bottom" align="start">
-                            {#each availableLabels as label}
-                                <DropdownMenu.Item onclick={() => removeLabelFromAllModels(label)}>
-                                    <span><Tag style={`color: ${label.color};`} class="inline mr-1" /> {label.name}</span>
-                                </DropdownMenu.Item>
-                            {/each}
-                        </DropdownMenu.Content>
-                    </DropdownMenu.Root>
-                </div>
+                        </Select.Group>
+                    </Select.Content>
+                </Select.Root>
             </div>
             <div class="flex flex-col gap-4">
                 <Label>Set/Unset group</Label>
                 <div class="grid grid-cols-2 gap-4">
-                    <Button onclick={onNewGroup} class="flex-grow"><Group /> New group</Button>
-                    <Button onclick={onRemoveGroup} class="flex-grow" disabled={!models.some(x => {
-                        if(instanceOfModelWithGroup(x))
-                        {
-                            return !!x.group;
-                        }
+                    <Button onclick={onNewGroup} class="flex-grow"
+                        ><Group /> New group</Button
+                    >
+                    <Button
+                        onclick={onRemoveGroup}
+                        class="flex-grow"
+                        disabled={!models.some((x) => {
+                            if (instanceOfModelWithGroup(x)) {
+                                return !!x.group;
+                            }
 
-                        return false;
-                    })}><Ungroup /> Remove from group</Button>
+                            return false;
+                        })}><Ungroup /> Remove from group</Button
+                    >
                 </div>
             </div>
         </CardContent>

@@ -1,5 +1,5 @@
 use serde::Serialize;
-use sqlx;
+use sqlx::{self, QueryBuilder};
 use tauri::async_runtime::block_on;
 
 #[derive(sqlx::FromRow, Serialize)]
@@ -50,16 +50,18 @@ pub async fn add_label_on_models(label_id: i64, model_ids: Vec<i64>, db: &super:
 }
 
 pub async fn set_labels_on_model(label_ids: Vec<i64>, model_id: i64, db: &super::db::Db) {
-    for label_id in label_ids {
-        sqlx::query!(
-            "INSERT INTO models_labels (label_id, model_id) VALUES (?, ?)",
-            label_id,
-            model_id
-        )
+    let mut query_builder: QueryBuilder<'_, sqlx::Sqlite> = QueryBuilder::new("INSERT INTO models_labels (label_id, model_id) ");
+
+    query_builder.push_values(label_ids, |mut b, label_id| {
+        b.push_bind(label_id).push_bind(model_id);
+    });
+
+    let query = query_builder.build();
+
+    query
         .execute(db)
         .await
-        .expect("Failed to add label to model");
-    }
+        .expect("Failed to update labels for models");
 }
 
 pub async fn remove_labels_from_model(model_id: i64, db: &super::db::Db) {

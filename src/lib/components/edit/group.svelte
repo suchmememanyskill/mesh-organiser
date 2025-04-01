@@ -24,10 +24,11 @@
     const props: { group: Group; class?: ClassValue; settingsVertical?: boolean } = $props();
     const tracked_group = $derived(props.group);
     let deleted = $state(false);
+    
     let link = $state("");
     let link_disabled = $state(false);
 
-    const relevant_group = $derived(data.grouped_entries.find(x => x.group.id === tracked_group.id));    
+    const relevant_group = $derived(data.grouped_entries.find(x => x.group.id === tracked_group.id));  
 
     async function onUngroup() {
         await ungroup($state.snapshot(tracked_group));
@@ -75,8 +76,7 @@
         save_link_on_models_debounced(snapshot, link_snapshot);
     }
 
-    // This isn't very reactive. Oh well
-    onMount(() => {
+    $effect(() => {
         if (!relevant_group)
         {
             return;
