@@ -3,11 +3,11 @@ use std::{io::Read, path::PathBuf};
 
 use crate::error::ApplicationError;
 
-pub fn prettify_file_name(file: &PathBuf) -> String {
+pub fn prettify_file_name(file: &PathBuf, is_dir : bool) -> String {
     let extension = file.extension();
     let mut file_name: String = String::from(file.file_name().take().unwrap().to_str().unwrap());
 
-    if file.is_file()
+    if !is_dir
     {
         match extension {
             Some(ext) => {

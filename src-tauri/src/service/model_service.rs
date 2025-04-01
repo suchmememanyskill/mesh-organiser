@@ -24,7 +24,7 @@ pub fn import_path(
     app_handle: &AppHandle,
 ) -> Result<CreationResult, ApplicationError> {
     let path_buff = PathBuf::from(path);
-    let name = util::prettify_file_name(&path_buff);
+    let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let is_step_supported = app_state.get_configuration().allow_importing_step;
 
     if path_buff.is_dir() {
@@ -74,7 +74,7 @@ fn import_models_from_dir(
             continue;
         }
 
-        let file_name = util::prettify_file_name(&entry);
+        let file_name = util::prettify_file_name(&entry, false);
         let extension = entry.extension().unwrap().to_str().unwrap();
         let file_size = entry.metadata()?.len() as usize;
         let mut file = File::open(&entry)?;
@@ -127,7 +127,7 @@ fn import_models_from_zip(
         }
 
         if file.is_file() {
-            let file_name = util::prettify_file_name(&outpath);
+            let file_name = util::prettify_file_name(&outpath, false);
             let extension = outpath.extension().unwrap().to_str().unwrap();
             let file_size = file.size() as usize;
 
