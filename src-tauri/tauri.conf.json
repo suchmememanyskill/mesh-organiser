@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "mesh-organiser",
+  "productName": "Mesh Organiser",
   "version": "0.1.0",
   "identifier": "com.mesh-organiser.app",
   "build": {
