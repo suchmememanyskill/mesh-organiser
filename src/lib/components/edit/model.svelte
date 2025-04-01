@@ -27,6 +27,7 @@
     import ModelImg from "$lib/components/view/model-img.svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import Trash2 from "@lucide/svelte/icons/trash-2";
+    import Tag from "@lucide/svelte/icons/tag";
 
     const props: { model: Model|ModelWithGroup;  class?: ClassValue, full_image?: boolean } = $props();
     let last_model_id = -1;
@@ -176,7 +177,7 @@
                             <Select.GroupHeading>Available labels</Select.GroupHeading>
                             {#each data.labels as label}
                               <Select.Item value={label.label.id.toString()} label={label.label.name}
-                                >{label.label.name}</Select.Item
+                                ><Tag style={`color: ${label.label.color};`} size=18 class="mr-3"/> {label.label.name}</Select.Item
                               >
                             {/each}
                           </Select.Group>

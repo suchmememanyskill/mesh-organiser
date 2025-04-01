@@ -147,7 +147,7 @@
                         <DropdownMenu.Content side="bottom" align="start">
                             {#each data.labels as label}
                                 <DropdownMenu.Item onclick={() => setLabelOnAllModels(label.label)}>
-                                    <span>{label.label.name}</span>
+                                    <span><Tag style={`color: ${label.label.color};`} class="inline mr-1" /> {label.label.name}</span>
                                 </DropdownMenu.Item>
                             {/each}
                         </DropdownMenu.Content>
@@ -159,7 +159,7 @@
                         <DropdownMenu.Content side="bottom" align="start">
                             {#each availableLabels as label}
                                 <DropdownMenu.Item onclick={() => removeLabelFromAllModels(label)}>
-                                    <span>{label.name}</span>
+                                    <span><Tag style={`color: ${label.color};`} class="inline mr-1" /> {label.name}</span>
                                 </DropdownMenu.Item>
                             {/each}
                         </DropdownMenu.Content>
