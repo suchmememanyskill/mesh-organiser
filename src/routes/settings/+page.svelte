@@ -247,6 +247,7 @@
                 } label="Show ungrouped models in groups" />
                 <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
                 <CheckboxWithLabel bind:value={c.configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
+                <CheckboxWithLabel bind:value={c.configuration.show_grouped_count_on_labels} label="Show grouped model count on labels" />
             </CardContent>
         </Card>
     </div>

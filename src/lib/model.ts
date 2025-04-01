@@ -86,6 +86,7 @@ export interface Configuration {
     allow_importing_step : boolean;
     size_option_models : "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
     size_option_groups : "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
+    show_grouped_count_on_labels: boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -104,6 +105,7 @@ export function configurationDefault() : Configuration
         allow_importing_step : false,
         size_option_groups : "Grid_Medium",
         size_option_models : "Grid_Medium",
+        show_grouped_count_on_labels: true,
     }
 }
 

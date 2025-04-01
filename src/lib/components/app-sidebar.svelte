@@ -13,7 +13,7 @@
     import * as Popover from "$lib/components/ui/popover/index.js";
     import CircleHelp from "@lucide/svelte/icons/circle-help";
 
-    import { data } from '$lib/data.svelte';
+    import { data, c } from '$lib/data.svelte';
 
     import { resetMode, setMode } from "mode-watcher";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -150,7 +150,13 @@
                                 </a>
                             {/snippet}
                         </Sidebar.MenuButton>
-                        <Sidebar.MenuBadge>{labelEntry.total}</Sidebar.MenuBadge>
+                        <Sidebar.MenuBadge>
+                            {#if c.configuration.show_grouped_count_on_labels}
+                                {labelEntry.entries.length}
+                            {:else}
+                                {labelEntry.total}
+                            {/if}
+                        </Sidebar.MenuBadge>
                     </Sidebar.MenuItem>
                 {/each}
             </Sidebar.Menu>

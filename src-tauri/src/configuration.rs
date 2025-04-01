@@ -18,6 +18,7 @@ pub struct StoredConfiguration {
     pub allow_importing_step: Option<bool>,
     pub size_option_models: Option<String>,
     pub size_option_groups: Option<String>,
+    pub show_grouped_count_on_labels : Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -35,6 +36,7 @@ pub struct Configuration {
     pub allow_importing_step: bool,
     pub size_option_models: String,
     pub size_option_groups: String,
+    pub show_grouped_count_on_labels: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -60,6 +62,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         size_option_groups: configuration
             .size_option_groups
             .unwrap_or(default.size_option_groups),
+        show_grouped_count_on_labels: configuration
+            .show_grouped_count_on_labels
+            .unwrap_or(default.show_grouped_count_on_labels),
     }
 }
 
@@ -81,6 +86,7 @@ impl Default for Configuration {
             allow_importing_step: false,
             size_option_models: String::from("Grid_Medium"),
             size_option_groups: String::from("Grid_Medium"),
+            show_grouped_count_on_labels: true,
         }
     }
 }
