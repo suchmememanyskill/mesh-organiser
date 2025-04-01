@@ -22,6 +22,7 @@
     import { data, updateState } from "$lib/data.svelte";
     import { openInSlicer, importModel, editModel } from "$lib/tauri";
     import { page } from '$app/state';
+    import { toast } from "svelte-sonner";
 
     let imported_group_id : number|null|undefined = $state(null);
     let imported_model_ids : number[] = $state([]);
@@ -56,7 +57,20 @@
         for (let i = 0; i < paths.length; i++) {
             import_count = 0;
             thumbnail_count = 0;
-            const res = await importModel(paths[i]);
+            let res : AddModelResult | undefined = undefined;
+            try 
+            {
+                res = await importModel(paths[i]);
+            }
+            catch (reason : any) 
+            {
+                toast.error(reason.error_message, {
+                    description: reason.error_inner_message
+                });
+                console.error("Failed to import model:", reason);
+                continue;
+            }
+            
             import_count = 0;
             thumbnail_count = 0;
 
