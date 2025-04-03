@@ -396,6 +396,7 @@ pub fn run() {
 
                 let config = read_configuration(&app_data_path);
 
+                db::db::backup_db(&config, &app_data_path);
                 let db = db::db::setup_db(&config).await;
 
                 let mut initial_state = InitialState {
