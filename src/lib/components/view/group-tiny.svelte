@@ -15,10 +15,10 @@
 </script>
 
 <Card class={props.class}>
-    <CardHeader>
+    <CardHeader class="p-4">
         <h2 class="whitespace-nowrap w-100 overflow-hidden font-bold text-ellipsis text-center">{props.group.group.name}</h2>
     </CardHeader>
-    <CardContent class="relative">
+    <CardContent class="relative p-4">
         <GroupImg model={props.group.models} class="w-full aspect-square" />
         {#if props.group.total >= 2}
             <Badge class="absolute bottom-2 right-2">{props.group.total}</Badge>

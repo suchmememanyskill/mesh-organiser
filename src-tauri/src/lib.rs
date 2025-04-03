@@ -123,11 +123,12 @@ async fn get_slicers() -> Result<Vec<SlicerEntry>, ApplicationError> {
 }
 
 #[tauri::command]
-async fn overwrite_images(
+async fn update_images(
     state: State<'_, AppState>,
     app_handle: AppHandle,
+    overwrite: bool,
 ) -> Result<(), ApplicationError> {
-    service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, true).await?;
+    service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, overwrite).await?;
 
     Ok(())
 }
@@ -399,6 +400,9 @@ pub fn run() {
 
                 let mut initial_state = InitialState {
                     deep_link_url: None,
+                    max_parallelism: std::thread::available_parallelism()
+                        .unwrap_or(std::num::NonZeroUsize::new(6).unwrap())
+                        .get(),
                 };
 
                 let argv = std::env::args();
@@ -449,7 +453,7 @@ pub fn run() {
             remove_dead_groups,
             edit_label,
             delete_label,
-            overwrite_images,
+            update_images,
             get_slicers,
             set_configuration,
             get_configuration,

@@ -87,6 +87,9 @@ export interface Configuration {
     size_option_models : "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
     size_option_groups : "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
     show_grouped_count_on_labels: boolean;
+    fallback_3mf_thumbnail: boolean;
+    prefer_3mf_thumbnail: boolean;
+    thumbnail_parallelism: number;
 }
 
 export function configurationDefault() : Configuration
@@ -106,12 +109,16 @@ export function configurationDefault() : Configuration
         size_option_groups : "Grid_Medium",
         size_option_models : "Grid_Medium",
         show_grouped_count_on_labels: true,
+        fallback_3mf_thumbnail: true,
+        prefer_3mf_thumbnail: false,
+        thumbnail_parallelism: 3,
     }
 }
 
 export interface InitialState
 {
     deep_link_url?: string;
+    max_parallelism?: number;
 }
 
 export interface SlicerEntry

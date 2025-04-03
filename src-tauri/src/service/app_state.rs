@@ -12,6 +12,7 @@ use std::sync::Mutex;
 #[derive(Clone, Serialize)]
 pub struct InitialState {
     pub deep_link_url: Option<String>,
+    pub max_parallelism: usize,
 }
 
 pub struct AppState {
@@ -71,6 +72,9 @@ impl AppState {
         configuration.slicer = new_configuration.slicer.clone();
         configuration.thumbnail_color = new_configuration.thumbnail_color.clone();
         configuration.allow_importing_step = new_configuration.allow_importing_step;
+        configuration.fallback_3mf_thumbnail = new_configuration.fallback_3mf_thumbnail;
+        configuration.prefer_3mf_thumbnail = new_configuration.prefer_3mf_thumbnail;
+        configuration.thumbnail_parallelism = new_configuration.thumbnail_parallelism;
 
         deep_link_setting_changed
     }

@@ -1,3 +1,6 @@
+use std::num::NonZeroUsize;
+use std::thread;
+
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -19,6 +22,9 @@ pub struct StoredConfiguration {
     pub size_option_models: Option<String>,
     pub size_option_groups: Option<String>,
     pub show_grouped_count_on_labels : Option<bool>,
+    pub fallback_3mf_thumbnail: Option<bool>,
+    pub prefer_3mf_thumbnail: Option<bool>,
+    pub thumbnail_parallelism: Option<usize>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -37,6 +43,9 @@ pub struct Configuration {
     pub size_option_models: String,
     pub size_option_groups: String,
     pub show_grouped_count_on_labels: bool,
+    pub fallback_3mf_thumbnail: bool,
+    pub prefer_3mf_thumbnail: bool,
+    pub thumbnail_parallelism: usize,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -65,6 +74,16 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         show_grouped_count_on_labels: configuration
             .show_grouped_count_on_labels
             .unwrap_or(default.show_grouped_count_on_labels),
+        fallback_3mf_thumbnail: configuration
+            .fallback_3mf_thumbnail
+            .unwrap_or(default.fallback_3mf_thumbnail),
+        prefer_3mf_thumbnail: configuration
+            .prefer_3mf_thumbnail
+            .unwrap_or(default.prefer_3mf_thumbnail),
+        thumbnail_parallelism: configuration
+            .thumbnail_parallelism
+            .unwrap_or(default.thumbnail_parallelism),
+        
     }
 }
 
@@ -87,6 +106,9 @@ impl Default for Configuration {
             size_option_models: String::from("Grid_Medium"),
             size_option_groups: String::from("Grid_Medium"),
             show_grouped_count_on_labels: true,
+            fallback_3mf_thumbnail: true,
+            prefer_3mf_thumbnail: false,
+            thumbnail_parallelism: thread::available_parallelism().unwrap_or(NonZeroUsize::new(6).unwrap()).get() / 2,
         }
     }
 }

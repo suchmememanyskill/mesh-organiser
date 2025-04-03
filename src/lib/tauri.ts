@@ -156,9 +156,9 @@ export async function getAvailableSlicers() : Promise<SlicerEntry[]>
     return await invoke("get_slicers");
 }
 
-export async function overwriteImages() : Promise<void>
+export async function updateImages(overwrite : boolean) : Promise<void>
 {
-    await invoke("overwrite_images");
+    await invoke("update_images", { overwrite: overwrite });
 }
 
 export async function importModel(path : string) : Promise<AddModelResult>

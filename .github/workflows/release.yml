@@ -35,6 +35,7 @@ jobs:
           mkdir external-binaries
           cd external-binaries
           wget -O mesh-thumbnail-x86_64-unknown-linux-gnu https://github.com/suchmememanyskill/mesh-thumbnail/releases/latest/download/mesh-thumbnail
+          chmod a+x mesh-thumbnail-x86_64-unknown-linux-gnu
 
       - name: download mesh-thumbnail (windows only)
         if: matrix.platform == 'windows-latest'
