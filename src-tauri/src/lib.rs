@@ -433,6 +433,7 @@ pub fn run() {
                     max_parallelism: std::thread::available_parallelism()
                         .unwrap_or(std::num::NonZeroUsize::new(6).unwrap())
                         .get(),
+                    collapse_sidebar: config.collapse_sidebar,
                 };
 
                 let argv = std::env::args();

@@ -9,13 +9,15 @@
     import { Toaster } from "$lib/components/ui/sonner/index.js";
     import { toast } from "svelte-sonner";
     import { goto } from '$app/navigation';
-    import { updateState, initConfiguration, c } from '$lib/data.svelte';
+    import { updateState, initConfiguration, c, on_save_configuration } from '$lib/data.svelte';
     import { getCurrentWindow } from '@tauri-apps/api/window';
     import { check } from '@tauri-apps/plugin-updater';
     import { relaunch } from '@tauri-apps/plugin-process';
     import { confirm } from '@tauri-apps/plugin-dialog';
+    import { IsMobile } from "$lib/hooks/is-mobile.svelte";
 
     let { children } = $props();
+    let loaded_config = false;
 
     interface Error
     {
@@ -82,6 +84,7 @@
         await initConfiguration();
         await updateState();
         await removeDeadGroups();
+        loaded_config = true;
 
         try 
         {
@@ -113,6 +116,17 @@
         }
     });
 
+    $effect(() => {
+        const modified_configuration = $state.snapshot(c.configuration);
+
+        if (!loaded_config) {
+            return;
+        }
+        
+        on_save_configuration(modified_configuration);
+    });
+
+    const is_mobile = new IsMobile();
 </script>
 
 <ModeWatcher />
@@ -120,7 +134,9 @@
 <Sidebar.Provider class="w-full h-full">
     <AppSidebar />
     <main class="h-full flex-1 flex flex-row" style="min-width: 0;">
-        <Sidebar.Trigger class="aspect-square absolute" />
+        {#if is_mobile.current}
+            <Sidebar.Trigger class="aspect-square absolute" />
+        {/if}
         <div class="flex-1 pl-2" style="min-width: 0;">
             {@render children?.()}
         </div>

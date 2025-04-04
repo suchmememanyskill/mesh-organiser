@@ -25,6 +25,7 @@ pub struct StoredConfiguration {
     pub fallback_3mf_thumbnail: Option<bool>,
     pub prefer_3mf_thumbnail: Option<bool>,
     pub thumbnail_parallelism: Option<usize>,
+    pub collapse_sidebar : Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -46,6 +47,7 @@ pub struct Configuration {
     pub fallback_3mf_thumbnail: bool,
     pub prefer_3mf_thumbnail: bool,
     pub thumbnail_parallelism: usize,
+    pub collapse_sidebar: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -83,7 +85,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         thumbnail_parallelism: configuration
             .thumbnail_parallelism
             .unwrap_or(default.thumbnail_parallelism),
-        
+        collapse_sidebar: configuration
+            .collapse_sidebar
+            .unwrap_or(default.collapse_sidebar),
     }
 }
 
@@ -109,6 +113,7 @@ impl Default for Configuration {
             fallback_3mf_thumbnail: true,
             prefer_3mf_thumbnail: false,
             thumbnail_parallelism: thread::available_parallelism().unwrap_or(NonZeroUsize::new(6).unwrap()).get() / 2,
+            collapse_sidebar: false,
         }
     }
 }

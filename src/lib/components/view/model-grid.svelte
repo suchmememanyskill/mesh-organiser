@@ -9,7 +9,7 @@
     import { onDestroy } from "svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
-    import { c, on_save_configuration } from "$lib/data.svelte";
+    import { c } from "$lib/data.svelte";
 
     const props: { models: Model[]; default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
@@ -212,20 +212,6 @@
             });
         }, 30);
     }
-
-    let initial_render = true;
-
-    $effect(() => {
-        const modified_configuration = $state.snapshot(c.configuration);
-
-        if (initial_render)
-        {
-            initial_render = false;
-            return;
-        }
-
-        on_save_configuration(modified_configuration);
-    });
 </script>
 
 <div class="flex flex-row h-full">

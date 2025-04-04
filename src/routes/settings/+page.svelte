@@ -8,10 +8,10 @@
         getInitialState,
     } from "$lib/tauri";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-    import { c, updateState, data, on_save_configuration } from "$lib/data.svelte";
+    import { c, updateState, data } from "$lib/data.svelte";
     import { toReadableSize } from "$lib/utils";
     import { Input } from "$lib/components/ui/input/index.js";
-    import type { Configuration, SlicerEntry } from "$lib/model";
+    import type { SlicerEntry } from "$lib/model";
 
     import {
         Card,
@@ -89,19 +89,6 @@
         slicers = await getAvailableSlicers();
         app_data_dir = await appDataDir();
         model_dir_size = await computeModelFolderSize();
-    });
-
-    let initial_render = true;
-
-    $effect(() => {
-        const modified_configuration = $state.snapshot(c.configuration);
-
-        if (initial_render) {
-            initial_render = false;
-            return;
-        }
-        
-        on_save_configuration(modified_configuration);
     });
 </script>
 

@@ -1,19 +1,16 @@
 <script lang="ts">
-    import type { Model, GroupedEntry } from "$lib/model";
-    import ModelTiny from "$lib/components/view/model-tiny.svelte";
+    import type { GroupedEntry } from "$lib/model";
     import ModelEdit from "$lib/components/edit/model.svelte";
-    import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
     import { onDestroy } from "svelte";
-    import { instanceOfModelWithGroup } from "$lib/utils";
     import GroupTiny from "./group-tiny.svelte";
     import GroupTinyList from "./group-tiny-list.svelte";
     import EditMultiModel from "$lib/components/edit/multi-model.svelte";
     import EditGroup from "$lib/components/edit/group.svelte";
     import { buttonVariants } from "$lib/components/ui/button";
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
-    import { c, on_save_configuration } from "$lib/data.svelte";
+    import { c } from "$lib/data.svelte";
 
     const props: { groups: GroupedEntry[] } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
@@ -202,20 +199,6 @@
             });
         }, 30);
     }
-
-    let initial_render = true;
-
-    $effect(() => {
-        const modified_configuration = $state.snapshot(c.configuration);
-
-        if (initial_render)
-        {
-            initial_render = false;
-            return;
-        }
-
-        on_save_configuration(modified_configuration);
-    });
 </script>
 
 <div class="flex flex-row h-full">

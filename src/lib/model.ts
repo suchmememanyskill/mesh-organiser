@@ -90,6 +90,7 @@ export interface Configuration {
     fallback_3mf_thumbnail: boolean;
     prefer_3mf_thumbnail: boolean;
     thumbnail_parallelism: number;
+    collapse_sidebar: boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -112,6 +113,7 @@ export function configurationDefault() : Configuration
         fallback_3mf_thumbnail: true,
         prefer_3mf_thumbnail: false,
         thumbnail_parallelism: 3,
+        collapse_sidebar: false,
     }
 }
 
@@ -119,6 +121,7 @@ export interface InitialState
 {
     deep_link_url?: string;
     max_parallelism?: number;
+    collapse_sidebar?: boolean;
 }
 
 export interface SlicerEntry

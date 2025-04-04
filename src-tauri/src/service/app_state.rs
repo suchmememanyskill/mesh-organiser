@@ -13,6 +13,7 @@ use std::sync::Mutex;
 pub struct InitialState {
     pub deep_link_url: Option<String>,
     pub max_parallelism: usize,
+    pub collapse_sidebar: bool,
 }
 
 pub struct AppState {

@@ -71,15 +71,17 @@ body.sauce
   pointer-events: all !important;
 }
 
-.hide-scrollbar::-webkit-scrollbar 
-{
-  display: none;
-}
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar 
+  {
+    display: none;
+  }
 
-.hide-scrollbar 
-{
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  .hide-scrollbar 
+  {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 .group.toast
