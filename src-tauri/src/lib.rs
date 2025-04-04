@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{path::PathBuf, sync::{Arc, Mutex}};
 
 use configuration::Configuration;
 use error::ApplicationError;
@@ -135,8 +135,27 @@ async fn update_images(
 
 #[tauri::command]
 async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
+    let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
+
+    if model.len() <= 0 {
+        return Err(ApplicationError::InternalError(String::from("Failed to find model to delete")));
+    }
+
+    let model = &model[0];
+
     db::model::delete_model(model_id, &state.db).await;
 
+    let model_path = PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.sha256, model.filetype));
+    let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.sha256));
+
+    if model_path.exists() {
+        std::fs::remove_file(model_path)?;
+    }
+
+    if image_path.exists() {
+        std::fs::remove_file(image_path)?;
+    }
+    
     Ok(())
 }
 
