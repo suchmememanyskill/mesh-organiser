@@ -29,11 +29,11 @@ See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases)
 ## Structure breakdown
 
 The app knows 3 layers of organisation:
-- Model: A 3d model of any kind
+- Model: A singular 3d model of any kind
 - Group: A collection of 3d models with a strong relationship (like multiple parts of a bigger model)
-    - Groups are not intended to add/remove models to/from after creation
+    - Groups their contents are not intended to be edited after creation. Use Labels for this goal.
 - Label: A collection of 3d models with a weak relationship (like multiple models/groups of the same type; like 'wall art' or 'puzzle')
-    - Labels are intended to add/remove models to/from after creation. See the label dropdowns at groups or individual models.
+    - Labels thier contents can be edited at any time using the label dropdown menu on groups, models or a collection of models.
 
 ## Credits
 
