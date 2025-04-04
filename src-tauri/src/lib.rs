@@ -315,6 +315,11 @@ fn extract_deep_link(data: &str) -> Option<String> {
         "prusaslicer://open/?file=",
         "orcaslicer://open/?file=",
         "meshorganiser://open/?file=",
+        "bambustudio://open?file=",
+        "cura://open?file=",
+        "prusaslicer://open?file=",
+        "orcaslicer://open?file=",
+        "meshorganiser://open?file=",
     ];
 
     for start in possible_starts {
@@ -374,7 +379,12 @@ pub fn run() {
 
                 if let Some(deep_link) = deep_link
                 {
-                    _app.emit("deep-link", deep_link).unwrap();
+                    println!("Emitting deep link {:?}", deep_link);
+                    _app.emit("deeplink", deep_link).unwrap();
+                }
+                else  
+                {
+                    println!("Failed to emit deep link {:?}", &argv[1]);
                 }
             }
             

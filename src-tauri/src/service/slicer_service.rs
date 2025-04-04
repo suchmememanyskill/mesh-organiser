@@ -93,9 +93,11 @@ impl Slicer {
 
         let _ = Command::new("flatpak")
             .arg("run")
+            .arg("--file-forwarding")
             .arg(get_flatpak_slicer_package(&self))
-            .arg("--")
+            .arg("@@")
             .args(paths)
+            .arg("@@")
             .output()?;
 
         Ok(())
