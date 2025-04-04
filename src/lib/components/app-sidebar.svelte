@@ -101,7 +101,7 @@
                             {#snippet child({ props })}
                                 <a onclick={() => { sidebar.toggle(); c.configuration.collapse_sidebar = !$state.snapshot(sidebar.open); }} {...props}>
                                     <PanelLeft />
-                                    <span>Open/Close panel</span>
+                                    <span>Open/Close sidebar</span>
                                 </a>
                             {/snippet}
                         </Sidebar.MenuButton>
