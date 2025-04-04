@@ -22,6 +22,7 @@
     import { createLabel } from "$lib/tauri";
     import { updateState } from "$lib/data.svelte";
     import Button from "./ui/button/button.svelte";
+    import { page } from '$app/state';
 
     function generate_random_color() {
         return "#" + Math.floor(Math.random() * 0xFFFFFF).toString(16);
@@ -44,66 +45,69 @@
         new_label_name = "New label";
         set_random_color();
     }
+
+    const current_url = $derived(page.url.pathname);
+
+    const main_group_entries = $derived(
+        [
+            {
+                title: "Import",
+                icon: FolderInput,
+                url: "/import",
+                count: 0,
+            },
+            {
+                title: "Models",
+                icon: Box,
+                url: "/model",
+                count: data.entries.length,
+            },
+            {
+                title: "Groups",
+                icon: Boxes,
+                url: "/group",
+                count: data.grouped_entries.length
+            },
+            {
+                title: "Settings",
+                icon: Settings,
+                url: "/settings",
+                count: 0
+            },
+            {
+                title: "About",
+                icon: CircleHelp,
+                url: "/about",
+                count: 0
+            }
+        ]
+    )
+
+    $effect(() => {
+        console.log($state.snapshot(current_url));
+    })
 </script>
 
-<Sidebar.Root>
+<Sidebar.Root collapsible="icon">
     <Sidebar.Content>
         <Sidebar.Group>
-            <Sidebar.GroupLabel>Mesh Organiser</Sidebar.GroupLabel>
             <Sidebar.GroupContent>
                 <Sidebar.Menu>
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton>
-                            {#snippet child({ props })}
-                                <a href="/import" {...props}>
-                                    <FolderInput />
-                                    <span>Import</span>
-                                </a>
-                            {/snippet}
-                        </Sidebar.MenuButton>
-                    </Sidebar.MenuItem>
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton>
-                            {#snippet child({ props })}
-                                <a href="/model" {...props}>
-                                    <Box />
-                                    <span>Models</span>
-                                </a>
-                            {/snippet}
-                        </Sidebar.MenuButton>
-                        <Sidebar.MenuBadge>{data.entries.length}</Sidebar.MenuBadge>
-                    </Sidebar.MenuItem>
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton>
-                            {#snippet child({ props })}
-                                <a href="/group" {...props}>
-                                    <Boxes />
-                                    <span>Groups</span>
-                                </a>
-                            {/snippet}
-                        </Sidebar.MenuButton>
-                        <Sidebar.MenuBadge>{data.grouped_entries.length}</Sidebar.MenuBadge>
-                    </Sidebar.MenuItem>
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton>
-                            {#snippet child({ props })}
-                                <a href="/settings" {...props}>
-                                    <Settings />
-                                    <span>Settings</span>
-                                </a>
-                            {/snippet}
-                        </Sidebar.MenuButton>
-                    </Sidebar.MenuItem>
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton>
-                            {#snippet child({ props })}
-                                <a href="/about" {...props}>
-                                    <CircleHelp />
-                                    <span>About</span>
-                                </a>
-                            {/snippet}
-                        </Sidebar.MenuButton>
-                    </Sidebar.MenuItem>
+                    {#each main_group_entries as entry}
+                        <Sidebar.MenuItem>
+                            <Sidebar.MenuButton class={current_url == entry.url ? "border-l-2 border-secondary" : "" }>
+                                {#snippet child({ props })}
+                                    <a href={entry.url} {...props}>
+                                        <entry.icon />
+                                        <span>{entry.title}</span>
+                                    </a>
+                                {/snippet}
+                            </Sidebar.MenuButton>
+                            {#if entry.count >= 1}
+                                <Sidebar.MenuBadge>{entry.count}</Sidebar.MenuBadge>
+                            {/if}
+                        </Sidebar.MenuItem>
+                    {/each}
                 </Sidebar.Menu>
             </Sidebar.GroupContent>
         </Sidebar.Group>
@@ -142,7 +146,7 @@
             <Sidebar.Menu>
                 {#each data.labels as labelEntry}
                     <Sidebar.MenuItem>
-                        <Sidebar.MenuButton>
+                        <Sidebar.MenuButton class={current_url == `/label/${labelEntry.label.id}` ? "border-l-2 border-secondary" : "" }>
                             {#snippet child({ props })}
                                 <a href="/label/{labelEntry.label.id}" {...props}>
                                     <Tag style={`color: ${labelEntry.label.color};`} />
@@ -168,7 +172,7 @@
     <Sidebar.Footer>
         <DropdownMenu.Root>
             <DropdownMenu.Trigger
-                class={buttonVariants({ variant: "outline", size: "icon" })}
+                class="{buttonVariants({ variant: "outline", size: "icon" })} w-full"
             >
                 <Sun
                     class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
@@ -192,3 +196,10 @@
         </DropdownMenu.Root>
     </Sidebar.Footer>
 </Sidebar.Root>
+
+<style>
+    .border-secondary:not(:hover)
+    {
+        border-radius: 0;
+    }
+</style>

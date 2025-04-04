@@ -120,8 +120,8 @@
 <Sidebar.Provider class="w-full h-full">
     <AppSidebar />
     <main class="h-full flex-1 flex flex-row" style="min-width: 0;">
-        <Sidebar.Trigger class="aspect-square" />
-        <div class="flex-1" style="min-width: 0;">
+        <Sidebar.Trigger class="aspect-square absolute" />
+        <div class="flex-1 pl-2" style="min-width: 0;">
             {@render children?.()}
         </div>
     </main>
