@@ -23,7 +23,8 @@ pub async fn get_labels(db: &super::db::Db) -> Vec<Label> {
 			label_id as id, 
 			label_name as name, 
 			label_color as color
-		  FROM labels"#
+		  FROM labels
+          ORDER BY label_name ASC"#
     )
     .fetch_all(db)
     .await

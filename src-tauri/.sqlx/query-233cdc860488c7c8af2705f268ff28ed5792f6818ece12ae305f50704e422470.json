@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT \n\t\t\tlabel_id as id, \n\t\t\tlabel_name as name, \n\t\t\tlabel_color as color\n\t\t  FROM labels",
+  "query": "SELECT \n\t\t\tlabel_id as id, \n\t\t\tlabel_name as name, \n\t\t\tlabel_color as color\n\t\t  FROM labels\n          ORDER BY label_name ASC",
   "describe": {
     "columns": [
       {
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "90674f4eafd622e1579c3974e4386b9d28257956929cf91dd736fcdc13c15f3e"
+  "hash": "233cdc860488c7c8af2705f268ff28ed5792f6818ece12ae305f50704e422470"
 }
