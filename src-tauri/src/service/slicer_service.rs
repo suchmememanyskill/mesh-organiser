@@ -67,8 +67,7 @@ impl Slicer {
 
         Command::new(slicer_path)
             .args(paths)
-            .output()
-            .expect("failed to execute process");
+            .spawn()?;
 
         Ok(())
     }
@@ -98,7 +97,7 @@ impl Slicer {
             .arg("@@")
             .args(paths)
             .arg("@@")
-            .output()?;
+            .spawn()?;
 
         Ok(())
     }

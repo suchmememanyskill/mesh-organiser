@@ -26,9 +26,11 @@
     } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { updateState, data } from "$lib/data.svelte";
-    import Button, {
+    import {
         buttonVariants,
-    } from "$lib/components/ui/button/button.svelte";
+        Button,
+        AsyncButton,
+    } from "$lib/components/ui/button/index.js";
     import { instanceOfModelWithGroup } from "$lib/utils";
     import { toast } from "svelte-sonner";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
@@ -163,11 +165,11 @@
             <div class="flex flex-col gap-4">
                 <Label>Open</Label>
                 <div class="grid grid-cols-2 gap-4">
-                    <Button class="flex-grow" onclick={onOpenInFolder}
-                        ><FolderOpen /> Open in folder</Button
+                    <AsyncButton class="flex-grow" onclick={onOpenInFolder}
+                        ><FolderOpen /> Open in folder</AsyncButton
                     >
-                    <Button class="flex-grow" onclick={onOpenInSlicer}
-                        ><Slice /> Open in slicer</Button
+                    <AsyncButton class="flex-grow" onclick={onOpenInSlicer}
+                        ><Slice /> Open in slicer</AsyncButton
                     >
                 </div>
             </div>

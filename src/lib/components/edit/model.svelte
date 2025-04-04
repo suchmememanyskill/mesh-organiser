@@ -22,7 +22,7 @@
     import { updateState, data } from "$lib/data.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
-    import { buttonVariants, Button } from "$lib/components/ui/button/index.js";
+    import { buttonVariants, Button, AsyncButton } from "$lib/components/ui/button/index.js";
     import { toReadableSize, instanceOfModelWithGroup } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
@@ -124,8 +124,8 @@
         </CardHeader>
         <CardContent class="text-sm pt-4">
             <div class="grid grid-cols-2 gap-4 mb-4">
-                <Button class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</Button>
-                <Button class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</Button>
+                <AsyncButton class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</AsyncButton>
+                <AsyncButton class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</AsyncButton>
             </div>
             <div class="grid w-full items-center gap-4">
                 <div class="flex flex-col space-y-1.5">
