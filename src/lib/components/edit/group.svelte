@@ -130,11 +130,7 @@
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <Label for="link">
-                        {#if link && !link_disabled}
-                        <a href="{link}" target="_blank" class="text-primary hover:underline">Link/Url</a>
-                        {:else}
-                            Link/Url
-                        {/if}
+                        Link/Url
                     </Label>
                     <div class="flex flex-row gap-2">
                         <Input
