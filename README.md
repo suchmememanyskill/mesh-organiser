@@ -7,10 +7,10 @@ Competes with your downloads folder for storing models.
 ## Install
 
 Download for:
-- [Windows](https://github.com/suchmememanyskill/mesh-thumbnail/releases/latest/download/Mesh.Organiser_1.0.0_x64_en-US.msi) (.msi)
+- [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.0.0/Mesh.Organiser_1.0.0_x64_en-US.msi) (.msi)
 - Linux
-    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-thumbnail/releases/latest/download/Mesh.Organiser_1.0.0_amd64.deb) (.deb)
-    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-thumbnail/releases/latest/download/Mesh.Organiser-1.0.0-1.x86_64.rpm) (.rpm)
+    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.0.0/Mesh.Organiser-1.0.0-1.x86_64.rpm) (.deb)
+    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.0.0/Mesh.Organiser-1.0.0-1.x86_64.rpm) (.rpm)
     - Note: Only slicers installed via flatpak are supported
     - Note: Thumbnail generation currently isn't supported
 
