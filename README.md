@@ -18,7 +18,7 @@ See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases)
 
 ## Site integrations
 
-Note: To open 'Open in ...' links from these websites, you need to enable them in settings. By default they are disabled to not overwrite any settings you may have.
+Note: To open 'Open in ...' links from these websites, you need to enable them in settings. By default they are disabled to not overwrite any integrations you may currently have.
 
 ### [Thingiverse](https://www.thingiverse.com/)
 - Redirect 'Open in Cura' to app (see settings)

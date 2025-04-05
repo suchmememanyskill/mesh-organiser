@@ -262,8 +262,8 @@
             {#if selected.length >= 2}
                 <EditMultiModel models={selected.map(x => x.models).flat()} />
             {:else if selected.length === 1 && selected[0].group.id >= 0}
-                <EditGroup group={selected[0].group} settingsVertical={true} />
                 {#if selected[0].models.length >= 2}
+                    <EditGroup group={selected[0].group} settingsVertical={true} />
                     <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models</a>
                     <EditMultiModel models={selected[0].models} />
                 {:else}

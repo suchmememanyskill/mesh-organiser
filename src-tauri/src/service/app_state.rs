@@ -18,7 +18,6 @@ pub struct InitialState {
 
 pub struct AppState {
     pub db: Arc<db::db::Db>,
-    // TODO: Put behind a mutex so i can change the configuration during runtime
     pub configuration: Mutex<Configuration>,
     pub initial_state: InitialState,
     pub app_data_path: String,
