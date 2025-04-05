@@ -37,6 +37,7 @@
         
         if (c.configuration.focus_after_link_import)
         {
+            await getCurrentWindow().unminimize();
             await getCurrentWindow().setFocus();
         }
 

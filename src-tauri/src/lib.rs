@@ -399,7 +399,7 @@ pub fn run() {
                 if let Some(deep_link) = deep_link
                 {
                     println!("Emitting deep link {:?}", deep_link);
-                    _app.emit("deeplink", deep_link).unwrap();
+                    _app.emit("deep-link", deep_link).unwrap();
                 }
                 else  
                 {

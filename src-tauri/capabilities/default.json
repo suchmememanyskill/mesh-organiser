@@ -13,6 +13,7 @@
     "deep-link:default",
     "shell:allow-open",
     "shell:default",
-    "core:window:allow-set-focus"
+    "core:window:allow-set-focus",
+    "core:window:allow-unminimize"
   ]
 }

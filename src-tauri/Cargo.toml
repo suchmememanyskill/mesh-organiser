@@ -1,7 +1,7 @@
 [package]
 name = "mesh-organiser"
 version = "1.0.0"
-description = "A Tauri App"
+description = "Organise your 3d models"
 authors = ["you"]
 edition = "2021"
 
