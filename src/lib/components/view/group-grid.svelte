@@ -257,21 +257,23 @@
             </RightClickModels>
         </div>
     </div> 
-    {#if selected.length >= 1}
-        <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-            {#if selected.length >= 2}
-                <EditMultiModel models={selected.map(x => x.models).flat()} />
-            {:else if selected.length === 1 && selected[0].group.id >= 0}
-                {#if selected[0].models.length >= 2}
-                    <EditGroup group={selected[0].group} settingsVertical={true} />
-                    <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models</a>
-                    <EditMultiModel models={selected[0].models} />
-                {:else}
-                    <ModelEdit model={selected[0].models[0]} full_image={true} />
-                {/if}
+    <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
+        {#if selected.length >= 2}
+            <EditMultiModel models={selected.map(x => x.models).flat()} />
+        {:else if selected.length === 1 && selected[0].group.id >= 0}
+            {#if selected[0].models.length >= 2}
+                <EditGroup group={selected[0].group} settingsVertical={true} />
+                <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models</a>
+                <EditMultiModel models={selected[0].models} />
             {:else}
                 <ModelEdit model={selected[0].models[0]} full_image={true} />
             {/if}
-        </div>
-    {/if}
+        {:else if selected.length === 1}
+            <ModelEdit model={selected[0].models[0]} full_image={true} />
+        {:else}
+            <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
+                <span class="text-xl">No group selected</span>
+            </div>
+        {/if}
+    </div>
 </div>

@@ -269,17 +269,19 @@
             </RightClickModels>
         </div>
     </div> 
-    {#if selected.length > 0 || props.default_show_multiselect_all}
-        <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto hide-scrollbar">
-            {#if selected.length >= 2}
-                <MultiModelEdit models={selected} />
-            {:else if selected.length === 1}
-                <ModelEdit model={selected[0]} full_image={true} />
-            {:else if filteredCollection.length === 1}
-                <ModelEdit model={filteredCollection[0]} full_image={true} />
-            {:else }
-                <MultiModelEdit models={filteredCollection} />
-            {/if}
-        </div>
-    {/if}
+    <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto hide-scrollbar">
+        {#if selected.length >= 2}
+            <MultiModelEdit models={selected} />
+        {:else if selected.length === 1}
+            <ModelEdit model={selected[0]} full_image={true} />
+        {:else if filteredCollection.length === 1}
+            <ModelEdit model={filteredCollection[0]} full_image={true} />
+        {:else if props.default_show_multiselect_all }
+            <MultiModelEdit models={filteredCollection} />
+        {:else}
+            <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
+                <span class="text-xl">No model selected</span>
+            </div>
+        {/if}
+    </div>
 </div>

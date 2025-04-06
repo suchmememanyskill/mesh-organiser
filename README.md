@@ -52,12 +52,14 @@ The app knows 3 layers of organisation:
 - Open slicer after importing from website (see settings, disabled by default)
 - Supported slicers: PrusaSlicer, OrcaSlicer, Cura, Bambu Studio
     - Request more via the [Issues tab](https://github.com/suchmememanyskill/mesh-organiser/issues)
+- Deduplicates imported models using a hash
+    - Importing the same model twice will not duplicate it; it'll be registered as the same model
 
 ## Credits
 
 Developed by [Sims](https://github.com/suchmememanyskill)
 - With development help from [dorkeline](https://github.com/dorkeline) and Ajadaz
-- With testing help from atomique13 and ioan18
+- With testing help from atomique13, ioan18 and einso
 
 Links:
 - [Thumbnail Generator](https://github.com/suchmememanyskill/mesh-thumbnail)
