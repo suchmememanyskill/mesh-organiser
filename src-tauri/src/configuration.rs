@@ -26,6 +26,7 @@ pub struct StoredConfiguration {
     pub prefer_3mf_thumbnail: Option<bool>,
     pub thumbnail_parallelism: Option<usize>,
     pub collapse_sidebar : Option<bool>,
+    pub zoom_level: Option<u32>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -48,6 +49,7 @@ pub struct Configuration {
     pub prefer_3mf_thumbnail: bool,
     pub thumbnail_parallelism: usize,
     pub collapse_sidebar: bool,
+    pub zoom_level: u32,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -88,6 +90,10 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         collapse_sidebar: configuration
             .collapse_sidebar
             .unwrap_or(default.collapse_sidebar),
+        zoom_level: configuration
+            .zoom_level
+            .unwrap_or(default.zoom_level),
+
     }
 }
 
@@ -114,6 +120,7 @@ impl Default for Configuration {
             prefer_3mf_thumbnail: false,
             thumbnail_parallelism: thread::available_parallelism().unwrap_or(NonZeroUsize::new(6).unwrap()).get() / 2,
             collapse_sidebar: false,
+            zoom_level: 100,
         }
     }
 }

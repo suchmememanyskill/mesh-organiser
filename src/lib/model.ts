@@ -91,6 +91,7 @@ export interface Configuration {
     prefer_3mf_thumbnail: boolean;
     thumbnail_parallelism: number;
     collapse_sidebar: boolean;
+    zoom_level: number;
 }
 
 export function configurationDefault() : Configuration
@@ -114,6 +115,7 @@ export function configurationDefault() : Configuration
         prefer_3mf_thumbnail: false,
         thumbnail_parallelism: 3,
         collapse_sidebar: false,
+        zoom_level: 100,
     }
 }
 

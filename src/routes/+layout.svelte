@@ -15,6 +15,8 @@
     import { relaunch } from '@tauri-apps/plugin-process';
     import { confirm } from '@tauri-apps/plugin-dialog';
     import { IsMobile } from "$lib/hooks/is-mobile.svelte";
+    import { getCurrentWebview } from "@tauri-apps/api/webview";
+    import { debounce } from "$lib/utils";
 
     let { children } = $props();
     let loaded_config = false;
@@ -82,7 +84,25 @@
             });
         });
 
+
         await initConfiguration();
+
+        const webview = await getCurrentWebview();
+        webview.setZoom(c.configuration.zoom_level / 100);
+
+        const debounced_resize = debounce(() => {
+            const zoom_level = Math.round((window.outerWidth) / window.innerWidth * 100);
+            
+            if (zoom_level === c.configuration.zoom_level)
+            {
+                return;
+            }
+
+            c.configuration.zoom_level = zoom_level;
+        }, 100);
+
+        addEventListener("resize", debounced_resize);
+
         await updateState();
         await removeDeadGroups();
         loaded_config = true;

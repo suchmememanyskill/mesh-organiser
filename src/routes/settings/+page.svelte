@@ -94,7 +94,7 @@
 
 <div class="w-full overflow-y-auto hide-scrollbar h-full">
     <div
-        class="flex flex-col gap-5 w-[500px] mx-auto"
+        class="flex flex-col gap-5 w-[500px] mx-auto relative"
     >
         <Card class="mt-5">
             <CardHeader>
@@ -245,7 +245,7 @@
             </CardContent>
         </Card>
 
-        <Card class="mb-5">
+        <Card>
             <CardHeader>
                 <CardTitle>Behaviour</CardTitle>
             </CardHeader>
@@ -262,6 +262,16 @@
                 {#if c.configuration.fallback_3mf_thumbnail}
                     <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
                 {/if}
+            </CardContent>
+        </Card>
+
+        <Card class="mb-5">
+            <CardHeader>
+                <CardTitle>Window Zoom</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-5">
+                <Label>Current zoom level: {c.configuration.zoom_level}%</Label>
+                <Label>Change the zoom level using Control and +/-</Label>
             </CardContent>
         </Card>
     </div>
