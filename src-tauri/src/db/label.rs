@@ -51,6 +51,10 @@ pub async fn add_label_on_models(label_id: i64, model_ids: Vec<i64>, db: &super:
 }
 
 pub async fn set_labels_on_model(label_ids: Vec<i64>, model_id: i64, db: &super::db::Db) {
+    if label_ids.is_empty() {
+        return;
+    }
+
     let mut query_builder: QueryBuilder<'_, sqlx::Sqlite> = QueryBuilder::new("INSERT INTO models_labels (label_id, model_id) ");
 
     query_builder.push_values(label_ids, |mut b, label_id| {

@@ -41,6 +41,18 @@ fn cleanse_name(name: &str) -> String {
     )
 }
 
+fn ensure_unique_file(base_path: &PathBuf, file_name: &str, extension: &str) -> PathBuf {
+    let mut counter = 1;
+    let mut new_file_name = base_path.join(format!("{}.{}", file_name, extension));
+    
+    while new_file_name.exists() {
+        new_file_name = base_path.join(format!("{}_{}.{}", file_name, counter, extension));
+        counter += 1;
+    }
+
+    return new_file_name;
+}
+
 fn get_path_from_model(
     temp_dir: &PathBuf,
     model: &Model,
@@ -49,30 +61,20 @@ fn get_path_from_model(
 ) -> Result<PathBuf, ApplicationError> {
     let base_dir = PathBuf::from(app_state.get_model_dir());
     let src_file_path = base_dir.join(format!("{}.{}", model.sha256, model.filetype));
+    let cleansed_name = cleanse_name(&model.name);
+    let extension = convert_zip_to_extension(&model.filetype);
+    let dst_file_path = ensure_unique_file(temp_dir, &cleansed_name, &extension);
 
     if is_zipped_file_extension(&model.filetype) {
         let file = File::open(src_file_path)?;
-        let extension = convert_zip_to_extension(&model.filetype);
 
-        let target = temp_dir.join(format!(
-            "{}_{}.{}",
-            cleanse_name(&model.name),
-            model.sha256,
-            extension
-        ));
         let mut archive = zip::ZipArchive::new(file)?;
         let mut file = archive.by_index(0)?;
-        let mut target_file = File::create(&target)?;
+        let mut dst_file = File::create(&dst_file_path)?;
 
-        std::io::copy(&mut file, &mut target_file)?;
-        Ok(target)
+        std::io::copy(&mut file, &mut dst_file)?;
+        Ok(dst_file_path)
     } else if !lazy {
-        let dst_file_path = temp_dir.join(format!(
-            "{}_{}.{}",
-            cleanse_name(&model.name),
-            model.sha256,
-            model.filetype
-        ));
         std::fs::copy(&src_file_path, &dst_file_path)?;
         Ok(dst_file_path)
     } else {
