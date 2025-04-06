@@ -59,11 +59,20 @@
 
         affected_models.forEach((x) => x.labels.push(label));
 
-        await setLabelOnModels(affected_models, label);
-        await updateState();
-        toast.success(
-            `Added label ${label.name} to ${affected_models.length} model(s)`,
+        let promise =  setLabelOnModels(affected_models, label);
+
+        toast.promise(
+            promise,
+            {
+                loading: `Adding label ${label.name} to ${affected_models.length} model(s)...`,
+                success: (_) => {
+                    return `Added label ${label.name} to ${affected_models.length} model(s)`;
+                },
+            }
         );
+
+        await promise;
+        await updateState();
     }
 
     async function removeLabelFromAllModels(label: LLabel) {
@@ -73,11 +82,20 @@
             (x) => (x.labels = x.labels.filter((l) => l.id !== label.id)),
         );
 
-        await removeLabelFromModels(affected_models, label);
-        await updateState();
-        toast.success(
-            `Removed label ${label.name} from ${affected_models.length} model(s)`,
+        let promise = removeLabelFromModels(affected_models, label);
+
+        toast.promise(
+            promise,
+            {
+                loading: `Removing label ${label.name} from ${affected_models.length} model(s)...`,
+                success: (_) => {
+                    return `Removed label ${label.name} from ${affected_models.length} model(s)`;
+                },
+            }
         );
+
+        await promise;
+        await updateState();
     }
 
     async function updateLabels(labels: LLabel[]) {
@@ -131,14 +149,24 @@
     async function onDelete() {
         const affected_models = models;
 
-        await Promise.all(
+        let promise = Promise.all(
             affected_models.map(async (x) => {
                 await deleteModel(x);
             }),
         );
 
+        toast.promise(
+            promise,
+            {
+                loading: `Deleting ${affected_models.length} model(s)...`,
+                success: (_) => {
+                    return `Deleted ${affected_models.length} model(s)`;
+                },
+            }
+        );
+
+        await promise;
         await updateState();
-        toast.success(`Deleted ${affected_models.length} model(s)`);
     }
 </script>
 
