@@ -17,7 +17,7 @@
 {#if entries && labelEntry}
     <div class="w-full h-full flex flex-col">
         <EditLabel class="my-3 mx-4" label={labelEntry.label} />
-        <div class="overflow-hidden">
+        <div class="overflow-hidden h-full">
             <GroupGrid groups={entries} />
         </div>
     </div>

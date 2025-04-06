@@ -10,6 +10,7 @@
     import GroupImg from "$lib/components/view/group-img.svelte";
     import type { ClassValue } from "svelte/elements";
     import { Badge } from "$lib/components/ui/badge/index.js";
+    import PrinterCheck from "@lucide/svelte/icons/printer-check";
 
     const props: { group: GroupedEntry, class?: ClassValue } = $props();
 </script>
@@ -23,5 +24,8 @@
         {#if props.group.total >= 2}
             <Badge class="absolute bottom-2 right-2">{props.group.total}</Badge>
         {/if}    
+        {#if props.group.group.flags.printed}
+            <Badge class="absolute bottom-2 left-2"><PrinterCheck size=16 /></Badge>
+        {/if}   
     </CardContent>
 </Card>

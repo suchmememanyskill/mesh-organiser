@@ -1,34 +1,62 @@
 use super::label;
 use super::label::Label;
 use super::model_group::ModelGroup;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use sqlx::{self, types::chrono};
 use std::collections::HashMap;
 use tauri::async_runtime::block_on;
+use bitflags::bitflags;
 
-#[derive(sqlx::FromRow, Serialize)]
+bitflags! {
+    pub struct Flags: u32 {
+        const Printed = 0b00000001;
+    }
+}
+
+impl Serialize for Flags {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut flags = Vec::new();
+        if self.contains(Flags::Printed) {
+            flags.push("Printed");
+        }
+        flags.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Flags {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let flags: Vec<String> = Vec::deserialize(deserializer)?;
+        let mut result = Flags::empty();
+        for flag in flags {
+            match flag.as_str() {
+                "Printed" => result.insert(Flags::Printed),
+                _ => {}
+            }
+        }
+        Ok(result)
+    }
+}
+
+#[derive(Serialize)]
 pub struct Model {
-    #[sqlx(rename = "model_id")]
     pub id: i64,
-    #[sqlx(rename = "model_name")]
     pub name: String,
-    #[sqlx(rename = "model_sha256")]
     pub sha256: String,
-    #[sqlx(rename = "model_filetype")]
     pub filetype: String,
-    #[sqlx(rename = "model_size")]
     pub size: i64,
-    #[sqlx(rename = "model_url")]
     pub link: Option<String>,
-    #[sqlx(rename = "model_desc")]
     pub description: Option<String>,
-    #[sqlx(rename = "model_added")]
     pub added: String,
-    #[sqlx(rename = "model_group_id")]
     pub group: Option<ModelGroup>,
-    #[sqlx(skip)]
     pub labels: Vec<label::Label>,
+    pub flags: Flags,
 }
 
 pub fn get_models_sync(db: &super::db::Db) -> Vec<Model> {
@@ -37,7 +65,7 @@ pub fn get_models_sync(db: &super::db::Db) -> Vec<Model> {
 
 pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
     let rows = sqlx::query!(
-        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, model_size,
+        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, model_size, model_flags,
                 labels.label_id, label_name, label_color,
                 models_group.group_id, group_name, group_created
          FROM models 
@@ -69,6 +97,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
                 None => None,
             },
             labels: Vec::new(),
+            flags: Flags::from_bits(row.model_flags as u32).unwrap_or(Flags::empty()),
         });
 
         // Hack as silly little sql library doesn't understand that this is optional
@@ -128,6 +157,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         let mut label_id: Option<i64> = row.get("label_id");
         let mut label_name: Option<String> = row.get("label_name");
         let mut label_color: Option<i64> = row.get("label_color");
+        let model_flags: i64 = row.get("model_flags");
 
         let entry = model_map.entry(model_id).or_insert(Model {
             id: model_id,
@@ -147,6 +177,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
                 None => None,
             },
             labels: Vec::new(),
+            flags: Flags::from_bits(model_flags as u32).unwrap_or(Flags::empty()),
         });
 
         if label_id.is_none() {
@@ -209,9 +240,10 @@ pub fn edit_model_sync(
     name: &str,
     link: Option<&str>,
     description: Option<&str>,
+    flags : Flags,
     db: &super::db::Db,
 ) {
-    block_on(edit_model(id, name, link, description, db))
+    block_on(edit_model(id, name, link, description, flags, db))
 }
 
 pub async fn edit_model(
@@ -219,15 +251,18 @@ pub async fn edit_model(
     name: &str,
     link: Option<&str>,
     description: Option<&str>,
+    flags : Flags,
     db: &super::db::Db,
 ) {
+    let bits = flags.bits() as i64;
     sqlx::query!(
         "UPDATE models
-         SET model_name = ?, model_url = ?, model_desc = ?
+         SET model_name = ?, model_url = ?, model_desc = ?, model_flags = ?
          WHERE model_id = ?",
         name,
         link,
         description,
+        bits,
         id
     )
     .execute(db)

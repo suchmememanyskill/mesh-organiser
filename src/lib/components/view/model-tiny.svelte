@@ -9,15 +9,20 @@
     import type { Model } from "$lib/model";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import type { ClassValue } from "svelte/elements";
+    import { Badge } from "$lib/components/ui/badge/index.js";
+    import PrinterCheck from "@lucide/svelte/icons/printer-check";
 
     const props: { model: Model, class?: ClassValue } = $props();
 </script>
 
-<Card class={props.class}>
+<Card class="{props.class} relative">
     <CardHeader class="p-4">
         <h2 class="whitespace-nowrap w-100 overflow-hidden font-bold text-ellipsis text-center">{props.model.name}</h2>
     </CardHeader>
     <CardContent class="p-4">
         <ModelImg model={props.model} class="w-full aspect-square" />
+        {#if props.model.flags.printed}
+            <Badge class="absolute bottom-2 left-2"><PrinterCheck size=16 /></Badge>
+        {/if}    
     </CardContent>
 </Card>

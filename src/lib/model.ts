@@ -1,3 +1,44 @@
+export type RawFlags = 'Printed'[];
+
+export interface Flags 
+{
+    printed : boolean;
+}
+
+export function convertRawToFlags(raw : RawFlags) : Flags
+{
+    let flags : Flags = defaultFlags();
+
+    raw.forEach(flag => {
+        switch (flag) {
+            case "Printed":
+                flags.printed = true;
+                break;
+        }
+    });
+
+    return flags;
+}
+
+export function convertFlagsToRaw(flags : Flags) : RawFlags
+{
+    let raw_flags : RawFlags = [];
+
+    if (flags.printed)
+    {
+        raw_flags.push("Printed");
+    }
+
+    return raw_flags;
+}
+
+export function defaultFlags() : Flags
+{
+    return {
+        printed : false,
+    };
+}
+
 export interface RawLabel
 {
     id : number;
@@ -24,6 +65,7 @@ export interface RawModel
     added : string;
     group? : RawGroup;
     labels : RawLabel[];
+    flags : RawFlags;
 }
 
 export interface Label 
@@ -44,6 +86,7 @@ export interface Model
     description? : string;
     added : Date;
     labels : Label[];
+    flags : Flags;
 }
 
 export interface Group
@@ -51,6 +94,7 @@ export interface Group
     id : number;
     name : string;
     createdAt : Date;
+    flags : Flags;
 }
 
 export interface GroupedEntry

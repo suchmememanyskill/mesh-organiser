@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { RawModel, RawLabel, RawGroup, Model, Group, Label, InitialState, Configuration, SlicerEntry, AddModelResult, DownloadResult } from "./model";
+import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawFlags, convertFlagsToRaw, defaultFlags } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -21,7 +21,8 @@ export async function editModel(model : Model) : Promise<void>
         modelId: model.id,
         modelName: model.name,
         modelDescription: model.description,
-        modelUrl: model.link
+        modelUrl: model.link,
+        modelFlags: convertFlagsToRaw(model.flags),
     });
 }
 
@@ -100,7 +101,8 @@ export async function addEmptyGroup(group_name : string) : Promise<Group>
     return {
         id: group_id,
         name: group_name,
-        createdAt: new Date()
+        createdAt: new Date(),
+        flags: defaultFlags(),
     }
 }
 

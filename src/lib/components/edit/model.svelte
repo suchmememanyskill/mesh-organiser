@@ -28,6 +28,7 @@
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Tag from "@lucide/svelte/icons/tag";
+    import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
 
     const props: { model: Model|ModelWithGroup;  class?: ClassValue, full_image?: boolean } = $props();
     let last_model_id = -1;
@@ -186,6 +187,13 @@
                         id="description"
                         placeholder="Description of the model"
                         bind:value={model.description} />
+                </div>
+                <div class="flex flex-col gap-3">
+                    <Label>Properties</Label>
+                    <CheckboxWithLabel class="ml-1" label="Printed?" bind:value={
+                        () => model.flags.printed,
+                        (val) => model.flags.printed = val
+                    } />
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <div class="grid grid-cols-2 text-sm">

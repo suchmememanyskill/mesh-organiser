@@ -9,6 +9,7 @@
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
+    import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
 
     import type { Model, Label as LLabel } from "$lib/model";
     import { goto } from "$app/navigation";
@@ -23,6 +24,7 @@
         addEmptyGroup,
         addModelsToGroup,
         removeModelsFromGroup,
+        editModel,
     } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { updateState, data } from "$lib/data.svelte";
@@ -46,6 +48,7 @@
     const props: { models: Model[]; class?: ClassValue } = $props();
 
     const models: Model[] = $derived(props.models);
+    const printed = $derived(models.every((x) => x.flags.printed));
 
     let availableLabels = $derived(
         models
@@ -90,6 +93,33 @@
                 loading: `Removing label ${label.name} from ${affected_models.length} model(s)...`,
                 success: (_) => {
                     return `Removed label ${label.name} from ${affected_models.length} model(s)`;
+                },
+            }
+        );
+
+        await promise;
+        await updateState();
+    }
+
+    // TODO: this is terribly inefficient
+    async function setPrintedFlagOnAllModels(printed: boolean) {
+        const set_or_unset = printed ? "Set" : "Unset";
+        const affected_models = models;
+
+        affected_models.forEach((x) => (x.flags.printed = printed));
+
+        let promise = (async () => {
+            for (const model of affected_models) {
+                await editModel(model);
+            }
+        })();
+
+        toast.promise(
+            promise,
+            {
+                loading: `${set_or_unset}ting flag on ${affected_models.length} model(s)...`,
+                success: (_) => {
+                    return `${set_or_unset} flag on ${affected_models.length} model(s)`;
                 },
             }
         );
@@ -275,6 +305,13 @@
                         })}><Ungroup /> Remove from group</Button
                     >
                 </div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <Label>Properties</Label>
+                <CheckboxWithLabel class="ml-1" label="Printed?" bind:value={
+                    () => printed,
+                    (val) => setPrintedFlagOnAllModels(val)
+                } />
             </div>
         </CardContent>
     </Card>

@@ -47,9 +47,9 @@
         Grid_Small: "w-32 text-sm",
         Grid_Medium: "w-40",
         Grid_Large: "w-60",
-        List_Small: "h-10 text-sm [&_.imglist]:w-[130px]",
-        List_Medium: "h-14 [&_.imglist]:w-[180px]",
-        List_Large: "h-20 text-lg [&_.imglist]:w-[250px]",
+        List_Small: "h-10 text-sm [&_.imglist]:w-[115px]",
+        List_Medium: "h-14 [&_.imglist]:w-[165px]",
+        List_Large: "h-20 text-lg [&_.imglist]:w-[235px]",
     };
 
     const size = $derived(sizes[c.configuration.size_option_groups]);

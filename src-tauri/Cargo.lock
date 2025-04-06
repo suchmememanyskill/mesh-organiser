@@ -2509,6 +2509,7 @@ dependencies = [
 name = "mesh-organiser"
 version = "1.0.0"
 dependencies = [
+ "bitflags 2.9.0",
  "chrono",
  "futures",
  "regex",

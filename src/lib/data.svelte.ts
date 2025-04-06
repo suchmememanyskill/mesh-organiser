@@ -1,4 +1,4 @@
-import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault } from "./model";
+import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault, convertRawToFlags } from "./model";
 import { getLabels, getModels, getConfig, setConfig } from "./tauri";
 import { debounce } from "./utils";
 
@@ -24,6 +24,7 @@ function convertModel(raw : RawModel) : Model
         description : raw.description,
         added : new Date(raw.added),
         labels : raw.labels.map(label => convertLabel(label)),
+        flags : convertRawToFlags(raw.flags),
     };
 }
 
@@ -33,6 +34,9 @@ function convertGroup(raw : RawGroup) : Group
         id : raw.id,
         name : raw.name,
         createdAt : new Date(raw.created),
+        flags : {
+            printed : true,
+        },
     };
 }
 
@@ -71,6 +75,11 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
 
             group.models.push(model);
             group.total += 1;
+
+            if (group.group.flags.printed && !model.flags.printed)
+            {
+                group.group.flags.printed = false;
+            }
         }
         else 
         {
@@ -85,9 +94,10 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
         looseModels.forEach(model => {
             ret.push({
                 group: {
-                    id: Math.random() * Number.MAX_SAFE_INTEGER * -1,
+                    id: model.id * -1,
                     name: model.name,
                     createdAt: model.added,
+                    flags: model.flags,
                 },
                 models: [model],
                 total: 1,
@@ -117,9 +127,10 @@ function extractModels(models : RawModel[]) : ModelWithGroup[]
 
 export async function updateState() : Promise<void>
 {
+    let start = performance.now();
     let raw_models = await getModels();
     let raw_labels = await getLabels();
-
+    
     let model_groups = extractGroups(raw_models);
     let models = extractModels(raw_models);
 
@@ -166,9 +177,10 @@ export async function updateState() : Promise<void>
         let singles_as_groups : GroupedEntry[] = singles.map(model => { 
             return {
                 group : {
-                    id: Math.random() * Number.MAX_SAFE_INTEGER * -1,
+                    id: model.id * -1,
                     name: model.name,
                     createdAt: model.added,
+                    flags: model.flags,
                 },
                 models : [model],
                 total : 1,
@@ -190,6 +202,8 @@ export async function updateState() : Promise<void>
     data.entries = models;
     data.grouped_entries = model_groups;
     data.labels = labels;
+
+    console.log("Update took", performance.now() - start, "ms");
 }
 
 export async function initConfiguration() : Promise<void>

@@ -10,12 +10,13 @@
     import ModelImg from "$lib/components/view/model-img.svelte";
     import type { ClassValue } from "svelte/elements";
     import { Badge } from "$lib/components/ui/badge/index.js";
+    import PrinterCheck from "@lucide/svelte/icons/printer-check";
 
     const props: { group: GroupedEntry, class?: ClassValue } = $props();
 </script>
 
-<div class="{props.class} flex flex-row gap-5 border rounded-lg p-1 px-3 min-w-0">
-    <div class="flex flex-row gap-5 h-full imglist">
+<div class="{props.class} flex flex-row gap-3 border rounded-lg p-1 px-3 min-w-0">
+    <div class="flex flex-row gap-3 h-full imglist">
         {#each props.group.models.slice(0, 3) as model}
             <ModelImg model={model} class="h-full aspect-square" />
         {/each}
@@ -24,5 +25,9 @@
 
     {#if props.group.total >= 2}
         <Badge class="h-fit my-auto">{props.group.total}</Badge>
+    {/if}    
+
+    {#if props.group.group.flags.printed}
+        <Badge class="h-fit my-auto"><PrinterCheck size=16 /></Badge>
     {/if}    
 </div>

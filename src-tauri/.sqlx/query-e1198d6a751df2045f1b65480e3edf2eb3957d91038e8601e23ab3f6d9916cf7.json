@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE models\n         SET model_name = ?, model_url = ?, model_desc = ?, model_flags = ?\n         WHERE model_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "e1198d6a751df2045f1b65480e3edf2eb3957d91038e8601e23ab3f6d9916cf7"
+}

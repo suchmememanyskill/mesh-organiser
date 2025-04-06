@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::{Arc, Mutex}};
 
 use configuration::Configuration;
+use db::model::Flags;
 use error::ApplicationError;
 use serde::Serialize;
 use service::{
@@ -59,6 +60,7 @@ async fn edit_model(
     model_name: &str,
     model_url: Option<&str>,
     model_description: Option<&str>,
+    model_flags : Flags,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     db::model::edit_model(
@@ -66,6 +68,7 @@ async fn edit_model(
         model_name,
         model_url,
         model_description,
+        model_flags,
         &state.db,
     )
     .await;
