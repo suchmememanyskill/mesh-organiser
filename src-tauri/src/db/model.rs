@@ -129,7 +129,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         .collect::<Vec<String>>()
         .join(",");
     let formatted_query = format!(
-        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_size,
+        "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_size, model_flags,
                 labels.label_id, label_name, label_color,
                 models_group.group_id, group_name, group_created
          FROM models 
