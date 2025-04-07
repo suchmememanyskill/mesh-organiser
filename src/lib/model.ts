@@ -137,6 +137,7 @@ export interface Configuration {
     collapse_sidebar: boolean;
     zoom_level: number;
     export_metadata: boolean;
+    show_date_on_list_view: boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -162,6 +163,7 @@ export function configurationDefault() : Configuration
         collapse_sidebar: false,
         zoom_level: 100,
         export_metadata: false,
+        show_date_on_list_view: true,
     }
 }
 

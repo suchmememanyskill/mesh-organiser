@@ -28,6 +28,7 @@ pub struct StoredConfiguration {
     pub collapse_sidebar : Option<bool>,
     pub zoom_level: Option<u32>,
     pub export_metadata: Option<bool>,
+    pub show_date_on_list_view: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -52,6 +53,7 @@ pub struct Configuration {
     pub collapse_sidebar: bool,
     pub zoom_level: u32,
     pub export_metadata: bool,
+    pub show_date_on_list_view: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -98,6 +100,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         export_metadata: configuration
             .export_metadata
             .unwrap_or(default.export_metadata),
+        show_date_on_list_view: configuration
+            .show_date_on_list_view
+            .unwrap_or(default.show_date_on_list_view),
     }
 }
 
@@ -126,6 +131,7 @@ impl Default for Configuration {
             collapse_sidebar: false,
             zoom_level: 100,
             export_metadata: false,
+            show_date_on_list_view: true,
         }
     }
 }

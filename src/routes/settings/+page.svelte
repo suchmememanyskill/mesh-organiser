@@ -263,6 +263,7 @@
                     <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
                 {/if}
                 <CheckboxWithLabel bind:value={c.configuration.export_metadata} label="Export metadata to .json when opening in folder" />
+                <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
             </CardContent>
         </Card>
 

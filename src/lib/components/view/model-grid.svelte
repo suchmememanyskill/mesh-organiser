@@ -48,7 +48,7 @@
         Grid_Small: "w-32 text-sm",
         Grid_Medium: "w-40",
         Grid_Large: "w-60",
-        List_Small: "h-10 text-sm",
+        List_Small: "h-10 text-sm hidden-if-small",
         List_Medium: "h-14",
         List_Large: "h-20 text-lg",
     };
