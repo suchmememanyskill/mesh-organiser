@@ -13,6 +13,8 @@ pub enum ApplicationError {
     SidecarError(#[from] tauri_plugin_shell::Error),
     #[error("Failed to download file")]
     DownloadError(#[from] reqwest::Error),
+    #[error("Failed to process JSON")]
+    JsonError(#[from] serde_json::Error),
 }
 
 impl Serialize for ApplicationError {
@@ -44,6 +46,11 @@ impl Serialize for ApplicationError {
             }
             ApplicationError::DownloadError(inner) => {
                 state.serialize_field("error_type", "DownloadError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            }
+            ApplicationError::JsonError(inner) => {
+                state.serialize_field("error_type", "JsonError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }

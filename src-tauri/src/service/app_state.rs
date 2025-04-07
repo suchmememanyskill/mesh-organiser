@@ -75,6 +75,7 @@ impl AppState {
         configuration.fallback_3mf_thumbnail = new_configuration.fallback_3mf_thumbnail;
         configuration.prefer_3mf_thumbnail = new_configuration.prefer_3mf_thumbnail;
         configuration.thumbnail_parallelism = new_configuration.thumbnail_parallelism;
+        configuration.export_metadata = new_configuration.export_metadata;
 
         deep_link_setting_changed
     }

@@ -262,6 +262,7 @@
                 {#if c.configuration.fallback_3mf_thumbnail}
                     <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
                 {/if}
+                <CheckboxWithLabel bind:value={c.configuration.export_metadata} label="Export metadata to .json when opening in folder" />
             </CardContent>
         </Card>
 

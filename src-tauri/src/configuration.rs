@@ -27,6 +27,7 @@ pub struct StoredConfiguration {
     pub thumbnail_parallelism: Option<usize>,
     pub collapse_sidebar : Option<bool>,
     pub zoom_level: Option<u32>,
+    pub export_metadata: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -50,6 +51,7 @@ pub struct Configuration {
     pub thumbnail_parallelism: usize,
     pub collapse_sidebar: bool,
     pub zoom_level: u32,
+    pub export_metadata: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -93,7 +95,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         zoom_level: configuration
             .zoom_level
             .unwrap_or(default.zoom_level),
-
+        export_metadata: configuration
+            .export_metadata
+            .unwrap_or(default.export_metadata),
     }
 }
 
@@ -121,6 +125,7 @@ impl Default for Configuration {
             thumbnail_parallelism: thread::available_parallelism().unwrap_or(NonZeroUsize::new(6).unwrap()).get() / 2,
             collapse_sidebar: false,
             zoom_level: 100,
+            export_metadata: false,
         }
     }
 }

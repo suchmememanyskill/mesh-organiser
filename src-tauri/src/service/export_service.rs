@@ -23,6 +23,12 @@ pub fn export_to_temp_folder(
         .map(|f| get_path_from_model(&temp_dir, f, &app_state, lazy).unwrap())
         .collect();
 
+    if app_state.get_configuration().export_metadata {
+        let metadata_path = temp_dir.join("metadata.json");
+        let metadata_file = File::create(&metadata_path)?;
+        serde_json::to_writer_pretty(metadata_file, &models)?;
+    }
+
     Ok((temp_dir, paths))
 }
 

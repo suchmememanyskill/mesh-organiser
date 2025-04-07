@@ -136,6 +136,7 @@ export interface Configuration {
     thumbnail_parallelism: number;
     collapse_sidebar: boolean;
     zoom_level: number;
+    export_metadata: boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -160,6 +161,7 @@ export function configurationDefault() : Configuration
         thumbnail_parallelism: 3,
         collapse_sidebar: false,
         zoom_level: 100,
+        export_metadata: false,
     }
 }
 
