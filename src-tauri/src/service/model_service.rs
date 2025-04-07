@@ -55,7 +55,6 @@ fn import_models_from_dir(
     app_state: &AppState,
     app_handle: &AppHandle,
 ) -> Result<CreationResult, ApplicationError> {
-    let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     let mut model_ids = Vec::new();
     let is_step_supported = app_state.get_configuration().allow_importing_step;
     let mut temp_str;
@@ -86,6 +85,13 @@ fn import_models_from_dir(
         let _ = app_handle.emit("import-count", model_ids.len());
     }
 
+    if model_ids.is_empty() {
+        return Err(ApplicationError::InternalError(String::from(
+            "No models found in directory",
+        )));
+    }
+
+    let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     model_group::set_group_id_on_models_sync(Some(group_id), model_ids.clone(), &app_state.db);
 
     Ok(CreationResult {
@@ -102,7 +108,6 @@ fn import_models_from_zip(
 ) -> Result<CreationResult, ApplicationError> {
     let zip_file = File::open(&path)?;
     let mut archive = zip::ZipArchive::new(zip_file)?;
-    let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     let mut model_ids = Vec::new();
     let is_step_supported = app_state.get_configuration().allow_importing_step;
     let mut temp_str;
@@ -139,6 +144,13 @@ fn import_models_from_zip(
         }
     }
 
+    if model_ids.is_empty() {
+        return Err(ApplicationError::InternalError(String::from(
+            "No models found in zip file",
+        )));
+    }
+
+    let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
     model_group::set_group_id_on_models_sync(Some(group_id), model_ids.clone(), &app_state.db);
 
     Ok(CreationResult {
