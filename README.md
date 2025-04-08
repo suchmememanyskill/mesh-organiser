@@ -16,6 +16,12 @@ Download for:
 
 See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases) tab for more downloads and release notes
 
+## Support/Donate
+
+If you like this program, consider [boosting the logo's model on makerworld](https://makerworld.com/en/models/1298078-mesh-organiser-logo-cardboard-box#profileId-1329865) for free
+
+If you really like this program, consider donating on [Ko-Fi](https://ko-fi.com/suchmememanyskill)
+
 ## Site integrations
 
 Note: To open 'Open in ...' links from these websites, you need to enable them in settings. By default they are disabled to not overwrite any integrations you may currently have.
@@ -64,4 +70,3 @@ Developed by [Sims](https://github.com/suchmememanyskill)
 Links:
 - [Thumbnail Generator](https://github.com/suchmememanyskill/mesh-thumbnail)
 - [Report an issue / Request a feature](https://github.com/suchmememanyskill/mesh-organiser/issues)
-- [Donate on Ko-Fi](https://ko-fi.com/suchmememanyskill)
