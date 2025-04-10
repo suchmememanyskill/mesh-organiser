@@ -13,23 +13,27 @@
     import * as Popover from "$lib/components/ui/popover/index.js";
     import CircleHelp from "@lucide/svelte/icons/circle-help";
 
-    import { data, c } from "$lib/data.svelte";
+    import { data, c, updateState } from "$lib/data.svelte";
 
     import { resetMode, setMode } from "mode-watcher";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
 
-    import { createLabel, getInitialState } from "$lib/tauri";
-    import { updateState } from "$lib/data.svelte";
+    import { createLabel, getAvailableSlicers, getInitialState } from "$lib/tauri";
     import Button from "./ui/button/button.svelte";
     import { page } from "$app/state";
     import PanelLeft from "@lucide/svelte/icons/panel-left";
+    import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
+    import Slice from "@lucide/svelte/icons/slice";
+    import Check from "@lucide/svelte/icons/check";
     import { onMount } from "svelte";
-
+    import type { SlicerEntry } from "$lib/model";
+    
     function generate_random_color() {
         return "#" + Math.floor(Math.random() * 0xffffff).toString(16);
     }
 
+    let slicers = $state([] as SlicerEntry[]);
     let new_label_name = $state("New label");
     let new_label_color = $state(generate_random_color());
 
@@ -88,28 +92,61 @@
     onMount(async () => {
         let open = !(await getInitialState()).collapse_sidebar;
         sidebar.setOpen(open);
+        slicers = await getAvailableSlicers();
     });
 </script>
 
 <Sidebar.Root collapsible="icon">
-    <Sidebar.Content>
-        <Sidebar.Group>
-            <Sidebar.GroupContent>
-                <Sidebar.Menu>
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton>
-                            {#snippet child({ props })}
-                                <a onclick={() => { sidebar.toggle(); c.configuration.collapse_sidebar = !$state.snapshot(sidebar.open); }} {...props}>
-                                    <PanelLeft />
-                                    <span>Open/Close sidebar</span>
-                                </a>
-                            {/snippet}
-                        </Sidebar.MenuButton>
-                    </Sidebar.MenuItem>
-                </Sidebar.Menu>
-            </Sidebar.GroupContent>
-        </Sidebar.Group>
+    <Sidebar.Header>
+        <Sidebar.Menu>
+            <Sidebar.MenuItem>
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                        {#snippet child({ props })}
+                            <Sidebar.MenuButton
+                                size="lg"
+                                class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                                {...props}
+                            >
+                                <div
+                                    class="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
+                                >
+                                    <Slice class="size-4" />
+                                </div>
+                                <div class="flex flex-col gap-0.5 leading-none">
+                                    <span class="font-semibold">Slicer</span>
+                                    <span class="">{c.configuration.slicer ?? "None"}</span>
+                                </div>
+                                <ChevronsUpDown class="ml-auto" />
+                            </Sidebar.MenuButton>
+                        {/snippet}
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content class="w-[var(--bits-dropdown-menu-anchor-width)]" align="start">
+                        {#each slicers as slicer (slicer.slicer)}
+                            <DropdownMenu.Item class="data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-foreground" disabled={!slicer.installed} onSelect={() => (c.configuration.slicer = slicer.slicer)}>
+                                {slicer.slicer} {slicer.installed ? "" : "- Not installed"}
+                                {#if slicer.slicer === c.configuration.slicer}
+                                    <Check class="ml-auto" />
+                                {/if}
+                            </DropdownMenu.Item>
+                        {/each}
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+            </Sidebar.MenuItem>
 
+            <Sidebar.MenuItem>
+                <Sidebar.MenuButton>
+                    {#snippet child({ props })}
+                        <a onclick={() => { sidebar.toggle(); c.configuration.collapse_sidebar = !$state.snapshot(sidebar.open); }} {...props}>
+                            <PanelLeft />
+                            <span>Open/Close sidebar</span>
+                        </a>
+                    {/snippet}
+                </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+        </Sidebar.Menu>
+    </Sidebar.Header>
+    <Sidebar.Content>
         <Sidebar.Group>
             <Sidebar.GroupContent>
                 <Sidebar.Menu>

@@ -162,35 +162,6 @@
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
                 <div class="flex flex-col space-y-1.5">
-                    <Label for="preferredSlicer">Preferred slicer</Label>
-                    <Select.Root
-                        type="single"
-                        name="preferredSlicer"
-                        bind:value={
-                            () => c.configuration.slicer ?? "",
-                            (val) => (c.configuration.slicer = val)
-                        }
-                    >
-                        <Select.Trigger>
-                            {c.configuration.slicer ?? "Select a slicer"}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Group>
-                                <Select.GroupHeading>Available slicers</Select.GroupHeading>
-                                {#each slicers as slicer}
-                                    <Select.Item
-                                        value={slicer.slicer}
-                                        label={slicer.slicer}
-                                        disabled={!slicer.installed}
-                                        >{slicer.slicer} {slicer.installed ? "" : "- Not Installed"}</Select.Item
-                                    >
-                                {/each}
-                            </Select.Group>
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-                
-                <div class="flex flex-col space-y-1.5">
                     <Label for="path">Model directory*</Label>
                     <div class="flex flex-row gap-2">
                         <Input
