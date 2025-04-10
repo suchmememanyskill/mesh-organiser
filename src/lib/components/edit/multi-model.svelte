@@ -11,7 +11,7 @@
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
 
-    import type { Model, Label as LLabel } from "$lib/model";
+    import type { Model, Label as LLabel, Group as GGroup, ModelWithGroup } from "$lib/model";
     import { goto } from "$app/navigation";
 
     import type { ClassValue } from "svelte/elements";
@@ -44,11 +44,15 @@
     import Group from "@lucide/svelte/icons/group";
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import Trash2 from "@lucide/svelte/icons/trash-2";
+    import Component from "@lucide/svelte/icons/component";
+    import Boxes from "@lucide/svelte/icons/boxes";
 
     const props: { models: Model[]; class?: ClassValue } = $props();
 
-    const models: Model[] = $derived(props.models);
+    const models: ModelWithGroup[] = $derived(props.models);
     const printed = $derived(models.every((x) => x.flags.printed));
+    const allModelGroups = $derived(models.map((x) => x.group).filter((g) => !!g).filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i));
+    const availableGroups = $derived(allModelGroups.filter((g) => !models.every((x) => x.group?.id === g.id)));
 
     let availableLabels = $derived(
         models
@@ -126,6 +130,22 @@
 
         await promise;
         await updateState();
+    }
+
+    async function onAddModelsToGroup(group : GGroup) {
+        const affected_models = models;
+
+        await addModelsToGroup(affected_models, group);
+        await updateState();
+
+        toast.success(`Added ${affected_models.length} models to group '${group.name}'`, {
+            action : {
+                label: "Go to group",
+                onClick: () => {
+                    goto("/group/" + group.id);
+                },
+            }
+        });
     }
 
     async function updateLabels(labels: LLabel[]) {
@@ -232,7 +252,6 @@
                 </div>
             </div>
             <div class="flex flex-col gap-4">
-                <!-- TODO: Figure out a better way to do this. This isn't as nice as the single model label add -->
                 <Label>Add/Remove labels</Label>
 
                 <Select.Root
@@ -296,15 +315,21 @@
                     <Button
                         onclick={onRemoveGroup}
                         class="flex-grow"
-                        disabled={!models.some((x) => {
-                            if (instanceOfModelWithGroup(x)) {
-                                return !!x.group;
-                            }
-
-                            return false;
-                        })}><Ungroup /> Remove from group</Button
+                        disabled={allModelGroups.length <= 0}><Ungroup /> Remove from group</Button
                     >
                 </div>
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger disabled={availableGroups.length <= 0} class="{buttonVariants({ variant: "default" })} flex-grow">
+                        <Component /> Add selected to group
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content side="bottom" align="start" class="w-[var(--bits-dropdown-menu-anchor-width)]">
+                        {#each availableGroups as group}
+                            <DropdownMenu.Item onclick={() => onAddModelsToGroup(group)}>
+                                <Boxes class="mr-2" /> {group.name}
+                            </DropdownMenu.Item>
+                        {/each}
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
             </div>
             <div class="flex flex-col gap-4">
                 <Label>Properties</Label>
