@@ -33,3 +33,7 @@ export function toReadableSize(size : number) {
 export function instanceOfModelWithGroup(object: any): object is ModelWithGroup {
 	return 'group' in object;
 }
+
+export function countWriter(type : string, groups : any[]) : string {
+	return `${groups.length} ${type}${groups.length === 1 ? "" : "s"}`;
+}

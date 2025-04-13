@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}};
+use std::{path::PathBuf, sync::{Arc, Mutex}, thread};
 
 use configuration::Configuration;
 use db::model::Flags;
@@ -24,6 +24,7 @@ mod util;
 async fn add_model(
     path: &str,
     recursive : bool,
+    delete_imported : bool,
     state: State<'_, AppState>,
     app_handle: AppHandle,
 ) -> Result<Vec<CreationResult>, ApplicationError> {
@@ -31,7 +32,7 @@ async fn add_model(
     let state_clone = state.real_clone();
 
     let result = tauri::async_runtime::spawn_blocking(move || {
-        let result = model_service::import_path(&path_clone, &state_clone, &app_handle, recursive)?;
+        let result = model_service::import_path(&path_clone, &state_clone, &app_handle, recursive, delete_imported)?;
         let model_ids : Vec<i64> = result.iter().flat_map(|f| f.model_ids.clone()).collect();
         let models = db::model::get_models_by_id_sync(model_ids, &state_clone.db);
         block_on(service::thumbnail_service::generate_thumbnails(
@@ -358,11 +359,11 @@ fn extract_deep_link(data: &str) -> Option<String> {
     None
 }
 
-fn remove_temp_paths() {
+fn remove_temp_paths() -> Result<(), ApplicationError> {
     let threshold = std::time::Duration::from_secs(5 * 60);
     let now = std::time::SystemTime::now();
-    for entry in std::fs::read_dir(&std::env::temp_dir()).unwrap() {
-        let entry = entry.unwrap();
+    for entry in std::fs::read_dir(&std::env::temp_dir())? {
+        let entry = entry?;
         let path = entry.path();
         if path.is_dir()
             && path
@@ -380,17 +381,21 @@ fn remove_temp_paths() {
                         >= threshold
                     {
                         println!("Removing temporary path {:?}", path);
-                        std::fs::remove_dir_all(&path).unwrap();
+                        std::fs::remove_dir_all(&path)?;
                     }
                 }
             }
         }
     }
+
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    remove_temp_paths();
+    thread::spawn(move || {
+        let _ = remove_temp_paths();
+    });
 
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())

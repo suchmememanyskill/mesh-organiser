@@ -19,11 +19,12 @@
     import Folder from "@lucide/svelte/icons/folder";
     import Undo2 from "@lucide/svelte/icons/undo-2";
     import type { Model, AddModelResult, GroupedEntry } from "$lib/model";
-    import { data, updateState } from "$lib/data.svelte";
+    import { c, data, updateState } from "$lib/data.svelte";
     import { openInSlicer, importModel, editModel } from "$lib/tauri";
     import { page } from '$app/state';
     import { toast } from "svelte-sonner";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index";
+    import { countWriter } from "$lib/utils";
 
     let imported_group_ids : number[] = $state([]);
     let imported_model_ids : number[] = $state([]);
@@ -36,7 +37,8 @@
             : data.entries.filter((entry) => imported_model_ids.includes(entry.id));
     });
 
-    let recursive = $state(false);
+    let recursive = $state($state.snapshot(c.configuration.default_enabled_recursive_import));
+    let delete_after_import = $state($state.snapshot(c.configuration.default_enabled_delete_after_import));
     let import_count = $state(0);
     let thumbnail_count = $state(0);
     let importing_group = $state("");
@@ -57,7 +59,7 @@
             let res : AddModelResult[] = [];
             try 
             {
-                res = await importModel(paths[i], recursive);
+                res = await importModel(paths[i], recursive, delete_after_import);
             }
             catch (reason : any) 
             {
@@ -253,8 +255,8 @@
                 <CardTitle>Import</CardTitle>
                 <CardDescription>Import 3d models via files</CardDescription>
             </CardHeader>
-            <CardContent>
-                <div class="flex gap-5 mb-5">
+            <CardContent class="flex gap-4 flex-col">
+                <div class="flex gap-5">
                     <Button class="grow" onclick={handle_open_file}
                         ><File /> Import File</Button
                     >
@@ -263,13 +265,14 @@
                     </Button>
                 </div>
 
-                <CheckboxWithLabel label="Import folder recursively" bind:value={recursive} />
-
                 <div
                     class="flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed text-sm"
                 >
                     <p>Drag and drop files here</p>
                 </div>
+
+                <CheckboxWithLabel label="Import folder recursively" bind:value={recursive} />
+                <CheckboxWithLabel label="Delete files after import" bind:value={delete_after_import} />
             </CardContent>
         </Card>
     {:else}
@@ -277,7 +280,7 @@
             <div class="flex flex-row gap-5 justify-center mt-4">
                 <Button onclick={clearCurrentModel}><Undo2 /> Import another model</Button>
                 <div class="my-auto">
-                    Imported {imported_groups.length} group(s), {imported_models.length} model(s)
+                    Imported {countWriter("group", imported_groups)}, {countWriter("model", imported_models)}
                 </div>
             </div>
             {#if imported_groups.length === 1}

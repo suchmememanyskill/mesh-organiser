@@ -32,7 +32,6 @@
     let thumbnail_count = $state(0);
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
-    let slicers = $state([] as SlicerEntry[]);
     let app_data_dir = "";
 
     async function replaceAllThumbnails(overwrite : boolean) {
@@ -86,7 +85,6 @@
     });
 
     onMount(async () => {
-        slicers = await getAvailableSlicers();
         app_data_dir = await appDataDir();
         model_dir_size = await computeModelFolderSize();
     });
@@ -117,13 +115,18 @@
                         <Label class="p-2 mx-auto">Progress: {(thumbnail_count/data.entries.length*100).toFixed(1)}%</Label>
                     {/if}
 
+                    <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3MF files" />
+                    {#if c.configuration.fallback_3mf_thumbnail}
+                        <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
+                    {/if}
+
                     <div class="flex flex-col space-y-1.5">
                         <Label>Max Parallelism</Label>
                         <Input
                             type="number"
                             min="1"
                             max={max_parallelism}
-                            bind:value={c.configuration.thumbnail_parallelism} />
+                            bind:value={c.configuration.core_parallelism} />
                     </div>
 
                     <div class="flex flex-col space-y-1.5">
@@ -161,6 +164,11 @@
                 <CardTitle>Import/Export settings</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
+                <CheckboxWithLabel bind:value={c.configuration.default_enabled_recursive_import} label="Check recursive import by default" />
+                <CheckboxWithLabel bind:value={c.configuration.default_enabled_delete_after_import} label="Check delete after import by default" />
+                <CheckboxWithLabel bind:value={c.configuration.export_metadata} label="Export metadata to .json when opening in folder" />
+                <CheckboxWithLabel bind:value={c.configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
+
                 <div class="flex flex-col space-y-1.5">
                     <Label for="path">Model directory*</Label>
                     <div class="flex flex-row gap-2">
@@ -227,13 +235,7 @@
                     (val) => { c.configuration.show_ungrouped_models_in_groups = val; onInternalStateChange(); }
                 } label="Show ungrouped models in groups" />
                 <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
-                <CheckboxWithLabel bind:value={c.configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
                 <CheckboxWithLabel bind:value={c.configuration.show_grouped_count_on_labels} label="Show grouped model count on labels" />
-                <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3MF files" />
-                {#if c.configuration.fallback_3mf_thumbnail}
-                    <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
-                {/if}
-                <CheckboxWithLabel bind:value={c.configuration.export_metadata} label="Export metadata to .json when opening in folder" />
                 <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
             </CardContent>
         </Card>

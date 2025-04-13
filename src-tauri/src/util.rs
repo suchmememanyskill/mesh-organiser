@@ -1,11 +1,12 @@
 use regex::Regex;
 use std::{io::Read, path::PathBuf};
+use std::ffi::OsStr;
 
 use crate::error::ApplicationError;
 
 pub fn prettify_file_name(file: &PathBuf, is_dir : bool) -> String {
     let extension = file.extension();
-    let mut file_name: String = String::from(file.file_name().take().unwrap().to_str().unwrap());
+    let mut file_name: String = String::from(file.file_name().unwrap_or(OsStr::new("unknown_filename")).to_str().unwrap());
 
     if !is_dir
     {

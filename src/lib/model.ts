@@ -133,11 +133,13 @@ export interface Configuration {
     show_grouped_count_on_labels: boolean;
     fallback_3mf_thumbnail: boolean;
     prefer_3mf_thumbnail: boolean;
-    thumbnail_parallelism: number;
+    core_parallelism: number;
     collapse_sidebar: boolean;
     zoom_level: number;
     export_metadata: boolean;
     show_date_on_list_view: boolean;
+    default_enabled_delete_after_import: boolean;
+    default_enabled_recursive_import: boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -159,11 +161,13 @@ export function configurationDefault() : Configuration
         show_grouped_count_on_labels: true,
         fallback_3mf_thumbnail: true,
         prefer_3mf_thumbnail: false,
-        thumbnail_parallelism: 3,
+        core_parallelism: 3,
         collapse_sidebar: false,
         zoom_level: 100,
         export_metadata: false,
         show_date_on_list_view: true,
+        default_enabled_delete_after_import: false,
+        default_enabled_recursive_import: false,
     }
 }
 

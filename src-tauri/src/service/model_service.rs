@@ -5,7 +5,7 @@ use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use crate::{db::model, error::ApplicationError};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::fs::{read_dir, File};
+use std::fs::{self, read_dir, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter};
@@ -22,7 +22,8 @@ pub fn import_path(
     path: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-    recursive : bool
+    recursive : bool,
+    delete_imported : bool,
 ) -> Result<Vec<CreationResult>, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
@@ -30,22 +31,30 @@ pub fn import_path(
 
     if path_buff.is_dir() {
 
-        if (recursive)
+        if recursive
         {
-            return import_models_from_dir_recursive(&path_buff, app_state, app_handle);
+            return import_models_from_dir_recursive(&path_buff, app_state, app_handle, delete_imported);
         }
 
-        let result = import_models_from_dir(path, &name, &app_state, &app_handle)?;
+        let result = import_models_from_dir(path, &name, &app_state, &app_handle, delete_imported)?;
         return Ok(vec![result]);
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
-        let result = import_models_from_zip(path, &name, &app_state, &app_handle)?;
+        let result = import_models_from_zip(path, &name, &app_state, &app_handle, delete_imported)?;
         return Ok(vec![result]);
     } else if is_supported_extension(&path_buff, is_step_supported) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
-        let mut file = File::open(&path_buff)?;
+        let result;
 
-        let result = import_single_model(&mut file, extension, size, &name, None, &app_state)?;
+        {
+            let mut file = File::open(&path_buff)?;
+            result = import_single_model(&mut file, extension, size, &name, None, &app_state)?;
+        }
+
+        if delete_imported
+        {
+            let _ = fs::remove_file(&path_buff);
+        }
 
         return Ok(vec![CreationResult {
             group_id: None,
@@ -61,7 +70,8 @@ pub fn import_path(
 fn import_models_from_dir_recursive(
     path: &PathBuf,
     app_state: &AppState,
-    app_handle: &AppHandle
+    app_handle: &AppHandle,
+    delete_imported : bool,
 ) -> Result<Vec<CreationResult>, ApplicationError> {
     let mut results : Vec<CreationResult> = vec![];
     let entries : Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
@@ -69,7 +79,7 @@ fn import_models_from_dir_recursive(
 
     for folder in entries.iter().filter(|f| f.path().is_dir())
     {
-        if let Ok(result) = import_models_from_dir_recursive(&folder.path(), app_state, app_handle)
+        if let Ok(result) = import_models_from_dir_recursive(&folder.path(), app_state, app_handle, delete_imported)
         {
             results.extend(result);
         }
@@ -79,7 +89,7 @@ fn import_models_from_dir_recursive(
     {
         let group_name = util::prettify_file_name(path, true);
 
-        if let Ok(result) = import_models_from_dir(path.to_str().unwrap(), &group_name, app_state, app_handle)
+        if let Ok(result) = import_models_from_dir(path.to_str().unwrap(), &group_name, app_state, app_handle, delete_imported)
         {
             results.push(result);
         }
@@ -93,6 +103,7 @@ fn import_models_from_dir(
     group_name: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
+    delete_imported : bool,
 ) -> Result<CreationResult, ApplicationError> {
     let mut model_ids = Vec::new();
     let is_step_supported = app_state.get_configuration().allow_importing_step;
@@ -117,12 +128,23 @@ fn import_models_from_dir(
         let file_name = util::prettify_file_name(&entry, false);
         let extension = entry.extension().unwrap().to_str().unwrap();
         let file_size = entry.metadata()?.len() as usize;
-        let mut file = File::open(&entry)?;
+        let id;
 
-        let id = import_single_model(
-            &mut file, extension, file_size, &file_name, link, &app_state,
-        )?;
+        {
+            let mut file = File::open(&entry)?;
+
+            id = import_single_model(
+                &mut file, extension, file_size, &file_name, link, &app_state,
+            )?;
+        }
+
         model_ids.push(id);
+
+        if delete_imported
+        {
+            let _ = fs::remove_file(&entry);
+        }
+
         let _ = app_handle.emit("import-count", model_ids.len());
     }
 
@@ -146,9 +168,8 @@ fn import_models_from_zip(
     group_name: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
+    delete_imported : bool,
 ) -> Result<CreationResult, ApplicationError> {
-    let zip_file = File::open(&path)?;
-    let mut archive = zip::ZipArchive::new(zip_file)?;
     let mut model_ids = Vec::new();
     let is_step_supported = app_state.get_configuration().allow_importing_step;
     let mut temp_str;
@@ -156,35 +177,45 @@ fn import_models_from_zip(
     let _ = app_handle.emit("import-count", 0 as usize);
     let _ = app_handle.emit("import-group", group_name);
 
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i)?;
-        let outpath = match file.enclosed_name() {
-            Some(path) => path,
-            None => continue,
-        };
-
-        if outpath.file_name().take().unwrap() == ".link" {
-            let mut file_contents: Vec<u8> = Vec::new();
-            file.read_to_end(&mut file_contents)?;
-            temp_str = String::from_utf8(file_contents).unwrap();
-            link = Some(temp_str.as_str());
+    {
+        let zip_file = File::open(&path)?;
+        let mut archive = zip::ZipArchive::new(zip_file)?;
+    
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i)?;
+            let outpath = match file.enclosed_name() {
+                Some(path) => path,
+                None => continue,
+            };
+    
+            if outpath.file_name().take().unwrap() == ".link" {
+                let mut file_contents: Vec<u8> = Vec::new();
+                file.read_to_end(&mut file_contents)?;
+                temp_str = String::from_utf8(file_contents).unwrap();
+                link = Some(temp_str.as_str());
+            }
+    
+            if !is_supported_extension(&outpath, is_step_supported) {
+                continue;
+            }
+    
+            if file.is_file() {
+                let file_name = util::prettify_file_name(&outpath, false);
+                let extension = outpath.extension().unwrap().to_str().unwrap();
+                let file_size = file.size() as usize;
+    
+                let id = import_single_model(
+                    &mut file, extension, file_size, &file_name, link, &app_state,
+                )?;
+                model_ids.push(id);
+                let _ = app_handle.emit("import-count", model_ids.len());
+            }
         }
+    }
 
-        if !is_supported_extension(&outpath, is_step_supported) {
-            continue;
-        }
-
-        if file.is_file() {
-            let file_name = util::prettify_file_name(&outpath, false);
-            let extension = outpath.extension().unwrap().to_str().unwrap();
-            let file_size = file.size() as usize;
-
-            let id = import_single_model(
-                &mut file, extension, file_size, &file_name, link, &app_state,
-            )?;
-            model_ids.push(id);
-            let _ = app_handle.emit("import-count", model_ids.len());
-        }
+    if delete_imported
+    {
+        let _ = fs::remove_file(path);
     }
 
     if model_ids.is_empty() {

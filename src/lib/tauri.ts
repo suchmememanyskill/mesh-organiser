@@ -163,11 +163,12 @@ export async function updateImages(overwrite : boolean) : Promise<void>
     await invoke("update_images", { overwrite: overwrite });
 }
 
-export async function importModel(path : string, recursive : boolean) : Promise<AddModelResult[]>
+export async function importModel(path : string, recursive : boolean, delete_imported : boolean) : Promise<AddModelResult[]>
 {
     return await invoke("add_model", {
         path: path,
-        recursive : recursive
+        recursive : recursive,
+        deleteImported : delete_imported,
     });
 }
 

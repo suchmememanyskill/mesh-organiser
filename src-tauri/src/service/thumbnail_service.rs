@@ -32,7 +32,7 @@ pub async fn generate_thumbnails(
     let model_path = PathBuf::from(app_state.get_model_dir());
     let fallback_3mf_thumbnail = app_state.get_configuration().fallback_3mf_thumbnail;
     let prefer_3mf_thumbnail = app_state.get_configuration().prefer_3mf_thumbnail;
-    let max_concurrent = app_state.get_configuration().thumbnail_parallelism;
+    let max_concurrent = app_state.get_configuration().core_parallelism;
 
     let color = app_state
         .get_configuration()

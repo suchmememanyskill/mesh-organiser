@@ -24,11 +24,13 @@ pub struct StoredConfiguration {
     pub show_grouped_count_on_labels : Option<bool>,
     pub fallback_3mf_thumbnail: Option<bool>,
     pub prefer_3mf_thumbnail: Option<bool>,
-    pub thumbnail_parallelism: Option<usize>,
+    pub core_parallelism: Option<usize>,
     pub collapse_sidebar : Option<bool>,
     pub zoom_level: Option<u32>,
     pub export_metadata: Option<bool>,
     pub show_date_on_list_view: Option<bool>,
+    pub default_enabled_recursive_import: Option<bool>,
+    pub default_enabled_delete_after_import: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -49,11 +51,13 @@ pub struct Configuration {
     pub show_grouped_count_on_labels: bool,
     pub fallback_3mf_thumbnail: bool,
     pub prefer_3mf_thumbnail: bool,
-    pub thumbnail_parallelism: usize,
+    pub core_parallelism: usize,
     pub collapse_sidebar: bool,
     pub zoom_level: u32,
     pub export_metadata: bool,
     pub show_date_on_list_view: bool,
+    pub default_enabled_recursive_import: bool,
+    pub default_enabled_delete_after_import: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -88,9 +92,6 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         prefer_3mf_thumbnail: configuration
             .prefer_3mf_thumbnail
             .unwrap_or(default.prefer_3mf_thumbnail),
-        thumbnail_parallelism: configuration
-            .thumbnail_parallelism
-            .unwrap_or(default.thumbnail_parallelism),
         collapse_sidebar: configuration
             .collapse_sidebar
             .unwrap_or(default.collapse_sidebar),
@@ -103,6 +104,15 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         show_date_on_list_view: configuration
             .show_date_on_list_view
             .unwrap_or(default.show_date_on_list_view),
+        core_parallelism: configuration
+            .core_parallelism
+            .unwrap_or(default.core_parallelism),
+        default_enabled_recursive_import: configuration
+            .default_enabled_recursive_import
+            .unwrap_or(default.default_enabled_recursive_import),
+        default_enabled_delete_after_import: configuration
+            .default_enabled_delete_after_import
+            .unwrap_or(default.default_enabled_delete_after_import),
     }
 }
 
@@ -127,11 +137,13 @@ impl Default for Configuration {
             show_grouped_count_on_labels: true,
             fallback_3mf_thumbnail: true,
             prefer_3mf_thumbnail: false,
-            thumbnail_parallelism: thread::available_parallelism().unwrap_or(NonZeroUsize::new(6).unwrap()).get() / 2,
+            core_parallelism: thread::available_parallelism().unwrap_or(NonZeroUsize::new(6).unwrap()).get() / 2,
             collapse_sidebar: false,
             zoom_level: 100,
             export_metadata: false,
             show_date_on_list_view: true,
+            default_enabled_recursive_import: false,
+            default_enabled_delete_after_import: false,
         }
     }
 }
