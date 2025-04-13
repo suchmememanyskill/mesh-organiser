@@ -164,8 +164,8 @@
                 <CardTitle>Import/Export settings</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                <CheckboxWithLabel bind:value={c.configuration.default_enabled_recursive_import} label="Check recursive import by default" />
-                <CheckboxWithLabel bind:value={c.configuration.default_enabled_delete_after_import} label="Check delete after import by default" />
+                <CheckboxWithLabel bind:value={c.configuration.default_enabled_recursive_import} label="Check 'Import folder recursively' by default" />
+                <CheckboxWithLabel bind:value={c.configuration.default_enabled_delete_after_import} label="Check 'Delete files after import' by default" />
                 <CheckboxWithLabel bind:value={c.configuration.export_metadata} label="Export metadata to .json when opening in folder" />
                 <CheckboxWithLabel bind:value={c.configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
 
