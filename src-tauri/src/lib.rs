@@ -23,15 +23,17 @@ mod util;
 #[tauri::command]
 async fn add_model(
     path: &str,
+    recursive : bool,
     state: State<'_, AppState>,
     app_handle: AppHandle,
-) -> Result<CreationResult, ApplicationError> {
+) -> Result<Vec<CreationResult>, ApplicationError> {
     let path_clone = String::from(path);
     let state_clone = state.real_clone();
 
     let result = tauri::async_runtime::spawn_blocking(move || {
-        let result = model_service::import_path(&path_clone, &state_clone, &app_handle)?;
-        let models = db::model::get_models_by_id_sync(result.model_ids.clone(), &state_clone.db);
+        let result = model_service::import_path(&path_clone, &state_clone, &app_handle, recursive)?;
+        let model_ids : Vec<i64> = result.iter().flat_map(|f| f.model_ids.clone()).collect();
+        let models = db::model::get_models_by_id_sync(model_ids, &state_clone.db);
         block_on(service::thumbnail_service::generate_thumbnails(
             models,
             &state_clone,
@@ -39,7 +41,7 @@ async fn add_model(
             false,
         ))?;
 
-        Result::<CreationResult, ApplicationError>::Ok(result)
+        Result::<Vec<CreationResult>, ApplicationError>::Ok(result)
     })
     .await
     .unwrap()?;

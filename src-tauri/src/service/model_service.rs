@@ -22,15 +22,24 @@ pub fn import_path(
     path: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-) -> Result<CreationResult, ApplicationError> {
+    recursive : bool
+) -> Result<Vec<CreationResult>, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let is_step_supported = app_state.get_configuration().allow_importing_step;
 
     if path_buff.is_dir() {
-        return import_models_from_dir(path, &name, &app_state, &app_handle);
+
+        if (recursive)
+        {
+            return import_models_from_dir_recursive(&path_buff, app_state, app_handle);
+        }
+
+        let result = import_models_from_dir(path, &name, &app_state, &app_handle)?;
+        return Ok(vec![result]);
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
-        return import_models_from_zip(path, &name, &app_state, &app_handle);
+        let result = import_models_from_zip(path, &name, &app_state, &app_handle)?;
+        return Ok(vec![result]);
     } else if is_supported_extension(&path_buff, is_step_supported) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
@@ -38,15 +47,45 @@ pub fn import_path(
 
         let result = import_single_model(&mut file, extension, size, &name, None, &app_state)?;
 
-        return Ok(CreationResult {
+        return Ok(vec![CreationResult {
             group_id: None,
             model_ids: vec![result],
-        });
+        }]);
     }
 
     return Err(ApplicationError::InternalError(String::from(
         "Unsupported file type",
     )));
+}
+
+fn import_models_from_dir_recursive(
+    path: &PathBuf,
+    app_state: &AppState,
+    app_handle: &AppHandle
+) -> Result<Vec<CreationResult>, ApplicationError> {
+    let mut results : Vec<CreationResult> = vec![];
+    let entries : Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
+    let is_step_supported = app_state.get_configuration().allow_importing_step;
+
+    for folder in entries.iter().filter(|f| f.path().is_dir())
+    {
+        if let Ok(result) = import_models_from_dir_recursive(&folder.path(), app_state, app_handle)
+        {
+            results.extend(result);
+        }
+    }
+
+    if entries.iter().filter(|f| f.path().is_file()).any(|f| is_supported_extension(&f.path(), is_step_supported))
+    {
+        let group_name = util::prettify_file_name(path, true);
+
+        if let Ok(result) = import_models_from_dir(path.to_str().unwrap(), &group_name, app_state, app_handle)
+        {
+            results.push(result);
+        }
+    }
+
+    Ok(results)
 }
 
 fn import_models_from_dir(
@@ -59,6 +98,8 @@ fn import_models_from_dir(
     let is_step_supported = app_state.get_configuration().allow_importing_step;
     let mut temp_str;
     let mut link = None;
+    let _ = app_handle.emit("import-count", 0 as usize);
+    let _ = app_handle.emit("import-group", group_name);
 
     for entry in read_dir(path)?
         .map(|f| f.unwrap().path())
@@ -112,6 +153,8 @@ fn import_models_from_zip(
     let is_step_supported = app_state.get_configuration().allow_importing_step;
     let mut temp_str;
     let mut link = None;
+    let _ = app_handle.emit("import-count", 0 as usize);
+    let _ = app_handle.emit("import-group", group_name);
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;

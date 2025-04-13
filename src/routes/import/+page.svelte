@@ -23,26 +23,23 @@
     import { openInSlicer, importModel, editModel } from "$lib/tauri";
     import { page } from '$app/state';
     import { toast } from "svelte-sonner";
+    import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index";
 
-    let imported_group_id : number|null|undefined = $state(null);
+    let imported_group_ids : number[] = $state([]);
     let imported_model_ids : number[] = $state([]);
 
-    let imported_group: GroupedEntry | undefined = $derived.by(() => {
-        if (!imported_group_id) {
-            return undefined;
-        }
-
-        return data.grouped_entries.find((entry) => entry.group.id === imported_group_id);
-    });
+    let imported_groups: GroupedEntry[] = $derived(data.grouped_entries.filter((entry) => imported_group_ids.includes(entry.group.id)));
 
     let imported_models: Model[] = $derived.by(() => {
-        return imported_group 
-            ? imported_group.models 
+        return imported_groups.length >= 1
+            ? imported_groups.map((x) => x.models).flat() 
             : data.entries.filter((entry) => imported_model_ids.includes(entry.id));
     });
 
+    let recursive = $state(false);
     let import_count = $state(0);
     let thumbnail_count = $state(0);
+    let importing_group = $state("");
     let busy: boolean = $state(false);
     let direct_open_in_slicer: boolean = false;
 
@@ -57,10 +54,10 @@
         for (let i = 0; i < paths.length; i++) {
             import_count = 0;
             thumbnail_count = 0;
-            let res : AddModelResult | undefined = undefined;
+            let res : AddModelResult[] = [];
             try 
             {
-                res = await importModel(paths[i]);
+                res = await importModel(paths[i], recursive);
             }
             catch (reason : any) 
             {
@@ -73,18 +70,19 @@
             
             import_count = 0;
             thumbnail_count = 0;
+            importing_group = "";
 
             if (!res) {
                 console.error("Failed to import model at path:", paths[i]);
                 continue;
             }
 
-            results.push(res);
+            results.push(...res);
         }
 
         await updateState();
 
-        imported_group_id = results.find((res) => res.group_id)?.group_id;
+        imported_group_ids = results.filter((res) => !!res.group_id).map((res) => res.group_id!);
         imported_model_ids = results.map((res) => res.model_ids).flat();
 
         if (direct_open_in_slicer)
@@ -105,7 +103,7 @@
         direct_open_in_slicer = false;
     }
 
-    async function handle_open(multiple: boolean, directory: boolean) {
+    async function handle_open(directory: boolean) {
         busy = true;
 
         let filters = undefined;
@@ -120,7 +118,7 @@
         }
 
         let result: any = await open({
-            multiple: multiple,
+            multiple: true,
             directory: directory,
             filters: filters,
         });
@@ -138,16 +136,17 @@
     }
 
     async function handle_open_file() {
-        await handle_open(true, false);
+        await handle_open(false);
     }
 
     async function handle_open_folder() {
-        await handle_open(false, true);
+        await handle_open(true);
     }
 
     let destroy_listener: UnlistenFn | null = null;
     let destroy_import_counter: UnlistenFn | null = null;
     let destroy_thumbnail_counter: UnlistenFn | null = null;
+    let destroy_importing_group: UnlistenFn | null = null;
 
     onMount(async () => {
         destroy_listener = await listen("tauri://drag-drop", async (event) => {
@@ -173,6 +172,10 @@
         destroy_thumbnail_counter = await listen<number>("thumbnail-count", (e) => {
             thumbnail_count = e.payload;
         });
+
+        destroy_importing_group = await listen<string>("import-group", (e) => {
+            importing_group = e.payload;
+        });
     });
 
     onDestroy(() => {
@@ -187,10 +190,14 @@
         if (destroy_thumbnail_counter) {
             destroy_thumbnail_counter();
         }
+
+        if (destroy_importing_group) {
+            destroy_importing_group();
+        }
     });
 
     function clearCurrentModel() {
-        imported_group_id = null;
+        imported_group_ids = [];
         imported_model_ids = [];
     }
 
@@ -226,6 +233,9 @@
 <div class="flex justify-center h-full">
     {#if busy}
         <div class="flex flex-col items-center gap-2 my-auto">
+            {#if importing_group}
+                <h1>Group: {importing_group}</h1>
+            {/if}
             {#if thumbnail_count > 0}
                 <h1>Generated {thumbnail_count} thumbnails...</h1>
             {:else if import_count > 0}
@@ -253,6 +263,8 @@
                     </Button>
                 </div>
 
+                <CheckboxWithLabel label="Import folder recursively" bind:value={recursive} />
+
                 <div
                     class="flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed text-sm"
                 >
@@ -264,10 +276,13 @@
         <div class="flex flex-col w-full gap-1">
             <div class="flex flex-row gap-5 justify-center mt-4">
                 <Button onclick={clearCurrentModel}><Undo2 /> Import another model</Button>
+                <div class="my-auto">
+                    Imported {imported_groups.length} group(s), {imported_models.length} model(s)
+                </div>
             </div>
-            {#if imported_group?.group}
+            {#if imported_groups.length === 1}
                 <div class="overflow-hidden">
-                    <GroupPage group={imported_group} />
+                    <GroupPage group={imported_groups[0]} />
                 </div>
             {:else}
                 <div class="overflow-hidden flex-grow w-full">
