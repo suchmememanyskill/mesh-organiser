@@ -1,56 +1,20 @@
-use std::path::PathBuf;
-
-use crate::db::model::Model;
-use crate::service::export_service::export_to_temp_folder;
-
-use super::app_state::AppState;
+use super::Slicer;
+use winreg::*;
 use crate::error::ApplicationError;
-use serde::{Deserialize, Serialize};
+use crate::service::app_state::AppState;
+use crate::db::model::Model;
+use std::path::PathBuf;
+use std::process::Command;
+use crate::service::export_service::export_to_temp_folder;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
-use strum::EnumIter;
-#[cfg(target_os = "windows")]
-use winreg::*;
 
-// TODO: Make all of this async
-
-#[derive(Clone, Serialize, Deserialize, EnumIter)]
-pub enum Slicer {
-    PrusaSlicer,
-    OrcaSlicer,
-    Cura,
-    BambuStudio,
-}
-
-impl Slicer {
-    #[cfg(target_os = "windows")]
+impl Slicer 
+{
     pub fn is_installed(&self) -> bool {
         get_slicer_path(&self).is_some()
     }
 
-    #[cfg(target_os = "linux")]
-    pub fn is_installed(&self) -> bool {
-        match Command::new("flatpak")
-        .arg("info")
-        .arg(get_flatpak_slicer_package(&self))
-        .output()
-        {
-            Ok(output) => {
-                return output.status.success();
-            }
-            Err(_) => {
-                return false;
-            }
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    pub fn is_installed(&self) -> bool {
-        get_slicer_path(&self).is_some()
-    }
-
-    #[cfg(target_os = "windows")]
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
         if !self.is_installed() {
             return Err(ApplicationError::InternalError(String::from(
@@ -76,114 +40,8 @@ impl Slicer {
 
         Ok(())
     }
-
-    #[cfg(target_os = "linux")]
-    pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
-        if !self.is_installed() {
-            return Err(ApplicationError::InternalError(String::from(
-                "Slicer not installed",
-            )));
-        }
-
-        let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
-
-        println!("Opening in slicer: {:?}", paths);
-
-        if paths.len() == 0 {
-            return Err(ApplicationError::InternalError(String::from(
-                "No models to open",
-            )));
-        }
-
-        let _ = Command::new("flatpak")
-            .arg("run")
-            .arg("--file-forwarding")
-            .arg(get_flatpak_slicer_package(&self))
-            .arg("@@")
-            .args(paths)
-            .arg("@@")
-            .spawn()?;
-
-        Ok(())
-    }
-
-    #[cfg(target_os = "macos")]
-    pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
-        if !self.is_installed() {
-            return Err(ApplicationError::InternalError(String::from(
-                "Slicer not installed",
-            )));
-        }
-
-        let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
-
-        println!("Opening in slicer: {:?}", paths);
-
-        if paths.len() == 0 {
-            return Err(ApplicationError::InternalError(String::from(
-                "No models to open",
-            )));
-        }
-
-        let slicer_path = get_slicer_path(&self).unwrap();
-        
-        Command::new("open")
-            .arg("-a")
-            .arg(slicer_path)
-            .arg("--args")
-            .args(paths)
-            .spawn()?;
-
-        Ok(())
-    }
 }
 
-#[cfg(target_os = "linux")]
-fn get_flatpak_slicer_package(slicer : &Slicer) -> String
-{
-    match slicer {
-        Slicer::PrusaSlicer => "com.prusa3d.PrusaSlicer",
-        Slicer::OrcaSlicer => "io.github.softfever.OrcaSlicer",
-        Slicer::Cura => "com.ultimaker.cura",
-        Slicer::BambuStudio => "com.bambulab.BambuStudio",
-    }.to_string()
-}
-
-#[cfg(target_os = "macos")]
-fn get_slicer_path(slicer: &Slicer) -> Option<PathBuf> {
-    match slicer {
-        Slicer::PrusaSlicer => {
-            let path = PathBuf::from("/Applications/Original Prusa Drivers/PrusaSlicer.app");
-            if path.exists() {
-                return Some(path);
-            }
-            return None;
-        },
-        Slicer::OrcaSlicer => {
-            let path = PathBuf::from("/Applications/OrcaSlicer.app");
-            if path.exists() {
-                return Some(path);
-            }
-            return None;
-        },
-        Slicer::Cura => {
-            let path = PathBuf::from("/Applications/UltiMaker Cura.app");
-            if path.exists() {
-                return Some(path);
-            }
-            return None;
-        },
-        Slicer::BambuStudio => {
-            let path = PathBuf::from("/Applications/BambuStudio.app");
-            if path.exists() {
-                return Some(path);
-            }
-            return None;
-        },
-    }
-}
-
-#[cfg(target_os = "windows")]
 fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
     use std::ffi::OsString;
 
@@ -203,7 +61,6 @@ fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
     }
 }
 
-#[cfg(target_os = "windows")]
 fn get_slicer_path(slicer : &Slicer) -> Option<PathBuf> {
     match slicer 
     {
