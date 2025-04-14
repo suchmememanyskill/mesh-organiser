@@ -14,6 +14,8 @@ use strum::IntoEnumIterator;
 use tauri::async_runtime::block_on;
 use tauri::{AppHandle, Emitter, Manager, State};
 use urlencoding::decode;
+use std::fs::File;
+use std::io::prelude::*;
 mod configuration;
 mod db;
 mod error;
@@ -416,6 +418,19 @@ pub fn run() {
                     println!("Failed to emit deep link {:?}", &argv[1]);
                 }
             }
+            else 
+            {
+                let window = _app.get_webview_window("main");
+
+                if let Some(window) = window {
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+                else 
+                {
+                    println!("Failed to get window to focus");
+                }
+            }
             
           }))
         .plugin(tauri_plugin_deep_link::init())
@@ -432,6 +447,19 @@ pub fn run() {
                         .to_str()
                         .unwrap(),
                 );
+
+                let app_data_path_clone = String::from(&app_data_path);
+
+                std::panic::set_hook(Box::new(move |info| {
+                    let loc = PathBuf::from(&app_data_path_clone).join("crash.log");
+
+                    if let Ok(mut file) = File::create(loc)
+                    {
+                        let _ = writeln!(file, "Panic occurred: {info}\n{:#?}", info);
+                    } 
+
+                    println!("Panic occurred: {:?}", info);
+                }));
 
                 let config = read_configuration(&app_data_path);
 
