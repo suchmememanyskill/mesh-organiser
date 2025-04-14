@@ -2,6 +2,9 @@ name: 'publish'
 
 on: workflow_dispatch
 
+env:
+  MESH_THUMBNAIL_REPO: suchmememanyskill/mesh-thumbnail
+
 jobs:
   publish-tauri:
     permissions:
@@ -10,12 +13,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-22.04' 
+          - name: win-amd64
+            target: x86_64-pc-windows-gnu
+            os: windows-latest
             args: ''
-          - platform: 'windows-latest'
+          - name: linux-amd64
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
             args: ''
-
-    runs-on: ${{ matrix.platform }}
+          - name: macos-amd64
+            target: x86_64-apple-darwin
+            os: macos-latest
+            args: ''
+          - name: macos-arm64
+            target: aarch64-apple-darwin
+            os: macos-latest
+            args: ''
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,23 +43,24 @@ jobs:
         with:
           version: 10
 
-      - name: download mesh-thumbnail (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: download mesh-thumbnail (not windows)
+        if: matrix.os != 'windows-latest'
         run: |
           mkdir external-binaries
           cd external-binaries
-          wget -O mesh-thumbnail-x86_64-unknown-linux-gnu https://github.com/suchmememanyskill/mesh-thumbnail/releases/latest/download/mesh-thumbnail
-          chmod a+x mesh-thumbnail-x86_64-unknown-linux-gnu
+          wget https://github.com/${{ env.MESH_THUMBNAIL_REPO }}/releases/latest/download/mesh-thumbnail-${{ matrix.target }}
+          chmod a+x mesh-thumbnail-${{ matrix.target }}
 
       - name: download mesh-thumbnail (windows only)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         run: |
           mkdir external-binaries
           cd external-binaries
-          curl -L https://github.com/suchmememanyskill/mesh-thumbnail/releases/latest/download/mesh-thumbnail.exe -o mesh-thumbnail-x86_64-pc-windows-msvc.exe
+          #TODO: build mesh-thumbnail for windows with msvc instead of gnu in mesh-thumbnail
+          curl -L -o mesh-thumbnail-x86_64-pc-windows-msvc.exe https://github.com/${{ env.MESH_THUMBNAIL_REPO }}/releases/latest/download/mesh-thumbnail-${{ matrix.target }}.exe
 
       - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' 
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
