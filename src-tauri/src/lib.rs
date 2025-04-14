@@ -397,7 +397,7 @@ pub fn run() {
         let _ = remove_temp_paths();
     });
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
             println!("a new app instance was opened with {argv:?} and the deep link event was already triggered");
@@ -500,6 +500,19 @@ pub fn run() {
             get_configuration,
             compute_model_folder_size,
         ])
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    app.run(|_app_handle, e| {
+        if let tauri::RunEvent::ExitRequested { api, .. } = e {
+            // Close sqlite db
+            tauri::async_runtime::block_on(async move {
+                let app_state = _app_handle.state::<AppState>();
+                app_state
+                    .db
+                    .close()
+                    .await;
+            });
+        }
+    });
 }
