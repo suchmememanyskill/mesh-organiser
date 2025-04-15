@@ -24,11 +24,11 @@ jobs:
           - name: macos-amd64
             target: x86_64-apple-darwin
             os: macos-latest
-            args: ''
+            args: '--target x86_64-apple-darwin'
           - name: macos-arm64
             target: aarch64-apple-darwin
             os: macos-latest
-            args: ''
+            args: '--target aarch64-apple-darwin'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
