@@ -15,6 +15,8 @@ pub enum ApplicationError {
     DownloadError(#[from] reqwest::Error),
     #[error("Failed to process JSON")]
     JsonError(#[from] serde_json::Error),
+    #[error("Framework error")]
+    FrameworkError(#[from] tauri::Error),
 }
 
 impl Serialize for ApplicationError {
@@ -51,6 +53,11 @@ impl Serialize for ApplicationError {
             }
             ApplicationError::JsonError(inner) => {
                 state.serialize_field("error_type", "JsonError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            }
+            ApplicationError::FrameworkError(inner) => {
+                state.serialize_field("error_type", "FrameworkError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }

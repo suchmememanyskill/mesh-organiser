@@ -31,6 +31,7 @@ pub struct StoredConfiguration {
     pub show_date_on_list_view: Option<bool>,
     pub default_enabled_recursive_import: Option<bool>,
     pub default_enabled_delete_after_import: Option<bool>,
+    pub open_links_in_external_browser: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -58,6 +59,7 @@ pub struct Configuration {
     pub show_date_on_list_view: bool,
     pub default_enabled_recursive_import: bool,
     pub default_enabled_delete_after_import: bool,
+    pub open_links_in_external_browser: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -113,6 +115,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         default_enabled_delete_after_import: configuration
             .default_enabled_delete_after_import
             .unwrap_or(default.default_enabled_delete_after_import),
+        open_links_in_external_browser: configuration
+            .open_links_in_external_browser
+            .unwrap_or(default.open_links_in_external_browser),
     }
 }
 
@@ -144,6 +149,7 @@ impl Default for Configuration {
             show_date_on_list_view: true,
             default_enabled_recursive_import: false,
             default_enabled_delete_after_import: false,
+            open_links_in_external_browser: true,
         }
     }
 }

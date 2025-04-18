@@ -176,3 +176,8 @@ export async function computeModelFolderSize() : Promise<number>
 {
     return await invoke("compute_model_folder_size");
 }
+
+export async function newWindow(url : string) : Promise<void>
+{
+    await invoke("new_window_with_url", { url: url });
+}

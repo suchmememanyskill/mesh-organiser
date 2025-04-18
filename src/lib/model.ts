@@ -140,6 +140,7 @@ export interface Configuration {
     show_date_on_list_view: boolean;
     default_enabled_delete_after_import: boolean;
     default_enabled_recursive_import: boolean;
+    open_links_in_external_browser: boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -168,6 +169,7 @@ export function configurationDefault() : Configuration
         show_date_on_list_view: true,
         default_enabled_delete_after_import: false,
         default_enabled_recursive_import: false,
+        open_links_in_external_browser: true,
     }
 }
 

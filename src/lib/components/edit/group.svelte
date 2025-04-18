@@ -20,6 +20,7 @@
     import { buttonVariants } from "$lib/components/ui/button/index.js";
     import { onMount } from "svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
+    import LinkButton from "$lib/components/view/link-button.svelte";
 
     const props: { group: Group; class?: ClassValue; settingsVertical?: boolean } = $props();
     const tracked_group = $derived(props.group);
@@ -140,9 +141,8 @@
                             bind:value={link}
                             disabled={link_disabled}
                         />
-                        {#if link && !link_disabled}
-                            <a href="{link}" target="_blank" class="{buttonVariants({ variant: "default"})}">Open Link</a>
-                        {/if}
+
+                        <LinkButton link={link} visible={!link_disabled} />
                     </div>
                 </div>
             </div>

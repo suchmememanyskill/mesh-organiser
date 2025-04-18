@@ -11,7 +11,7 @@ use service::{
     slicer_service::Slicer,
 };
 use strum::IntoEnumIterator;
-use tauri::async_runtime::block_on;
+use tauri::{async_runtime::block_on, menu::{MenuBuilder, MenuItem}, webview::DownloadEvent, window::ProgressBarState, WebviewUrl, WebviewWindowBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
 use urlencoding::decode;
 use std::fs::File;
@@ -335,6 +335,91 @@ async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, Ap
     Ok(size)
 }
 
+#[derive(Serialize, Clone)]
+struct DownloadFinishedEvent 
+{
+    path: String,
+    url: String,
+}
+
+#[tauri::command]
+async fn new_window_with_url(
+    url: &str,
+    app_handle: AppHandle,
+) -> Result<(), ApplicationError> {
+    if let Some(window) = app_handle.webview_windows().get("secondary")
+    {
+        window.set_focus()?;
+        window.navigate(url.parse().unwrap())?;
+        window.set_title("Browse models")?;
+        return Ok(());
+    }
+
+    println!("{}", url);
+
+    let menu = MenuBuilder::new(&app_handle)
+        .text("back", "← Back")
+        .separator()
+        .text("reload", "⟳ Reload")
+        .separator()
+        .text("forward", "→ Forward")
+        .build();
+
+    WebviewWindowBuilder::new(
+        &app_handle,
+        "secondary",
+        WebviewUrl::External(url.parse().unwrap()),
+    )
+    .title("Browse models")
+    .center()
+    .menu(menu?)
+    .on_menu_event(|f, event| {
+        let webviews = f.webviews();
+        let webview = webviews.first().unwrap();
+
+        match event.id().0.as_str() 
+        {
+            "back" => {
+                let _ = webview.eval("window.history.back()");
+            },
+            "forward" => {
+                let _ = webview.eval("window.history.forward()");
+            },
+            "reload" => {
+                let _ = webview.eval("window.location.reload()");
+            },
+            _ => {}
+        }
+    })
+    .on_download(|f, event | {
+        if let DownloadEvent::Requested { url, destination } = &event {
+            println!("Download started: {:?}", url);
+            let _ = f.app_handle().emit("download-started", url).unwrap();
+            let _ = f.window().set_title("Downloading model...");
+        }
+
+        if let DownloadEvent::Finished { url, path, success } = event {
+            if path.is_some() && success {
+                let path = path.unwrap();
+                let handle = f.app_handle();
+
+                println!("Download finished: {:?}", path);
+                let _ = handle.emit("download-finished", DownloadFinishedEvent {
+                    path: String::from(path.to_str().unwrap()),
+                    url: String::from(f.url().unwrap()),
+                }).unwrap();
+
+                let _ = f.window().set_title("Download complete");
+            }
+        }
+
+        true
+    })
+    .build()?;
+
+    Ok(())
+}
+
 fn extract_deep_link(data: &str) -> Option<String> {
     let possible_starts = vec![
         "bambustudio://open/?file=",
@@ -438,6 +523,15 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_shell::init())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                if window.label() == "main" {
+                    for window in window.app_handle().webview_windows() {
+                        window.1.close().unwrap();
+                    }
+                }
+            }
+        })
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
                 let app_data_path = String::from(
@@ -527,6 +621,7 @@ pub fn run() {
             set_configuration,
             get_configuration,
             compute_model_folder_size,
+            new_window_with_url
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

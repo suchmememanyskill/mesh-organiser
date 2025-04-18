@@ -29,6 +29,7 @@
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Tag from "@lucide/svelte/icons/tag";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import LinkButton from "$lib/components/view/link-button.svelte";
 
     const props: { model: Model|ModelWithGroup;  class?: ClassValue, full_image?: boolean } = $props();
     let last_model_id = -1;
@@ -147,9 +148,8 @@
                             placeholder="Where did this model come from?"
                             bind:value={model.link}
                         />
-                        {#if model.link}
-                            <a href="{model.link}" target="_blank" class="{buttonVariants({ variant: "default"})}">Open Link</a>
-                        {/if}
+
+                        <LinkButton link={model.link} />
                     </div>
                 </div>
                 <div class="flex flex-col space-y-1.5">

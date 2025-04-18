@@ -237,6 +237,7 @@
                 <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
                 <CheckboxWithLabel bind:value={c.configuration.show_grouped_count_on_labels} label="Show grouped model count on labels" />
                 <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
+                <CheckboxWithLabel bind:value={c.configuration.open_links_in_external_browser} label="Open links in external browser" />
             </CardContent>
         </Card>
 

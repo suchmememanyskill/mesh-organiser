@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button } from "$lib/components/ui/button/index.js";
+    import { Button, AsyncButton } from "$lib/components/ui/button/index.js";
     import { invoke } from "@tauri-apps/api/core";
     import { open } from "@tauri-apps/plugin-dialog";
     import { onDestroy, onMount } from "svelte";
@@ -20,11 +20,12 @@
     import Undo2 from "@lucide/svelte/icons/undo-2";
     import type { Model, AddModelResult, GroupedEntry } from "$lib/model";
     import { c, data, updateState } from "$lib/data.svelte";
-    import { openInSlicer, importModel, editModel } from "$lib/tauri";
+    import { openInSlicer, importModel, editModel, newWindow } from "$lib/tauri";
     import { page } from '$app/state';
     import { toast } from "svelte-sonner";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index";
     import { countWriter } from "$lib/utils";
+    import Flame from "@lucide/svelte/icons/flame";
 
     let imported_group_ids : number[] = $state([]);
     let imported_model_ids : number[] = $state([]);
@@ -45,7 +46,41 @@
     let busy: boolean = $state(false);
     let direct_open_in_slicer: boolean = false;
 
-    async function handle_import(paths?: string[], source?: string|null) {
+    const model_sites = [
+        {
+            "name": "Thingiverse",
+            "url": "https://www.thingiverse.com/",
+            "icon": null,
+        },
+        {
+            "name": "MyMiniFactory",
+            "url": "https://www.myminifactory.com/",
+            "icon": null,
+        },
+        {
+            "name": "Printables",
+            "url": "https://www.printables.com/",
+            "icon": Flame,
+        },
+        {
+            "name": "Makerworld",
+            "url": "https://www.makerworld.com/",
+            "icon": null,
+        }
+    ]
+
+    interface ImportModelSettings
+    {
+        delete_after_import: boolean;
+        recursive: boolean;
+    }
+
+    async function handle_import(paths?: string[], source?: string|null, settings?: ImportModelSettings) {
+        settings ??= {
+            delete_after_import: $state.snapshot(delete_after_import),
+            recursive: $state.snapshot(recursive),
+        }
+
         busy = true;
         if (!paths || paths.length === 0) {
             return;
@@ -59,7 +94,8 @@
             let res : AddModelResult[] = [];
             try 
             {
-                res = await importModel(paths[i], recursive, delete_after_import);
+                console.log("Importing model at path:", paths[i]);
+                res = await importModel(paths[i], settings.recursive, settings.delete_after_import);
             }
             catch (reason : any) 
             {
@@ -216,6 +252,7 @@
         const possiblePath = page.url.searchParams.get("path");
         const direct_open_param = page.url.searchParams.get("open");
         const source_param = page.url.searchParams.get("source");
+        const delete_after_import = page.url.searchParams.get("delete_after_import") === "true";
 
         if (!possiblePath)
         {
@@ -227,9 +264,8 @@
             direct_open_in_slicer = true;
         }        
 
-        handle_import([possiblePath], source_param);
+        handle_import([possiblePath], source_param, { delete_after_import: delete_after_import, recursive: false });
     })
-
 </script>
 
 <div class="flex justify-center h-full">
@@ -250,31 +286,50 @@
             </div>
         </div>
     {:else if imported_models.length <= 0}
-        <Card class="max-w-xxl h-fit my-auto">
-            <CardHeader>
-                <CardTitle>Import</CardTitle>
-                <CardDescription>Import 3d models via files</CardDescription>
-            </CardHeader>
-            <CardContent class="flex gap-4 flex-col">
-                <div class="flex gap-5">
-                    <Button class="grow" onclick={handle_open_file}
-                        ><File /> Import File</Button
+        <div class="flex flex-col gap-5 max-w-xxl h-fit my-auto">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Import</CardTitle>
+                    <CardDescription>Import 3d models via files</CardDescription>
+                </CardHeader>
+                <CardContent class="flex gap-4 flex-col">
+                    <div class="flex gap-5">
+                        <Button class="grow" onclick={handle_open_file}
+                            ><File /> Import File</Button
+                        >
+                        <Button class="grow" onclick={handle_open_folder}
+                            ><Folder /> Import Folder
+                        </Button>
+                    </div>
+
+                    <div
+                        class="flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed text-sm"
                     >
-                    <Button class="grow" onclick={handle_open_folder}
-                        ><Folder /> Import Folder
-                    </Button>
-                </div>
+                        <p>Drag and drop files here</p>
+                    </div>
 
-                <div
-                    class="flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed text-sm"
-                >
-                    <p>Drag and drop files here</p>
-                </div>
+                    <CheckboxWithLabel label="Import folder recursively" bind:value={recursive} />
+                    <CheckboxWithLabel label="Delete files after import" bind:value={delete_after_import} />
+                </CardContent>
+            </Card>
 
-                <CheckboxWithLabel label="Import folder recursively" bind:value={recursive} />
-                <CheckboxWithLabel label="Delete files after import" bind:value={delete_after_import} />
-            </CardContent>
-        </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Open model website</CardTitle>
+                    <CardDescription>Browse external repositories in a new window</CardDescription>
+                </CardHeader>
+                <CardContent class="grid grid-cols-2 gap-4">
+                    {#each model_sites as site}
+                        <AsyncButton onclick={() => newWindow(site.url)}>
+                            {#if site.icon}
+                                <site.icon />
+                            {/if}
+                            {site.name}
+                        </AsyncButton>
+                    {/each}
+                </CardContent>
+            </Card>
+        </div>
     {:else}
         <div class="flex flex-col w-full gap-1">
             <div class="flex flex-row gap-5 justify-center mt-4">

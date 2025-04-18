@@ -28,6 +28,12 @@
         error_type: string
     }
 
+    interface DownloadFinishedEvent
+    {
+        path: string,
+        url: string,
+    }
+
     function getFileFromUrl(url: string) {
         const url_parts = url.split('/');
         return url_parts[url_parts.length - 1];
@@ -45,7 +51,7 @@
 
         const download_result = await downloadFile(url);
 
-        let parts = ["path=" + download_result.path];
+        let parts = ["path=" + encodeURIComponent(download_result.path)];
 
         if (c.configuration.open_slicer_on_remote_model_import)
         {
@@ -60,10 +66,38 @@
         goto("/import?" + parts.join("&"));
     }
 
+    async function handleDownloadFinished(event: DownloadFinishedEvent) {
+        let parts = ["path=" + encodeURIComponent(event.path), "delete_after_import=true"];
+
+        await getCurrentWindow().unminimize();
+        await getCurrentWindow().setFocus();
+
+        if (event.url)
+        {
+            parts.push("source=" + event.url);
+        }
+
+        if (c.configuration.open_slicer_on_remote_model_import)
+        {
+            parts.push("open=true");
+        }
+
+        goto("/import?" + parts.join("&"));
+    }
+
     onMount(async () => {
         await listen<string>('deep-link', async (event) => {
             console.log('deep link (deep-link):', event);
             await handleDownload(event.payload);
+        });
+
+        await listen<string>('download-started', async (event) => {
+            toast.success(`Downloading model ${getFileFromUrl(event.payload)}`);
+        });
+
+        await listen<DownloadFinishedEvent>('download-finished', async (event) => {
+            console.log('download finished (download-finished):', event);
+            await handleDownloadFinished(event.payload);
         });
 
         const state = await getInitialState();
