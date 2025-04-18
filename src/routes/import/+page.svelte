@@ -54,7 +54,7 @@
         },
         {
             "name": "MyMiniFactory",
-            "url": "https://www.myminifactory.com/",
+            "url": "https://www.myminifactory.com/search#/?{\"designType\":\"free-only\"}",
             "icon": null,
         },
         {

@@ -41,8 +41,6 @@
 
     async function handleDownload(url : string)
     {
-        toast.success(`Downloading model ${getFileFromUrl(url)}`);
-        
         if (c.configuration.focus_after_link_import)
         {
             await getCurrentWindow().unminimize();
@@ -69,9 +67,6 @@
     async function handleDownloadFinished(event: DownloadFinishedEvent) {
         let parts = ["path=" + encodeURIComponent(event.path), "delete_after_import=true"];
 
-        await getCurrentWindow().unminimize();
-        await getCurrentWindow().setFocus();
-
         if (event.url)
         {
             parts.push("source=" + event.url);
@@ -88,14 +83,33 @@
     onMount(async () => {
         await listen<string>('deep-link', async (event) => {
             console.log('deep link (deep-link):', event);
-            await handleDownload(event.payload);
+            await toast.promise(handleDownload(event.payload), {
+                loading: `Downloading model ${getFileFromUrl(event.payload)}`,
+                success: `Downloaded model ${getFileFromUrl(event.payload)}`,
+                error: `Failed to download model ${getFileFromUrl(event.payload)}`
+            })
         });
 
+        let complete : ((value: unknown) => void)[] = []; 
+
         await listen<string>('download-started', async (event) => {
-            toast.success(`Downloading model ${getFileFromUrl(event.payload)}`);
+            toast.promise(new Promise((resolve) => {
+                complete.push(resolve);
+            }), {
+                loading: `Downloading model ${getFileFromUrl(event.payload)}`,
+                success: `Downloaded model ${getFileFromUrl(event.payload)}`,
+                error: `Failed to download model ${getFileFromUrl(event.payload)}`
+            });
+
+            await getCurrentWindow().unminimize();
+            await getCurrentWindow().setFocus();
         });
 
         await listen<DownloadFinishedEvent>('download-finished', async (event) => {
+            if (complete.length > 0) {
+                complete.pop()!(null);
+            }
+
             console.log('download finished (download-finished):', event);
             await handleDownloadFinished(event.payload);
         });

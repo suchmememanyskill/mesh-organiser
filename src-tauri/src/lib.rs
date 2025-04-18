@@ -372,6 +372,7 @@ async fn new_window_with_url(
     )
     .title("Browse models")
     .center()
+    .inner_size(1280f64, 720f64)
     .menu(menu?)
     .on_menu_event(|f, event| {
         let webviews = f.webviews();
