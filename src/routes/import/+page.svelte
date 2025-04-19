@@ -44,7 +44,6 @@
     let thumbnail_count = $state(0);
     let importing_group = $state("");
     let busy: boolean = $state(false);
-    let direct_open_in_slicer: boolean = false;
 
     const model_sites = [
         {
@@ -73,12 +72,14 @@
     {
         delete_after_import: boolean;
         recursive: boolean;
+        direct_open_in_slicer: boolean;
     }
 
     async function handle_import(paths?: string[], source?: string|null, settings?: ImportModelSettings) {
         settings ??= {
             delete_after_import: $state.snapshot(delete_after_import),
             recursive: $state.snapshot(recursive),
+            direct_open_in_slicer: false,
         }
 
         busy = true;
@@ -123,7 +124,7 @@
         imported_group_ids = results.filter((res) => !!res.group_id).map((res) => res.group_id!);
         imported_model_ids = results.map((res) => res.model_ids).flat();
 
-        if (direct_open_in_slicer)
+        if (settings.direct_open_in_slicer)
         {
             openAllInSlicer();
         }
@@ -138,7 +139,6 @@
         }
 
         busy = false;
-        direct_open_in_slicer = false;
     }
 
     async function handle_open(directory: boolean) {
@@ -259,12 +259,11 @@
             return;
         }
 
-        if (direct_open_param === "true")
-        {
-            direct_open_in_slicer = true;
-        }        
-
-        handle_import([possiblePath], source_param, { delete_after_import: delete_after_import, recursive: false });
+        handle_import([possiblePath], source_param, { 
+            delete_after_import: delete_after_import, 
+            recursive: false,
+            direct_open_in_slicer: direct_open_param === "true" 
+        });
     })
 </script>
 
