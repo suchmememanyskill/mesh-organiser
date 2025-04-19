@@ -6,7 +6,7 @@ use crate::configuration::Configuration;
 
 pub type Db = Pool<Sqlite>;
 
-pub async fn setup_db(configuration: &Configuration) -> Db {
+pub async fn setup_db(configuration: &Configuration, backup_db_path: &str) -> Db {
     let mut path = PathBuf::from(configuration.data_path.clone());
 
     match std::fs::create_dir_all(path.clone()) {
@@ -36,10 +36,12 @@ pub async fn setup_db(configuration: &Configuration) -> Db {
 
     sqlx::migrate!("./migrations").run(&db).await.unwrap();
 
+    backup_db(configuration, backup_db_path);
+
     db
 }
 
-pub fn backup_db(configuration: &Configuration, data_path: &str) {
+fn backup_db(configuration: &Configuration, data_path: &str) {
     let mut db_path = PathBuf::from(configuration.data_path.clone());
     db_path.push("db.sqlite");
     let mut backup_dir = PathBuf::from(data_path);

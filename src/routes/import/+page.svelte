@@ -293,7 +293,7 @@
                     <CardDescription>Import 3d models via files</CardDescription>
                 </CardHeader>
                 <CardContent class="flex gap-4 flex-col">
-                    <div class="flex gap-5">
+                    <div class="grid grid-cols-2 gap-4">
                         <Button class="grow" onclick={handle_open_file}
                             ><File /> Import File</Button
                         >
@@ -303,7 +303,7 @@
                     </div>
 
                     <div
-                        class="flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed text-sm"
+                        class="flex h-[150px] w-full items-center justify-center rounded-md border border-dashed text-sm"
                     >
                         <p>Drag and drop files here</p>
                     </div>

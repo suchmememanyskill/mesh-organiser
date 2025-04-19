@@ -11,11 +11,12 @@ use service::{
     slicer_service::Slicer,
 };
 use strum::IntoEnumIterator;
-use tauri::{async_runtime::block_on, menu::{MenuBuilder, MenuItem}, webview::DownloadEvent, window::ProgressBarState, WebviewUrl, WebviewWindowBuilder};
+use tauri::{async_runtime::block_on, menu::{MenuBuilder, MenuItem, SubmenuBuilder}, webview::{DownloadEvent, PageLoadEvent}, window::ProgressBarState, WebviewUrl, WebviewWindowBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
 use urlencoding::decode;
 use std::fs::File;
 use std::io::prelude::*;
+use arboard::Clipboard;
 mod configuration;
 mod db;
 mod error;
@@ -342,6 +343,11 @@ struct DownloadFinishedEvent
     url: String,
 }
 
+struct Site {
+    name: &'static str,
+    url: &'static str,
+}
+
 #[tauri::command]
 async fn new_window_with_url(
     url: &str,
@@ -355,7 +361,32 @@ async fn new_window_with_url(
         return Ok(());
     }
 
-    println!("{}", url);
+    let sites : Vec<Site> = vec![
+        Site {
+            name: "Thingiverse",
+            url: "https://www.thingiverse.com/",
+        },
+        Site {
+            name: "MyMiniFactory",
+            url: "https://www.myminifactory.com/search#/?{\"designType\":\"free-only\"}",
+        },
+        Site {
+            name: "Printables",
+            url: "https://www.printables.com",
+        },
+        Site {
+            name: "Makerworld",
+            url: "https://www.makerworld.com",
+        }
+    ];
+
+    println!("Opening new window with URL: {}", url);
+
+    let mut submenu = SubmenuBuilder::new(&app_handle, "Sites");
+
+    for site in sites.iter() {
+        submenu = submenu.text(site.url, site.name);
+    }
 
     let menu = MenuBuilder::new(&app_handle)
         .text("back", "← Back")
@@ -363,7 +394,12 @@ async fn new_window_with_url(
         .text("reload", "⟳ Reload")
         .separator()
         .text("forward", "→ Forward")
-        .build();
+        .separator()
+        .text("copy_url", "Copy URL")
+        .separator()
+        .build()?;
+
+    menu.append(&submenu.build()?)?;
 
     WebviewWindowBuilder::new(
         &app_handle,
@@ -373,12 +409,13 @@ async fn new_window_with_url(
     .title("Browse models")
     .center()
     .inner_size(1280f64, 720f64)
-    .menu(menu?)
+    .menu(menu)
     .on_menu_event(|f, event| {
         let webviews = f.webviews();
         let webview = webviews.first().unwrap();
+        let id = event.id().0.as_str();
 
-        match event.id().0.as_str() 
+        match id
         {
             "back" => {
                 let _ = webview.eval("window.history.back()");
@@ -389,7 +426,19 @@ async fn new_window_with_url(
             "reload" => {
                 let _ = webview.eval("window.location.reload()");
             },
-            _ => {}
+            "copy_url" => {
+                let url = webview.url().unwrap();
+                let mut clipboard = Clipboard::new().unwrap();
+                let _ = clipboard.set_text(url.to_string());
+            },
+            _ => {
+                let _ = webview.navigate(id.parse().unwrap());
+            }
+        }
+    })
+    .on_page_load(|f, e| {
+        if e.event() == PageLoadEvent::Finished {
+            let _ = f.eval(include_str!("./inject.js"));
         }
     })
     .on_download(|f, event | {
@@ -557,9 +606,8 @@ pub fn run() {
                 }));
 
                 let config = read_configuration(&app_data_path);
-
-                db::db::backup_db(&config, &app_data_path);
-                let db = db::db::setup_db(&config).await;
+                
+                let db = db::db::setup_db(&config, &app_data_path).await;
 
                 let mut initial_state = InitialState {
                     deep_link_url: None,
