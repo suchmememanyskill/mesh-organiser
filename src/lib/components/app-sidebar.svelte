@@ -87,6 +87,29 @@
         },
     ]);
 
+    function cloneOnHover(event : MouseEvent) {
+        if (sidebar.open)
+        {
+            return;
+        }
+
+        let target = event.target as HTMLElement;
+        let boundingBox = target.getBoundingClientRect();
+        let clone = target.cloneNode(true) as HTMLElement;
+
+        clone.setAttribute("style", `position: fixed; top: ${boundingBox.top}px; left: ${boundingBox.left}px; z-index: 9999; width: fit-content !important; pointer-events: none;`);
+        clone.setAttribute("class", clone.getAttribute("class") + " bg-sidebar-accent text-sidebar-accent-foreground")
+        clone.id = target.innerText;
+        document.body.appendChild(clone);
+    }
+
+    function destroyOnLeave(event : MouseEvent) {
+        let target = event.target as HTMLElement;
+        let clone = document.getElementById(target.innerText);
+        clone?.remove();
+        console.log(event);
+    }
+
     const sidebar = Sidebar.useSidebar();
 
     onMount(async () => {
@@ -106,6 +129,7 @@
                             <Sidebar.MenuButton
                                 size="lg"
                                 class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                                onmouseenter={cloneOnHover} onmouseleave={destroyOnLeave}
                                 {...props}
                             >
                                 <div
@@ -137,7 +161,7 @@
             <Sidebar.MenuItem>
                 <Sidebar.MenuButton>
                     {#snippet child({ props })}
-                        <a onclick={() => { sidebar.toggle(); c.configuration.collapse_sidebar = !$state.snapshot(sidebar.open); }} {...props}>
+                        <a onclick={(e) => { sidebar.toggle(); document.getElementById("Open/Close sidebar")?.remove(); c.configuration.collapse_sidebar = !$state.snapshot(sidebar.open); }} {...props} onmouseenter={cloneOnHover} onmouseleave={destroyOnLeave}>
                             <PanelLeft />
                             <span>Open/Close sidebar</span>
                         </a>
@@ -158,7 +182,7 @@
                                     : ""}
                             >
                                 {#snippet child({ props })}
-                                    <a href={entry.url} {...props}>
+                                    <a href={entry.url} {...props} onmouseenter={cloneOnHover} onmouseleave={destroyOnLeave}>
                                         <entry.icon />
                                         <span>{entry.title}</span>
                                     </a>
@@ -227,6 +251,8 @@
                                 {#snippet child({ props })}
                                     <a
                                         href="/label/{labelEntry.label.id}"
+                                        onmouseenter={cloneOnHover}
+                                        onmouseleave={destroyOnLeave}
                                         {...props}
                                     >
                                         <Tag
