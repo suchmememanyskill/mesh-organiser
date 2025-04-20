@@ -107,7 +107,6 @@
         let target = event.target as HTMLElement;
         let clone = document.getElementById(target.innerText);
         clone?.remove();
-        console.log(event);
     }
 
     const sidebar = Sidebar.useSidebar();
