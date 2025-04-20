@@ -16,7 +16,7 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup, getModelAsBase64 } from "$lib/tauri";
+    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { updateState, data, c } from "$lib/data.svelte";
@@ -120,7 +120,7 @@
 
             <div class="absolute right-0 mr-8 flex flex-row gap-2">
 
-                <Toggle bind:pressed={
+                <Toggle size="sm" bind:pressed={
                     () => load3dPreview,
                     (val) => load3dPreview = val
                 }>
