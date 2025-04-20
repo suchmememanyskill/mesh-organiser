@@ -57,3 +57,9 @@ export function loadModelAutomatically(configuration: Configuration, model: Mode
 
     return modelSizeInMb <= maxSize;
 }
+
+export function loadModelSupported(model: Model): boolean {
+    return model.filetype === FileType.STL 
+        || model.filetype === FileType.OBJ 
+        || model.filetype === FileType.THREEMF;
+}
