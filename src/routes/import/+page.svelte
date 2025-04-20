@@ -315,7 +315,7 @@
             <Card>
                 <CardHeader>
                     <CardTitle>Open model website</CardTitle>
-                    <CardDescription>Browse external repositories in a new window</CardDescription>
+                    <CardDescription>Browse external repositories in a new window.<br />Downloads are redirected to this application.</CardDescription>
                 </CardHeader>
                 <CardContent class="grid grid-cols-2 gap-4">
                     {#each model_sites as site}
