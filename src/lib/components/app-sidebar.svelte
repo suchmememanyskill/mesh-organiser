@@ -98,7 +98,7 @@
         let clone = target.cloneNode(true) as HTMLElement;
 
         clone.setAttribute("style", `position: fixed; top: ${boundingBox.top}px; left: ${boundingBox.left}px; z-index: 9999; width: fit-content !important; pointer-events: none;`);
-        clone.setAttribute("class", clone.getAttribute("class") + " bg-sidebar-accent text-sidebar-accent-foreground")
+        clone.setAttribute("class", clone.getAttribute("class") + " bg-sidebar-accent text-sidebar-accent-foreground tooltip")
         clone.id = target.innerText;
         document.body.appendChild(clone);
     }
@@ -306,7 +306,7 @@
 </Sidebar.Root>
 
 <style>
-    .border-secondary:not(:hover) {
+    .border-secondary:not(:hover):not(.tooltip) {
         border-radius: 0;
     }
 </style>
