@@ -88,7 +88,7 @@
     ]);
 
     function cloneOnHover(event : MouseEvent) {
-        if (sidebar.open)
+        if (sidebar.open || sidebar.isMobile)
         {
             return;
         }
