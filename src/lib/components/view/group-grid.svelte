@@ -266,10 +266,10 @@
                 <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models</a>
                 <EditMultiModel models={selected[0].models} />
             {:else}
-                <ModelEdit model={selected[0].models[0]} full_image={true} />
+                <ModelEdit model={selected[0].models[0]} />
             {/if}
         {:else if selected.length === 1}
-            <ModelEdit model={selected[0].models[0]} full_image={true} />
+            <ModelEdit model={selected[0].models[0]} />
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
                 <span class="text-xl">No group selected</span>

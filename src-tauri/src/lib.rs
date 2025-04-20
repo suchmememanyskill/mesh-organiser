@@ -17,6 +17,7 @@ use urlencoding::decode;
 use std::fs::File;
 use std::io::prelude::*;
 use arboard::Clipboard;
+use base64::prelude::*;
 mod configuration;
 mod db;
 mod error;
@@ -336,6 +337,25 @@ async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, Ap
     Ok(size)
 }
 
+#[tauri::command]
+async fn get_model_as_base64(
+    model_id: i64,
+    state: State<'_, AppState>,
+) -> Result<String, ApplicationError> {
+    let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
+
+    if model.len() <= 0 {
+        return Err(ApplicationError::InternalError(String::from("Failed to find model to delete")));
+    }
+
+    let model = &model[0];
+
+    let bytes = service::export_service::get_bytes_from_model(model, &state).unwrap();
+    let base64 = BASE64_STANDARD.encode(bytes);
+
+    Ok(base64)
+}
+
 #[derive(Serialize, Clone)]
 struct DownloadFinishedEvent 
 {
@@ -577,7 +597,7 @@ pub fn run() {
             if let tauri::WindowEvent::Destroyed = event {
                 if window.label() == "main" {
                     for window in window.app_handle().webview_windows() {
-                        window.1.close().unwrap();
+                        let _ = window.1.close();
                     }
                 }
             }
@@ -670,7 +690,8 @@ pub fn run() {
             set_configuration,
             get_configuration,
             compute_model_folder_size,
-            new_window_with_url
+            new_window_with_url,
+            get_model_as_base64
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

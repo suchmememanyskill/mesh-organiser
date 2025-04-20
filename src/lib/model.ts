@@ -141,6 +141,9 @@ export interface Configuration {
     default_enabled_delete_after_import: boolean;
     default_enabled_recursive_import: boolean;
     open_links_in_external_browser: boolean;
+    max_size_model_3mf_preview: number; // in MB
+    max_size_model_stl_preview: number; // in MB
+    max_size_model_obj_preview: number; // in MB
 }
 
 export function configurationDefault() : Configuration
@@ -170,6 +173,9 @@ export function configurationDefault() : Configuration
         default_enabled_delete_after_import: false,
         default_enabled_recursive_import: false,
         open_links_in_external_browser: true,
+        max_size_model_3mf_preview: 15,
+        max_size_model_stl_preview: 30,
+        max_size_model_obj_preview: 30,
     }
 }
 
@@ -196,4 +202,12 @@ export interface DownloadResult
 {
     path : string;
     source_uri : string|null;
+}
+
+export enum FileType
+{
+    STL = "stl.zip",
+    OBJ = "obj.zip",
+    THREEMF = "3mf",
+    STEP = "step.zip",
 }

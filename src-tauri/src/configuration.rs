@@ -32,6 +32,9 @@ pub struct StoredConfiguration {
     pub default_enabled_recursive_import: Option<bool>,
     pub default_enabled_delete_after_import: Option<bool>,
     pub open_links_in_external_browser: Option<bool>,
+    pub max_size_model_3mf_preview : Option<u32>,
+    pub max_size_model_stl_preview : Option<u32>,
+    pub max_size_model_obj_preview : Option<u32>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -60,6 +63,9 @@ pub struct Configuration {
     pub default_enabled_recursive_import: bool,
     pub default_enabled_delete_after_import: bool,
     pub open_links_in_external_browser: bool,
+    pub max_size_model_3mf_preview: u32,
+    pub max_size_model_stl_preview: u32,
+    pub max_size_model_obj_preview: u32,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -118,6 +124,15 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         open_links_in_external_browser: configuration
             .open_links_in_external_browser
             .unwrap_or(default.open_links_in_external_browser),
+        max_size_model_3mf_preview: configuration
+            .max_size_model_3mf_preview
+            .unwrap_or(default.max_size_model_3mf_preview),
+        max_size_model_stl_preview: configuration
+            .max_size_model_stl_preview
+            .unwrap_or(default.max_size_model_stl_preview),
+        max_size_model_obj_preview: configuration
+            .max_size_model_obj_preview
+            .unwrap_or(default.max_size_model_obj_preview),
     }
 }
 
@@ -150,6 +165,9 @@ impl Default for Configuration {
             default_enabled_recursive_import: false,
             default_enabled_delete_after_import: false,
             open_links_in_external_browser: true,
+            max_size_model_3mf_preview: 15,
+            max_size_model_stl_preview: 30,
+            max_size_model_obj_preview: 30,
         }
     }
 }

@@ -16,26 +16,30 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup } from "$lib/tauri";
+    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup, getModelAsBase64 } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
-    import { updateState, data } from "$lib/data.svelte";
+    import { updateState, data, c } from "$lib/data.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
-    import { buttonVariants, Button, AsyncButton } from "$lib/components/ui/button/index.js";
-    import { toReadableSize, instanceOfModelWithGroup } from "$lib/utils";
+    import { AsyncButton } from "$lib/components/ui/button/index.js";
+    import { toReadableSize, instanceOfModelWithGroup, loadModelAutomatically } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Tag from "@lucide/svelte/icons/tag";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
     import LinkButton from "$lib/components/view/link-button.svelte";
-
-    const props: { model: Model|ModelWithGroup;  class?: ClassValue, full_image?: boolean } = $props();
+    import ThreeCanvas from "$lib/components/view/three-d-canvas.svelte";
+    import { Toggle } from "$lib/components/ui/toggle/index.js";
+    import Box from "@lucide/svelte/icons/box";
+    
+    const props: { model: Model|ModelWithGroup; class?: ClassValue } = $props();
     let last_model_id = -1;
     let deleted = $state(false);
 
     let model : Model = $derived(props.model);
+    let load3dPreview = $derived(loadModelAutomatically($state.snapshot(c.configuration), model));
 
     let group : Group | null = $derived.by(() => {
         if (instanceOfModelWithGroup(props.model)) {
@@ -106,8 +110,22 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <ModelImg model={model} class="{props.full_image ? "h-full w-full" : "h-36 w-36" } m-auto" />
-            <div class="absolute right-0 mr-8">
+            <div class="aspect-square h-full">
+                {#if load3dPreview}
+                    <ThreeCanvas model={model} class="h-full" />
+                {:else}
+                    <ModelImg model={model} class="h-full m-auto" />
+                {/if}
+            </div>
+
+            <div class="absolute right-0 mr-8 flex flex-row gap-2">
+
+                <Toggle bind:pressed={
+                    () => load3dPreview,
+                    (val) => load3dPreview = val
+                }>
+                    <Box />
+                </Toggle>
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
                         <Ellipsis />
@@ -152,6 +170,7 @@
                         <LinkButton link={model.link} />
                     </div>
                 </div>
+
                 <div class="flex flex-col space-y-1.5">
                     <Label>Labels</Label>
                     <Select.Root type="multiple" name="labels" bind:value={

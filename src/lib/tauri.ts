@@ -181,3 +181,8 @@ export async function newWindow(url : string) : Promise<void>
 {
     await invoke("new_window_with_url", { url: url });
 }
+
+export async function getModelAsBase64(model : Model) : Promise<string>
+{
+    return await invoke("get_model_as_base64", { modelId: model.id });
+}

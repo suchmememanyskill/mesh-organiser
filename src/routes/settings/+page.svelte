@@ -11,7 +11,7 @@
     import { c, updateState, data } from "$lib/data.svelte";
     import { toReadableSize } from "$lib/utils";
     import { Input } from "$lib/components/ui/input/index.js";
-    import type { SlicerEntry } from "$lib/model";
+    import { configurationDefault, type SlicerEntry } from "$lib/model";
 
     import {
         Card,
@@ -157,6 +157,61 @@
                     Note: Images may not update in the application until the application is restarted.
                 </div>
             </CardFooter>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Model preview</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-6">
+                <div class="flex flex-col gap-3">
+                    <Label>Max filesize where STL models are automatically loaded (in MB)</Label>
+
+                    <CheckboxWithLabel label = "Do not automatically load STL models" class="ml-1"
+                        bind:value={
+                            () => c.configuration.max_size_model_stl_preview <= 0,
+                            (val) => { c.configuration.max_size_model_stl_preview = val ? 0 : configurationDefault().max_size_model_stl_preview; }
+                        } />
+
+                    <Input
+                        type="number"
+                        min="0"
+                        disabled={c.configuration.max_size_model_stl_preview <= 0}
+                        bind:value={c.configuration.max_size_model_stl_preview} />
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <Label>Max filesize where OBJ models are automatically loaded (in MB)</Label>
+
+                    <CheckboxWithLabel label = "Do not automatically load OBJ models" class="ml-1"
+                        bind:value={
+                            () => c.configuration.max_size_model_obj_preview <= 0,
+                            (val) => { c.configuration.max_size_model_obj_preview = val ? 0 : configurationDefault().max_size_model_obj_preview; }
+                        } />
+
+                    <Input
+                        type="number"
+                        min="0"
+                        disabled={c.configuration.max_size_model_obj_preview <= 0}
+                        bind:value={c.configuration.max_size_model_obj_preview} />
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <Label>Max filesize where 3MF models are automatically loaded (in MB)</Label>
+
+                    <CheckboxWithLabel label = "Do not automatically load 3MF models" class="ml-1"
+                        bind:value={
+                            () => c.configuration.max_size_model_3mf_preview <= 0,
+                            (val) => { c.configuration.max_size_model_3mf_preview = val ? 0 : configurationDefault().max_size_model_3mf_preview; }
+                        } />
+
+                    <Input
+                        type="number"
+                        min="0"
+                        disabled={c.configuration.max_size_model_3mf_preview <= 0}
+                        bind:value={c.configuration.max_size_model_3mf_preview} />
+                </div>
+            </CardContent>
         </Card>
 
         <Card>

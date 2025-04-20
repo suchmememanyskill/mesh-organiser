@@ -273,9 +273,9 @@
         {#if selected.length >= 2}
             <MultiModelEdit models={selected} />
         {:else if selected.length === 1}
-            <ModelEdit model={selected[0]} full_image={true} />
+            <ModelEdit model={selected[0]} />
         {:else if filteredCollection.length === 1}
-            <ModelEdit model={filteredCollection[0]} full_image={true} />
+            <ModelEdit model={filteredCollection[0]} />
         {:else if props.default_show_multiselect_all }
             <MultiModelEdit models={filteredCollection} />
         {:else}
