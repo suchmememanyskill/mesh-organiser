@@ -11,6 +11,7 @@
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
     import LabelSelect from "$lib/components/view/label-select.svelte";
+    import { countWriter } from "$lib/utils";
 
     import type { Model, Label as LLabel, Group as GGroup, ModelWithGroup, LabelMin } from "$lib/model";
     import { goto } from "$app/navigation";
@@ -72,9 +73,9 @@
         toast.promise(
             promise,
             {
-                loading: `Adding label ${label.name} to ${affected_models.length} model(s)...`,
+                loading: `Adding label ${label.name} to ${countWriter("model", affected_models)}...`,
                 success: (_) => {
-                    return `Added label ${label.name} to ${affected_models.length} model(s)`;
+                    return `Added label ${label.name} to ${countWriter("model", affected_models)}`;
                 },
             }
         );
@@ -95,9 +96,9 @@
         toast.promise(
             promise,
             {
-                loading: `Removing label ${label.name} from ${affected_models.length} model(s)...`,
+                loading: `Removing label ${label.name} from ${countWriter("model", affected_models)}...`,
                 success: (_) => {
-                    return `Removed label ${label.name} from ${affected_models.length} model(s)`;
+                    return `Removed label ${label.name} from ${countWriter("model", affected_models)}`;
                 },
             }
         );
@@ -122,9 +123,9 @@
         toast.promise(
             promise,
             {
-                loading: `${set_or_unset}ting flag on ${affected_models.length} model(s)...`,
+                loading: `${set_or_unset}ting flag on ${countWriter("model", affected_models)}...`,
                 success: (_) => {
-                    return `${set_or_unset} flag on ${affected_models.length} model(s)`;
+                    return `${set_or_unset} flag on ${countWriter("model", affected_models)}`;
                 },
             }
         );
@@ -139,7 +140,7 @@
         await addModelsToGroup(affected_models, group);
         await updateState();
 
-        toast.success(`Added ${affected_models.length} models to group '${group.name}'`, {
+        toast.success(`Added ${countWriter("model", affected_models)} to group '${group.name}'`, {
             action : {
                 label: "Go to group",
                 onClick: () => {
@@ -209,9 +210,9 @@
         toast.promise(
             promise,
             {
-                loading: `Deleting ${affected_models.length} model(s)...`,
+                loading: `Deleting ${countWriter("model", affected_models)}...`,
                 success: (_) => {
-                    return `Deleted ${affected_models.length} model(s)`;
+                    return `Deleted ${countWriter("model", affected_models)}`;
                 },
             }
         );
@@ -226,7 +227,7 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <CardTitle class="mr-10">{models.length} models</CardTitle>
+            <CardTitle class="mr-10">{countWriter("model", models)}</CardTitle>
             <div class="absolute right-0 top-5 mr-8">
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>

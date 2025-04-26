@@ -270,7 +270,7 @@
             {/if}
         {:else if selected.length === 1}
             <ModelEdit model={selected[0].models[0]} />
-        {:else if props.default_show_multiselect_all}
+        {:else if props.default_show_multiselect_all && filteredCollection.length > 0}
             <EditMultiModel models={filteredCollection.map(x => x.models).flat()} />
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
