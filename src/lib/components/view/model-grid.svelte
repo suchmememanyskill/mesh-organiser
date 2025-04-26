@@ -11,7 +11,7 @@
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
     import { c } from "$lib/data.svelte";
 
-    const props: { models: Model[]; default_show_multiselect_all? : boolean } = $props();
+    const props: { models: Model[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
     
     let scrollContainer : HTMLElement;

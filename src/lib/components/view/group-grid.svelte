@@ -12,7 +12,7 @@
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
     import { c } from "$lib/data.svelte";
 
-    const props: { groups: GroupedEntry[] } = $props();
+    const props: { groups: GroupedEntry[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
 
     let scrollContainer : HTMLElement;
@@ -270,6 +270,8 @@
             {/if}
         {:else if selected.length === 1}
             <ModelEdit model={selected[0].models[0]} />
+        {:else if props.default_show_multiselect_all}
+            <EditMultiModel models={filteredCollection.map(x => x.models).flat()} />
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
                 <span class="text-xl">No group selected</span>

@@ -8,22 +8,27 @@
 
     import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";
+    import { page } from '$app/state';
 
     import type { Label as LLabel } from "$lib/model";
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editLabel, deleteLabel, setChildsOnLabel } from "$lib/tauri";
+    import { editLabel, deleteLabel, setChildsOnLabel, createLabel } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import { data, updateState } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
+    import Button from "$lib/components/ui/button/button.svelte";
+    import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
+    import { goto } from "$app/navigation";
 
     const props: { label: LLabel; class?: ClassValue } = $props();
     const tracked_label = $derived(props.label);
+    const parentId = $derived(page.url.searchParams.get("parentId"))
 
-    const save_label_debounced = debounce(async (edited_label: LLabel) => {
+    const saveLabelDebounced = debounce(async (edited_label: LLabel) => {
         console.log("Saving Label");
         await editLabel(edited_label);
         await setChildsOnLabel(edited_label, edited_label.children);
@@ -34,12 +39,26 @@
     {
         await deleteLabel(tracked_label);
         await updateState();
+
+        if (parentId)
+        {
+            goto("/label/" + parentId);
+        }
     }
     
     function onUpdateLabel()
     {
         let snapshot = $state.snapshot(tracked_label);
-        save_label_debounced(snapshot);
+        saveLabelDebounced(snapshot);
+    }
+
+    async function addLabel(newLabelName: string, newLabelColor: string) 
+    {
+        let snapshot = $state.snapshot(tracked_label);
+        let newLabel = await createLabel(newLabelName, newLabelColor);
+        snapshot.children.push(newLabel);
+        await setChildsOnLabel(snapshot, snapshot.children);
+        await updateState();
     }
 </script>
 
@@ -47,7 +66,10 @@
 <Card class={props.class}>
     <CardHeader class="relative">
         <CardTitle class="mr-10">Label '{tracked_label.name}'</CardTitle>
-        <div class="absolute right-0 top-5 mr-8">
+        <div class="absolute flex gap-5 right-0 top-5 mr-8">
+            <AddLabelPopover onsubmit={addLabel}>
+                <Button size="sm">Add sub-label</Button>
+            </AddLabelPopover>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                     <Ellipsis />

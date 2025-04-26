@@ -174,10 +174,10 @@ async fn add_label(
     label_name: &str,
     label_color: i64,
     state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::create_label(label_name, label_color, &state.db).await;
+) -> Result<i64, ApplicationError> {
+    let id = db::label::create_label(label_name, label_color, &state.db).await;
 
-    Ok(())
+    Ok(id)
 }
 
 #[tauri::command]

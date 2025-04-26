@@ -140,6 +140,7 @@ export async function updateState() : Promise<void>
     let start = performance.now();
     let raw_models = await getModels();
     let raw_labels = await getLabels();
+    let afterFetch = performance.now();
     console.log(raw_labels);
     
     let model_groups = extractGroups(raw_models);
@@ -216,7 +217,7 @@ export async function updateState() : Promise<void>
     data.grouped_entries = model_groups;
     data.labels = labels;
 
-    console.log("Update took", performance.now() - start, "ms");
+    console.log("Update took", performance.now() - start, "ms,", afterFetch - start, "ms for fetching data.");
 }
 
 export async function initConfiguration() : Promise<void>

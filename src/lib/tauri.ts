@@ -31,12 +31,17 @@ export async function deleteModel(model : Model) : Promise<void>
     await invoke("delete_model", { modelId: model.id });
 }
 
-export async function createLabel(name : string, color : string) : Promise<void>
+export async function createLabel(name : string, color : string) : Promise<LabelMin>
 {
     let colorHex = color.replace("#", "");
     let colorNumber = parseInt(colorHex, 16);
 
-    await invoke("add_label", { labelName: name, labelColor: colorNumber });
+    let labelId : number = await invoke("add_label", { labelName: name, labelColor: colorNumber });
+    return {
+        id: labelId,
+        name: name,
+        color: color,
+    }
 }
 
 export async function ungroup(group : Group) : Promise<void>

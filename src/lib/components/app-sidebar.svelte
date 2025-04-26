@@ -20,7 +20,11 @@
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
 
-    import { createLabel, getAvailableSlicers, getInitialState } from "$lib/tauri";
+    import {
+        createLabel,
+        getAvailableSlicers,
+        getInitialState,
+    } from "$lib/tauri";
     import Button from "./ui/button/button.svelte";
     import { page } from "$app/state";
     import PanelLeft from "@lucide/svelte/icons/panel-left";
@@ -31,28 +35,13 @@
     import type { LabelMin, SlicerEntry } from "$lib/model";
     import { int, label } from "three/tsl";
     import ChevronRight from "@lucide/svelte/icons/chevron-right";
-    
-    function generate_random_color() {
-        return "#" + Math.floor(Math.random() * 0xffffff).toString(16);
-    }
+    import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
 
     let slicers = $state([] as SlicerEntry[]);
-    let new_label_name = $state("New label");
-    let new_label_color = $state(generate_random_color());
 
-    async function set_random_color() {
-        new_label_color = generate_random_color();
-    }
-
-    async function add_label() {
-        if (!new_label_name) {
-            return;
-        }
-
-        await createLabel(new_label_name, new_label_color);
+    async function addLabel(newLabelName: string, newLabelColor: string) {
+        await createLabel(newLabelName, newLabelColor);
         await updateState();
-        new_label_name = "New label";
-        set_random_color();
     }
 
     const current_url = $derived(page.url.pathname);
@@ -62,7 +51,8 @@
         }
 
         let labelId = parseInt(current_url.substring(7));
-        let label = data.labels.find((l) => l.label.id === labelId)?.label ?? null;
+        let label =
+            data.labels.find((l) => l.label.id === labelId)?.label ?? null;
         return label;
     });
 
@@ -99,9 +89,8 @@
         },
     ]);
 
-    function cloneOnHover(event : MouseEvent) {
-        if (sidebar.open || sidebar.isMobile)
-        {
+    function cloneOnHover(event: MouseEvent) {
+        if (sidebar.open || sidebar.isMobile) {
             return;
         }
 
@@ -109,16 +98,32 @@
         let boundingBox = target.getBoundingClientRect();
         let clone = target.cloneNode(true) as HTMLElement;
 
-        clone.setAttribute("style", `position: fixed; top: ${boundingBox.top}px; left: ${boundingBox.left}px; z-index: 9999; width: fit-content !important; pointer-events: none;`);
-        clone.setAttribute("class", clone.getAttribute("class") + " bg-sidebar-accent text-sidebar-accent-foreground tooltip")
+        clone.setAttribute(
+            "style",
+            `position: fixed; top: ${boundingBox.top}px; left: ${boundingBox.left}px; z-index: 9999; width: fit-content !important; pointer-events: none;`,
+        );
+        clone.setAttribute(
+            "class",
+            clone.getAttribute("class") +
+                " bg-sidebar-accent text-sidebar-accent-foreground tooltip",
+        );
         clone.id = target.innerText;
         document.body.appendChild(clone);
     }
 
-    function destroyOnLeave(event : MouseEvent) {
+    function destroyOnLeave(event: MouseEvent) {
         let target = event.target as HTMLElement;
         let clone = document.getElementById(target.innerText);
         clone?.remove();
+    }
+
+    function onClickScrollIntoView(event: any) {
+        setTimeout(() => {
+            event.target.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            });
+        }, 50);
     }
 
     const sidebar = Sidebar.useSidebar();
@@ -140,7 +145,8 @@
                             <Sidebar.MenuButton
                                 size="lg"
                                 class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                                onmouseenter={cloneOnHover} onmouseleave={destroyOnLeave}
+                                onmouseenter={cloneOnHover}
+                                onmouseleave={destroyOnLeave}
                                 {...props}
                             >
                                 <div
@@ -150,16 +156,28 @@
                                 </div>
                                 <div class="flex flex-col gap-0.5 leading-none">
                                     <span class="font-semibold">Slicer</span>
-                                    <span class="">{c.configuration.slicer ?? "None"}</span>
+                                    <span class=""
+                                        >{c.configuration.slicer ??
+                                            "None"}</span
+                                    >
                                 </div>
                                 <ChevronsUpDown class="ml-auto" />
                             </Sidebar.MenuButton>
                         {/snippet}
                     </DropdownMenu.Trigger>
-                    <DropdownMenu.Content class="w-[var(--bits-dropdown-menu-anchor-width)]" align="start">
+                    <DropdownMenu.Content
+                        class="w-[var(--bits-dropdown-menu-anchor-width)]"
+                        align="start"
+                    >
                         {#each slicers as slicer (slicer.slicer)}
-                            <DropdownMenu.Item class="data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-foreground" disabled={!slicer.installed} onSelect={() => (c.configuration.slicer = slicer.slicer)}>
-                                {slicer.slicer} {slicer.installed ? "" : "- Not installed"}
+                            <DropdownMenu.Item
+                                class="data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-foreground"
+                                disabled={!slicer.installed}
+                                onSelect={() =>
+                                    (c.configuration.slicer = slicer.slicer)}
+                            >
+                                {slicer.slicer}
+                                {slicer.installed ? "" : "- Not installed"}
                                 {#if slicer.slicer === c.configuration.slicer}
                                     <Check class="ml-auto" />
                                 {/if}
@@ -172,7 +190,19 @@
             <Sidebar.MenuItem>
                 <Sidebar.MenuButton>
                     {#snippet child({ props })}
-                        <a onclick={(e) => { sidebar.toggle(); document.getElementById("Open/Close sidebar")?.remove(); c.configuration.collapse_sidebar = !$state.snapshot(sidebar.open); }} {...props} onmouseenter={cloneOnHover} onmouseleave={destroyOnLeave}>
+                        <a
+                            onclick={(e) => {
+                                sidebar.toggle();
+                                document
+                                    .getElementById("Open/Close sidebar")
+                                    ?.remove();
+                                c.configuration.collapse_sidebar =
+                                    !$state.snapshot(sidebar.open);
+                            }}
+                            {...props}
+                            onmouseenter={cloneOnHover}
+                            onmouseleave={destroyOnLeave}
+                        >
                             <PanelLeft />
                             <span>Open/Close sidebar</span>
                         </a>
@@ -193,7 +223,12 @@
                                     : ""}
                             >
                                 {#snippet child({ props })}
-                                    <a href={entry.url} {...props} onmouseenter={cloneOnHover} onmouseleave={destroyOnLeave}>
+                                    <a
+                                        href={entry.url}
+                                        {...props}
+                                        onmouseenter={cloneOnHover}
+                                        onmouseleave={destroyOnLeave}
+                                    >
                                         <entry.icon />
                                         <span>{entry.title}</span>
                                     </a>
@@ -212,48 +247,21 @@
 
         <Sidebar.Group>
             <Sidebar.GroupLabel>Labels</Sidebar.GroupLabel>
-            <Popover.Root>
-                <Popover.Trigger>
-                    {#snippet child({ props })}
-                        <Sidebar.GroupAction title="New label" {...props}>
-                            <span class="sr-only">New label</span>
-                            <Plus />
-                        </Sidebar.GroupAction>
-                    {/snippet}
-                </Popover.Trigger>
-                <Popover.Content class="w-80">
-                    <div class="grid gap-4">
-                        <div class="grid gap-2">
-                            <div class="grid grid-cols-3 items-center gap-4">
-                                <Label for="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    bind:value={new_label_name}
-                                    class="col-span-2 h-8"
-                                />
-                            </div>
-                            <div class="grid grid-cols-3 items-center gap-4">
-                                <Label for="color">Color</Label>
-                                <Input
-                                    id="color"
-                                    bind:value={new_label_color}
-                                    type="color"
-                                    class="col-span-2 h-8"
-                                />
-                            </div>
-                            <div class="grid grid-cols-1 items-center gap-4">
-                                <Button onclick={add_label}>Create</Button>
-                            </div>
-                        </div>
-                    </div>
-                </Popover.Content>
-            </Popover.Root>
+            <AddLabelPopover onsubmit={addLabel}>
+                <Sidebar.GroupAction title="New label">
+                    <span class="sr-only">New label</span>
+                    <Plus />
+                </Sidebar.GroupAction>
+            </AddLabelPopover>
 
             <Sidebar.GroupContent>
                 <Sidebar.Menu>
                     {#each data.labels as labelEntry (labelEntry.label.id)}
                         {#if !labelEntry.label.hasParent}
-                            {@render LabelTree({ label: labelEntry.label, level: 1 })}
+                            {@render LabelTree({
+                                label: labelEntry.label,
+                                level: 1,
+                            })}
                         {/if}
                     {/each}
                 </Sidebar.Menu>
@@ -291,85 +299,38 @@
     </Sidebar.Footer>
 </Sidebar.Root>
 
-<style>
-    .border-secondary:not(:hover):not(.tooltip) {
-        border-radius: 0;
-    }
-</style>
-
-{#snippet LabelTree({ label, level } : { label: LabelMin, level : number })}
+{#snippet LabelTree({ label, level, parentId }: { label: LabelMin; level: number, parentId?: number })}
     <!-- TODO: This find isn't great -->
-    {@const labelWithChildren = data.labels.find((l) => l.label.id === label.id)!}
+    {@const labelWithChildren = data.labels.find(
+        (l) => l.label.id === label.id,
+    )}
 
-    {#if labelWithChildren.label.children.length <= 0 || level > 5}
-        <Sidebar.MenuItem>
-            <Sidebar.MenuButton
-                class={current_url ==
-                `/label/${labelWithChildren.label.id}`
-                    ? "border-l-2 border-secondary"
-                    : ""}
-            >
-                {#snippet child({ props })}
-                    <a
-                        href="/label/{labelWithChildren.label.id}"
-                        onmouseenter={cloneOnHover}
-                        onmouseleave={destroyOnLeave}
-                        {...props}
-                    >
-                        <Tag
-                            style={`color: ${labelWithChildren.label.color};`}
-                        />
-                        <span>{labelWithChildren.label.name}</span>
-                    </a>
-                {/snippet}
-            </Sidebar.MenuButton>
-            <Sidebar.MenuBadge>
-                {#if c.configuration.show_grouped_count_on_labels}
-                    {labelWithChildren.entries.length}
-                {:else}
-                    {labelWithChildren.total}
-                {/if}
-            </Sidebar.MenuBadge>
-        </Sidebar.MenuItem>
-    {:else}
-        <Collapsible.Root class="group/collapsible [&[data-state=open]>li>a>svg.chevron:first-child]:rotate-90" open={
-            currentUrlChild != null && labelWithChildren.label.effectiveLabels.some(c => c.id === currentUrlChild.id)
-        }>
+    {#if labelWithChildren}
+        {#if labelWithChildren.label.children.length <= 0 || level > 5}
             <Sidebar.MenuItem>
                 <Sidebar.MenuButton
-                    class={current_url ==
-                    `/label/${labelWithChildren.label.id}`
+                    class={current_url.startsWith(`/label/${labelWithChildren.label.id}`)
                         ? "border-l-2 border-secondary"
                         : ""}
                 >
-
                     {#snippet child({ props })}
                         <a
-                            href="/label/{labelWithChildren.label.id}"
+                            href={"/label/" + labelWithChildren.label.id + (parentId ? `?parentId=${parentId}` : "")}
                             onmouseenter={cloneOnHover}
                             onmouseleave={destroyOnLeave}
+                            onclick={onClickScrollIntoView}
                             {...props}
                         >
-                            {#if sidebar.open || sidebar.isMobile}
-                                <ChevronRight class="chevron" className="transition-transform" />
-                            {/if}
-
-                            <Tag class="h-full w-full"
+                            <Tag
                                 style={`color: ${labelWithChildren.label.color};`}
                             />
-
-                            <span>{labelWithChildren.label.name}</span>
+                            <span class="mr-3"
+                                >{labelWithChildren.label.name}</span
+                            >
                         </a>
                     {/snippet}
                 </Sidebar.MenuButton>
-                <Collapsible.Content>
-                    <Sidebar.MenuSub>
-                        {#each labelWithChildren.label.children as childLabel (childLabel.id)}
-                            {@render LabelTree({ label: childLabel, level: level + 1 })}
-                        {/each}
-                    </Sidebar.MenuSub>
-                </Collapsible.Content>
-                <Sidebar.MenuBadge>
+                <Sidebar.MenuBadge class="w-5 max-w-5 basis-5">
                     {#if c.configuration.show_grouped_count_on_labels}
                         {labelWithChildren.entries.length}
                     {:else}
@@ -377,6 +338,72 @@
                     {/if}
                 </Sidebar.MenuBadge>
             </Sidebar.MenuItem>
-        </Collapsible.Root>
+        {:else}
+            <Collapsible.Root
+                class="group/collapsible [&[data-state=open]>li>a>svg.chevron:first-child]:rotate-90"
+                open={currentUrlChild != null &&
+                    labelWithChildren.label.effectiveLabels.some(
+                        (c) => c.id === currentUrlChild.id,
+                    )}
+            >
+                <Sidebar.MenuItem>
+                    <Sidebar.MenuButton
+                        class={current_url.startsWith(`/label/${labelWithChildren.label.id}`)
+                            ? "border-l-2 border-secondary"
+                            : ""}
+                    >
+                        {#snippet child({ props })}
+                            <a
+                                href={"/label/" + labelWithChildren.label.id + (parentId ? `?parentId=${parentId}` : "")}
+                                onmouseenter={cloneOnHover}
+                                onmouseleave={destroyOnLeave}
+                                onclick={onClickScrollIntoView}
+                                {...props}
+                            >
+                                {#if sidebar.open || sidebar.isMobile}
+                                    <ChevronRight
+                                        class="chevron"
+                                        className="transition-transform"
+                                    />
+                                {/if}
+
+                                <Tag
+                                    class="h-full w-full"
+                                    style={`color: ${labelWithChildren.label.color};`}
+                                />
+
+                                <span class="mr-3"
+                                    >{labelWithChildren.label.name}</span
+                                >
+                            </a>
+                        {/snippet}
+                    </Sidebar.MenuButton>
+                    <Collapsible.Content>
+                        <Sidebar.MenuSub>
+                            {#each labelWithChildren.label.children as childLabel (childLabel.id)}
+                                {@render LabelTree({
+                                    label: childLabel,
+                                    level: level + 1,
+                                    parentId: labelWithChildren.label.id,
+                                })}
+                            {/each}
+                        </Sidebar.MenuSub>
+                    </Collapsible.Content>
+                    <Sidebar.MenuBadge class="w-5 max-w-5 basis-5">
+                        {#if c.configuration.show_grouped_count_on_labels}
+                            {labelWithChildren.entries.length}
+                        {:else}
+                            {labelWithChildren.total}
+                        {/if}
+                    </Sidebar.MenuBadge>
+                </Sidebar.MenuItem>
+            </Collapsible.Root>
+        {/if}
     {/if}
 {/snippet}
+
+<style>
+    .border-secondary:not(:hover):not(.tooltip) {
+        border-radius: 0;
+    }
+</style>

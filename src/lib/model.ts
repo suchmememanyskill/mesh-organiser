@@ -84,7 +84,7 @@ export interface LabelMin
 
 export interface Label extends LabelMin
 {
-    children: LabelMin[];
+    children : LabelMin[];
     effectiveLabels: LabelMin[];
     hasParent: boolean;
 }
