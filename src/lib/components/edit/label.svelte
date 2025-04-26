@@ -13,12 +13,12 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editLabel, deleteLabel } from "$lib/tauri";
+    import { editLabel, deleteLabel, setChildsOnLabel } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import { data, updateState } from "$lib/data.svelte";
-    import { buttonVariants } from "$lib/components/ui/button/index.js";
+    import LabelSelect from "$lib/components/view/label-select.svelte";
 
     const props: { label: LLabel; class?: ClassValue } = $props();
     const tracked_label = $derived(props.label);
@@ -26,6 +26,7 @@
     const save_label_debounced = debounce(async (edited_label: LLabel) => {
         console.log("Saving Label");
         await editLabel(edited_label);
+        await setChildsOnLabel(edited_label, edited_label.children);
         await updateState();
     }, 1000);
 
@@ -60,7 +61,7 @@
         </div>
     </CardHeader>
     <CardContent class="text-sm">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-3 gap-4">
             <div class="flex flex-col space-y-1.5">
                 <Label for="name">Name</Label>
                 <Input
@@ -79,6 +80,12 @@
                     oninput={onUpdateLabel}
                     bind:value={tracked_label.color}
                 />
+            </div>
+            <div class="flex flex-col space-y-1.5">
+                <Label>Sub-labels</Label>
+                <LabelSelect availableLabels={data.labels.map(x => x.label)} bind:value={
+                    () => tracked_label.children,
+                    (val) => { tracked_label.children = val; onUpdateLabel(); }} />
             </div>
         </div>
     </CardContent>

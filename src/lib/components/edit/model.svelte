@@ -33,6 +33,7 @@
     import ThreeCanvas from "$lib/components/view/three-d-canvas.svelte";
     import { Toggle } from "$lib/components/ui/toggle/index.js";
     import Box from "@lucide/svelte/icons/box";
+    import LabelSelect from "$lib/components/view/label-select.svelte";
     
     const props: { model: Model|ModelWithGroup; class?: ClassValue } = $props();
     let last_model_id = -1;
@@ -173,32 +174,7 @@
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Labels</Label>
-                    <Select.Root type="multiple" name="labels" bind:value={
-                        () => model.labels.map((l) => l.id.toString()),
-                        (val) => model.labels = val.map((id) => data.labels.find((l) => l.label.id.toString() === id)).filter((l) => l).map((l) => l?.label!)
-                    }>
-                        <Select.Trigger class="h-fit">
-                            {#if model.labels.length <= 0}
-                                Select some labels
-                            {:else}
-                            <div class="flex flex-wrap h-fit justify-start gap-2">
-                                {#each model.labels as label}
-                                    <LabelBadge label={label!} />
-                                {/each}
-                            </div>
-                            {/if}
-                        </Select.Trigger>
-                        <Select.Content>
-                          <Select.Group>
-                            <Select.GroupHeading>Available labels</Select.GroupHeading>
-                            {#each data.labels as label}
-                              <Select.Item value={label.label.id.toString()} label={label.label.name}
-                                ><Tag style={`color: ${label.label.color};`} size=18 class="mr-3"/> {label.label.name}</Select.Item
-                              >
-                            {/each}
-                          </Select.Group>
-                        </Select.Content>
-                      </Select.Root>
+                    <LabelSelect availableLabels={data.labels.map(x => x.label)} bind:value={model.labels} />
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <Label for="description">Description</Label>

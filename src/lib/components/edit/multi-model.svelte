@@ -10,8 +10,9 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import LabelSelect from "$lib/components/view/label-select.svelte";
 
-    import type { Model, Label as LLabel, Group as GGroup, ModelWithGroup } from "$lib/model";
+    import type { Model, Label as LLabel, Group as GGroup, ModelWithGroup, LabelMin } from "$lib/model";
     import { goto } from "$app/navigation";
 
     import type { ClassValue } from "svelte/elements";
@@ -61,7 +62,7 @@
             .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i),
     );
 
-    async function setLabelOnAllModels(label: LLabel) {
+    async function setLabelOnAllModels(label: LabelMin) {
         const affected_models = models;
 
         affected_models.forEach((x) => x.labels.push(label));
@@ -82,7 +83,7 @@
         await updateState();
     }
 
-    async function removeLabelFromAllModels(label: LLabel) {
+    async function removeLabelFromAllModels(label: LabelMin) {
         const affected_models = models;
 
         affected_models.forEach(
@@ -148,7 +149,7 @@
         });
     }
 
-    async function updateLabels(labels: LLabel[]) {
+    async function updateLabels(labels: LabelMin[]) {
         const added_label = labels.find(
             (x) => !availableLabels.some((l) => l.id === x.id),
         );
@@ -253,58 +254,11 @@
             </div>
             <div class="flex flex-col gap-4">
                 <Label>Add/Remove labels</Label>
-
-                <Select.Root
-                    type="multiple"
-                    name="labels"
-                    bind:value={
-                        () => availableLabels.map((l) => l.id.toString()),
-                        (val) =>
-                            updateLabels(
-                                val
-                                    .map((id) =>
-                                        data.labels.find(
-                                            (l) => l.label.id.toString() === id,
-                                        ),
-                                    )
-                                    .filter((l) => l)
-                                    .map((l) => l?.label!),
-                            )
-                    }
-                >
-                    <Select.Trigger class="h-fit">
-                        {#if availableLabels.length <= 0}
-                            Select some labels
-                        {:else}
-                            <div
-                                class="flex flex-wrap h-fit justify-start gap-2"
-                            >
-                                {#each availableLabels as label}
-                                    <LabelBadge label={label!} />
-                                {/each}
-                            </div>
-                        {/if}
-                    </Select.Trigger>
-                    <Select.Content>
-                        <Select.Group>
-                            <Select.GroupHeading
-                                >Available labels</Select.GroupHeading
-                            >
-                            {#each data.labels as label}
-                                <Select.Item
-                                    value={label.label.id.toString()}
-                                    label={label.label.name}
-                                    ><Tag
-                                        style={`color: ${label.label.color};`}
-                                        size="18"
-                                        class="mr-3"
-                                    />
-                                    {label.label.name}</Select.Item
-                                >
-                            {/each}
-                        </Select.Group>
-                    </Select.Content>
-                </Select.Root>
+                
+                <LabelSelect availableLabels={data.labels.map(x => x.label)} bind:value={
+                    () => availableLabels,
+                    (val) => updateLabels(val)
+                } />
             </div>
             <div class="flex flex-col gap-4">
                 <Label>Set/Unset group</Label>

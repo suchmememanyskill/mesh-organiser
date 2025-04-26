@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawFlags, convertFlagsToRaw, defaultFlags } from "./model";
+import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawFlags, convertFlagsToRaw, defaultFlags, type LabelMin } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -49,7 +49,7 @@ export async function editGroup(group : Group) : Promise<void>
     await invoke("edit_group", { groupId: group.id, groupName: group.name });
 }
 
-export async function setLabelsOnModel(labels : Label[], model : Model) : Promise<void>
+export async function setLabelsOnModel(labels : LabelMin[], model : Model) : Promise<void>
 {
     let labelIds = labels.map(label => label.id);
 
@@ -80,14 +80,14 @@ export async function openInFolder(models : Model[]) : Promise<void>
     await invoke("open_in_folder", { modelIds: modelIds });
 }
 
-export async function setLabelOnModels(models : Model[], label : Label) : Promise<void>
+export async function setLabelOnModels(models : Model[], label : LabelMin) : Promise<void>
 {
     let modelIds = models.map(model => model.id);
 
     await invoke("set_label_on_models", { modelIds: modelIds, labelId: label.id });
 }
 
-export async function removeLabelFromModels(models : Model[], label : Label) : Promise<void>
+export async function removeLabelFromModels(models : Model[], label : LabelMin) : Promise<void>
 {
     let modelIds = models.map(model => model.id);
 
@@ -125,7 +125,7 @@ export async function removeDeadGroups() : Promise<void>
     await invoke("remove_dead_groups");
 }
 
-export async function editLabel(label : Label) : Promise<void>
+export async function editLabel(label : LabelMin) : Promise<void>
 {
     let colorHex = label.color.replace("#", "");
     let colorNumber = parseInt(colorHex, 16);
@@ -133,7 +133,7 @@ export async function editLabel(label : Label) : Promise<void>
     await invoke("edit_label", { labelId: label.id, labelName: label.name, labelColor: colorNumber });
 }
 
-export async function deleteLabel(label : Label) : Promise<void>
+export async function deleteLabel(label : LabelMin) : Promise<void>
 {
     await invoke("delete_label", { labelId: label.id });
 }
@@ -185,4 +185,25 @@ export async function newWindow(url : string) : Promise<void>
 export async function getModelAsBase64(model : Model) : Promise<string>
 {
     return await invoke("get_model_as_base64", { modelId: model.id });
+}
+
+export async function addChildsToLabel(parent : LabelMin, childs : LabelMin[]) : Promise<void>
+{
+    let childIds = childs.map(child => child.id);
+
+    await invoke("add_childs_from_label", { parentLabelId: parent.id, childLabelIds: childIds });
+}
+
+export async function removeChildsFromLabel(parent : LabelMin, childs : LabelMin[]) : Promise<void>
+{
+    let childIds = childs.map(child => child.id);
+
+    await invoke("remove_childs_from_label", { parentLabelId: parent.id, childLabelIds: childIds });
+}
+
+export async function setChildsOnLabel(parent : LabelMin, childs : LabelMin[]) : Promise<void>
+{
+    let childIds = childs.map(child => child.id);
+
+    await invoke("set_childs_on_label", { parentLabelId: parent.id, childLabelIds: childIds });
 }

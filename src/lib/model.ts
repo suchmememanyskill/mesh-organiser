@@ -39,11 +39,18 @@ export function defaultFlags() : Flags
     };
 }
 
-export interface RawLabel
+export interface RawLabelMin
 {
     id : number;
     name : string;
     color : number;
+}
+
+export interface RawLabel extends RawLabelMin
+{
+    children : RawLabelMin[];
+    effective_labels : RawLabelMin[];
+    has_parent : boolean;
 }
 
 export interface RawGroup
@@ -64,15 +71,22 @@ export interface RawModel
     description? : string;
     added : string;
     group? : RawGroup;
-    labels : RawLabel[];
+    labels : RawLabelMin[];
     flags : RawFlags;
 }
 
-export interface Label 
+export interface LabelMin 
 {
     id : number;
     name : string;
     color : string;
+} 
+
+export interface Label extends LabelMin
+{
+    children: LabelMin[];
+    effectiveLabels: LabelMin[];
+    hasParent: boolean;
 }
 
 export interface Model 
@@ -85,7 +99,7 @@ export interface Model
     link? : string;
     description? : string;
     added : Date;
-    labels : Label[];
+    labels : LabelMin[];
     flags : Flags;
 }
 

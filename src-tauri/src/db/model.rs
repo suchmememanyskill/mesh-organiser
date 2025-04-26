@@ -1,12 +1,11 @@
-use super::label;
-use super::label::Label;
+use super::label::LabelMin;
 use super::model_group::ModelGroup;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use sqlx::{self, types::chrono};
-use std::collections::HashMap;
 use tauri::async_runtime::block_on;
 use bitflags::bitflags;
+use indexmap::IndexMap;
 
 bitflags! {
     pub struct Flags: u32 {
@@ -55,7 +54,7 @@ pub struct Model {
     pub description: Option<String>,
     pub added: String,
     pub group: Option<ModelGroup>,
-    pub labels: Vec<label::Label>,
+    pub labels: Vec<LabelMin>,
     pub flags: Flags,
 }
 
@@ -76,7 +75,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
     .fetch_all(db)
     .await;
 
-    let mut model_map: HashMap<i64, Model> = HashMap::new();
+    let mut model_map: IndexMap<i64, Model> = IndexMap::new();
 
     for mut row in rows.unwrap() {
         let entry = model_map.entry(row.model_id).or_insert(Model {
@@ -106,7 +105,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
         }
 
         if !entry.labels.iter().any(|f| f.id == (row.label_id)) {
-            entry.labels.push(Label {
+            entry.labels.push(LabelMin {
                 id: row.label_id,
                 name: row.label_name.take().unwrap(),
                 color: row.label_color.take().unwrap(),
@@ -140,7 +139,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
 
     let rows = sqlx::query(&formatted_query).fetch_all(db).await;
 
-    let mut model_map: std::collections::HashMap<i64, Model> = std::collections::HashMap::new();
+    let mut model_map: IndexMap<i64, Model> = IndexMap::new();
 
     for row in rows.unwrap() {
         let model_id: i64 = row.get("model_id");
@@ -187,7 +186,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         let label_id_unwrapped = label_id.take().unwrap();
 
         if !entry.labels.iter().any(|f| f.id == label_id_unwrapped) {
-            entry.labels.push(label::Label {
+            entry.labels.push(LabelMin {
                 id: label_id_unwrapped,
                 name: label_name.take().unwrap(),
                 color: label_color.take().unwrap(),

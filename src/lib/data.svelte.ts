@@ -1,4 +1,4 @@
-import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault, convertRawToFlags } from "./model";
+import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault, convertRawToFlags, type LabelMin, type RawLabelMin } from "./model";
 import { getLabels, getModels, getConfig, setConfig } from "./tauri";
 import { debounce } from "./utils";
 
@@ -23,7 +23,7 @@ function convertModel(raw : RawModel) : Model
         link : raw.link,
         description : raw.description,
         added : new Date(raw.added),
-        labels : raw.labels.map(label => convertLabel(label)),
+        labels : raw.labels.map(label => convertLabelMin(label)),
         flags : convertRawToFlags(raw.flags),
     };
 }
@@ -41,6 +41,16 @@ function convertGroup(raw : RawGroup) : Group
 }
 
 function convertLabel(raw : RawLabel) : Label
+{
+    return {
+        ...convertLabelMin(raw),
+        children : raw.children.map(child => convertLabelMin(child)),
+        effectiveLabels : raw.effective_labels.map(label => convertLabelMin(label)),
+        hasParent : raw.has_parent,
+    }
+}
+
+function convertLabelMin(raw : RawLabelMin) : LabelMin
 {
     return {
         id : raw.id,
@@ -130,13 +140,16 @@ export async function updateState() : Promise<void>
     let start = performance.now();
     let raw_models = await getModels();
     let raw_labels = await getLabels();
+    console.log(raw_labels);
     
     let model_groups = extractGroups(raw_models);
     let models = extractModels(raw_models);
 
+    // TODO: Make this more efficient
     let labels : LabelEntry[] = raw_labels.map(raw_label => {
         let label = convertLabel(raw_label);
-        let filtered_models = models.filter(model => model.labels.some(l => l.id === label.id));
+        
+        let filtered_models = models.filter(model => model.labels.some(l => label.effectiveLabels.some(el => el.id === l.id)));
 
         let grouped_filtered_models : any = {};
         let singles = [];

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM labels_labels WHERE parent_label_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "ea9ccd22097d476d8e3c32a2460505f3b78072f378bb1b98f689721916b5a14a"
+}

@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n            parent_labels.label_id  as parent_label_id,\n            parent_labels.label_name as parent_label_name,\n            parent_labels.label_color as parent_label_color,\n            child_labels.label_id as child_label_id, \n            child_labels.label_name as child_label_name, \n            child_labels.label_color as child_label_color\n          FROM labels as parent_labels\n          LEFT JOIN labels_labels ON parent_labels.label_id = labels_labels.parent_label_id\n          LEFT JOIN labels as child_labels ON labels_labels.child_label_id = child_labels.label_id  \n          ORDER BY parent_labels.label_name ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "parent_label_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "parent_label_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "parent_label_color",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "child_label_id",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "child_label_name",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "child_label_color",
+        "ordinal": 5,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "f9f3df3716701d75346a76f136547db39a92e68f5cbfe013a39188e20a8f1925"
+}

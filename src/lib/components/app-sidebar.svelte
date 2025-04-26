@@ -12,6 +12,7 @@
     import { Label } from "$lib/components/ui/label/index.js";
     import * as Popover from "$lib/components/ui/popover/index.js";
     import CircleHelp from "@lucide/svelte/icons/circle-help";
+    import * as Collapsible from "$lib/components/ui/collapsible/index.js";
 
     import { data, c, updateState } from "$lib/data.svelte";
 
@@ -27,7 +28,9 @@
     import Slice from "@lucide/svelte/icons/slice";
     import Check from "@lucide/svelte/icons/check";
     import { onMount } from "svelte";
-    import type { SlicerEntry } from "$lib/model";
+    import type { LabelMin, SlicerEntry } from "$lib/model";
+    import { int, label } from "three/tsl";
+    import ChevronRight from "@lucide/svelte/icons/chevron-right";
     
     function generate_random_color() {
         return "#" + Math.floor(Math.random() * 0xffffff).toString(16);
@@ -53,6 +56,15 @@
     }
 
     const current_url = $derived(page.url.pathname);
+    const currentUrlChild = $derived.by(() => {
+        if (!current_url.startsWith("/label/")) {
+            return null;
+        }
+
+        let labelId = parseInt(current_url.substring(7));
+        let label = data.labels.find((l) => l.label.id === labelId)?.label ?? null;
+        return label;
+    });
 
     const main_group_entries = $derived([
         {
@@ -239,36 +251,10 @@
 
             <Sidebar.GroupContent>
                 <Sidebar.Menu>
-                    {#each data.labels as labelEntry}
-                        <Sidebar.MenuItem>
-                            <Sidebar.MenuButton
-                                class={current_url ==
-                                `/label/${labelEntry.label.id}`
-                                    ? "border-l-2 border-secondary"
-                                    : ""}
-                            >
-                                {#snippet child({ props })}
-                                    <a
-                                        href="/label/{labelEntry.label.id}"
-                                        onmouseenter={cloneOnHover}
-                                        onmouseleave={destroyOnLeave}
-                                        {...props}
-                                    >
-                                        <Tag
-                                            style={`color: ${labelEntry.label.color};`}
-                                        />
-                                        <span>{labelEntry.label.name}</span>
-                                    </a>
-                                {/snippet}
-                            </Sidebar.MenuButton>
-                            <Sidebar.MenuBadge>
-                                {#if c.configuration.show_grouped_count_on_labels}
-                                    {labelEntry.entries.length}
-                                {:else}
-                                    {labelEntry.total}
-                                {/if}
-                            </Sidebar.MenuBadge>
-                        </Sidebar.MenuItem>
+                    {#each data.labels as labelEntry (labelEntry.label.id)}
+                        {#if !labelEntry.label.hasParent}
+                            {@render LabelTree({ label: labelEntry.label, level: 1 })}
+                        {/if}
                     {/each}
                 </Sidebar.Menu>
             </Sidebar.GroupContent>
@@ -310,3 +296,87 @@
         border-radius: 0;
     }
 </style>
+
+{#snippet LabelTree({ label, level } : { label: LabelMin, level : number })}
+    <!-- TODO: This find isn't great -->
+    {@const labelWithChildren = data.labels.find((l) => l.label.id === label.id)!}
+
+    {#if labelWithChildren.label.children.length <= 0 || level > 5}
+        <Sidebar.MenuItem>
+            <Sidebar.MenuButton
+                class={current_url ==
+                `/label/${labelWithChildren.label.id}`
+                    ? "border-l-2 border-secondary"
+                    : ""}
+            >
+                {#snippet child({ props })}
+                    <a
+                        href="/label/{labelWithChildren.label.id}"
+                        onmouseenter={cloneOnHover}
+                        onmouseleave={destroyOnLeave}
+                        {...props}
+                    >
+                        <Tag
+                            style={`color: ${labelWithChildren.label.color};`}
+                        />
+                        <span>{labelWithChildren.label.name}</span>
+                    </a>
+                {/snippet}
+            </Sidebar.MenuButton>
+            <Sidebar.MenuBadge>
+                {#if c.configuration.show_grouped_count_on_labels}
+                    {labelWithChildren.entries.length}
+                {:else}
+                    {labelWithChildren.total}
+                {/if}
+            </Sidebar.MenuBadge>
+        </Sidebar.MenuItem>
+    {:else}
+        <Collapsible.Root class="group/collapsible [&[data-state=open]>li>a>svg.chevron:first-child]:rotate-90" open={
+            currentUrlChild != null && labelWithChildren.label.effectiveLabels.some(c => c.id === currentUrlChild.id)
+        }>
+            <Sidebar.MenuItem>
+                <Sidebar.MenuButton
+                    class={current_url ==
+                    `/label/${labelWithChildren.label.id}`
+                        ? "border-l-2 border-secondary"
+                        : ""}
+                >
+
+                    {#snippet child({ props })}
+                        <a
+                            href="/label/{labelWithChildren.label.id}"
+                            onmouseenter={cloneOnHover}
+                            onmouseleave={destroyOnLeave}
+                            {...props}
+                        >
+                            {#if sidebar.open || sidebar.isMobile}
+                                <ChevronRight class="chevron" className="transition-transform" />
+                            {/if}
+
+                            <Tag class="h-full w-full"
+                                style={`color: ${labelWithChildren.label.color};`}
+                            />
+
+                            <span>{labelWithChildren.label.name}</span>
+                        </a>
+                    {/snippet}
+                </Sidebar.MenuButton>
+                <Collapsible.Content>
+                    <Sidebar.MenuSub>
+                        {#each labelWithChildren.label.children as childLabel (childLabel.id)}
+                            {@render LabelTree({ label: childLabel, level: level + 1 })}
+                        {/each}
+                    </Sidebar.MenuSub>
+                </Collapsible.Content>
+                <Sidebar.MenuBadge>
+                    {#if c.configuration.show_grouped_count_on_labels}
+                        {labelWithChildren.entries.length}
+                    {:else}
+                        {labelWithChildren.total}
+                    {/if}
+                </Sidebar.MenuBadge>
+            </Sidebar.MenuItem>
+        </Collapsible.Root>
+    {/if}
+{/snippet}

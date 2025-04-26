@@ -490,6 +490,40 @@ async fn new_window_with_url(
     Ok(())
 }
 
+#[tauri::command]
+async fn add_childs_to_label(
+    parent_label_id: i64,
+    child_label_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::add_childs_to_label(parent_label_id, child_label_ids, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn remove_childs_from_label(
+    parent_label_id: i64,
+    child_label_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::remove_childs_from_label(parent_label_id, child_label_ids, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_childs_on_label(
+    parent_label_id: i64,
+    child_label_ids: Vec<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label::remove_all_childs_from_label(parent_label_id, &state.db).await;
+    db::label::add_childs_to_label(parent_label_id, child_label_ids, &state.db).await;
+
+    Ok(())
+}
+
 fn extract_deep_link(data: &str) -> Option<String> {
     let possible_starts = vec![
         "bambustudio://open/?file=",
@@ -691,7 +725,10 @@ pub fn run() {
             get_configuration,
             compute_model_folder_size,
             new_window_with_url,
-            get_model_as_base64
+            get_model_as_base64,
+            add_childs_to_label,
+            remove_childs_from_label,
+            set_childs_on_label,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
