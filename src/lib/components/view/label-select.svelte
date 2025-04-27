@@ -3,8 +3,11 @@
     import type { LabelMin } from "$lib/model";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import Tag from "@lucide/svelte/icons/tag";
+    import type { ClassValue } from "svelte/elements";
+    import { countWriter } from "$lib/utils";
 
-    let { value = $bindable(), availableLabels = []} : { value: LabelMin[], availableLabels : LabelMin[] } = $props();
+    let { value = $bindable(), availableLabels = [], clazz = undefined, placeholder = "Select some labels", onlyShowLabelCount = false} 
+    : { value: LabelMin[], availableLabels : LabelMin[], clazz? : ClassValue, placeholder? : string, onlyShowLabelCount?: boolean } = $props();
 
     console.log(availableLabels);
 </script>
@@ -23,14 +26,18 @@
                 .map((l) => l!))
     }
 >
-    <Select.Trigger class="h-fit">
+    <Select.Trigger class="h-fit {clazz}">
         {#if value.length <= 0}
-            Select some labels
+            {placeholder}
         {:else}
             <div class="flex flex-wrap h-fit justify-start gap-2">
-                {#each value as label}
-                    <LabelBadge label={label!} />
-                {/each}
+                {#if onlyShowLabelCount}
+                    {countWriter("label", value)} selected
+                {:else}
+                    {#each value as label}
+                        <LabelBadge label={label!} />
+                    {/each}
+                {/if}
             </div>
         {/if}
     </Select.Trigger>

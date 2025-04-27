@@ -71,6 +71,7 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
             {
                 groups.set(raw.group.id, {
                     group : convertGroup(raw.group),
+                    labels : [],
                     models : [],
                     total : 0,
                 });
@@ -97,6 +98,10 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
         }
     });
 
+    groups.forEach(group => group.labels = group.models
+        .flatMap(model => model.labels)
+        .filter((label, index, self) => self.findIndex(l => l.id === label.id) === index));
+
     let ret = [...groups.values()];
 
     if (c.configuration.show_ungrouped_models_in_groups)
@@ -110,6 +115,7 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
                     flags: model.flags,
                 },
                 models: [model],
+                labels: model.labels,
                 total: 1,
             });
         });
@@ -196,6 +202,7 @@ export async function updateState() : Promise<void>
                     createdAt: model.added,
                     flags: model.flags,
                 },
+                labels : model.labels,
                 models : [model],
                 total : 1,
             }

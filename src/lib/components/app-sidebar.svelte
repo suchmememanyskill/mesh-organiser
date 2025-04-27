@@ -309,7 +309,7 @@
         {#if labelWithChildren.label.children.length <= 0 || level > 5}
             <Sidebar.MenuItem>
                 <Sidebar.MenuButton
-                    class={current_url.startsWith(`/label/${labelWithChildren.label.id}`)
+                    class={current_url === `/label/${labelWithChildren.label.id}`
                         ? "border-l-2 border-secondary"
                         : ""}
                 >
@@ -348,7 +348,7 @@
             >
                 <Sidebar.MenuItem>
                     <Sidebar.MenuButton
-                        class={current_url.startsWith(`/label/${labelWithChildren.label.id}`)
+                        class={current_url === `/label/${labelWithChildren.label.id}`
                             ? "border-l-2 border-secondary"
                             : ""}
                     >
