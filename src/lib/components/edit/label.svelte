@@ -69,7 +69,7 @@
 
 <Card class={props.class}>
     <CardHeader class="relative">
-        <CardTitle class="mr-10">Label '{tracked_label.name}' <span class="font-light">{thisLabelOnly ? "(Without sub-label models)" : ""}</span></CardTitle>
+        <CardTitle class="mr-10">{!thisLabelOnly && tracked_label.children.length > 0 ? "Grouped" : ""} Label '{tracked_label.name}'</CardTitle>
         <div class="absolute flex gap-5 right-0 top-5 mr-8">
             <AddLabelPopover onsubmit={addLabel}>
                 <Button size="sm">Add sub-label</Button>
