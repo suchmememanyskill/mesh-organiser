@@ -13,7 +13,7 @@
     import { c, data } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
 
-    const props: { groups: GroupedEntry[], default_show_multiselect_all? : boolean, labelId?: number, useAllLabels?: boolean } = $props();
+    const props: { groups: GroupedEntry[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
 
     let scrollContainer : HTMLElement;
@@ -27,39 +27,6 @@
             | "name-desc";
         limit: number;
     }
-    const allLabels = $derived.by(() => {
-        if (props.useAllLabels) {
-            return data.labels.flatMap(l => l.label);
-        }
-
-        return props.groups.flatMap(g => g.labels)
-            .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i); //TODO: Find a more performant solution for this
-    });
-
-    let _lastEntries : number[] = [];
-    let selectedLabels : LabelMin[] = $state.raw([]);
-
-    $effect(() => {
-        let entries = $state.snapshot(allLabels);
-        
-        if (entries.length === _lastEntries.length && entries.every(x => _lastEntries.includes(x.id))) 
-        {
-            return;
-        }
-
-        _lastEntries = entries.map(x => x.id);
-
-        if (c.configuration.show_models_from_child_label_in_parent_labels || !props.labelId)
-        {
-            selectedLabels = [];
-        }
-        else 
-        {
-            selectedLabels = allLabels.filter(x => x.id === props.labelId);
-        }
-
-        console.log("Selected labels: ", $state.snapshot(selectedLabels));
-    });
 
     const currentFilter = $state<SearchFilters>({
         search: "",
@@ -100,7 +67,7 @@
     const filteredCollection = $derived.by(() => {
         let search_lower = currentFilter.search.toLowerCase();
 
-        let filtered = props.groups
+        return props.groups
             .filter(
                 (group) =>
                     group.group.name
@@ -127,17 +94,6 @@
                         return 0;
                 }
             });
-
-        if (!(selectedLabels.length === allLabels.length || selectedLabels.length === 0))
-        {
-            filtered = filtered.filter((group) => {
-                return group.labels.some((label) =>
-                    selectedLabels.some((selectedLabel) => selectedLabel.id === label.id)
-                );
-            });
-        }
-
-        return filtered;
     });
 
 
@@ -282,8 +238,6 @@
                     </Select.Group>
                 </Select.Content>
             </Select.Root>
-
-            <LabelSelect availableLabels={allLabels} placeholder="Filter on labels" onlyShowLabelCount={true} bind:value={selectedLabels} clazz="border-primary h-10 overflow-hidden" />
         </div>
         
         <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>

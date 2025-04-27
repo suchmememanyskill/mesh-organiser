@@ -12,7 +12,7 @@
     import { c, data } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
 
-    const props: { models: Model[], default_show_multiselect_all? : boolean, useAllLabels?: boolean } = $props();
+    const props: { models: Model[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
     
     let scrollContainer : HTMLElement;
@@ -28,32 +28,6 @@
             | "size-desc";
         limit: number;
     }
-
-    let allLabels = $derived.by(() => {
-        if (props.useAllLabels) {
-            return data.labels.flatMap(l => l.label);
-        }
-
-        return props.models
-            .map((x) => x.labels)
-            .flat()
-            .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
-    });
-
-    let _lastEntries : number[] = [];
-    let selectedLabels : LabelMin[] = $state.raw([]);
-
-    $effect(() => {
-        let entries = $state.snapshot(allLabels);
-        
-        if (entries.length === _lastEntries.length && entries.every(x => _lastEntries.includes(x.id))) 
-        {
-            return;
-        }
-
-        _lastEntries = entries.map(x => x.id);
-        selectedLabels = [];
-    });
 
     const currentFilter = $state<SearchFilters>({
         search: "",
@@ -96,7 +70,7 @@
     const filteredCollection = $derived.by(() => {
         let search_lower = currentFilter.search.toLowerCase();
 
-        let filtered = props.models
+        return props.models
             .filter(
                 (model) =>
                     model.name
@@ -133,17 +107,6 @@
                         return 0;
                 }
             });
-
-        if (!(selectedLabels.length === allLabels.length || selectedLabels.length === 0))
-        {
-            filtered = filtered.filter((model) => {
-                return model.labels.some((label) => {
-                    return selectedLabels.some(selectedLabel => label.id === selectedLabel.id);
-                });
-            });
-        }
-
-        return filtered;
     });
 
     let is_shift_pressed = false;
@@ -288,8 +251,6 @@
                     </Select.Group>
                 </Select.Content>
             </Select.Root>
-
-            <LabelSelect availableLabels={allLabels} placeholder="Filter on labels" onlyShowLabelCount={true} bind:value={selectedLabels} clazz="border-primary h-10 overflow-hidden" />
         </div>
         <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
             <RightClickModels models={selected} class="flex flex-row justify-center gap-2 flex-wrap outline-0">

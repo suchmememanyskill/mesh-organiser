@@ -3,4 +3,4 @@
     import { data } from "$lib/data.svelte";
 </script>
 
-<ModelGrid models={data.entries} useAllLabels={true} />
+<ModelGrid models={data.entries} />

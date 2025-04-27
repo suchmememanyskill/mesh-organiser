@@ -159,7 +159,6 @@ export interface Configuration {
     max_size_model_3mf_preview: number; // in MB
     max_size_model_stl_preview: number; // in MB
     max_size_model_obj_preview: number; // in MB
-    show_models_from_child_label_in_parent_labels : boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -191,8 +190,7 @@ export function configurationDefault() : Configuration
         open_links_in_external_browser: true,
         max_size_model_3mf_preview: 15,
         max_size_model_stl_preview: 30,
-        max_size_model_obj_preview: 30,
-        show_models_from_child_label_in_parent_labels: true,
+        max_size_model_obj_preview: 30
     }
 }
 

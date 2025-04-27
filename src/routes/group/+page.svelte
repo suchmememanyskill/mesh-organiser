@@ -4,4 +4,4 @@
     import { page } from '$app/state';
 </script>
 
-<GroupGrid groups={data.grouped_entries} useAllLabels={true} />
+<GroupGrid groups={data.grouped_entries} />

@@ -35,7 +35,6 @@ pub struct StoredConfiguration {
     pub max_size_model_3mf_preview : Option<u32>,
     pub max_size_model_stl_preview : Option<u32>,
     pub max_size_model_obj_preview : Option<u32>,
-    pub show_models_from_child_label_in_parent_labels : Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -67,7 +66,6 @@ pub struct Configuration {
     pub max_size_model_3mf_preview: u32,
     pub max_size_model_stl_preview: u32,
     pub max_size_model_obj_preview: u32,
-    pub show_models_from_child_label_in_parent_labels: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -135,9 +133,6 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         max_size_model_obj_preview: configuration
             .max_size_model_obj_preview
             .unwrap_or(default.max_size_model_obj_preview),
-        show_models_from_child_label_in_parent_labels: configuration
-            .show_models_from_child_label_in_parent_labels
-            .unwrap_or(default.show_models_from_child_label_in_parent_labels),
     }
 }
 
@@ -173,7 +168,6 @@ impl Default for Configuration {
             max_size_model_3mf_preview: 15,
             max_size_model_stl_preview: 30,
             max_size_model_obj_preview: 30,
-            show_models_from_child_label_in_parent_labels: true,
         }
     }
 }

@@ -28,6 +28,10 @@
     const tracked_label = $derived(props.label);
     const parentId = $derived(page.url.searchParams.get("parentId"))
 
+    const thisLabelOnly = $derived.by(() => {
+        return page.url.searchParams.get("thisLabelOnly") === "true";
+    });
+
     const saveLabelDebounced = debounce(async (edited_label: LLabel) => {
         console.log("Saving Label");
         await editLabel(edited_label);
@@ -65,7 +69,7 @@
 
 <Card class={props.class}>
     <CardHeader class="relative">
-        <CardTitle class="mr-10">Label '{tracked_label.name}'</CardTitle>
+        <CardTitle class="mr-10">Label '{tracked_label.name}' <span class="font-light">{thisLabelOnly ? "(Without sub-label models)" : ""}</span></CardTitle>
         <div class="absolute flex gap-5 right-0 top-5 mr-8">
             <AddLabelPopover onsubmit={addLabel}>
                 <Button size="sm">Add sub-label</Button>

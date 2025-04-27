@@ -3,6 +3,7 @@
     import Moon from "@lucide/svelte/icons/moon";
     import Plus from "@lucide/svelte/icons/plus";
     import Tag from "@lucide/svelte/icons/tag";
+    import Tags from "@lucide/svelte/icons/tags";
     import FolderInput from "@lucide/svelte/icons/folder-input";
     import Boxes from "@lucide/svelte/icons/boxes";
     import Box from "@lucide/svelte/icons/box";
@@ -45,6 +46,9 @@
     }
 
     const current_url = $derived(page.url.pathname);
+    const thisLabelOnly = $derived.by(() => {
+        return page.url.searchParams.get("thisLabelOnly") === "true";
+    });
     const currentUrlChild = $derived.by(() => {
         if (!current_url.startsWith("/label/")) {
             return null;
@@ -348,7 +352,7 @@
             >
                 <Sidebar.MenuItem>
                     <Sidebar.MenuButton
-                        class={current_url === `/label/${labelWithChildren.label.id}`
+                        class={current_url === `/label/${labelWithChildren.label.id}` && !thisLabelOnly
                             ? "border-l-2 border-secondary"
                             : ""}
                     >
@@ -367,7 +371,7 @@
                                     />
                                 {/if}
 
-                                <Tag
+                                <Tags
                                     class="h-full w-full"
                                     style={`color: ${labelWithChildren.label.color};`}
                                 />
@@ -380,6 +384,32 @@
                     </Sidebar.MenuButton>
                     <Collapsible.Content>
                         <Sidebar.MenuSub>
+                            <Sidebar.MenuItem>
+                                <Sidebar.MenuButton
+                                    class={current_url === `/label/${labelWithChildren.label.id}` && thisLabelOnly
+                                        ? "border-l-2 border-secondary"
+                                        : ""}>
+
+                                    {#snippet child({ props })}
+                                        <a
+                                            href={"/label/" + labelWithChildren.label.id + "?thisLabelOnly=true"}
+                                            onmouseenter={cloneOnHover}
+                                            onmouseleave={destroyOnLeave}
+                                            onclick={onClickScrollIntoView}
+                                            {...props}
+                                        >
+                                            <Tag
+                                                class="h-full w-full"
+                                                style={`color: ${labelWithChildren.label.color};`}
+                                            />
+            
+                                            <span class="mr-3"
+                                                >{labelWithChildren.label.name}</span
+                                            >
+                                        </a>
+                                    {/snippet}
+                                </Sidebar.MenuButton>
+                            </Sidebar.MenuItem>
                             {#each labelWithChildren.label.children as childLabel (childLabel.id)}
                                 {@render LabelTree({
                                     label: childLabel,
