@@ -293,10 +293,7 @@
                 <CheckboxWithLabel bind:value={c.configuration.show_grouped_count_on_labels} label="Show grouped model count on labels" />
                 <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
                 <CheckboxWithLabel bind:value={c.configuration.open_links_in_external_browser} label="Open links in external browser" />
-                <CheckboxWithLabel bind:value={
-                    () => c.configuration.show_models_from_child_label_in_parent_labels,
-                    (val) => { c.configuration.show_models_from_child_label_in_parent_labels = val; onInternalStateChange(); }
-                } label="Show models from child labels in parent labels" />
+                <CheckboxWithLabel bind:value={c.configuration.show_models_from_child_label_in_parent_labels} label="Show models from child labels in parent labels" />
             </CardContent>
         </Card>
 

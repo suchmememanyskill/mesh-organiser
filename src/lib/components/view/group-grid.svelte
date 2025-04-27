@@ -33,7 +33,7 @@
         }
 
         return props.groups.flatMap(g => g.labels)
-            .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+            .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i); //TODO: Find a more performant solution for this
     });
 
     let _lastEntries : number[] = [];
