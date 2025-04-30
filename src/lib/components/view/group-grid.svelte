@@ -125,7 +125,7 @@
 
     onMount(async () => {
         destroyStateChangeListener = await listen<void>("state-change", (_) => {
-            selected = selected.filter(x => props.groups.some(y => y.group.id === x.group.id));
+            selected = props.groups.filter(x => selected.some(y => y.group.id === x.group.id));
             console.log("Filtered out deleted groups");
         });
     });
@@ -135,9 +135,8 @@
         window.removeEventListener("keyup", onKeyUp);
         clearInterval(interval);
 
-        if (destroyStateChangeListener) {
+        if (destroyStateChangeListener) 
             destroyStateChangeListener();
-        }
     });
 
     async function onClick(group: GroupedEntry, event : any) {

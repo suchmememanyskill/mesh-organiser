@@ -137,7 +137,7 @@
 
     onMount(async () => {
         destroyStateChangeListener = await listen<void>("state-change", (_) => {
-            selected = selected.filter(x => props.models.some(y => y.id === x.id));
+            selected = props.models.filter(x => selected.some(y => y.id === x.id));
             console.log("Filtered out deleted models");
         });
     });
