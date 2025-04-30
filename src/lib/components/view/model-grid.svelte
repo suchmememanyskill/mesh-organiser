@@ -6,11 +6,12 @@
     import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
-    import { onDestroy } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import { instanceOfModelWithGroup } from "$lib/utils";
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
     import { c, data } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
+    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
     const props: { models: Model[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
@@ -132,10 +133,22 @@
     window.addEventListener("keyup", onKeyUp);
     const interval = setInterval(handleScroll, 1000);
 
-    onDestroy(() => {
+    let destroyStateChangeListener: UnlistenFn | null = null;
+
+    onMount(async () => {
+        destroyStateChangeListener = await listen<void>("state-change", (_) => {
+            selected = selected.filter(x => props.models.some(y => y.id === x.id));
+            console.log("Filtered out deleted models");
+        });
+    });
+
+    onDestroy(async () => {
         window.removeEventListener("keydown", onKeyDown);
         window.removeEventListener("keyup", onKeyUp);
         clearInterval(interval);
+
+        if (destroyStateChangeListener) 
+            destroyStateChangeListener();
     });
 
     async function onClick(model: Model, event : any) {
@@ -186,16 +199,6 @@
             }
         }
     }
-
-    $effect(() => {
-        const current_models = $state.snapshot(props.models);
-
-        setTimeout(() => {
-            selected = selected.filter(x => current_models.some(y => y.id === x.id));
-            console.log("Filtered out deleted models");
-	    }, 0);
-    })
-
     
     function onRightClick(model : Model, event : any)
     {

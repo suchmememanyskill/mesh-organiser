@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Model } from "$lib/model";
-    import { onMount } from "svelte";
+    import { onMount, untrack } from "svelte";
     import { appDataDir, join } from "@tauri-apps/api/path";
     import { convertFileSrc } from "@tauri-apps/api/core";
     import type { ClassValue } from "svelte/elements";
@@ -9,11 +9,13 @@
 
     let img_src = $state("");
     let load_failed = $state(false);
+    let lastLoadId = -1;
 
     let props: { model: Model, class?: ClassValue } = $props();
 
     async function update_image(model_sha256: string)
     {
+        console.log("Loading image for model " + model_sha256);
         const appDataDirPath = await appDataDir();
         const filePath = await join(
             appDataDirPath,
@@ -26,8 +28,15 @@
     }
 
     $effect(() => {
-        const current_model = $state.snapshot(props.model.sha256);
-        update_image(current_model);
+        if (props.model.id === lastLoadId) {
+            return;
+        }
+
+        lastLoadId = $state.snapshot(props.model.id);
+
+        untrack(() => {
+            update_image($state.snapshot(props.model.sha256));
+        });
     })
 </script>
 

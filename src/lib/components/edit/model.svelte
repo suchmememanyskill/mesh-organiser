@@ -36,8 +36,7 @@
     import LabelSelect from "$lib/components/view/label-select.svelte";
     
     const props: { model: Model|ModelWithGroup; class?: ClassValue } = $props();
-    let last_model_id = -1;
-    let deleted = $state(false);
+    let deleted = $derived({ deleted: !props.model });
 
     let model : Model = $derived(props.model);
     let load3dPreview = $derived(loadModelAutomatically($state.snapshot(c.configuration), model));
@@ -58,26 +57,21 @@
         await updateState();
     }, 1000);
 
-    $effect(() => {
+    async function onUpdateModel()
+    {
         let snapshot = $state.snapshot(model);
 
         if (!snapshot.name) {
             return;
         }
 
-        if (last_model_id !== snapshot.id) {
-            last_model_id = snapshot.id;
-            deleted = false;
-            return;
-        }
-
         save_model_debounced(snapshot);
-    });
+    }
 
     async function onDelete() {
         await deleteModel(model);
         await updateState();
-        deleted = true;
+        deleted.deleted = true;
     }
 
     async function onOpenInSlicer()
@@ -104,7 +98,7 @@
     }
 </script>
 
-{#if deleted}
+{#if deleted.deleted}
     <div class="flex justify-center items-center h-64">
         <span class="text-2xl">Model Deleted</span>
     </div>
@@ -155,6 +149,7 @@
                         id="name"
                         placeholder="Name of the model"
                         bind:value={model.name}
+                        oninput={onUpdateModel}
                     />
                 </div>
                 <div class="flex flex-col space-y-1.5">
@@ -166,6 +161,7 @@
                             id="link"
                             placeholder="Where did this model come from?"
                             bind:value={model.link}
+                            oninput={onUpdateModel}
                         />
 
                         <LinkButton link={model.link} />
@@ -174,18 +170,19 @@
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Labels</Label>
-                    <LabelSelect availableLabels={data.labels.map(x => x.label)} bind:value={model.labels} />
+                    <LabelSelect onchange={onUpdateModel} availableLabels={data.labels.map(x => x.label)} bind:value={model.labels} />
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <Label for="description">Description</Label>
                     <Textarea
                         id="description"
                         placeholder="Description of the model"
-                        bind:value={model.description} />
+                        bind:value={model.description}
+                        oninput={onUpdateModel} />
                 </div>
                 <div class="flex flex-col gap-3">
                     <Label>Properties</Label>
-                    <CheckboxWithLabel class="ml-1" label="Printed?" bind:value={
+                    <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Printed?" bind:value={
                         () => model.flags.printed,
                         (val) => model.flags.printed = val
                     } />

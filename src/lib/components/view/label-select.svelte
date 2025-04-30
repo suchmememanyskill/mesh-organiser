@@ -6,8 +6,8 @@
     import type { ClassValue } from "svelte/elements";
     import { countWriter } from "$lib/utils";
 
-    let { value = $bindable(), availableLabels = [], clazz = undefined, placeholder = "Select some labels", onlyShowLabelCount = false} 
-    : { value: LabelMin[], availableLabels : LabelMin[], clazz? : ClassValue, placeholder? : string, onlyShowLabelCount?: boolean } = $props();
+    let { value = $bindable(), availableLabels = [], clazz = undefined, placeholder = "Select some labels", onlyShowLabelCount = false, onchange = () => {}} 
+    : { value: LabelMin[], availableLabels : LabelMin[], clazz? : ClassValue, placeholder? : string, onlyShowLabelCount?: boolean, onchange?: VoidFunction } = $props();
 
     console.log(availableLabels);
 </script>
@@ -15,6 +15,7 @@
 <Select.Root
     type="multiple"
     name="labels"
+    onValueChange={onchange}
     bind:value={
         () => value.map((l) => l.id.toString()),
         (val) =>

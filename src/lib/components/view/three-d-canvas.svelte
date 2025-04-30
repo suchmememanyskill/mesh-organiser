@@ -18,6 +18,7 @@
     
     const props: { model: Model; class? : ClassValue } = $props();
     let geometry: BufferGeometry|null = $state.raw(null);
+    let lastLoadId = -1;
     
     function convertGeometry(group : GGroup) : BufferGeometry
     {
@@ -119,6 +120,13 @@
     
     $effect(() => {
         let snapshot = $state.snapshot(props.model);
+
+        if (snapshot.id === lastLoadId)
+        {
+            return;
+        }
+
+        lastLoadId = snapshot.id;
 
         if (snapshot) {
             untrack(() => load(snapshot));

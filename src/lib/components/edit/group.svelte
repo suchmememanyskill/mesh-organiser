@@ -26,10 +26,20 @@
     const tracked_group = $derived(props.group);
     let deleted = $state(false);
     
-    let link = $state("");
-    let link_disabled = $state(false);
-
     const relevant_group = $derived(data.grouped_entries.find(x => x.group.id === tracked_group.id));  
+    const links = $derived.by(() => {
+        if (!relevant_group) 
+        {
+            return [];
+        }
+
+        return relevant_group.models
+            .map(x => x.link)
+            .filter(x => x)
+            .filter((value, index, self) => self.indexOf(value) === index);
+    });
+    let link = $derived(links.length === 1 ? links[0]! : "");
+    let link_disabled = $derived(links.length > 1);
 
     async function onUngroup() {
         await ungroup($state.snapshot(tracked_group));
@@ -76,25 +86,6 @@
         const link_snapshot = $state.snapshot(link);
         save_link_on_models_debounced(snapshot, link_snapshot);
     }
-
-    $effect(() => {
-        if (!relevant_group)
-        {
-            return;
-        }
-
-        const links = relevant_group.models.map(x => x.link).filter(x => x).filter((value, index, self) => self.indexOf(value) === index);
-
-        if (links.length === 1)
-        {
-            link = links[0]!;
-        }
-        else if (links.length >= 2)
-        {
-            link_disabled = true;
-            link = "Multiple Links";
-        }
-    });
 </script>
 
 {#if deleted}
@@ -134,15 +125,25 @@
                         Link/Url
                     </Label>
                     <div class="flex flex-row gap-2">
-                        <Input
-                            id="link"
-                            placeholder="Where did this model come from?"
-                            oninput={onUpdateModels}
-                            bind:value={link}
-                            disabled={link_disabled}
-                        />
+                        {#if link_disabled}
+                            <Input
+                                placeholder="Multiple Links"
+                                oninput={onUpdateModels}
+                                disabled={true}
+                            />
+                        {:else}
+                            <Input
+                                id="link"
+                                placeholder="Where did this model come from?"
+                                oninput={onUpdateModels}
+                                bind:value={
+                                    () => link,
+                                    (val) => link = val
+                                }
+                            />
 
-                        <LinkButton link={link} visible={!link_disabled} />
+                            <LinkButton link={link} />
+                        {/if} 
                     </div>
                 </div>
             </div>

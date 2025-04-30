@@ -3,7 +3,7 @@
     import ModelEdit from "$lib/components/edit/model.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
-    import { onDestroy } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import GroupTiny from "./group-tiny.svelte";
     import GroupTinyList from "./group-tiny-list.svelte";
     import EditMultiModel from "$lib/components/edit/multi-model.svelte";
@@ -12,6 +12,7 @@
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
     import { c, data } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
+    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
     const props: { groups: GroupedEntry[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
@@ -120,10 +121,23 @@
     window.addEventListener("keyup", onKeyUp);
     const interval = setInterval(handleScroll, 1000);
 
+    let destroyStateChangeListener: UnlistenFn | null = null;
+
+    onMount(async () => {
+        destroyStateChangeListener = await listen<void>("state-change", (_) => {
+            selected = selected.filter(x => props.groups.some(y => y.group.id === x.group.id));
+            console.log("Filtered out deleted groups");
+        });
+    });
+
     onDestroy(() => {
         window.removeEventListener("keydown", onKeyDown);
         window.removeEventListener("keyup", onKeyUp);
         clearInterval(interval);
+
+        if (destroyStateChangeListener) {
+            destroyStateChangeListener();
+        }
     });
 
     async function onClick(group: GroupedEntry, event : any) {
@@ -174,15 +188,6 @@
             }
         }
     }
-
-    $effect(() => {
-        const current_groups = $state.snapshot(props.groups);
-
-        setTimeout(() => {
-            selected = selected.filter(x => current_groups.some(y => y.group.id === x.group.id));
-            console.log("Filtered out deleted models");
-	    }, 0);
-    })
 
     function onRightClick(group : GroupedEntry, event : any)
     {

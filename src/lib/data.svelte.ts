@@ -1,6 +1,7 @@
 import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault, convertRawToFlags, type LabelMin, type RawLabelMin } from "./model";
 import { getLabels, getModels, getConfig, setConfig } from "./tauri";
 import { debounce } from "./utils";
+import { emit } from "@tauri-apps/api/event";
 
 export const data = $state({
     entries : [] as ModelWithGroup[],
@@ -225,6 +226,7 @@ export async function updateState() : Promise<void>
     data.labels = labels;
 
     console.log("Update took", performance.now() - start, "ms,", afterFetch - start, "ms for fetching data.");
+    await emit("state-change", {});
 }
 
 export async function initConfiguration() : Promise<void>
