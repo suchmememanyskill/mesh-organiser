@@ -7,13 +7,13 @@ Competes with your downloads folder for storing models.
 ## Install
 
 Download for:
-- [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.1.0/Mesh.Organiser_1.1.0_x64_en-US.msi) (.msi)
+- [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.3.0/Mesh.Organiser_1.3.0_x64_en-US.msi) (.msi)
 - Macos
-    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.1.0/Mesh.Organiser_1.1.0_aarch64.dmg)
-    - [x64/Intel based chips](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.1.0/Mesh.Organiser_1.1.0_x64.dmg)
+    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.3.0/Mesh.Organiser_1.3.0_aarch64.dmg)
+    - [x64/Intel based chips](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.3.0/Mesh.Organiser_1.3.0_x64.dmg)
 - Linux
-    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.1.0/Mesh.Organiser_1.1.0_amd64.deb) (.deb)
-    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.1.0/Mesh.Organiser-1.1.0-1.x86_64.rpm) (.rpm)
+    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.3.0/Mesh.Organiser_1.3.0_amd64.deb) (.deb)
+    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.3.0/Mesh.Organiser-1.3.0-1.x86_64.rpm) (.rpm)
     - Note: Only slicers installed via flatpak are supported
 
 See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases) tab for more downloads and release notes

@@ -109,7 +109,7 @@
             </div>
             <div class="flex flex-col space-y-1.5">
                 <Label>Sub-labels</Label>
-                <LabelSelect availableLabels={data.labels.map(x => x.label)} bind:value={
+                <LabelSelect placeholder="Add sub-labels" availableLabels={data.labels.map(x => x.label)} bind:value={
                     () => tracked_label.children,
                     (val) => { tracked_label.children = val; onUpdateLabel(); }} />
             </div>
