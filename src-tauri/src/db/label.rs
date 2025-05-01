@@ -64,7 +64,6 @@ pub async fn get_labels(db: &super::db::Db) -> Vec<Label> {
     .await
     .expect("Failed to get labels");
 
-    // TODO: Replace with https://lib.rs/crates/indexmap
     let mut label_map: IndexMap<i64, Label> = IndexMap::new();
     let mut has_parents = vec![];
 
