@@ -36,6 +36,7 @@ pub struct StoredConfiguration {
     pub max_size_model_stl_preview : Option<u32>,
     pub max_size_model_obj_preview : Option<u32>,
     pub allow_importing_gcode: Option<bool>,
+    pub only_show_single_image_in_groups : Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -68,6 +69,7 @@ pub struct Configuration {
     pub max_size_model_stl_preview: u32,
     pub max_size_model_obj_preview: u32,
     pub allow_importing_gcode: bool,
+    pub only_show_single_image_in_groups : bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -138,6 +140,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         allow_importing_gcode: configuration
             .allow_importing_gcode
             .unwrap_or(default.allow_importing_gcode),
+        only_show_single_image_in_groups: configuration
+            .only_show_single_image_in_groups
+            .unwrap_or(default.only_show_single_image_in_groups),
     }
 }
 
@@ -174,6 +179,7 @@ impl Default for Configuration {
             max_size_model_stl_preview: 30,
             max_size_model_obj_preview: 30,
             allow_importing_gcode: true,
+            only_show_single_image_in_groups: false,
         }
     }
 }

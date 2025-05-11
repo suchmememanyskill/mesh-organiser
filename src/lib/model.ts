@@ -160,6 +160,7 @@ export interface Configuration {
     max_size_model_stl_preview: number; // in MB
     max_size_model_obj_preview: number; // in MB
     allow_importing_gcode: boolean;
+    only_show_single_image_in_groups: boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -193,6 +194,7 @@ export function configurationDefault() : Configuration
         max_size_model_stl_preview: 30,
         max_size_model_obj_preview: 30,
         allow_importing_gcode: true,
+        only_show_single_image_in_groups: false,
     }
 }
 

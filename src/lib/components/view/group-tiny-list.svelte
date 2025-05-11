@@ -17,11 +17,15 @@
 </script>
 
 <div class="{props.class} flex flex-row gap-3 border rounded-lg p-1 px-3 min-w-0 overflow-hidden">
-    <div class="flex flex-row gap-3 h-full imglist">
-        {#each props.group.models.slice(0, 3) as model}
-            <ModelImg model={model} class="h-full aspect-square" />
-        {/each}
-    </div>
+    {#if c.configuration.only_show_single_image_in_groups }
+        <ModelImg model={Array.from(props.group.models).sort((a, b) => b.size - a.size)[0]} class="h-full aspect-square" />
+    {:else}
+        <div class="flex flex-row gap-3 h-full imglist">
+            {#each props.group.models.slice(0, 3) as model}
+                <ModelImg model={model} class="h-full aspect-square" />
+            {/each}
+        </div>
+    {/if}
     <div class="my-auto flex-1 h-fit overflow-hidden">
         <h2 class="truncate font-bold">{props.group.group.name}</h2>
         {#if c.configuration.show_date_on_list_view}
