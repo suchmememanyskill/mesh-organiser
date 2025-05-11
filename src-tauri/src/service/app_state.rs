@@ -77,6 +77,7 @@ impl AppState {
         configuration.core_parallelism = new_configuration.core_parallelism;
         configuration.export_metadata = new_configuration.export_metadata;
         configuration.allow_importing_gcode = new_configuration.allow_importing_gcode;
+        configuration.custom_slicer_path = new_configuration.custom_slicer_path.clone();
 
         deep_link_setting_changed
     }

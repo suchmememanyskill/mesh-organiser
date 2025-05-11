@@ -1,10 +1,10 @@
-use super::Slicer;
+use super::{open_custom_slicer, Slicer};
 use winreg::*;
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
 use crate::db::model::Model;
+use crate::service::slicer_service::open_with_paths;
 use std::path::PathBuf;
-use std::process::Command;
 use crate::service::export_service::export_to_temp_folder;
 use std::fs;
 use std::path::Path;
@@ -12,10 +12,20 @@ use std::path::Path;
 impl Slicer 
 {
     pub fn is_installed(&self) -> bool {
+        if let Slicer::Custom = self
+        {
+            return true;
+        }
+
         get_slicer_path(&self).is_some()
     }
 
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
+        if let Slicer::Custom = self
+        {
+            return open_custom_slicer(models, app_state);
+        }
+
         if !self.is_installed() {
             return Err(ApplicationError::InternalError(String::from(
                 "Slicer not installed",
@@ -28,17 +38,7 @@ impl Slicer
 
         println!("Opening in slicer: {:?}", paths);
 
-        if paths.len() == 0 {
-            return Err(ApplicationError::InternalError(String::from(
-                "No models to open",
-            )));
-        }
-
-        Command::new(slicer_path)
-            .args(paths)
-            .spawn()?;
-
-        Ok(())
+        open_with_paths(slicer_path, paths)
     }
 }
 

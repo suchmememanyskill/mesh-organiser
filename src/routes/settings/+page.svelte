@@ -55,6 +55,19 @@
         }
     }
 
+    async function openCustomSlicerPicker()
+    {
+        const new_path = await open({
+            multiple: false,
+            directory: false,
+        });
+
+        if (new_path)
+        {
+            c.configuration.custom_slicer_path = new_path;
+        }
+    }
+
     async function onInternalStateChange()
     {
         await updateState();
@@ -276,6 +289,29 @@
                 <CheckboxWithLabel bind:value={c.configuration.orca_deep_link} label="Bind 'Open in OrcaSlicer' links" />
                 <div>
                     Note: Binding the same link as your current slicer may cause opening links of that type to become inconsistent.
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Custom Slicer</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-5">
+                <Label for="custom_slicer_path">Custom Slicer Path</Label>
+
+                <div class="flex flex-row gap-2">
+                    <Input
+                        id="custom_slicer_path"
+                        placeholder="Path to your slicer"
+                        type="text"
+                        class="flex-grow"
+                        bind:value={c.configuration.custom_slicer_path}
+                    />
+                    <Button onclick={openCustomSlicerPicker}>Browse</Button>
+                </div>
+                <div>
+                    Note: On all platforms, this will run the chosen file as executable, with all opened models as arguments.
                 </div>
             </CardContent>
         </Card>

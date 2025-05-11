@@ -2,16 +2,28 @@ use super::Slicer;
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
 use crate::db::model::Model;
+use crate::service::slicer_service::open_custom_slicer;
 use std::process::Command;
 use crate::service::export_service::export_to_temp_folder;
 
 impl Slicer 
 {
     pub fn is_installed(&self) -> bool {
+        if let Slicer::Custom = self
+        {
+            return true;
+        }
+
+        let package = get_flatpak_slicer_package(&self);
+
+        if package.is_empty() {
+            return false;
+        }
+
         match Command::new("flatpak")
-        .arg("info")
-        .arg(get_flatpak_slicer_package(&self))
-        .output()
+            .arg("info")
+            .arg(package)
+            .output()
         {
             Ok(output) => {
                 return output.status.success();
@@ -23,6 +35,11 @@ impl Slicer
     }
 
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
+        if let Slicer::Custom = self
+        {
+            return open_custom_slicer(models, app_state);
+        }
+
         if !self.is_installed() {
             return Err(ApplicationError::InternalError(String::from(
                 "Slicer not installed",
@@ -59,5 +76,6 @@ fn get_flatpak_slicer_package(slicer : &Slicer) -> String
         Slicer::OrcaSlicer => "io.github.softfever.OrcaSlicer",
         Slicer::Cura => "com.ultimaker.cura",
         Slicer::BambuStudio => "com.bambulab.BambuStudio",
+        _ => "",
     }.to_string()
 }

@@ -37,6 +37,7 @@ pub struct StoredConfiguration {
     pub max_size_model_obj_preview : Option<u32>,
     pub allow_importing_gcode: Option<bool>,
     pub only_show_single_image_in_groups : Option<bool>,
+    pub custom_slicer_path: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -70,6 +71,7 @@ pub struct Configuration {
     pub max_size_model_obj_preview: u32,
     pub allow_importing_gcode: bool,
     pub only_show_single_image_in_groups : bool,
+    pub custom_slicer_path: String,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -143,6 +145,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         only_show_single_image_in_groups: configuration
             .only_show_single_image_in_groups
             .unwrap_or(default.only_show_single_image_in_groups),
+        custom_slicer_path: configuration
+            .custom_slicer_path
+            .unwrap_or(default.custom_slicer_path),
     }
 }
 
@@ -180,6 +185,7 @@ impl Default for Configuration {
             max_size_model_obj_preview: 30,
             allow_importing_gcode: true,
             only_show_single_image_in_groups: false,
+            custom_slicer_path: String::new(),
         }
     }
 }

@@ -8,4 +8,5 @@ pub enum Slicer {
     OrcaSlicer,
     Cura,
     BambuStudio,
+    Custom
 }
