@@ -76,6 +76,7 @@ impl AppState {
         configuration.prefer_3mf_thumbnail = new_configuration.prefer_3mf_thumbnail;
         configuration.core_parallelism = new_configuration.core_parallelism;
         configuration.export_metadata = new_configuration.export_metadata;
+        configuration.allow_importing_gcode = new_configuration.allow_importing_gcode;
 
         deep_link_setting_changed
     }

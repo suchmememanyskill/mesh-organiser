@@ -5,7 +5,7 @@
         (): Promise<void>;
     }
 
-    const props : { children : any, class?: string, onclick: Function } = $props()
+    const props : { children : any, class?: string, onclick: Function, enabled?: boolean } = $props()
     let active = $state(true)
 
     async function onClick() {
@@ -15,6 +15,6 @@
     }
 </script>
 
-<Root onclick={onClick} class={props.class} disabled={!active}>
+<Root onclick={onClick} class={props.class} disabled={!(props.enabled ?? true) || !active}>
     {@render props.children?.()}
 </Root>

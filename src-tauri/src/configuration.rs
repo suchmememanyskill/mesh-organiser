@@ -35,6 +35,7 @@ pub struct StoredConfiguration {
     pub max_size_model_3mf_preview : Option<u32>,
     pub max_size_model_stl_preview : Option<u32>,
     pub max_size_model_obj_preview : Option<u32>,
+    pub allow_importing_gcode: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -66,6 +67,7 @@ pub struct Configuration {
     pub max_size_model_3mf_preview: u32,
     pub max_size_model_stl_preview: u32,
     pub max_size_model_obj_preview: u32,
+    pub allow_importing_gcode: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -133,6 +135,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         max_size_model_obj_preview: configuration
             .max_size_model_obj_preview
             .unwrap_or(default.max_size_model_obj_preview),
+        allow_importing_gcode: configuration
+            .allow_importing_gcode
+            .unwrap_or(default.allow_importing_gcode),
     }
 }
 
@@ -168,6 +173,7 @@ impl Default for Configuration {
             max_size_model_3mf_preview: 15,
             max_size_model_stl_preview: 30,
             max_size_model_obj_preview: 30,
+            allow_importing_gcode: true,
         }
     }
 }

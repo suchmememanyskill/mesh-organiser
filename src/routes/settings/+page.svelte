@@ -223,6 +223,7 @@
                 <CheckboxWithLabel bind:value={c.configuration.default_enabled_delete_after_import} label="Check 'Delete files after import' by default" />
                 <CheckboxWithLabel bind:value={c.configuration.export_metadata} label="Export metadata to .json when opening in folder" />
                 <CheckboxWithLabel bind:value={c.configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
+                <CheckboxWithLabel bind:value={c.configuration.allow_importing_gcode} label="Allow importing gcode files" />
 
                 <div class="flex flex-col space-y-1.5">
                     <Label for="path">Model directory*</Label>

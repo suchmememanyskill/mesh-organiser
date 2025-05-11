@@ -58,8 +58,15 @@ export function loadModelAutomatically(configuration: Configuration, model: Mode
     return modelSizeInMb <= maxSize;
 }
 
-export function loadModelSupported(model: Model): boolean {
+export function isModelPreviewable(model: Model): boolean {
     return model.filetype === FileType.STL 
         || model.filetype === FileType.OBJ 
         || model.filetype === FileType.THREEMF;
+}
+
+export function isModelSlicable(model: Model): boolean {
+    return model.filetype === FileType.STL 
+        || model.filetype === FileType.OBJ 
+        || model.filetype === FileType.THREEMF
+        || model.filetype === FileType.STEP;
 }

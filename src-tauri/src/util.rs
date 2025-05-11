@@ -61,7 +61,7 @@ pub fn get_folder_size(path: &str) -> u64 {
 pub fn is_zippable_file_extension(extension: &str) -> bool {
     let lowercase = extension.to_lowercase();
 
-    vec!["stl", "obj", "step"]
+    vec!["stl", "obj", "step", "gcode"]
         .iter()
         .any(|f| lowercase.as_str().eq(*f))
 }
@@ -69,7 +69,7 @@ pub fn is_zippable_file_extension(extension: &str) -> bool {
 pub fn is_zipped_file_extension(extension: &str) -> bool {
     let lowercase = extension.to_lowercase();
 
-    vec!["stl.zip", "obj.zip", "step.zip"]
+    vec!["stl.zip", "obj.zip", "step.zip", "gcode.zip"]
         .iter()
         .any(|f| lowercase.as_str().eq(*f))
 }
@@ -81,6 +81,7 @@ pub fn convert_extension_to_zip(extension: &str) -> String {
         "stl" => "stl.zip",
         "obj" => "obj.zip",
         "step" => "step.zip",
+        "gcode" => "gcode.zip",
         _ => &lowercase,
     })
 }
@@ -92,6 +93,7 @@ pub fn convert_zip_to_extension(extension: &str) -> String {
         "stl.zip" => "stl",
         "obj.zip" => "obj",
         "step.zip" => "step",
+        "gcode.zip" => "gcode",
         _ => &lowercase,
     })
 }

@@ -1,4 +1,5 @@
 use super::app_state::AppState;
+use crate::configuration::Configuration;
 use crate::db::model_group;
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
@@ -27,7 +28,7 @@ pub fn import_path(
 ) -> Result<Vec<CreationResult>, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
-    let is_step_supported = app_state.get_configuration().allow_importing_step;
+    let configuration = app_state.get_configuration();
 
     if path_buff.is_dir() {
 
@@ -41,7 +42,7 @@ pub fn import_path(
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
         let result = import_models_from_zip(path, &name, &app_state, &app_handle, delete_imported)?;
         return Ok(vec![result]);
-    } else if is_supported_extension(&path_buff, is_step_supported) {
+    } else if is_supported_extension(&path_buff, &configuration) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
         let result;
@@ -75,7 +76,7 @@ fn import_models_from_dir_recursive(
 ) -> Result<Vec<CreationResult>, ApplicationError> {
     let mut results : Vec<CreationResult> = vec![];
     let entries : Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
-    let is_step_supported = app_state.get_configuration().allow_importing_step;
+    let configuration = app_state.get_configuration();
 
     for folder in entries.iter().filter(|f| f.path().is_dir())
     {
@@ -85,7 +86,7 @@ fn import_models_from_dir_recursive(
         }
     }
 
-    if entries.iter().filter(|f| f.path().is_file()).any(|f| is_supported_extension(&f.path(), is_step_supported))
+    if entries.iter().filter(|f| f.path().is_file()).any(|f| is_supported_extension(&f.path(), &configuration))
     {
         let group_name = util::prettify_file_name(path, true);
 
@@ -106,7 +107,7 @@ fn import_models_from_dir(
     delete_imported : bool,
 ) -> Result<CreationResult, ApplicationError> {
     let mut model_ids = Vec::new();
-    let is_step_supported = app_state.get_configuration().allow_importing_step;
+    let configuration = app_state.get_configuration();
     let mut temp_str;
     let mut link = None;
     let _ = app_handle.emit("import-count", 0 as usize);
@@ -121,7 +122,7 @@ fn import_models_from_dir(
             link = Some(temp_str.as_str());
         }
 
-        if !is_supported_extension(&entry, is_step_supported) {
+        if !is_supported_extension(&entry, &configuration) {
             continue;
         }
 
@@ -171,7 +172,7 @@ fn import_models_from_zip(
     delete_imported : bool,
 ) -> Result<CreationResult, ApplicationError> {
     let mut model_ids = Vec::new();
-    let is_step_supported = app_state.get_configuration().allow_importing_step;
+    let configuration = app_state.get_configuration();
     let mut temp_str;
     let mut link = None;
     let _ = app_handle.emit("import-count", 0 as usize);
@@ -195,7 +196,7 @@ fn import_models_from_zip(
                 link = Some(temp_str.as_str());
             }
     
-            if !is_supported_extension(&outpath, is_step_supported) {
+            if !is_supported_extension(&outpath, &configuration) {
                 continue;
             }
     
@@ -291,14 +292,15 @@ where
     return Ok(id);
 }
 
-fn is_supported_extension(path: &PathBuf, is_step_supported: bool) -> bool {
+fn is_supported_extension(path: &PathBuf, configuration: &Configuration) -> bool {
     match path.extension() {
         Some(ext) => {
             let lowercase = ext.to_str().unwrap().to_lowercase();
             lowercase == "stl"
                 || lowercase == "obj"
                 || lowercase == "3mf"
-                || (is_step_supported && lowercase == "step")
+                || (configuration.allow_importing_gcode && lowercase == "gcode")
+                || (configuration.allow_importing_step && lowercase == "step")
         }
         None => false,
     }

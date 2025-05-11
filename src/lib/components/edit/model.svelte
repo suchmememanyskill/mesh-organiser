@@ -14,7 +14,7 @@
     import Slice from "@lucide/svelte/icons/slice";
     import { Textarea } from "$lib/components/ui/textarea/index.js";
 
-    import { debounce } from "$lib/utils";
+    import { debounce, isModelSlicable } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
     import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -23,7 +23,7 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import { AsyncButton } from "$lib/components/ui/button/index.js";
-    import { toReadableSize, instanceOfModelWithGroup, loadModelAutomatically, loadModelSupported } from "$lib/utils";
+    import { toReadableSize, instanceOfModelWithGroup, loadModelAutomatically, isModelPreviewable } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import Trash2 from "@lucide/svelte/icons/trash-2";
@@ -115,7 +115,7 @@
 
             <div class="absolute right-0 mr-8 flex flex-row gap-2">
 
-                <Toggle size="sm" class={loadModelSupported(model) ? "" : "hidden"} bind:pressed={
+                <Toggle size="sm" class={isModelPreviewable(model) ? "" : "hidden"} bind:pressed={
                     () => load3dPreview,
                     (val) => load3dPreview = val
                 }>
