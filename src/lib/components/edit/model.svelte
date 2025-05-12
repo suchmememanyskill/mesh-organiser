@@ -14,7 +14,7 @@
     import Slice from "@lucide/svelte/icons/slice";
     import { Textarea } from "$lib/components/ui/textarea/index.js";
 
-    import { debounce, isModelSlicable } from "$lib/utils";
+    import { debounce, isModelSlicable, fileTypeToColor, fileTypeToDisplayName } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
     import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -22,6 +22,7 @@
     import { updateState, data, c } from "$lib/data.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
+    import { Badge } from "$lib/components/ui/badge/index.js";
     import { AsyncButton } from "$lib/components/ui/button/index.js";
     import { toReadableSize, instanceOfModelWithGroup, loadModelAutomatically, isModelPreviewable } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
@@ -104,7 +105,7 @@
     </div>
 {:else}
     <Card class={props.class}>
-        <CardHeader class="relative">
+        <CardHeader class="relative space-y-0">
             <div class="aspect-square h-full">
                 {#if load3dPreview}
                     <ThreeCanvas model={model} class="h-full" />
@@ -113,8 +114,11 @@
                 {/if}
             </div>
 
-            <div class="absolute right-0 mr-8 flex flex-row gap-2">
+            <div class="absolute left-7 h-9 m-0 flex flex-row">
+                <Badge class="h-fit my-auto text-sm {fileTypeToColor(model.filetype)}">{fileTypeToDisplayName(model.filetype)}</Badge>
+            </div>
 
+            <div class="absolute right-0 mr-8 flex flex-row gap-2 h-9">
                 <Toggle size="sm" class={isModelPreviewable(model) ? "" : "hidden"} bind:pressed={
                     () => load3dPreview,
                     (val) => load3dPreview = val
@@ -192,13 +196,11 @@
                         <div class="text-left space-y-1">
                             <div>Date added</div>
                             <div>Size</div>
-                            <div>Filetype</div>
                             <div>Group</div>
                         </div>
                         <div class="text-right space-y-1">
                             <div>{model.added.toLocaleDateString()}</div>
                             <div>{toReadableSize(model.size)}</div>
-                            <div>{model.filetype}</div>
                             {#if group}
                                 <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
                             {:else}

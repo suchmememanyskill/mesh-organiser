@@ -65,7 +65,7 @@ export interface RawModel
     id : number;
     name : string;
     sha256 : string;
-    filetype : string;
+    filetype : FileType;
     size : number;
     link? : string;
     description? : string;
@@ -94,7 +94,7 @@ export interface Model
     id : number;
     name : string;
     sha256 : string;
-    filetype : string;
+    filetype : FileType;
     size : number;
     link? : string;
     description? : string;

@@ -70,3 +70,35 @@ export function isModelSlicable(model: Model): boolean {
         || model.filetype === FileType.THREEMF
         || model.filetype === FileType.STEP;
 }
+
+export function fileTypeToDisplayName(fileType: FileType): string {
+    switch (fileType) {
+        case FileType.STL:
+            return "STL";
+        case FileType.OBJ:
+            return "OBJ";
+        case FileType.THREEMF:
+            return "3MF";
+        case FileType.STEP:
+            return "STEP";
+        case FileType.GCODE:
+            return "GCODE";
+        default:
+            return "Unknown";
+    }
+}
+
+export function fileTypeToColor(fileType: FileType): string {
+    switch (fileType) {
+        case FileType.STL:
+            return "text-black bg-blue-400 hover:bg-blue-500";
+        case FileType.THREEMF:
+            return "text-black bg-emerald-500 hover:bg-emerald-600";
+        case FileType.OBJ:
+            return "text-black bg-purple-400 hover:bg-purple-500";
+        case FileType.GCODE:
+            return "text-black bg-orange-400 hover:bg-orange-500";
+        default:
+            return "text-black bg-gray-300 hover:bg-gray-400";
+    }
+}
