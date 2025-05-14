@@ -100,6 +100,27 @@ pub async fn generate_thumbnails(
         })
         .collect();
 
+    #[cfg(debug_assertions)]
+    {
+        while !commands.is_empty() {
+            let command_wrapper = commands.pop().unwrap();
+            let result = command_wrapper.command.output().await;
+            match result {
+                Ok(output) => {
+                    if !output.status.success() {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        println!("Error: {}", stderr);
+                    }
+                }
+                Err(e) => {
+                    println!("Failed to execute command: {}", e);
+                }
+            }
+        }
+
+        return Ok(());
+    }
+
     let mut running = Vec::new();
 
     println!("Using {} threads for thumbnail generation", max_concurrent);

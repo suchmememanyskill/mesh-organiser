@@ -197,6 +197,7 @@
                             <div>Date added</div>
                             <div>Size</div>
                             <div>Group</div>
+                            <div>Hash</div>
                         </div>
                         <div class="text-right space-y-1">
                             <div>{model.added.toLocaleDateString()}</div>
@@ -206,6 +207,7 @@
                             {:else}
                                 <div>None</div>
                             {/if}
+                            <div>{model.sha256}</div>
                         </div>
                     </div>
                 </div>
