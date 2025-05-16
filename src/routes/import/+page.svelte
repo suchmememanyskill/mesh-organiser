@@ -150,7 +150,7 @@
             filters = [
                 {
                     name: "3D Models",
-                    extensions: ["stl", "obj", "3mf"],
+                    extensions: ["stl", "obj", "3mf", "gcode", "step"],
                 },
             ];
         }
