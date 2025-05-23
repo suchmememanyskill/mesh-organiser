@@ -530,17 +530,24 @@ fn extract_deep_link(data: &str) -> Option<String> {
         "cura://open/?file=",
         "prusaslicer://open/?file=",
         "orcaslicer://open/?file=",
+        "elegooslicer://open/?file=",
         "meshorganiser://open/?file=",
         "bambustudio://open?file=",
         "cura://open?file=",
         "prusaslicer://open?file=",
         "orcaslicer://open?file=",
+        "elegooslicer://open?file=",
         "meshorganiser://open?file=",
     ];
 
     for start in possible_starts {
         if data.starts_with(start) {
             let encoded = data[start.len()..].to_string();
+
+            if data.starts_with("elegooslicer") {
+                return Some(encoded);
+            }
+
             let decode = decode(&encoded).unwrap();
 
             return Some(String::from(decode));

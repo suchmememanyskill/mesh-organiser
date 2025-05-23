@@ -78,6 +78,7 @@ impl AppState {
         configuration.export_metadata = new_configuration.export_metadata;
         configuration.allow_importing_gcode = new_configuration.allow_importing_gcode;
         configuration.custom_slicer_path = new_configuration.custom_slicer_path.clone();
+        configuration.elegoo_deep_link = new_configuration.elegoo_deep_link;
 
         deep_link_setting_changed
     }
@@ -112,6 +113,10 @@ impl AppState {
 
         if config.orca_deep_link {
             let _ = app_handle.deep_link().register("orcaslicer");
+        }
+
+        if config.elegoo_deep_link {
+            let _ = app_handle.deep_link().register("elegooslicer");
         }
 
         let _ = app_handle.deep_link().register("meshorganiser");

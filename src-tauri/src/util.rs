@@ -32,6 +32,21 @@ pub fn prettify_file_name(file: &PathBuf, is_dir : bool) -> String {
     file_name
 }
 
+pub fn cleanse_evil_from_name(name: &str) -> String {
+    String::from(
+        name.replace("\\", " ")
+            .replace("/", " ")
+            .replace(":", " ")
+            .replace("*", " ")
+            .replace("?", " ")
+            .replace("\"", " ")
+            .replace("<", " ")
+            .replace(">", " ")
+            .replace("|", " ")
+            .trim(),
+    )
+}
+
 pub fn open_folder_in_explorer(path: &str) {
     #[cfg(target_os = "windows")]
     {

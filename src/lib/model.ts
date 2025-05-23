@@ -137,6 +137,7 @@ export interface Configuration {
     cura_deep_link: boolean;
     bambu_deep_link: boolean;
     orca_deep_link: boolean;
+    elegoo_deep_link: boolean;
     open_slicer_on_remote_model_import: boolean;
     show_ungrouped_models_in_groups: boolean;
     slicer: string|null;
@@ -172,6 +173,7 @@ export function configurationDefault() : Configuration
         cura_deep_link: false,
         bambu_deep_link: false,
         orca_deep_link: false,
+        elegoo_deep_link: false,
         open_slicer_on_remote_model_import: false,
         show_ungrouped_models_in_groups: true,
         slicer: null,

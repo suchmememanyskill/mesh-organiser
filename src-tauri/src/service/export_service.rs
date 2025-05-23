@@ -1,4 +1,4 @@
-use crate::util::{convert_zip_to_extension, is_zipped_file_extension};
+use crate::util::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
 use crate::{db::model::Model, error::ApplicationError};
 use chrono::Utc;
 use std::{fs::File, path::PathBuf};
@@ -53,21 +53,6 @@ pub fn get_bytes_from_model(
     Ok(buffer)
 }
 
-fn cleanse_name(name: &str) -> String {
-    String::from(
-        name.replace("\\", " ")
-            .replace("/", " ")
-            .replace(":", " ")
-            .replace("*", " ")
-            .replace("?", " ")
-            .replace("\"", " ")
-            .replace("<", " ")
-            .replace(">", " ")
-            .replace("|", " ")
-            .trim(),
-    )
-}
-
 fn ensure_unique_file(base_path: &PathBuf, file_name: &str, extension: &str) -> PathBuf {
     let mut counter = 1;
     let mut new_file_name = base_path.join(format!("{}.{}", file_name, extension));
@@ -88,7 +73,7 @@ fn get_path_from_model(
 ) -> Result<PathBuf, ApplicationError> {
     let base_dir = PathBuf::from(app_state.get_model_dir());
     let src_file_path = base_dir.join(format!("{}.{}", model.sha256, model.filetype));
-    let cleansed_name = cleanse_name(&model.name);
+    let cleansed_name = cleanse_evil_from_name(&model.name);
     let extension = convert_zip_to_extension(&model.filetype);
     let dst_file_path = ensure_unique_file(temp_dir, &cleansed_name, &extension);
 

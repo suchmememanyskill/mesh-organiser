@@ -38,6 +38,7 @@ pub struct StoredConfiguration {
     pub allow_importing_gcode: Option<bool>,
     pub only_show_single_image_in_groups : Option<bool>,
     pub custom_slicer_path: Option<String>,
+    pub elegoo_deep_link: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -72,6 +73,7 @@ pub struct Configuration {
     pub allow_importing_gcode: bool,
     pub only_show_single_image_in_groups : bool,
     pub custom_slicer_path: String,
+    pub elegoo_deep_link: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -148,6 +150,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         custom_slicer_path: configuration
             .custom_slicer_path
             .unwrap_or(default.custom_slicer_path),
+        elegoo_deep_link: configuration
+            .elegoo_deep_link
+            .unwrap_or(default.elegoo_deep_link),
     }
 }
 
@@ -186,6 +191,7 @@ impl Default for Configuration {
             allow_importing_gcode: true,
             only_show_single_image_in_groups: false,
             custom_slicer_path: String::new(),
+            elegoo_deep_link: false,
         }
     }
 }
