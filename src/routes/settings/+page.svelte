@@ -101,6 +101,13 @@
         app_data_dir = await appDataDir();
         model_dir_size = await computeModelFolderSize();
     });
+    
+    let splitConversions = {
+        "no_split": "No split",
+        "split-left-right": "Split left/right",
+        "split-top-bottom": "Split top/bottom",
+    };
+
 </script>
 
 <div class="w-full overflow-y-auto hide-scrollbar h-full">
@@ -332,6 +339,18 @@
                 <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
                 <CheckboxWithLabel bind:value={c.configuration.open_links_in_external_browser} label="Open links in external browser" />
                 <CheckboxWithLabel bind:value={c.configuration.only_show_single_image_in_groups} label="Only show first image of group" />
+
+                <div class="flex flex-col space-y-1.5">
+                    <Label>Split group view</Label>
+                    <Select.Root type="single" bind:value={c.configuration.group_split_view}>
+                        <Select.Trigger class="w-[180px]">{splitConversions[c.configuration.group_split_view]}</Select.Trigger>
+                        <Select.Content>
+                            <Select.Item value="no_split">{splitConversions["no_split"]}</Select.Item>
+                            <Select.Item value="split-left-right">{splitConversions["split-left-right"]}</Select.Item>
+                            <Select.Item value="split-top-bottom">{splitConversions["split-top-bottom"]}</Select.Item>
+                        </Select.Content>
+                    </Select.Root>                    
+                </div>
             </CardContent>
         </Card>
 

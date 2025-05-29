@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { GroupedEntry, LabelMin } from "$lib/model";
+    import type { GroupedEntry, LabelMin, Model } from "$lib/model";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
@@ -13,9 +13,22 @@
     import { c, data } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+    import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
+    import { IsSplitGridSize } from "$lib/hooks/is-split-grid-size.svelte";
 
     const props: { groups: GroupedEntry[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
+
+    let gridSizeMonitor = new IsSplitGridSize();
+
+    let effectiveSplitSetting = $derived.by(() => {
+        if (gridSizeMonitor.current)
+        {
+            return "no_split";
+        }
+
+        return c.configuration.group_split_view;
+    });
 
     let scrollContainer : HTMLElement;
 
@@ -204,6 +217,15 @@
             });
         }, 30);
     }
+
+    let models = $state.raw<Model[]>([]);
+    let selectedModels = $derived(models.length <= 0 ? selected.map(x => x.models).flat() : models);
+
+    $effect(() => {
+        // Clear models list when selected changes
+        let s = selected;
+        models = [];
+    })
 </script>
 
 <div class="flex flex-row h-full">
@@ -243,33 +265,53 @@
                 </Select.Content>
             </Select.Root>
         </div>
-        
-        <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-2 flex-wrap outline-0">
-                {#if c.configuration.size_option_groups.includes("List")}
-                    {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
-                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="w-full">
-                            <GroupTinyList group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
-                        </div>
-                    {/each}
+
+        {#if effectiveSplitSetting === "no_split"}
+            {@render GroupGrid()}
+        {:else if effectiveSplitSetting === "split-left-right"}
+            <span class="overflow-hidden grid grid-cols-[1fr_auto_1fr] gap-3 h-full">
+                {@render GroupGrid()}
+                <div class="border-l border-dashed" />
+                {#if selected.length >= 1}
+                    <ModelGridInner bind:value={models} itemSize={c.configuration.size_option_groups} availableModels={selected.map(x => x.models).flat()} />
                 {:else}
-                    {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
-                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
-                            <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
-                        </div>
-                    {/each}
+                    <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
+                        <span class="text-xl">No models in group to display</span>
+                    </div>
                 {/if}
-            </RightClickModels>
-        </div>
+            </span>
+        {:else if effectiveSplitSetting === "split-top-bottom"}
+            <span class="overflow-hidden flex flex-col gap-3 h-full">
+                {@render GroupGrid()}
+                <div class="border-t border-dashed" />
+                {#if selected.length >= 1}
+                    <ModelGridInner bind:value={models} itemSize={c.configuration.size_option_groups} availableModels={selected.map(x => x.models).flat()} clazz="h-full" />
+                {:else}
+                    <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
+                        <span class="text-xl">No models in group to display</span>
+                    </div>
+                {/if}
+            </span>
+        {/if}
     </div> 
     <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
         {#if selected.length >= 2}
-            <EditMultiModel models={selected.map(x => x.models).flat()} />
+            {#if selectedModels.length >= 2}
+                <EditMultiModel models={selectedModels} />
+            {:else if selectedModels.length === 1}
+                <ModelEdit model={selectedModels[0]} />
+            {/if}
         {:else if selected.length === 1 && selected[0].group.id >= 0}
             {#if selected[0].models.length >= 2}
                 <EditGroup group={selected[0].group} settingsVertical={true} />
-                <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models</a>
-                <EditMultiModel models={selected[0].models} />
+                {#if effectiveSplitSetting === "no_split"}
+                    <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models</a>
+                {/if}
+                {#if selectedModels.length >= 2}
+                    <EditMultiModel models={selectedModels} />
+                {:else if selectedModels.length === 1}
+                    <ModelEdit model={selectedModels[0]} />
+                {/if}
             {:else}
                 <ModelEdit model={selected[0].models[0]} />
             {/if}
@@ -284,3 +326,23 @@
         {/if}
     </div>
 </div>
+
+{#snippet GroupGrid()}
+    <div class="overflow-y-scroll h-full" bind:this={scrollContainer} onscroll={handleScroll}>
+        <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-2 flex-wrap outline-0">
+            {#if c.configuration.size_option_groups.includes("List")}
+                {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                    <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="w-full">
+                        <GroupTinyList group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
+                    </div>
+                {/each}
+            {:else}
+                {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                    <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
+                        <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
+                    </div>
+                {/each}
+            {/if}
+        </RightClickModels>
+    </div>
+{/snippet}

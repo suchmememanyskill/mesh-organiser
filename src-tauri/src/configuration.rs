@@ -39,6 +39,7 @@ pub struct StoredConfiguration {
     pub only_show_single_image_in_groups : Option<bool>,
     pub custom_slicer_path: Option<String>,
     pub elegoo_deep_link: Option<bool>,
+    pub group_split_view : Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -74,6 +75,7 @@ pub struct Configuration {
     pub only_show_single_image_in_groups : bool,
     pub custom_slicer_path: String,
     pub elegoo_deep_link: bool,
+    pub group_split_view: String,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -153,6 +155,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         elegoo_deep_link: configuration
             .elegoo_deep_link
             .unwrap_or(default.elegoo_deep_link),
+        group_split_view: configuration
+            .group_split_view
+            .unwrap_or(default.group_split_view),
     }
 }
 
@@ -192,6 +197,7 @@ impl Default for Configuration {
             only_show_single_image_in_groups: false,
             custom_slicer_path: String::new(),
             elegoo_deep_link: false,
+            group_split_view: String::from("no_split"),
         }
     }
 }

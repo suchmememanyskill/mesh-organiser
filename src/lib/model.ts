@@ -166,6 +166,7 @@ export interface Configuration {
     allow_importing_gcode: boolean;
     only_show_single_image_in_groups: boolean;
     custom_slicer_path : string;
+    group_split_view: "no_split" | "split-left-right" | "split-top-bottom";
 }
 
 export function configurationDefault() : Configuration
@@ -202,6 +203,7 @@ export function configurationDefault() : Configuration
         allow_importing_gcode: true,
         only_show_single_image_in_groups: false,
         custom_slicer_path: "",
+        group_split_view: "no_split",
     }
 }
 
