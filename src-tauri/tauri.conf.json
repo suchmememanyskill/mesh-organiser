@@ -42,7 +42,10 @@
     ],
     "externalBin": [
       "../external-binaries/mesh-thumbnail"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": "-"
+    }
   },
   "plugins": {
     "updater": {
