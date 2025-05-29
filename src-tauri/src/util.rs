@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::process::Command;
 use std::{io::Read, path::PathBuf};
 use std::ffi::OsStr;
 
@@ -50,7 +51,15 @@ pub fn cleanse_evil_from_name(name: &str) -> String {
 pub fn open_folder_in_explorer(path: &str) {
     #[cfg(target_os = "windows")]
     {
-        let _ = std::process::Command::new("explorer")
+        let _ = Command::new("explorer")
+            .arg(path)
+            .output()
+            .unwrap();
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let _ = Command::new("open")
             .arg(path)
             .output()
             .unwrap();
@@ -58,7 +67,7 @@ pub fn open_folder_in_explorer(path: &str) {
 
     #[cfg(target_os = "linux")]
     {
-        let _ = std::process::Command::new("xdg-open")
+        let _ = Command::new("xdg-open")
             .arg(path)
             .output()
             .unwrap();
