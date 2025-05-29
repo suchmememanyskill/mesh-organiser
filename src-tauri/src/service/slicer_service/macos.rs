@@ -55,10 +55,17 @@ impl Slicer {
 fn get_slicer_path(slicer: &Slicer) -> Option<PathBuf> {
     match slicer {
         Slicer::PrusaSlicer => {
-            let path = PathBuf::from("/Applications/Original Prusa Drivers/PrusaSlicer.app");
+            let path: PathBuf = PathBuf::from("/Applications/Original Prusa Drivers/PrusaSlicer.app");
+            let second_path = PathBuf::from("/Applications/PrusaSlicer.app");
+
             if path.exists() {
                 return Some(path);
             }
+
+            if second_path.exists() {
+                return Some(second_path);
+            }
+
             return None;
         },
         Slicer::OrcaSlicer => {
