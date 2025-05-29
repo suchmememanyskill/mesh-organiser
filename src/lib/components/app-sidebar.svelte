@@ -384,32 +384,35 @@
                     </Sidebar.MenuButton>
                     <Collapsible.Content>
                         <Sidebar.MenuSub>
-                            <Sidebar.MenuItem>
-                                <Sidebar.MenuButton
-                                    class={current_url === `/label/${labelWithChildren.label.id}` && thisLabelOnly
-                                        ? "border-l-2 border-secondary"
-                                        : ""}>
+                            {#if labelWithChildren.entries.length > 0 }
+                                <Sidebar.MenuItem>
+                                    <Sidebar.MenuButton
+                                        class={current_url === `/label/${labelWithChildren.label.id}` && thisLabelOnly
+                                            ? "border-l-2 border-secondary"
+                                            : ""}>
 
-                                    {#snippet child({ props })}
-                                        <a
-                                            href={"/label/" + labelWithChildren.label.id + "?thisLabelOnly=true"}
-                                            onmouseenter={cloneOnHover}
-                                            onmouseleave={destroyOnLeave}
-                                            onclick={onClickScrollIntoView}
-                                            {...props}
-                                        >
-                                            <Tag
-                                                class="h-full w-full"
-                                                style={`color: ${labelWithChildren.label.color};`}
-                                            />
-            
-                                            <span class="mr-3"
-                                                >{labelWithChildren.label.name}</span
+                                        {#snippet child({ props })}
+                                            <a
+                                                href={"/label/" + labelWithChildren.label.id + "?thisLabelOnly=true"}
+                                                onmouseenter={cloneOnHover}
+                                                onmouseleave={destroyOnLeave}
+                                                onclick={onClickScrollIntoView}
+                                                {...props}
                                             >
-                                        </a>
-                                    {/snippet}
-                                </Sidebar.MenuButton>
-                            </Sidebar.MenuItem>
+                                                <Tag
+                                                    class="h-full w-full"
+                                                    style={`color: ${labelWithChildren.label.color};`}
+                                                />
+                
+                                                <span class="mr-3"
+                                                    >{labelWithChildren.label.name}</span
+                                                >
+                                            </a>
+                                        {/snippet}
+                                    </Sidebar.MenuButton>
+                                </Sidebar.MenuItem>
+                            {/if}
+
                             {#each labelWithChildren.label.children as childLabel (childLabel.id)}
                                 {@render LabelTree({
                                     label: childLabel,
