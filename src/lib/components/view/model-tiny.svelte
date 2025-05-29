@@ -11,6 +11,7 @@
     import type { ClassValue } from "svelte/elements";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import PrinterCheck from "@lucide/svelte/icons/printer-check";
+    import { flagsToGlyphObjects } from "$lib/glyph";
 
     const props: { model: Model, class?: ClassValue } = $props();
 </script>
@@ -21,8 +22,11 @@
     </CardHeader>
     <CardContent class="p-4">
         <ModelImg model={props.model} class="w-full aspect-square" />
-        {#if props.model.flags.printed}
-            <Badge class="absolute bottom-2 left-2"><PrinterCheck size=16 /></Badge>
-        {/if}    
+
+        <div class="flex flex-col gap-2 absolute bottom-2 left-2">
+            {#each flagsToGlyphObjects(props.model.flags) as glyph}
+                <Badge class={glyph.badgeClasses}><glyph.glyph size=16 class={glyph.glyphClasses} /></Badge>
+            {/each}
+        </div>
     </CardContent>
 </Card>

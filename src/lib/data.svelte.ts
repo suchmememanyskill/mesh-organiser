@@ -37,6 +37,7 @@ function convertGroup(raw : RawGroup) : Group
         createdAt : new Date(raw.created),
         flags : {
             printed : true,
+            favorite : true,
         },
     };
 }
@@ -91,6 +92,11 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
             if (group.group.flags.printed && !model.flags.printed)
             {
                 group.group.flags.printed = false;
+            }
+
+            if (group.group.flags.favorite && !model.flags.favorite)
+            {
+                group.group.flags.favorite = false;
             }
         }
         else 

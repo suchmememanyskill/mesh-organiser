@@ -16,7 +16,7 @@
 
     import { debounce, isModelSlicable, fileTypeToColor, fileTypeToDisplayName } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup } from "$lib/tauri";
+    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup, addEmptyGroup, addModelsToGroup } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { updateState, data, c } from "$lib/data.svelte";
@@ -27,6 +27,7 @@
     import { toReadableSize, instanceOfModelWithGroup, loadModelAutomatically, isModelPreviewable } from "$lib/utils";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
+    import GroupIcon from "@lucide/svelte/icons/group";
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Tag from "@lucide/svelte/icons/tag";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
@@ -35,6 +36,7 @@
     import { Toggle } from "$lib/components/ui/toggle/index.js";
     import Box from "@lucide/svelte/icons/box";
     import LabelSelect from "$lib/components/view/label-select.svelte";
+    import { goto } from "$app/navigation";
     
     const props: { model: Model|ModelWithGroup; class?: ClassValue } = $props();
     let deleted = $derived({ deleted: !props.model });
@@ -97,6 +99,20 @@
 
         await updateState();
     }
+
+    async function createGroup()
+    {
+        if (group)
+        {
+            return;
+        }
+
+        const newGroup = await addEmptyGroup(model.name);
+        await addModelsToGroup([model], newGroup);
+        await updateState();
+        
+        goto("/group/" + newGroup.id);
+    }
 </script>
 
 {#if deleted.deleted}
@@ -130,6 +146,9 @@
                         <Ellipsis />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
+                        <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
+                            <GroupIcon /> Create new group wtih model
+                        </DropdownMenu.Item>
                         <DropdownMenu.Item onclick={onUngroup} disabled={!group}>
                             <Ungroup /> Remove from current group
                         </DropdownMenu.Item>
@@ -186,10 +205,8 @@
                 </div>
                 <div class="flex flex-col gap-3">
                     <Label>Properties</Label>
-                    <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Printed?" bind:value={
-                        () => model.flags.printed,
-                        (val) => model.flags.printed = val
-                    } />
+                    <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Printed" bind:value={model.flags.printed} />
+                    <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Favorite" bind:value={model.flags.favorite} />
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <div class="grid grid-cols-2 text-sm">

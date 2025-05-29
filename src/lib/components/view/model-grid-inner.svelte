@@ -152,12 +152,14 @@
 
     const sizeClasses = $derived(sizes[itemSize]);
 
+    /* TODO: Figure out how to do change detection in a way updating a model doesn't cause this to trigger
     $effect.pre(() => {
         // Fire whenever avialableModels changes
         let models = availableModels;
         limit = 100;
         scrollContainer?.scrollTo(0, 0);
     })
+    */
 </script>
 
 <div class="overflow-y-scroll {clazz}" bind:this={scrollContainer} onscroll={handleScroll}>

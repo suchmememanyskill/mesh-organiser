@@ -5,6 +5,7 @@
     import { Badge } from "$lib/components/ui/badge/index.js";
     import PrinterCheck from "@lucide/svelte/icons/printer-check";
     import { c } from "$lib/data.svelte";
+    import { flagsToGlyphObjects } from "$lib/glyph";
 
     const props: { model: Model, class?: ClassValue } = $props();
 </script>
@@ -17,10 +18,12 @@
             <p class="hidden-if-small text-xs font-thin ml-4">Added {props.model.added.toLocaleDateString()}</p>
         {/if}
     </div>
-    
-    {#if props.model.flags.printed}
-        <Badge class="h-fit my-auto"><PrinterCheck size=16 /></Badge>
-    {/if}    
+
+    <div class="h-fit my-auto flex flex-row gap-2">
+        {#each flagsToGlyphObjects(props.model.flags) as glyph}
+            <Badge class={glyph.badgeClasses}><glyph.glyph size=16 class={glyph.glyphClasses} /></Badge>
+        {/each}
+    </div> 
 </div>
 
 <style>

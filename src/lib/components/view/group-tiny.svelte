@@ -11,6 +11,7 @@
     import type { ClassValue } from "svelte/elements";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import PrinterCheck from "@lucide/svelte/icons/printer-check";
+    import { flagsToGlyphObjects } from "$lib/glyph";
 
     const props: { group: GroupedEntry, class?: ClassValue } = $props();
 </script>
@@ -24,8 +25,11 @@
         {#if props.group.total >= 2}
             <Badge class="absolute bottom-2 right-2">{props.group.total}</Badge>
         {/if}    
-        {#if props.group.group.flags.printed}
-            <Badge class="absolute bottom-2 left-2"><PrinterCheck size=16 /></Badge>
-        {/if}   
+
+        <div class="flex flex-col gap-2 absolute bottom-2 left-2">
+            {#each flagsToGlyphObjects(props.group.group.flags) as glyph}
+                <Badge class={glyph.badgeClasses}><glyph.glyph size=16 class={glyph.glyphClasses} /></Badge>
+            {/each}
+        </div>
     </CardContent>
 </Card>

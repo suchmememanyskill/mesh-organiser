@@ -9,7 +9,8 @@ use indexmap::IndexMap;
 
 bitflags! {
     pub struct Flags: u32 {
-        const Printed = 0b00000001;
+        const Printed  = 0b00000001;
+        const Favorite = 0b00000010;
     }
 }
 
@@ -21,6 +22,9 @@ impl Serialize for Flags {
         let mut flags = Vec::new();
         if self.contains(Flags::Printed) {
             flags.push("Printed");
+        }
+        if self.contains(Flags::Favorite) {
+            flags.push("Favorite");
         }
         flags.serialize(serializer)
     }
@@ -36,6 +40,7 @@ impl<'de> Deserialize<'de> for Flags {
         for flag in flags {
             match flag.as_str() {
                 "Printed" => result.insert(Flags::Printed),
+                "Favorite" => result.insert(Flags::Favorite),
                 _ => {}
             }
         }

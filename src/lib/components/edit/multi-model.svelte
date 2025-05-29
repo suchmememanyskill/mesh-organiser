@@ -53,6 +53,7 @@
 
     const models: ModelWithGroup[] = $derived(props.models);
     const printed = $derived(models.every((x) => x.flags.printed));
+    const favorited = $derived(models.every((x) => x.flags.favorite));
     const allModelGroups = $derived(models.map((x) => x.group).filter((g) => !!g).filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i));
     const availableGroups = $derived(allModelGroups.filter((g) => !models.every((x) => x.group?.id === g.id)));
 
@@ -107,12 +108,23 @@
         await updateState();
     }
 
+    async function setPrintedFlagOnAllModels(printed: boolean) 
+    {
+        await setFlagOnAllModels((x) => (x.flags.printed = printed), printed);
+    }
+
+    async function setFavoriteFlagOnAllModels(favorite: boolean) 
+    {
+        await setFlagOnAllModels((x) => (x.flags.favorite = favorite), favorite);
+    }
+
     // TODO: this is terribly inefficient
-    async function setPrintedFlagOnAllModels(printed: boolean) {
-        const set_or_unset = printed ? "Set" : "Unset";
+    async function setFlagOnAllModels(action : (m : ModelWithGroup) => void, set : boolean)
+    {
+        const set_or_unset = set ? "Set" : "Unset";
         const affected_models = models;
 
-        affected_models.forEach((x) => (x.flags.printed = printed));
+        affected_models.forEach(action);
 
         let promise = (async () => {
             for (const model of affected_models) {
@@ -288,9 +300,13 @@
             </div>
             <div class="flex flex-col gap-4">
                 <Label>Properties</Label>
-                <CheckboxWithLabel class="ml-1" label="Printed?" bind:value={
+                <CheckboxWithLabel class="ml-1" label="Printed" bind:value={
                     () => printed,
                     (val) => setPrintedFlagOnAllModels(val)
+                } />
+                <CheckboxWithLabel class="ml-1" label="Favorite" bind:value={
+                    () => favorited,
+                    (val) => setFavoriteFlagOnAllModels(val)
                 } />
             </div>
         </CardContent>

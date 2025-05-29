@@ -1,8 +1,10 @@
-export type RawFlags = 'Printed'[];
+export type RawFlag = 'Printed' | 'Favorite';
+export type RawFlags = RawFlag[];
 
 export interface Flags 
 {
     printed : boolean;
+    favorite : boolean;
 }
 
 export function convertRawToFlags(raw : RawFlags) : Flags
@@ -13,6 +15,9 @@ export function convertRawToFlags(raw : RawFlags) : Flags
         switch (flag) {
             case "Printed":
                 flags.printed = true;
+                break;
+            case "Favorite":
+                flags.favorite = true;
                 break;
         }
     });
@@ -29,6 +34,11 @@ export function convertFlagsToRaw(flags : Flags) : RawFlags
         raw_flags.push("Printed");
     }
 
+    if (flags.favorite)
+    {
+        raw_flags.push("Favorite");
+    }
+
     return raw_flags;
 }
 
@@ -36,6 +46,7 @@ export function defaultFlags() : Flags
 {
     return {
         printed : false,
+        favorite : false,
     };
 }
 

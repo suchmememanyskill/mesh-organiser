@@ -1,17 +1,11 @@
 <script lang="ts">
-    import {
-        Card,
-        CardHeader,
-        CardTitle,
-        CardContent,
-    } from "$lib/components/ui/card";
-
     import type { Model, GroupedEntry } from "$lib/model";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import type { ClassValue } from "svelte/elements";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import PrinterCheck from "@lucide/svelte/icons/printer-check";
     import { c } from "$lib/data.svelte";
+    import { flagsToGlyphObjects } from "$lib/glyph";
 
     const props: { group: GroupedEntry, class?: ClassValue } = $props();
 </script>
@@ -37,13 +31,19 @@
         <Badge class="h-fit my-auto">{props.group.total}</Badge>
     {/if}    
 
-    {#if props.group.group.flags.printed}
-        <Badge class="h-fit my-auto"><PrinterCheck size=16 /></Badge>
-    {/if}    
+    <div class="h-fit my-auto flex flex-row gap-2 destroy-if-empty">
+        {#each flagsToGlyphObjects(props.group.group.flags) as glyph}
+            <Badge class={glyph.badgeClasses}><glyph.glyph size=16 class={glyph.glyphClasses} /></Badge>
+        {/each}
+    </div>
 </div>
 
 <style>
     .hidden-if-small p.hidden-if-small {
+        display: none;
+    }
+
+    .destroy-if-empty:empty {
         display: none;
     }
 </style>

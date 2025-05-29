@@ -8,12 +8,15 @@
     import Boxes from "@lucide/svelte/icons/boxes";
     import Box from "@lucide/svelte/icons/box";
     import Settings from "@lucide/svelte/icons/settings";
+    import Star from "@lucide/svelte/icons/star";
+    import NotebookText from "@lucide/svelte/icons/notebook-text";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import * as Popover from "$lib/components/ui/popover/index.js";
     import CircleHelp from "@lucide/svelte/icons/circle-help";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+    import History from "@lucide/svelte/icons/history";
 
     import { data, c, updateState } from "$lib/data.svelte";
 
@@ -79,6 +82,26 @@
             url: "/group",
             count: data.grouped_entries.length,
         },
+        {
+            title: "Favorites",
+            icon: Star,
+            url: "/favorite",
+            count: data.entries.filter(x => x.flags.favorite).length
+        },
+        {
+            title: "Print History",
+            icon: History,
+            url: "/printed",
+            count: data.entries.filter(x => x.flags.printed).length,
+        },
+        /*
+        {
+            title: "Resources",
+            icon: NotebookText,
+            url: "/resource",
+            count: 0,
+        },
+        */
         {
             title: "Settings",
             icon: Settings,
