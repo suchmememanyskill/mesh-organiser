@@ -131,6 +131,9 @@ export interface LabelEntry
     total : number;
 }
 
+export type SizeOptionModels = "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
+export const SizeOptionModelsAsList = ["Grid_Small", "Grid_Medium", "Grid_Large", "List_Small", "List_Medium", "List_Large"] as SizeOptionModels[];
+
 export interface Configuration {
     data_path: string;
     prusa_deep_link: boolean;
@@ -144,8 +147,8 @@ export interface Configuration {
     focus_after_link_import: boolean;
     thumbnail_color : string;
     allow_importing_step : boolean;
-    size_option_models : "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
-    size_option_groups : "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
+    size_option_models : SizeOptionModels;
+    size_option_groups : SizeOptionModels;
     show_grouped_count_on_labels: boolean;
     fallback_3mf_thumbnail: boolean;
     prefer_3mf_thumbnail: boolean;

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { LabelMin, Model } from "$lib/model";
+    import { SizeOptionModelsAsList, type LabelMin, type Model } from "$lib/model";
     import ModelTiny from "$lib/components/view/model-tiny.svelte";
     import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
     import ModelEdit from "$lib/components/edit/model.svelte";
@@ -12,11 +12,10 @@
     import { c, data } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+    import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
 
     const props: { models: Model[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
-    
-    let scrollContainer : HTMLElement;
 
     interface SearchFilters {
         search: string;
@@ -27,35 +26,12 @@
             | "name-desc"
             | "size-asc"
             | "size-desc";
-        limit: number;
     }
 
     const currentFilter = $state<SearchFilters>({
         search: "",
         order: "date-desc",
-        limit: 100,
     });
-
-    function handleScroll()
-    {
-        if (scrollContainer && currentFilter.limit < filteredCollection.length) {
-            const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-            if (scrollTop + clientHeight >= scrollHeight) {
-                currentFilter.limit += 100;
-            }
-        }
-    }
-
-    const sizes = {
-        Grid_Small: "w-32 text-sm",
-        Grid_Medium: "w-40",
-        Grid_Large: "w-60",
-        List_Small: "h-10 text-sm hidden-if-small",
-        List_Medium: "h-14",
-        List_Large: "h-20 text-lg",
-    };
-
-    const size = $derived(sizes[c.configuration.size_option_models]);
 
     const readableOrders = {
         "date-asc": "Date (Asc)",
@@ -109,113 +85,6 @@
                 }
             });
     });
-
-    let is_shift_pressed = false;
-    let is_control_pressed = false;
-
-    function onKeyDown(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = true;
-        } else if (event.key === "Control") {
-            is_control_pressed = true;
-        }
-    }
-
-    function onKeyUp(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = false;
-        } else if (event.key === "Control") {
-            is_control_pressed = false;
-        }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    const interval = setInterval(handleScroll, 1000);
-
-    let destroyStateChangeListener: UnlistenFn | null = null;
-
-    onMount(async () => {
-        destroyStateChangeListener = await listen<void>("state-change", (_) => {
-            selected = props.models.filter(x => selected.some(y => y.id === x.id));
-            console.log("Filtered out deleted models");
-        });
-    });
-
-    onDestroy(async () => {
-        window.removeEventListener("keydown", onKeyDown);
-        window.removeEventListener("keyup", onKeyUp);
-        clearInterval(interval);
-
-        if (destroyStateChangeListener) 
-            destroyStateChangeListener();
-    });
-
-    async function onClick(model: Model, event : any) {
-        if (is_shift_pressed && selected.length === 1)
-        {
-            let start = filteredCollection.indexOf(selected[0]);
-            let end = filteredCollection.indexOf(model);
-
-            if (start === -1 || end === -1)
-            {
-                return;
-            }
-
-            if (start > end)
-            {
-                [start, end] = [end, start];
-            }
-
-            selected = filteredCollection.slice(start, end + 1);
-        }
-        else if (is_control_pressed)
-        {
-            if (selected.some(x => x.id === model.id))
-            {
-                selected = selected.filter(x => x.id !== model.id);
-            }
-            else
-            {
-                selected = [...selected, model];
-            }
-        }
-        else
-        {
-            if (selected.length === 1 && selected[0].id === model.id)
-            {
-                selected = [];
-            }
-            else
-            {
-                selected = [model];
-
-                setTimeout(() => {
-                    event.target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                    });
-                }, 30);
-            }
-        }
-    }
-    
-    function onRightClick(model : Model, event : any)
-    {
-        if (selected.some(m => m.id === model.id))
-        {
-            return;
-        }
-
-        selected = [model];
-
-        setTimeout(() => {
-            event.target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-            });
-        }, 30);
-    }
 </script>
 
 <div class="flex flex-row h-full">
@@ -246,32 +115,17 @@
                 <Select.Content>
                     <Select.Group>
                         <Select.GroupHeading>Size options</Select.GroupHeading>
-                        {#each Object.entries(sizes) as size_entry}
-                            <Select.Item value={size_entry[0]} label={size_entry[0].replaceAll("_", " ")}
-                                >{size_entry[0].replaceAll("_", " ")}</Select.Item
+                        {#each SizeOptionModelsAsList as entry}
+                            <Select.Item value={entry} label={entry.replaceAll("_", " ")}
+                                >{entry.replaceAll("_", " ")}</Select.Item
                             >
                         {/each}
                     </Select.Group>
                 </Select.Content>
             </Select.Root>
         </div>
-        <div class="overflow-y-scroll" bind:this={scrollContainer} onscroll={handleScroll}>
-            <RightClickModels models={selected} class="flex flex-row justify-center gap-2 flex-wrap outline-0">
-                {#if c.configuration.size_option_models.includes("List")}
-                    {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
-                        <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="w-full">
-                            <ModelTinyList {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
-                        </div>
-                    {/each}
-                {:else}
-                    {#each filteredCollection.slice(0, currentFilter.limit) as model (model.id)}
-                        <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
-                            <ModelTiny {model} class="{size} pointer-events-none select-none {selected.some(x => model.id === x.id) ? "border-primary" : "" }" />
-                        </div>
-                    {/each}
-                {/if}
-            </RightClickModels>
-        </div>
+
+        <ModelGridInner bind:value={selected} itemSize={c.configuration.size_option_models} availableModels={filteredCollection} />
     </div> 
     <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto hide-scrollbar">
         {#if selected.length >= 2}
