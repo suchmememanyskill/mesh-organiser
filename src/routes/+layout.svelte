@@ -36,7 +36,7 @@
 
     function getFileFromUrl(url: string) {
         const url_parts = url.split('/');
-        return url_parts[url_parts.length - 1];
+        return url_parts[url_parts.length - 1].split('?')[0];
     }
 
     async function handleDownload(url : string)
