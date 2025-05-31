@@ -329,7 +329,7 @@
 
 {#snippet GroupGrid()}
     <div class="overflow-y-scroll h-full" bind:this={scrollContainer} onscroll={handleScroll}>
-        <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center gap-2 flex-wrap outline-0">
+        <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center content-start gap-2 flex-wrap outline-0">
             {#if c.configuration.size_option_groups.includes("List")}
                 {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
                     <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="w-full">

@@ -98,7 +98,7 @@
             title: "Projects",
             icon: NotebookText,
             url: "/resource",
-            count: 0,
+            count: data.resources.length,
         },
         {
             title: "Settings",

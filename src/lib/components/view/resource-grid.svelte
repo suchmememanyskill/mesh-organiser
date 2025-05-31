@@ -139,7 +139,7 @@
             </Select.Root>
         </div>
 
-        <div class="overflow-y-scroll h-full flex flex-row justify-center gap-2 flex-wrap outline-0 content-start" bind:this={scrollContainer} onscroll={handleScroll}>
+        <div class="overflow-y-scroll h-full flex flex-row gap-2 flex-wrap outline-0 content-start" bind:this={scrollContainer} onscroll={handleScroll}>
             {#each filteredCollection.slice(0, currentFilter.limit) as resource (resource.id)}
                 <div oncontextmenu={(e) => onClick(resource, e)} onclick="{(e) => onClick(resource, e)}" 
                     class="h-14 [&_.imglist]:w-[165px] flex flex-row gap-3 border rounded-lg p-1 px-3 min-w-0 overflow-hidden w-full select-none {selected?.id === resource.id ? "border-primary" : "" }">

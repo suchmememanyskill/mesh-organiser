@@ -163,7 +163,7 @@
 </script>
 
 <div class="overflow-y-scroll {clazz}" bind:this={scrollContainer} onscroll={handleScroll}>
-    <RightClickModels models={value} class="flex flex-row justify-center gap-2 flex-wrap outline-0">
+    <RightClickModels models={value} class="flex flex-row justify-center content-start gap-2 flex-wrap outline-0">
         {#if itemSize.includes("List")}
             {#each availableModels.slice(0, limit) as model (model.id)}
                 <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="w-full">
