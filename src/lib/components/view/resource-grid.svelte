@@ -2,17 +2,19 @@
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
     import GroupTinyList from "./group-tiny-list.svelte";
-    import { buttonVariants } from "$lib/components/ui/button";
+    import { AsyncButton, buttonVariants } from "$lib/components/ui/button";
     import { c, data, updateState } from "$lib/data.svelte";
-    import type { Resource } from "$lib/model";
+    import type { GroupedEntry, Resource } from "$lib/model";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import EditResource from "$lib/components/edit/resource.svelte";
     import NotebookText from "@lucide/svelte/icons/notebook-text";
     import ClipboardCheck from "@lucide/svelte/icons/clipboard-check";
     import Button from "../ui/button/button.svelte";
-    import { addResource } from "$lib/tauri";
+    import { addResource, openInFolder, openInSlicer } from "$lib/tauri";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import { onMount } from "svelte";
+    import FolderOpen from "@lucide/svelte/icons/folder-open";
+    import Slice from "@lucide/svelte/icons/slice";
 
     const props: { resources: Resource[] } = $props();
     let selected = $state.raw<Resource|null>(null);
@@ -115,6 +117,18 @@
             }
         });
     });
+
+    async function onOpenInFolder(group : GroupedEntry) {
+        if (group) {
+            await openInFolder(group.models);
+        }
+    }
+
+    async function onOpenInSlicer(group : GroupedEntry) {
+        if (group) {
+            await openInSlicer(group.models);
+        }
+    }
 </script>
 
 <div class="flex flex-row h-full">
@@ -171,13 +185,21 @@
             <EditResource resource={selected} ondelete={_ => selected = null} />
 
             {#each selected.groups as group (group.group.id)}
-                <div class="grid grid-cols-1 gap-2 border rounded-lg pt-1 pb-3">
+                <div class="grid grid-cols-1 gap-2 border rounded-lg pt-1">
                     <GroupTinyList group={group} class="w-full h-14 [&_.imglist]:w-[165px] border-none" />
                     <a href="/group/{group.group.id}" class="mx-3 {buttonVariants({ variant: "default"})}">
                         Open group
                     </a>
+                    <div class="grid grid-cols-2 gap-4 mb-4 mx-3 mt-2">
+                        <AsyncButton onclick={() => onOpenInFolder(group)}><FolderOpen /> Open in folder</AsyncButton>
+                        <AsyncButton onclick={() => onOpenInSlicer(group)}><Slice /> Open in slicer</AsyncButton>
+                    </div>
                 </div>
             {/each}
+            <div class="flex flex-col justify-center items-center p-4 gap-4 rounded-md border border-dashed">
+                <span>Add groups to projects in the groups menu</span>
+                <a href="/group" class="w-full {buttonVariants({ variant: "secondary"})}">Go to the groups menu</a>
+            </div>
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
                 <span class="text-xl">No project selected</span>
