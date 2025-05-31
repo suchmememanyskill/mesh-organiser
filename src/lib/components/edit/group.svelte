@@ -169,8 +169,8 @@
                 </div>
                 <div class="flex flex-col space-y-1.5">
                     <Label>Project</Label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <ResourceSelect clazz="truncate" onchange={onUpdateGroup} availableResources={data.resources.filter(x => !x.flags.completed || x.id === tracked_group.resourceId)} bind:value={
+                    <div class="flex flex-row gap-2">
+                        <ResourceSelect clazz="truncate flex-grow" onchange={onUpdateGroup} availableResources={data.resources.filter(x => !x.flags.completed || x.id === tracked_group.resourceId)} bind:value={
                             () => data.resources.find(r => r.id === tracked_group.resourceId) || null,
                             (val) => tracked_group.resourceId = val?.id || null
                         } />

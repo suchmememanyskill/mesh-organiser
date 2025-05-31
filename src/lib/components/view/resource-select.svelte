@@ -8,7 +8,7 @@
     import type { Resource } from "$lib/model";
     import NotebookText from "@lucide/svelte/icons/notebook-text";
 
-    let { value = $bindable(), availableResources = [], clazz = undefined, placeholder = "Select a resource", onchange = () => {}} 
+    let { value = $bindable(), availableResources = [], clazz = undefined, placeholder = "Select a project", onchange = () => {}} 
     : { value: Resource|null, availableResources : Resource[], clazz? : ClassValue, placeholder? : string, onchange?: VoidFunction } = $props();
 </script>
 
@@ -38,7 +38,7 @@
                 label="None">
                 None
             </Select.Item>
-            <Select.GroupHeading>Available resources</Select.GroupHeading>
+            <Select.GroupHeading>Active projects</Select.GroupHeading>
             {#each availableResources as resource}
                 <Select.Item
                     value={resource.id.toString()}

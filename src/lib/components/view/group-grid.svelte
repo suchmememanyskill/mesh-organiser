@@ -302,8 +302,8 @@
                 <ModelEdit model={selectedModels[0]} />
             {/if}
         {:else if selected.length === 1 && selected[0].group.id >= 0}
+            <EditGroup group={selected[0].group} settingsVertical={true} />
             {#if selected[0].models.length >= 2}
-                <EditGroup group={selected[0].group} settingsVertical={true} />
                 {#if effectiveSplitSetting === "no_split"}
                     <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].group.id}">View models</a>
                 {/if}
