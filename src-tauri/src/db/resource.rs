@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use sqlx::{self, types::chrono};
-use tauri::async_runtime::block_on;
 use bitflags::bitflags;
 use indexmap::IndexMap;
 

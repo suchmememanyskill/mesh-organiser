@@ -1,4 +1,4 @@
-use std::{num::NonZeroUsize, path::PathBuf};
+use std::path::PathBuf;
 
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc::error::TryRecvError;
@@ -50,7 +50,7 @@ pub async fn generate_thumbnails(
         })
         .collect();
 
-    let mut imported_amount: usize = 0;
+    let imported_amount: usize = 0;
 
     struct C {
         command: Command,

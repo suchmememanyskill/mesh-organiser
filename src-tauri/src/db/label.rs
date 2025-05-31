@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 
 use serde::Serialize;
 use sqlx::{self, QueryBuilder};

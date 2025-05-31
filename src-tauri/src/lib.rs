@@ -11,7 +11,7 @@ use service::{
     slicer_service::Slicer,
 };
 use strum::IntoEnumIterator;
-use tauri::{async_runtime::block_on, menu::{MenuBuilder, MenuItem, SubmenuBuilder}, webview::{DownloadEvent, PageLoadEvent}, window::ProgressBarState, WebviewUrl, WebviewWindowBuilder};
+use tauri::{async_runtime::block_on, menu::{MenuBuilder, SubmenuBuilder}, webview::{DownloadEvent, PageLoadEvent}, WebviewUrl, WebviewWindowBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
 use urlencoding::decode;
 use std::fs::File;
@@ -813,7 +813,7 @@ pub fn run() {
         .expect("error while running tauri application");
 
     app.run(|_app_handle, e| {
-        if let tauri::RunEvent::ExitRequested { api, .. } = e {
+        if let tauri::RunEvent::ExitRequested {  .. } = e {
             // Close sqlite db
             tauri::async_runtime::block_on(async move {
                 let app_state = _app_handle.state::<AppState>();
