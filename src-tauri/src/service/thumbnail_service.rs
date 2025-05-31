@@ -50,7 +50,7 @@ pub async fn generate_thumbnails(
         })
         .collect();
 
-    let imported_amount: usize = 0;
+    let mut imported_amount: usize = 0;
 
     struct C {
         command: Command,
@@ -99,7 +99,7 @@ pub async fn generate_thumbnails(
             }
         })
         .collect();
-
+/*
     #[cfg(debug_assertions)]
     {
         while !commands.is_empty() {
@@ -120,6 +120,7 @@ pub async fn generate_thumbnails(
 
         return Ok(());
     }
+*/
 
     let mut running = Vec::new();
 
