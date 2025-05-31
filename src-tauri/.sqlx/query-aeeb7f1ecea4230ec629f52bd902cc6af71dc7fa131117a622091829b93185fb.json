@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created\n            FROM resources\n            WHERE resources.resource_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "resource_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "resource_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "resource_flags",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "resource_created",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "aeeb7f1ecea4230ec629f52bd902cc6af71dc7fa131117a622091829b93185fb"
+}

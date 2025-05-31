@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE models_group SET group_name = ?, group_resource_id = ? WHERE group_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "2b05b2752df5ddcbdddff302a671b3419547f57bc644f21b7ae6539bd13693f5"
+}

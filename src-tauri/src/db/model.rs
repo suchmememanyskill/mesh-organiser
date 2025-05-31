@@ -8,39 +8,39 @@ use bitflags::bitflags;
 use indexmap::IndexMap;
 
 bitflags! {
-    pub struct Flags: u32 {
+    pub struct ModelFlags: u32 {
         const Printed  = 0b00000001;
         const Favorite = 0b00000010;
     }
 }
 
-impl Serialize for Flags {
+impl Serialize for ModelFlags {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut flags = Vec::new();
-        if self.contains(Flags::Printed) {
+        if self.contains(ModelFlags::Printed) {
             flags.push("Printed");
         }
-        if self.contains(Flags::Favorite) {
+        if self.contains(ModelFlags::Favorite) {
             flags.push("Favorite");
         }
         flags.serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for Flags {
+impl<'de> Deserialize<'de> for ModelFlags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         let flags: Vec<String> = Vec::deserialize(deserializer)?;
-        let mut result = Flags::empty();
+        let mut result = ModelFlags::empty();
         for flag in flags {
             match flag.as_str() {
-                "Printed" => result.insert(Flags::Printed),
-                "Favorite" => result.insert(Flags::Favorite),
+                "Printed" => result.insert(ModelFlags::Printed),
+                "Favorite" => result.insert(ModelFlags::Favorite),
                 _ => {}
             }
         }
@@ -60,7 +60,7 @@ pub struct Model {
     pub added: String,
     pub group: Option<ModelGroup>,
     pub labels: Vec<LabelMin>,
-    pub flags: Flags,
+    pub flags: ModelFlags,
 }
 
 pub fn get_models_sync(db: &super::db::Db) -> Vec<Model> {
@@ -71,7 +71,7 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
     let rows = sqlx::query!(
         "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, model_size, model_flags,
                 labels.label_id, label_name, label_color,
-                models_group.group_id, group_name, group_created
+                models_group.group_id, group_name, group_created, group_resource_id
          FROM models 
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
          LEFT JOIN labels ON models_labels.label_id = labels.label_id
@@ -97,11 +97,12 @@ pub async fn get_models(db: &super::db::Db) -> Vec<Model> {
                     id: id,
                     name: row.group_name.unwrap(),
                     created: row.group_created.unwrap(),
+                    resource_id: row.group_resource_id,
                 }),
                 None => None,
             },
             labels: Vec::new(),
-            flags: Flags::from_bits(row.model_flags as u32).unwrap_or(Flags::empty()),
+            flags: ModelFlags::from_bits(row.model_flags as u32).unwrap_or(ModelFlags::empty()),
         });
 
         // Hack as silly little sql library doesn't understand that this is optional
@@ -135,7 +136,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
     let formatted_query = format!(
         "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_added, model_size, model_flags,
                 labels.label_id, label_name, label_color,
-                models_group.group_id, group_name, group_created
+                models_group.group_id, group_name, group_created, group_resource_id
          FROM models 
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
          LEFT JOIN labels ON models_labels.label_id = labels.label_id 
@@ -158,6 +159,7 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
         let group_id: Option<i64> = row.get("group_id");
         let group_name: Option<String> = row.get("group_name");
         let group_created: Option<String> = row.get("group_created");
+        let group_resource_id: Option<i64> = row.get("group_resource_id");
         let mut label_id: Option<i64> = row.get("label_id");
         let mut label_name: Option<String> = row.get("label_name");
         let mut label_color: Option<i64> = row.get("label_color");
@@ -177,11 +179,12 @@ pub async fn get_models_by_id(ids: Vec<i64>, db: &super::db::Db) -> Vec<Model> {
                     id: id,
                     name: group_name.unwrap(),
                     created: group_created.unwrap(),
+                    resource_id: group_resource_id,
                 }),
                 None => None,
             },
             labels: Vec::new(),
-            flags: Flags::from_bits(model_flags as u32).unwrap_or(Flags::empty()),
+            flags: ModelFlags::from_bits(model_flags as u32).unwrap_or(ModelFlags::empty()),
         });
 
         if label_id.is_none() {
@@ -244,7 +247,7 @@ pub fn edit_model_sync(
     name: &str,
     link: Option<&str>,
     description: Option<&str>,
-    flags : Flags,
+    flags : ModelFlags,
     db: &super::db::Db,
 ) {
     block_on(edit_model(id, name, link, description, flags, db))
@@ -255,7 +258,7 @@ pub async fn edit_model(
     name: &str,
     link: Option<&str>,
     description: Option<&str>,
-    flags : Flags,
+    flags : ModelFlags,
     db: &super::db::Db,
 ) {
     let bits = flags.bits() as i64;

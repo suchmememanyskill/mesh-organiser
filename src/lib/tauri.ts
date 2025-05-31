@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawFlags, convertFlagsToRaw, defaultFlags, type LabelMin } from "./model";
+import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawModedlFlags, convertModelFlagsToRaw, defaultFlags, type LabelMin, type RawResource, convertResourceFlagsToRaw, type Resource } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -15,6 +15,13 @@ export async function getLabels() : Promise<RawLabel[]>
     return raw_labels;
 }
 
+export async function getResources() : Promise<RawResource[]>
+{
+    let raw_resources : RawResource[] = await invoke("get_resources");
+
+    return raw_resources;
+}
+
 export async function editModel(model : Model) : Promise<void>
 {
     await invoke("edit_model", {  
@@ -22,7 +29,7 @@ export async function editModel(model : Model) : Promise<void>
         modelName: model.name,
         modelDescription: model.description,
         modelUrl: model.link,
-        modelFlags: convertFlagsToRaw(model.flags),
+        modelFlags: convertModelFlagsToRaw(model.flags),
     });
 }
 
@@ -51,7 +58,7 @@ export async function ungroup(group : Group) : Promise<void>
 
 export async function editGroup(group : Group) : Promise<void>
 {
-    await invoke("edit_group", { groupId: group.id, groupName: group.name });
+    await invoke("edit_group", { groupId: group.id, groupName: group.name, groupResourceId: group.resourceId });
 }
 
 export async function setLabelsOnModel(labels : LabelMin[], model : Model) : Promise<void>
@@ -108,6 +115,7 @@ export async function addEmptyGroup(group_name : string) : Promise<Group>
         name: group_name,
         createdAt: new Date(),
         flags: defaultFlags(),
+        resourceId: null,
     }
 }
 
@@ -211,4 +219,36 @@ export async function setChildsOnLabel(parent : LabelMin, childs : LabelMin[]) :
     let childIds = childs.map(child => child.id);
 
     await invoke("set_childs_on_label", { parentLabelId: parent.id, childLabelIds: childIds });
+}
+
+export async function editResource(resource: Resource): Promise<void>
+{
+    await invoke("edit_resource", {
+        resourceId: resource.id,
+        resourceName: resource.name,
+        resourceFlags: convertResourceFlagsToRaw(resource.flags),
+    });
+}
+
+export async function deleteResource(resource: Resource): Promise<void>
+{
+    await invoke("remove_resource", { resourceId: resource.id });
+}
+
+export async function addResource(name: string): Promise<Resource>
+{
+    let resourceId: number = await invoke("add_resource", { resourceName: name });
+    
+    return {
+        id: resourceId,
+        name: name,
+        flags: { completed: false },
+        groups: [],
+        createdAt: new Date(),
+    };
+}
+
+export async function openResourceFolder(resource: Resource): Promise<void>
+{
+    await invoke("open_resource_folder", { resourceId: resource.id });
 }

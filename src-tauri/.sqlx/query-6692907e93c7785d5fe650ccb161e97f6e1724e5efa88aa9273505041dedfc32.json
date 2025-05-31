@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE resources SET resource_name = ?, resource_flags = ? WHERE resource_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "6692907e93c7785d5fe650ccb161e97f6e1724e5efa88aa9273505041dedfc32"
+}

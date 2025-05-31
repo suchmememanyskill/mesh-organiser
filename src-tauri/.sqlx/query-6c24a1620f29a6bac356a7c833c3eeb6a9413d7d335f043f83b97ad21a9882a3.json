@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created,\n            models_group.group_id\n            FROM resources\n            LEFT JOIN models_group ON resources.resource_id = models_group.group_resource_id\n            ORDER BY resources.resource_name ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "resource_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "resource_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "resource_flags",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "resource_created",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "group_id",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "6c24a1620f29a6bac356a7c833c3eeb6a9413d7d335f043f83b97ad21a9882a3"
+}

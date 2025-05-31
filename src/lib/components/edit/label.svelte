@@ -92,7 +92,7 @@
                 <Label for="name">Name</Label>
                 <Input
                     id="name"
-                    placeholder="Name of the model"
+                    placeholder="Name of the label"
                     oninput={onUpdateLabel}
                     bind:value={tracked_label.name}
                 />

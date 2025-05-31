@@ -1,15 +1,23 @@
-export type RawFlag = 'Printed' | 'Favorite';
-export type RawFlags = RawFlag[];
+export type RawModelFlag = 'Printed' | 'Favorite';
+export type RawModedlFlags = RawModelFlag[];
 
-export interface Flags 
+export type RawResourceFlag = 'Completed';
+export type RawResourceFlags = RawResourceFlag[];
+
+export interface ModelFlags 
 {
     printed : boolean;
     favorite : boolean;
 }
 
-export function convertRawToFlags(raw : RawFlags) : Flags
+export interface ResourceFlags
 {
-    let flags : Flags = defaultFlags();
+    completed : boolean;
+}
+
+export function convertRawToModelFlags(raw : RawModedlFlags) : ModelFlags
+{
+    let flags : ModelFlags = defaultFlags();
 
     raw.forEach(flag => {
         switch (flag) {
@@ -25,9 +33,9 @@ export function convertRawToFlags(raw : RawFlags) : Flags
     return flags;
 }
 
-export function convertFlagsToRaw(flags : Flags) : RawFlags
+export function convertModelFlagsToRaw(flags : ModelFlags) : RawModedlFlags
 {
-    let raw_flags : RawFlags = [];
+    let raw_flags : RawModedlFlags = [];
 
     if (flags.printed)
     {
@@ -42,7 +50,36 @@ export function convertFlagsToRaw(flags : Flags) : RawFlags
     return raw_flags;
 }
 
-export function defaultFlags() : Flags
+export function convertRawToResourceFlags(raw : RawResourceFlags) : ResourceFlags
+{
+    let flags : ResourceFlags = {
+        completed: false,
+    };
+
+    raw.forEach(flag => {
+        switch (flag) {
+            case "Completed":
+                flags.completed = true;
+                break;
+        }
+    });
+
+    return flags;
+}
+
+export function convertResourceFlagsToRaw(flags : ResourceFlags) : RawResourceFlags
+{
+    let raw_flags : RawResourceFlags = [];
+
+    if (flags.completed)
+    {
+        raw_flags.push("Completed");
+    }
+
+    return raw_flags;
+}
+
+export function defaultFlags() : ModelFlags
 {
     return {
         printed : false,
@@ -69,6 +106,7 @@ export interface RawGroup
     id : number;
     name : string;
     created : string;
+    resource_id: number|null;
 }
 
 export interface RawModel 
@@ -83,7 +121,16 @@ export interface RawModel
     added : string;
     group? : RawGroup;
     labels : RawLabelMin[];
-    flags : RawFlags;
+    flags : RawModedlFlags;
+}
+
+export interface RawResource 
+{
+    id : number;
+    name : string;
+    flags : RawResourceFlags;
+    group_ids : number[];
+    created: string;
 }
 
 export interface LabelMin 
@@ -100,6 +147,15 @@ export interface Label extends LabelMin
     hasParent: boolean;
 }
 
+export interface Resource
+{
+    id : number;
+    name : string;
+    flags : ResourceFlags;
+    groups : GroupedEntry[];
+    createdAt: Date;
+}
+
 export interface Model 
 {
     id : number;
@@ -111,7 +167,7 @@ export interface Model
     description? : string;
     added : Date;
     labels : LabelMin[];
-    flags : Flags;
+    flags : ModelFlags;
 }
 
 export interface Group
@@ -119,7 +175,8 @@ export interface Group
     id : number;
     name : string;
     createdAt : Date;
-    flags : Flags;
+    resourceId: number|null;
+    flags : ModelFlags;
 }
 
 export interface GroupedEntry

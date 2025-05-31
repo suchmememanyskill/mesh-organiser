@@ -94,14 +94,12 @@
             url: "/printed",
             count: data.entries.filter(x => x.flags.printed).length,
         },
-        /*
         {
-            title: "Resources",
+            title: "Projects",
             icon: NotebookText,
             url: "/resource",
             count: 0,
         },
-        */
         {
             title: "Settings",
             icon: Settings,

@@ -24,6 +24,7 @@ pub struct AppState {
 }
 
 impl AppState {
+    // TODO: Change to pathbuf
     pub fn get_model_dir(&self) -> String {
         let mut path_buff = PathBuf::from(self.get_configuration().data_path.clone());
         path_buff.push("models");
@@ -35,6 +36,7 @@ impl AppState {
         String::from(path_buff.to_str().unwrap())
     }
 
+    // TODO: Change to pathbuf
     pub fn get_image_dir(&self) -> String {
         let mut path_buff = PathBuf::from(self.app_data_path.clone());
         path_buff.push("images");
@@ -44,6 +46,17 @@ impl AppState {
         }
 
         String::from(path_buff.to_str().unwrap())
+    }
+
+    pub fn get_resources_dir(&self) -> PathBuf {
+        let mut path_buff = PathBuf::from(self.get_configuration().data_path.clone());
+        path_buff.push("resources");
+
+        if !path_buff.exists() {
+            std::fs::create_dir_all(path_buff.clone()).expect("Failed to create resources directory");
+        }
+
+        path_buff
     }
 
     pub fn write_configuration(&self, new_configuration: &Configuration) -> bool {

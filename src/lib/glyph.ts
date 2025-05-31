@@ -1,6 +1,6 @@
 import type { IconProps } from "@lucide/svelte";
 import type { Component } from "svelte";
-import type { Flags } from "$lib/model";
+import type { ModelFlags } from "$lib/model";
 
 import PrinterCheck from "@lucide/svelte/icons/printer-check";
 import Star from "@lucide/svelte/icons/star";
@@ -15,7 +15,7 @@ export interface GlyphObject
     glyphClasses?: ClassValue;
 }
 
-export function flagsToGlyphObjects(flags: Flags): GlyphObject[]
+export function flagsToGlyphObjects(flags: ModelFlags): GlyphObject[]
 {
     const glyphs : GlyphObject[] = [];
 

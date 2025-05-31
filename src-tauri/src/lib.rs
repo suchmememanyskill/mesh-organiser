@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::{Arc, Mutex}, thread};
 
 use configuration::Configuration;
-use db::model::Flags;
+use db::{model::ModelFlags, resource::{Resource, ResourceFlags}};
 use error::ApplicationError;
 use serde::Serialize;
 use service::{
@@ -35,6 +35,7 @@ async fn add_model(
     let path_clone = String::from(path);
     let state_clone = state.real_clone();
 
+    // TODO: can this not just be removed?
     let result = tauri::async_runtime::spawn_blocking(move || {
         let result = model_service::import_path(&path_clone, &state_clone, &app_handle, recursive, delete_imported)?;
         let model_ids : Vec<i64> = result.iter().flat_map(|f| f.model_ids.clone()).collect();
@@ -67,7 +68,7 @@ async fn edit_model(
     model_name: &str,
     model_url: Option<&str>,
     model_description: Option<&str>,
-    model_flags : Flags,
+    model_flags : ModelFlags,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     db::model::edit_model(
@@ -219,9 +220,10 @@ async fn ungroup(group_id: i64, state: State<'_, AppState>) -> Result<(), Applic
 async fn edit_group(
     group_id: i64,
     group_name: &str,
+    group_resource_id: Option<i64>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
-    db::model_group::edit_group(group_id, group_name, &state.db).await;
+    db::model_group::edit_group(group_id, group_name, group_resource_id, &state.db).await;
 
     Ok(())
 }
@@ -524,6 +526,71 @@ async fn set_childs_on_label(
     Ok(())
 }
 
+#[tauri::command]
+async fn get_resources(state: State<'_, AppState>) -> Result<Vec<Resource>, ApplicationError> {
+    let resources = db::resource::get_resources(&state.db).await;
+
+    Ok(resources)
+}
+
+#[tauri::command]
+async fn add_resource(
+    resource_name: &str,
+    state: State<'_, AppState>,
+) -> Result<i64, ApplicationError> {
+    let id = db::resource::add_resource(resource_name, &state.db).await;
+
+    Ok(id)
+}
+
+#[tauri::command]
+async fn edit_resource(
+    resource_id: i64,
+    resource_name: &str,
+    resource_flags: ResourceFlags,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::resource::edit_resource(resource_id, resource_name, resource_flags, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn remove_resource(
+    resource_id: i64,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    let resource = db::resource::get_resource_by_id(resource_id, &state.db).await;
+
+    if resource.is_none() {
+        return Err(ApplicationError::InternalError(String::from("Resource not found")));
+    }
+
+    let resource = resource.unwrap();
+
+    service::resource_service::delete_resource_folder(&resource, &state).await?;
+    db::resource::delete_resource(resource.id, &state.db).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn open_resource_folder(
+    resource_id: i64,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    let resource = db::resource::get_resource_by_id(resource_id, &state.db).await;
+
+    if resource.is_none() {
+        return Err(ApplicationError::InternalError(String::from("Resource not found")));
+    }
+
+    let resource = resource.unwrap();
+
+    service::resource_service::open_resource_folder(&resource, &state).await?;
+    Ok(())
+}
+
 fn extract_deep_link(data: &str) -> Option<String> {
     let possible_starts = vec![
         "bambustudio://open/?file=",
@@ -736,6 +803,11 @@ pub fn run() {
             add_childs_to_label,
             remove_childs_from_label,
             set_childs_on_label,
+            get_resources,
+            add_resource,
+            edit_resource,
+            remove_resource,
+            open_resource_folder,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

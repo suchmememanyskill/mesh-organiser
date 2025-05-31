@@ -1,12 +1,13 @@
-import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault, convertRawToFlags, type LabelMin, type RawLabelMin } from "./model";
-import { getLabels, getModels, getConfig, setConfig } from "./tauri";
+import { type RawModel, type RawGroup, type RawLabel, type Group, type Label, type GroupedEntry, type Model, type ModelWithGroup, type LabelEntry, type Configuration, configurationDefault, convertRawToModelFlags, type LabelMin, type RawLabelMin, type Resource, convertRawToResourceFlags, type RawResource } from "./model";
+import { getLabels, getModels, getConfig, setConfig, getResources } from "./tauri";
 import { debounce } from "./utils";
 import { emit } from "@tauri-apps/api/event";
 
 export const data = $state({
     entries : [] as ModelWithGroup[],
     grouped_entries : [] as GroupedEntry[],
-    labels : [] as LabelEntry[]
+    labels : [] as LabelEntry[],
+    resources : [] as Resource[],
 });
 
 export let c = $state({
@@ -25,7 +26,7 @@ function convertModel(raw : RawModel) : Model
         description : raw.description,
         added : new Date(raw.added),
         labels : raw.labels.map(label => convertLabelMin(label)),
-        flags : convertRawToFlags(raw.flags),
+        flags : convertRawToModelFlags(raw.flags),
     };
 }
 
@@ -35,6 +36,7 @@ function convertGroup(raw : RawGroup) : Group
         id : raw.id,
         name : raw.name,
         createdAt : new Date(raw.created),
+        resourceId : raw.resource_id,
         flags : {
             printed : true,
             favorite : true,
@@ -120,6 +122,7 @@ function extractGroups(models : RawModel[]) : GroupedEntry[]
                     name: model.name,
                     createdAt: model.added,
                     flags: model.flags,
+                    resourceId: null,
                 },
                 models: [model],
                 labels: model.labels,
@@ -148,19 +151,45 @@ function extractModels(models : RawModel[]) : ModelWithGroup[]
     });
 }
 
+function extractResources(rawResources : RawResource[], groupedEntries : GroupedEntry[]) : Resource[]
+{
+    let groupMap : Map<number, GroupedEntry> = new Map();
+
+    groupedEntries.forEach(group => {
+        groupMap.set(group.group.id, group);
+    });
+
+    return rawResources.map(rawResource => {
+        let groups = rawResource.group_ids.map(groupId => groupMap.get(groupId)) as GroupedEntry[];
+
+        let resource: Resource = {
+            id: rawResource.id,
+            name: rawResource.name,
+            flags: convertRawToResourceFlags(rawResource.flags),
+            groups: groups.filter(group => group !== undefined),
+            createdAt: new Date(rawResource.created),
+        };
+
+        groups.forEach(group => group.group.resourceId = resource.id);
+        return resource;
+    });
+}
+
 export async function updateState() : Promise<void>
 {
     let start = performance.now();
-    let raw_models = await getModels();
-    let raw_labels = await getLabels();
+    let rawModels = await getModels();
+    let rawLabels = await getLabels();
+    let rawResources = await getResources();
     let afterFetch = performance.now();
-    console.log(raw_labels);
+    console.log(rawLabels);
     
-    let model_groups = extractGroups(raw_models);
-    let models = extractModels(raw_models);
+    let modelGroups = extractGroups(rawModels);
+    let models = extractModels(rawModels);
+    let resources = extractResources(rawResources, modelGroups);
 
     // TODO: Make this more efficient
-    let labels : LabelEntry[] = raw_labels.map(raw_label => {
+    let labels : LabelEntry[] = rawLabels.map(raw_label => {
         let label = convertLabel(raw_label);
         
         let filtered_models = models.filter(model => model.labels.some(l => label.effectiveLabels.some(el => el.id === l.id)));
@@ -189,7 +218,7 @@ export async function updateState() : Promise<void>
         for (const [key, value] of Object.entries(grouped_filtered_models))
         {
             const group_id = parseInt(key);
-            const group = model_groups.find(g => g.group.id === group_id);
+            const group = modelGroups.find(g => g.group.id === group_id);
 
             if (group && group.total === (value as Model[]).length)
             {
@@ -208,6 +237,7 @@ export async function updateState() : Promise<void>
                     name: model.name,
                     createdAt: model.added,
                     flags: model.flags,
+                    resourceId: null,
                 },
                 labels : model.labels,
                 models : [model],
@@ -223,13 +253,10 @@ export async function updateState() : Promise<void>
         };
     });
 
-    console.log(model_groups);
-    console.log(models);
-    console.log(labels);
-
     data.entries = models;
-    data.grouped_entries = model_groups;
+    data.grouped_entries = modelGroups;
     data.labels = labels;
+    data.resources = resources;
 
     console.log("Update took", performance.now() - start, "ms,", afterFetch - start, "ms for fetching data.");
     await emit("state-change", {});

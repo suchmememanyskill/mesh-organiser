@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, model_size, model_flags,\n                labels.label_id, label_name, label_color,\n                models_group.group_id, group_name, group_created\n         FROM models \n         LEFT JOIN models_labels ON models.model_id = models_labels.model_id \n         LEFT JOIN labels ON models_labels.label_id = labels.label_id\n         LEFT JOIN models_group ON models.model_group_id = models_group.group_id",
+  "query": "SELECT models.model_id, model_name, model_sha256, model_filetype, model_url, model_desc, model_group_id, model_added, model_size, model_flags,\n                labels.label_id, label_name, label_color,\n                models_group.group_id, group_name, group_created, group_resource_id\n         FROM models \n         LEFT JOIN models_labels ON models.model_id = models_labels.model_id \n         LEFT JOIN labels ON models_labels.label_id = labels.label_id\n         LEFT JOIN models_group ON models.model_group_id = models_group.group_id",
   "describe": {
     "columns": [
       {
@@ -82,6 +82,11 @@
         "name": "group_created",
         "ordinal": 15,
         "type_info": "Text"
+      },
+      {
+        "name": "group_resource_id",
+        "ordinal": 16,
+        "type_info": "Integer"
       }
     ],
     "parameters": {
@@ -103,8 +108,9 @@
       true,
       false,
       true,
+      true,
       true
     ]
   },
-  "hash": "0591038c30cc1561ba411643062ff65e49fdb63e3a0d2b33f51da7dafe6d91a5"
+  "hash": "10dd6644642d6bf3dd69129e91337229ecdb94a5c9c154a3bf90c8062f7c9586"
 }

@@ -13,14 +13,14 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { ungroup, editGroup, openInSlicer, openInFolder, editModel } from "$lib/tauri";
+    import { ungroup, editGroup, openInSlicer, openInFolder, editModel, addResource, openResourceFolder } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import { data, updateState } from "$lib/data.svelte";
-    import { buttonVariants } from "$lib/components/ui/button/index.js";
-    import { onMount } from "svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import LinkButton from "$lib/components/view/link-button.svelte";
+    import Button from "../ui/button/button.svelte";
+    import ResourceSelect from "$lib/components/view/resource-select.svelte";
 
     const props: { group: Group; class?: ClassValue; settingsVertical?: boolean } = $props();
     const tracked_group = $derived(props.group);
@@ -86,6 +86,23 @@
         const link_snapshot = $state.snapshot(link);
         save_link_on_models_debounced(snapshot, link_snapshot);
     }
+
+    async function onNewResource()
+    {
+        let snapshot = $state.snapshot(tracked_group);   
+        let resource = await addResource(tracked_group.name);
+        snapshot.resourceId = resource.id;
+        await editGroup(snapshot);
+        await updateState();
+    }
+
+    async function openResourceInFolder()
+    {
+        let resource = data.resources.find(r => r.id === tracked_group.resourceId);
+        if (resource) {
+            await openResourceFolder(resource);
+        }
+    }
 </script>
 
 {#if deleted}
@@ -95,7 +112,11 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative">
-            <CardTitle class="mr-10">Group '{tracked_group.name}'</CardTitle>
+            <div class="{props.settingsVertical ? "grid grid-cols-1 mr-10" : "flex flex-row"} gap-2">
+                <CardTitle>Group '{tracked_group.name}'</CardTitle>
+                <p class="ml-2 text-xs font-thin my-auto">Created {tracked_group.createdAt.toLocaleDateString()}</p>
+            </div>
+            
             <div class="absolute right-0 top-5 mr-8">
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger>
@@ -110,7 +131,7 @@
             </div>
         </CardHeader>
         <CardContent class="text-sm">
-            <div class="{props.settingsVertical ? "grid w-full items-center gap-4" : "grid grid-cols-2 gap-4" }">
+            <div class="{props.settingsVertical ? "grid w-full items-center gap-4" : "grid grid-cols-3 gap-4" }">
                 <div class="flex flex-col space-y-1.5">
                     <Label for="name">Name</Label>
                     <Input
@@ -144,6 +165,20 @@
 
                             <LinkButton link={link} />
                         {/if} 
+                    </div>
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                    <Label>Project</Label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <ResourceSelect clazz="truncate" onchange={onUpdateGroup} availableResources={data.resources.filter(x => !x.flags.completed || x.id === tracked_group.resourceId)} bind:value={
+                            () => data.resources.find(r => r.id === tracked_group.resourceId) || null,
+                            (val) => tracked_group.resourceId = val?.id || null
+                        } />
+                        {#if tracked_group.resourceId}
+                            <Button class="h-full" onclick={openResourceInFolder}>Open project folder</Button>
+                        {:else}
+                            <Button class="h-full" onclick={onNewResource}>Create project</Button>
+                        {/if}
                     </div>
                 </div>
             </div>
