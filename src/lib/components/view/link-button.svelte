@@ -15,7 +15,7 @@
 
 </script>
 
-{#if (props.visible ?? true) && !!props.link}
+{#if (props.visible ?? !!props.link)}
     {#if c.configuration.open_links_in_external_browser}
         <a href="{props.link}" target="_blank" class="{buttonVariants({ variant: "default"})}"><Link /> Open Link</a>
     {:else}

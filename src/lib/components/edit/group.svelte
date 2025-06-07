@@ -153,7 +153,7 @@
 
 {#snippet ViewContent()}
     <div class="grid grid-cols-2 gap-4">
-        <LinkButton link={link} />
+        <LinkButton link={link} visible={true} />
         <Button disabled={!tracked_group.resourceId} onclick={openResourceInFolder}><NotebookText /> Open project</Button>
     </div>
 {/snippet}
