@@ -7,13 +7,13 @@ Competes with your downloads folder for storing models.
 ## Install
 
 Download for:
-- [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.4.0/Mesh.Organiser_1.4.0_x64_en-US.msi) (.msi)
+- [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.5.0/Mesh.Organiser_1.5.0_x64_en-US.msi) (.msi)
 - Macos
-    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.4.0/Mesh.Organiser_1.4.0_aarch64.dmg)
-    - [x64/Intel based chips](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.4.0/Mesh.Organiser_1.4.0_x64.dmg)
+    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.5.0/Mesh.Organiser_1.5.0_aarch64.dmg)
+    - [x64/Intel based chips](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.5.0/Mesh.Organiser_1.5.0_x64.dmg)
 - Linux
-    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.4.0/Mesh.Organiser_1.4.0_amd64.deb) (.deb)
-    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.4.0/Mesh.Organiser-1.4.0-1.x86_64.rpm) (.rpm)
+    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.5.0/Mesh.Organiser_1.5.0_amd64.deb) (.deb)
+    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.5.0/Mesh.Organiser-1.5.0-1.x86_64.rpm) (.rpm)
     - Note: Only slicers installed via flatpak are supported
 
 See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases) tab for more downloads and release notes
@@ -45,18 +45,20 @@ Note: To open 'Open in ...' links from these websites, you need to enable them i
 
 ## Structure breakdown
 
-The app knows 3 layers of organisation:
+The app knows 4 layers of organisation:
 - Model: A singular 3d model of any kind
 - Group: A collection of 3d models with a strong relationship (like multiple parts of a bigger model)
     - Groups their contents are not intended to be edited after creation. Use Labels for this goal.
 - Label: A collection of 3d models with a weak relationship (like multiple models/groups of the same type; like 'wall art' or 'puzzle')
     - Labels thier contents can be edited at any time using the label dropdown menu on groups, models or a collection of models.
+- Project: A collection of groups needed to complete a project. Also offers a folder to store instructions (.pdf), or other misc files.
 
 ## Additional features
 
 - Compresses imported models to save disk space
 - Hold Shift/Control to select multiple models or groups at once
 - Import .step files (thumbnail generation does not work yet for .step files) (see settings, disabled by default)
+- Import .gcode files
 - Open slicer after importing from website (see settings, disabled by default)
 - Supported slicers: PrusaSlicer, OrcaSlicer, Cura, Bambu Studio
     - Request more via the [Issues tab](https://github.com/suchmememanyskill/mesh-organiser/issues)
