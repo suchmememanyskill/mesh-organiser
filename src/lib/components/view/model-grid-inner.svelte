@@ -21,30 +21,8 @@
     } = $props();
 
     let limit = $state(100);
-
     let scrollContainer : HTMLElement;
 
-    let is_shift_pressed = false;
-    let is_control_pressed = false;
-
-    function onKeyDown(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = true;
-        } else if (event.key === "Control") {
-            is_control_pressed = true;
-        }
-    }
-
-    function onKeyUp(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = false;
-        } else if (event.key === "Control") {
-            is_control_pressed = false;
-        }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
     const interval = setInterval(handleScroll, 1000);
 
     let destroyStateChangeListener: UnlistenFn | null = null;
@@ -57,8 +35,6 @@
     });
 
     onDestroy(async () => {
-        window.removeEventListener("keydown", onKeyDown);
-        window.removeEventListener("keyup", onKeyUp);
         clearInterval(interval);
 
         if (destroyStateChangeListener) 
@@ -75,8 +51,8 @@
         }
     }
 
-    async function onClick(model: Model, event : any) {
-        if (is_shift_pressed && value.length === 1)
+    async function onClick(model: Model, event : MouseEvent) {
+        if (event.shiftKey && value.length === 1)
         {
             let start = availableModels.indexOf(value[0]);
             let end = availableModels.indexOf(model);
@@ -93,7 +69,7 @@
 
             value = availableModels.slice(start, end + 1);
         }
-        else if (is_control_pressed)
+        else if (event.ctrlKey || event.metaKey)
         {
             if (value.some(x => x.id === model.id))
             {
@@ -115,10 +91,13 @@
                 value = [model];
 
                 setTimeout(() => {
-                    event.target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                    });
+                    if (event.target instanceof HTMLElement)
+                    {
+                        event.target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                        });
+                    }
                 }, 30);
             }
         }

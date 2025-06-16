@@ -147,7 +147,7 @@
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
                         <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
-                            <GroupIcon /> Create new group wtih model
+                            <GroupIcon /> Create new group with model
                         </DropdownMenu.Item>
                         <DropdownMenu.Item onclick={onUngroup} disabled={!group}>
                             <Ungroup /> Remove from current group

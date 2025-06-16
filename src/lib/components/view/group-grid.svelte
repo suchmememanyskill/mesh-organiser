@@ -110,28 +110,6 @@
             });
     });
 
-
-    let is_shift_pressed = false;
-    let is_control_pressed = false;
-
-    function onKeyDown(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = true;
-        } else if (event.key === "Control") {
-            is_control_pressed = true;
-        }
-    }
-
-    function onKeyUp(event: KeyboardEvent) {
-        if (event.key === "Shift") {
-            is_shift_pressed = false;
-        } else if (event.key === "Control") {
-            is_control_pressed = false;
-        }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
     const interval = setInterval(handleScroll, 1000);
 
     let destroyStateChangeListener: UnlistenFn | null = null;
@@ -144,16 +122,14 @@
     });
 
     onDestroy(() => {
-        window.removeEventListener("keydown", onKeyDown);
-        window.removeEventListener("keyup", onKeyUp);
         clearInterval(interval);
 
         if (destroyStateChangeListener) 
             destroyStateChangeListener();
     });
 
-    async function onClick(group: GroupedEntry, event : any) {
-        if (is_shift_pressed && selected.length === 1)
+    async function onClick(group: GroupedEntry, event : MouseEvent) {
+        if (event.shiftKey && selected.length === 1)
         {
             let start = filteredCollection.indexOf(selected[0]);
             let end = filteredCollection.indexOf(group);
@@ -170,7 +146,7 @@
 
             selected = filteredCollection.slice(start, end + 1);
         }
-        else if (is_control_pressed)
+        else if (event.ctrlKey || event.metaKey)
         {
             if (selected.some(x => x.group.id == group.group.id))
             {
@@ -192,10 +168,13 @@
                 selected = [group];
 
                 setTimeout(() => {
-                    event.target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                    });
+                    if (event.target instanceof HTMLElement)
+                    {
+                        event.target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                        });
+                    }
                 }, 30);
             }
         }
