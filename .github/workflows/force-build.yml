@@ -1,0 +1,89 @@
+name: 'force-build'
+
+on: workflow_dispatch
+
+env:
+  MESH_THUMBNAIL_REPO: suchmememanyskill/mesh-thumbnail
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: win-amd64
+            target: x86_64-pc-windows-gnu
+            os: windows-latest
+            args: ''
+          - name: linux-amd64
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            args: ''
+          - name: macos-amd64
+            target: x86_64-apple-darwin
+            os: macos-latest
+            args: '--target x86_64-apple-darwin'
+          - name: macos-arm64
+            target: aarch64-apple-darwin
+            os: macos-latest
+            args: '--target aarch64-apple-darwin'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: download mesh-thumbnail (not windows)
+        if: matrix.os != 'windows-latest'
+        run: |
+          mkdir external-binaries
+          cd external-binaries
+          wget https://github.com/${{ env.MESH_THUMBNAIL_REPO }}/releases/latest/download/mesh-thumbnail-${{ matrix.target }}
+          chmod a+x mesh-thumbnail-${{ matrix.target }}
+
+      - name: download mesh-thumbnail (windows only)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir external-binaries
+          cd external-binaries
+          #TODO: build mesh-thumbnail for windows with msvc instead of gnu in mesh-thumbnail
+          curl -L -o mesh-thumbnail-x86_64-pc-windows-msvc.exe https://github.com/${{ env.MESH_THUMBNAIL_REPO }}/releases/latest/download/mesh-thumbnail-${{ matrix.target }}.exe
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.name == 'linux-amd64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: install frontend dependencies
+        run: pnpm install
+
+      - uses: tauri-apps/tauri-action@v0
+        id: build-step
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          args: ${{ matrix.args }}
+      
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-build-${{ matrix.name }}
+          path: ${{ steps.build-step.outputs.artifactPaths }}
