@@ -76,7 +76,6 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         id: build-step
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
@@ -86,4 +85,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tauri-build-${{ matrix.name }}
-          path: ${{ steps.build-step.outputs.artifactPaths }}
+          path: src-tauri/target/release/bundle/**/*
