@@ -22,6 +22,8 @@
     import { updateState, data, c } from "$lib/data.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
+    import Button, { buttonVariants } from "../ui/button/button.svelte";
+    import Edit from "@lucide/svelte/icons/edit";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import { AsyncButton } from "$lib/components/ui/button/index.js";
     import { toReadableSize, instanceOfModelWithGroup, loadModelAutomatically, isModelPreviewable } from "$lib/utils";
@@ -43,6 +45,7 @@
 
     let model : Model = $derived(props.model);
     let load3dPreview = $derived(loadModelAutomatically($state.snapshot(c.configuration), model));
+    let editMode = $state(false);
 
     let group : Group | null = $derived.by(() => {
         if (instanceOfModelWithGroup(props.model)) {
@@ -134,30 +137,39 @@
                 <Badge class="h-fit my-auto text-sm {fileTypeToColor(model.filetype)}">{fileTypeToDisplayName(model.filetype)}</Badge>
             </div>
 
-            <div class="absolute right-0 mr-8 flex flex-row gap-2 h-9">
+            <div class="absolute right-0 mr-6 flex flex-row gap-2 h-9">
                 <Toggle size="sm" class={isModelPreviewable(model) ? "" : "hidden"} bind:pressed={
                     () => load3dPreview,
                     (val) => load3dPreview = val
                 }>
                     <Box />
                 </Toggle>
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger>
-                        <Ellipsis />
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content side="right" align="start">
-                        <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
-                            <GroupIcon /> Create new group with model
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item onclick={onUngroup} disabled={!group}>
-                            <Ungroup /> Remove from current group
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Item onclick={onDelete}>
-                            <Trash2 /> Delete model
-                        </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
+
+                <LinkButton link={model.link} class="h-full widthhack" variant="ghost" withText={false} withFallback={true}  />
+
+                {#if editMode}
+                    <DropdownMenu.Root>
+                        <DropdownMenu.Trigger>
+                            <div class="{buttonVariants({ variant: "ghost"})} widthhack h-full">
+                                <Ellipsis />
+                            </div>
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content side="right" align="start">
+                            <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
+                                <GroupIcon /> Create new group with model
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item onclick={onUngroup} disabled={!group}>
+                                <Ungroup /> Remove from current group
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.Item onclick={onDelete}>
+                                <Trash2 /> Delete model
+                            </DropdownMenu.Item>
+                        </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                {:else}
+                    <Button size="sm" variant="ghost" class="h-full aspect-square widthhack" onclick={() => editMode = true}><Edit /></Button>
+                {/if}
             </div>
         </CardHeader>
         <CardContent class="text-sm pt-4">
@@ -165,68 +177,94 @@
                 <AsyncButton class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</AsyncButton>
                 <AsyncButton class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</AsyncButton>
             </div>
-            <div class="grid w-full items-center gap-4">
-                <div class="flex flex-col space-y-1.5">
-                    <Label for="name">Name</Label>
-                    <Input
-                        id="name"
-                        placeholder="Name of the model"
-                        bind:value={model.name}
-                        oninput={onUpdateModel}
-                    />
-                </div>
-                <div class="flex flex-col space-y-1.5">
-                    <Label for="link">
-                        Link/Url
-                    </Label>
-                    <div class="flex flex-row gap-2">
-                        <Input
-                            id="link"
-                            placeholder="Where did this model come from?"
-                            bind:value={model.link}
-                            oninput={onUpdateModel}
-                        />
 
-                        <LinkButton link={model.link} />
+            {#if editMode}
+                {@render EditContent()}
+            {:else}
+                {@render ViewContent()}
+            {/if}
+
+            <div class="flex flex-col space-y-1.5 mt-4">
+                <div class="grid grid-cols-2 text-sm">
+                    <div class="text-left space-y-1">
+                        <div>Date added</div>
+                        <div>Size</div>
+                        <div>Group</div>
                     </div>
-                </div>
-
-                <div class="flex flex-col space-y-1.5">
-                    <Label>Labels</Label>
-                    <LabelSelect onchange={onUpdateModel} availableLabels={data.labels.map(x => x.label)} bind:value={model.labels} />
-                </div>
-                <div class="flex flex-col space-y-1.5">
-                    <Label for="description">Description</Label>
-                    <Textarea
-                        id="description"
-                        placeholder="Description of the model"
-                        bind:value={model.description}
-                        oninput={onUpdateModel} />
-                </div>
-                <div class="flex flex-col gap-3">
-                    <Label>Properties</Label>
-                    <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Printed" bind:value={model.flags.printed} />
-                    <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Favorite" bind:value={model.flags.favorite} />
-                </div>
-                <div class="flex flex-col space-y-1.5">
-                    <div class="grid grid-cols-2 text-sm">
-                        <div class="text-left space-y-1">
-                            <div>Date added</div>
-                            <div>Size</div>
-                            <div>Group</div>
-                        </div>
-                        <div class="text-right space-y-1">
-                            <div>{model.added.toLocaleDateString()}</div>
-                            <div>{toReadableSize(model.size)}</div>
-                            {#if group}
-                                <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
-                            {:else}
-                                <div>None</div>
-                            {/if}
-                        </div>
+                    <div class="text-right space-y-1">
+                        <div>{model.added.toLocaleDateString()}</div>
+                        <div>{toReadableSize(model.size)}</div>
+                        {#if group}
+                            <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
+                        {:else}
+                            <div>None</div>
+                        {/if}
                     </div>
                 </div>
             </div>
         </CardContent>
     </Card>
 {/if}
+
+{#snippet ViewContent()}
+    <div class="grid w-full items-center gap-2">
+        <h1 class="text-2xl font-semibold">{model.name}</h1>
+        {#if model.description}
+            <p class="whitespace-pre-wrap">{model.description}</p>
+        {/if}
+        {#if model.labels.length > 0}
+            <div class="flex flex-row flex-wrap gap-2 mt-2">
+                {#each model.labels as label}
+                    <LabelBadge label={label!} />
+                {/each}
+            </div>
+        {/if}
+    </div>
+{/snippet}
+
+{#snippet EditContent()}
+    <div class="grid w-full items-center gap-4">
+        <div class="flex flex-col space-y-1.5">
+            <Label for="name">Name</Label>
+            <Input
+                id="name"
+                placeholder="Name of the model"
+                bind:value={model.name}
+                oninput={onUpdateModel}
+            />
+        </div>
+        <div class="flex flex-col space-y-1.5">
+            <Label for="link">
+                Link/Url
+            </Label>
+            <div class="flex flex-row gap-2">
+                <Input
+                    id="link"
+                    placeholder="Where did this model come from?"
+                    bind:value={model.link}
+                    oninput={onUpdateModel}
+                />
+
+                <LinkButton link={model.link} />
+            </div>
+        </div>
+
+        <div class="flex flex-col space-y-1.5">
+            <Label>Labels</Label>
+            <LabelSelect onchange={onUpdateModel} availableLabels={data.labels.map(x => x.label)} bind:value={model.labels} />
+        </div>
+        <div class="flex flex-col space-y-1.5">
+            <Label for="description">Description</Label>
+            <Textarea
+                id="description"
+                placeholder="Description of the model"
+                bind:value={model.description}
+                oninput={onUpdateModel} />
+        </div>
+        <div class="flex flex-col gap-3">
+            <Label>Properties</Label>
+            <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Printed" bind:value={model.flags.printed} />
+            <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Favorite" bind:value={model.flags.favorite} />
+        </div>
+    </div>
+{/snippet}

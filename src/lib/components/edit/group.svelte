@@ -137,7 +137,7 @@
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
                 {:else}
-                    <Button size="sm" variant="ghost" onclick={() => editMode = true}><Edit /></Button>
+                    <Button size="sm" class="widthhack" variant="ghost" onclick={() => editMode = true}><Edit /></Button>
                 {/if}
             </div>
         </CardHeader>

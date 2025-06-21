@@ -91,6 +91,11 @@ body.sauce
     border-style: solid;
 }
 
+.widthhack
+{
+    width: 36px;
+}
+
 @layer base {
   * {
     @apply border-border;
