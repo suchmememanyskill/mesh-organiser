@@ -155,6 +155,9 @@
                             </div>
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Content side="right" align="start">
+                            <DropdownMenu.Item onclick={() => editMode = false}>
+                                <Edit /> Disable edit mode
+                            </DropdownMenu.Item>
                             <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
                                 <GroupIcon /> Create new group with model
                             </DropdownMenu.Item>
