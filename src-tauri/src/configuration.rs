@@ -40,6 +40,7 @@ pub struct StoredConfiguration {
     pub custom_slicer_path: Option<String>,
     pub elegoo_deep_link: Option<bool>,
     pub group_split_view : Option<String>,
+    pub label_exported_model_as_printed: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -76,6 +77,7 @@ pub struct Configuration {
     pub custom_slicer_path: String,
     pub elegoo_deep_link: bool,
     pub group_split_view: String,
+    pub label_exported_model_as_printed : bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -158,6 +160,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         group_split_view: configuration
             .group_split_view
             .unwrap_or(default.group_split_view),
+        label_exported_model_as_printed: configuration
+            .label_exported_model_as_printed
+            .unwrap_or(default.label_exported_model_as_printed),
     }
 }
 
@@ -198,6 +203,7 @@ impl Default for Configuration {
             custom_slicer_path: String::new(),
             elegoo_deep_link: false,
             group_split_view: String::from("no_split"),
+            label_exported_model_as_printed: false,
         }
     }
 }

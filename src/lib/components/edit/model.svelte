@@ -12,6 +12,7 @@
     import type { Model, Group, ModelWithGroup } from "$lib/model";
     import FolderOpen from "@lucide/svelte/icons/folder-open";
     import Slice from "@lucide/svelte/icons/slice";
+    import ListCheck from "@lucide/svelte/icons/list-check";
     import { Textarea } from "$lib/components/ui/textarea/index.js";
 
     import { debounce, isModelSlicable, fileTypeToColor, fileTypeToDisplayName } from "$lib/utils";
@@ -82,11 +83,21 @@
 
     async function onOpenInSlicer()
     {
+        if (c.configuration.label_exported_model_as_printed && !model.flags.printed) {
+            model.flags.printed = true;
+            await onUpdateModel();
+        }
+
         await openInSlicer([model]);
     }
 
     async function onOpenInFolder()
     {
+        if (c.configuration.label_exported_model_as_printed && !model.flags.printed) {
+            model.flags.printed = true;
+            await onUpdateModel();
+        }
+
         await openInFolder([model]);
     }
 
@@ -138,6 +149,28 @@
             </div>
 
             <div class="absolute right-0 mr-6 flex flex-row gap-2 h-9">
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                        {#snippet child({ props })}
+                            <Button {...props} class="h-full widthhack" variant="ghost"> 
+                                <ListCheck />
+                            </Button>
+                        {/snippet}
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content class="w-56">
+                        <DropdownMenu.Group>
+                            <DropdownMenu.Label>Properties</DropdownMenu.Label>
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.CheckboxItem onchange={onUpdateModel} bind:checked={model.flags.printed}>
+                                Printed
+                            </DropdownMenu.CheckboxItem>
+                            <DropdownMenu.CheckboxItem onchange={onUpdateModel} bind:checked={model.flags.favorite}>
+                                Favorite
+                            </DropdownMenu.CheckboxItem>
+                        </DropdownMenu.Group>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+
                 <Toggle size="sm" class={isModelPreviewable(model) ? "" : "hidden"} bind:pressed={
                     () => load3dPreview,
                     (val) => load3dPreview = val
@@ -263,11 +296,6 @@
                 placeholder="Description of the model"
                 bind:value={model.description}
                 oninput={onUpdateModel} />
-        </div>
-        <div class="flex flex-col gap-3">
-            <Label>Properties</Label>
-            <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Printed" bind:value={model.flags.printed} />
-            <CheckboxWithLabel onchange={onUpdateModel} class="ml-1" label="Favorite" bind:value={model.flags.favorite} />
         </div>
     </div>
 {/snippet}

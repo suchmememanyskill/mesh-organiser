@@ -339,6 +339,7 @@
                 <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
                 <CheckboxWithLabel bind:value={c.configuration.open_links_in_external_browser} label="Open links in external browser" />
                 <CheckboxWithLabel bind:value={c.configuration.only_show_single_image_in_groups} label="Only show first image of group" />
+                <CheckboxWithLabel bind:value={c.configuration.label_exported_model_as_printed} label="Label exported models as printed" />
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Split group view</Label>
