@@ -3,7 +3,7 @@
     import type { GroupedEntry } from "$lib/model";
     import EditGroup from "$lib/components/edit/group.svelte"
 
-    const props: { group: GroupedEntry|undefined|null } = $props();
+    const props: { group: GroupedEntry|undefined|null, initialEditMode?: boolean } = $props();
     const group = $derived(props.group);
 
 </script>
@@ -12,7 +12,7 @@
     <div class="w-full h-full flex flex-col">
         <EditGroup class="my-3 mx-4" group={group.group} />
         <div class="overflow-hidden">
-            <ModelGrid models={group.models} default_show_multiselect_all={true} />
+            <ModelGrid initialEditMode={props.initialEditMode} models={group.models} default_show_multiselect_all={true} />
         </div>
     </div>
 {:else}

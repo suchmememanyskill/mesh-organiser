@@ -14,7 +14,7 @@
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
 
-    const props: { models: Model[], default_show_multiselect_all? : boolean } = $props();
+    const props: { models: Model[], default_show_multiselect_all? : boolean, initialEditMode? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
 
     interface SearchFilters {
@@ -131,9 +131,9 @@
         {#if selected.length >= 2}
             <MultiModelEdit models={selected} />
         {:else if selected.length === 1}
-            <ModelEdit model={selected[0]} />
+            <ModelEdit initialEditMode={props.initialEditMode} model={selected[0]} />
         {:else if filteredCollection.length === 1}
-            <ModelEdit model={filteredCollection[0]} />
+            <ModelEdit initialEditMode={props.initialEditMode} model={filteredCollection[0]} />
         {:else if props.default_show_multiselect_all }
             <MultiModelEdit models={filteredCollection} />
         {:else}

@@ -339,11 +339,11 @@
             </div>
             {#if imported_groups.length === 1}
                 <div class="overflow-hidden">
-                    <GroupPage group={imported_groups[0]} />
+                    <GroupPage initialEditMode={true} group={imported_groups[0]} />
                 </div>
             {:else}
                 <div class="overflow-hidden flex-grow w-full">
-                    <ModelGrid models={imported_models} default_show_multiselect_all={true}  />
+                    <ModelGrid models={imported_models} default_show_multiselect_all={true} initialEditMode={true}  />
                 </div>
             {/if}
         </div>

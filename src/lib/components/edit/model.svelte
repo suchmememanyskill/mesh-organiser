@@ -41,12 +41,12 @@
     import LabelSelect from "$lib/components/view/label-select.svelte";
     import { goto } from "$app/navigation";
     
-    const props: { model: Model|ModelWithGroup; class?: ClassValue } = $props();
+    const props: { model: Model|ModelWithGroup; class?: ClassValue, initialEditMode? : boolean } = $props();
     let deleted = $derived({ deleted: !props.model });
 
     let model : Model = $derived(props.model);
     let load3dPreview = $derived(loadModelAutomatically($state.snapshot(c.configuration), model));
-    let editMode = $state(false);
+    let editMode = $state(props.initialEditMode ?? false);
 
     let group : Group | null = $derived.by(() => {
         if (instanceOfModelWithGroup(props.model)) {
