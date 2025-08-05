@@ -15,6 +15,7 @@
     import ListCheck from "@lucide/svelte/icons/list-check";
     import { Textarea } from "$lib/components/ui/textarea/index.js";
 
+    import * as HoverCard from "$lib/components/ui/hover-card/index.js";
     import { debounce, isModelSlicable, fileTypeToColor, fileTypeToDisplayName } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
     import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup, addEmptyGroup, addModelsToGroup } from "$lib/tauri";
@@ -177,8 +178,21 @@
                 }>
                     <Box />
                 </Toggle>
+                
+                {#if !!model.link}
+                    <HoverCard.Root>
+                        <HoverCard.Trigger>
+                            <LinkButton link={model.link} class="h-full widthhack" variant="ghost" withText={false} withFallback={true}  />
+                        </HoverCard.Trigger>
+                        <HoverCard.Content class="w-fit text-sm whitespace-nowrap">
+                            { model.link }
+                        </HoverCard.Content>
+                    </HoverCard.Root>
+                {:else}
+                    <LinkButton link={model.link} class="h-full widthhack" variant="ghost" withText={false} withFallback={true}  />
+                {/if}
 
-                <LinkButton link={model.link} class="h-full widthhack" variant="ghost" withText={false} withFallback={true}  />
+                
 
                 {#if editMode}
                     <DropdownMenu.Root>
