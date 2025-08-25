@@ -1,9 +1,11 @@
 use super::app_state::AppState;
 use crate::configuration::Configuration;
-use crate::db::model_group;
+use crate::db::{label, label_keywords, model_group};
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use crate::{db::model, error::ApplicationError};
+use indexmap::IndexMap;
+use itertools::Itertools;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::fs::{self, read_dir, File};
@@ -29,19 +31,21 @@ pub fn import_path(
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let configuration = app_state.get_configuration();
+    let creation_result : Vec<CreationResult>;
 
     if path_buff.is_dir() {
-
         if recursive
         {
-            return import_models_from_dir_recursive(&path_buff, app_state, app_handle, delete_imported);
+            creation_result = import_models_from_dir_recursive(&path_buff, app_state, app_handle, delete_imported)?;
         }
-
-        let result = import_models_from_dir(path, &name, &app_state, &app_handle, delete_imported)?;
-        return Ok(vec![result]);
+        else 
+        {
+            let result = import_models_from_dir(path, &name, &app_state, &app_handle, delete_imported)?;
+            creation_result = vec![result];
+        }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
         let result = import_models_from_zip(path, &name, &app_state, &app_handle, delete_imported)?;
-        return Ok(vec![result]);
+        creation_result = vec![result];
     } else if is_supported_extension(&path_buff, &configuration) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
@@ -57,15 +61,68 @@ pub fn import_path(
             let _ = fs::remove_file(&path_buff);
         }
 
-        return Ok(vec![CreationResult {
+        creation_result = vec![CreationResult {
             group_id: None,
             model_ids: vec![result],
-        }]);
+        }];
+    }
+    else 
+    {
+        return Err(ApplicationError::InternalError(String::from(
+            "Unsupported file type",
+        )));
     }
 
-    return Err(ApplicationError::InternalError(String::from(
-        "Unsupported file type",
-    )));
+    add_labels_by_keywords(&creation_result, app_state);
+
+    Ok(creation_result)
+}
+
+pub fn add_labels_by_keywords(
+    new_models: &Vec<CreationResult>,
+    app_state: &AppState,
+)
+{
+    let db = &app_state.db;
+    let model_ids = new_models.iter().flat_map(|r| r.model_ids.iter()).cloned().unique().collect::<Vec<i64>>();
+    let models = model::get_models_by_id_sync(model_ids, db);
+
+    let all_keywords = label_keywords::get_all_keywords_sync(db);
+    let mut all_keywords_map: IndexMap<String, Vec<i64>> = IndexMap::new();
+
+    for keyword in all_keywords.iter()
+    {
+        if all_keywords_map.contains_key(&keyword.name)
+        {
+            all_keywords_map[&keyword.name].push(keyword.label_id);
+        }
+        else 
+        {
+            all_keywords_map.insert(keyword.name.clone(), vec![keyword.label_id]);
+        }
+    }
+
+    for model in models.iter()
+    {
+        let name_parts: Vec<String> = model.name.split(|c: char| !c.is_alphanumeric()).map(|s| s.to_lowercase()).collect();
+        let label_ids : Vec<i64> = name_parts.iter()
+            .flat_map(|part| {
+                if all_keywords_map.contains_key(part)
+                {
+                    return all_keywords_map[part].clone();
+                }
+                
+                return vec![];
+            })
+            .filter(|l| !model.labels.iter().any(|existing_labels| existing_labels.id == *l))
+            .unique()
+            .collect();
+
+        if !label_ids.is_empty()
+        {
+           label::add_labels_on_model_sync(label_ids, model.id, db);
+        }
+    }
 }
 
 fn import_models_from_dir_recursive(

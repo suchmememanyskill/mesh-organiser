@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT keyword_id, keyword_name, keyword_label_id FROM label_keywords",
+  "describe": {
+    "columns": [
+      {
+        "name": "keyword_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "keyword_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "keyword_label_id",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "eca17efb670c968e6358f64f3d24dc69d870426abf5f56c32202c11773ec050d"
+}

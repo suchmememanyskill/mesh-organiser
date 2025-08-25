@@ -42,6 +42,7 @@ bitflags = { version = "2.9.0" }
 arboard = "3.5"
 base64 = "0.22.1"
 indexmap = "2.9"
+itertools = "0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"

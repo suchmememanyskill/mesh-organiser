@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM label_keywords WHERE keyword_label_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5cb532d7139a85e77065707c7ddbd4b4dc0f738e72080329df18638aa7f0f944"
+}

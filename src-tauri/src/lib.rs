@@ -235,7 +235,7 @@ async fn set_labels_on_model(
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     db::label::remove_labels_from_model(model_id, &state.db).await;
-    db::label::set_labels_on_model(label_ids, model_id, &state.db).await;
+    db::label::add_labels_on_model(label_ids, model_id, &state.db).await;
 
     Ok(())
 }
@@ -725,12 +725,21 @@ pub fn run() {
                 std::panic::set_hook(Box::new(move |info| {
                     let loc = PathBuf::from(&app_data_path_clone).join("crash.log");
 
+                    let error_message = match info.payload().downcast_ref::<&'static str>()
+                    {
+                        Some(s) => *s,
+                        None => match info.payload().downcast_ref::<String>() {
+                            Some(s) => &s[..],
+                            None => "Box<Any>",
+                        },
+                    };
+
                     if let Ok(mut file) = File::create(loc)
                     {
-                        let _ = writeln!(file, "Panic occurred: {info}\n{:#?}", info);
+                        let _ = writeln!(file, "Panic occurred: {error_message}\n{info}\n{:#?}", info);
                     } 
 
-                    println!("Panic occurred: {:?}", info);
+                    println!("Panic occurred: {error_message}\n{:?}", info);
                 }));
 
                 let config = read_configuration(&app_data_path);

@@ -21,6 +21,8 @@ pub struct LabelMin {
     pub color: i64,
 }
 
+// TODO: Allow adding string[] as search parameters to automatically add labels to models
+
 pub fn get_labels_sync(db: &super::db::Db) -> Vec<Label> {
     block_on(get_labels(db))
 }
@@ -123,7 +125,11 @@ pub async fn add_label_on_models(label_id: i64, model_ids: Vec<i64>, db: &super:
     }
 }
 
-pub async fn set_labels_on_model(label_ids: Vec<i64>, model_id: i64, db: &super::db::Db) {
+pub fn add_labels_on_model_sync(label_ids: Vec<i64>, model_id: i64, db: &super::db::Db) {
+    block_on(add_labels_on_model(label_ids, model_id, db))
+}
+
+pub async fn add_labels_on_model(label_ids: Vec<i64>, model_id: i64, db: &super::db::Db) {
     if label_ids.is_empty() {
         return;
     }
