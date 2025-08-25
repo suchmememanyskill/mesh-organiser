@@ -104,7 +104,13 @@ pub fn add_labels_by_keywords(
 
     for model in models.iter()
     {
-        let name_parts: Vec<String> = model.name.split(|c: char| !c.is_alphanumeric()).map(|s| s.to_lowercase()).collect();
+        let mut name_parts: Vec<String> = model.name.split(|c: char| !c.is_alphanumeric()).map(|s| s.to_lowercase()).collect();
+
+        if let Some(group) = &model.group
+        {
+            name_parts.extend(group.name.split(|c: char| !c.is_alphanumeric()).map(|s| s.to_lowercase()));
+        }
+
         let label_ids : Vec<i64> = name_parts.iter()
             .flat_map(|part| {
                 if all_keywords_map.contains_key(part)

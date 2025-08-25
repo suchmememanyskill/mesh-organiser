@@ -21,8 +21,6 @@ pub struct LabelMin {
     pub color: i64,
 }
 
-// TODO: Allow adding string[] as search parameters to automatically add labels to models
-
 pub fn get_labels_sync(db: &super::db::Db) -> Vec<Label> {
     block_on(get_labels(db))
 }

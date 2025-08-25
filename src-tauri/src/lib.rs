@@ -591,6 +591,27 @@ async fn open_resource_folder(
     Ok(())
 }
 
+#[tauri::command]
+async fn set_keywords_on_label(
+    label_id: i64,
+    keywords: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    db::label_keywords::set_keywords_for_label(&state.db, label_id, keywords).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_keywords_for_label(
+    label_id: i64,
+    state: State<'_, AppState>,
+) -> Result<Vec<db::label_keywords::LabelKeyword>, ApplicationError> {
+    let keywords = db::label_keywords::get_keywords_for_label(&state.db, label_id).await;
+
+    Ok(keywords)
+}
+
 fn extract_deep_link(data: &str) -> Option<String> {
     let possible_starts = vec![
         "bambustudio://open/?file=",
@@ -817,6 +838,8 @@ pub fn run() {
             edit_resource,
             remove_resource,
             open_resource_folder,
+            set_keywords_on_label,
+            get_keywords_for_label,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

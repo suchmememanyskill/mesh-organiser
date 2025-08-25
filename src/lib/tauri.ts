@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawModedlFlags, convertModelFlagsToRaw, defaultFlags, type LabelMin, type RawResource, convertResourceFlagsToRaw, type Resource } from "./model";
+import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawModedlFlags, convertModelFlagsToRaw, defaultFlags, type LabelMin, type RawResource, convertResourceFlagsToRaw, type Resource, type LabelKeyword } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -251,4 +251,14 @@ export async function addResource(name: string): Promise<Resource>
 export async function openResourceFolder(resource: Resource): Promise<void>
 {
     await invoke("open_resource_folder", { resourceId: resource.id });
+}
+
+export async function setKeywordsOnLabel(label: LabelMin, keywords: string[]): Promise<void>
+{
+    await invoke("set_keywords_on_label", { labelId: label.id, keywords: keywords });
+}
+
+export async function getKeywordsForLabel(label: LabelMin): Promise<LabelKeyword[]>
+{
+    return await invoke("get_keywords_for_label", { labelId: label.id });
 }

@@ -14,7 +14,7 @@
 
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editLabel, deleteLabel, setChildsOnLabel, createLabel } from "$lib/tauri";
+    import { editLabel, deleteLabel, setChildsOnLabel, createLabel, getKeywordsForLabel, setKeywordsOnLabel } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import Trash2 from "@lucide/svelte/icons/trash-2";
@@ -23,14 +23,19 @@
     import Button from "$lib/components/ui/button/button.svelte";
     import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
     import { goto } from "$app/navigation";
+    import EditListPopover from "$lib/components/view/edit-list-popover.svelte";
+    import { onMount } from "svelte";
 
     const props: { label: LLabel; class?: ClassValue } = $props();
     const tracked_label = $derived(props.label);
-    const parentId = $derived(page.url.searchParams.get("parentId"))
+    const parentId = $derived(page.url.searchParams.get("parentId"));
+    let lastId = $state(-1);
 
     const thisLabelOnly = $derived.by(() => {
         return page.url.searchParams.get("thisLabelOnly") === "true";
     });
+
+    let keywords = $state<string[]>([]);
 
     const saveLabelDebounced = debounce(async (edited_label: LLabel) => {
         console.log("Saving Label");
@@ -64,6 +69,28 @@
         await setChildsOnLabel(snapshot, snapshot.children);
         await updateState();
     }
+
+    async function refreshLabels(label : LLabel)
+    {
+        keywords = (await getKeywordsForLabel(label)).map(x => x.name);
+    }
+
+    async function updateLabels()
+    {
+        let snapshot = $state.snapshot(keywords);
+        console.log("Updating keywords: ", snapshot);
+        await setKeywordsOnLabel(tracked_label, snapshot);
+        await updateState();
+    }
+
+    $effect(() => 
+    {
+        if (lastId !== tracked_label.id) 
+        {
+            lastId = tracked_label.id;
+            refreshLabels(tracked_label);
+        }
+    });
 </script>
 
 
@@ -71,6 +98,9 @@
     <CardHeader class="relative">
         <CardTitle class="mr-10">{!thisLabelOnly && tracked_label.children.length > 0 ? "Grouped" : ""} Label '{tracked_label.name}'</CardTitle>
         <div class="absolute flex gap-5 right-0 top-5 mr-8">
+            <EditListPopover title="Edit keywords" description="When an imported model's name contains any previously defined keywords, the associated label will automatically be added to the model." bind:value={keywords} onEdit={updateLabels}>
+                <Button size="sm">Keywords {keywords.length > 0 ? `(${keywords.length})` : ''}</Button>
+            </EditListPopover>
             <AddLabelPopover onsubmit={addLabel}>
                 <Button size="sm">Add sub-label</Button>
             </AddLabelPopover>

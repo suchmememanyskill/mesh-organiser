@@ -310,3 +310,10 @@ export enum FileType
     STEP = "step.zip",
     GCODE = "gcode.zip",
 }
+
+export interface LabelKeyword
+{
+    id: number;
+    name: string;
+    label_id: number;
+}
