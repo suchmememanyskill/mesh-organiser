@@ -724,12 +724,12 @@ pub fn run() {
                     println!("Emitting deep link {:?}", deep_link);
                     _app.emit("deep-link", deep_link).unwrap();
                 }
-                else  
+                else
                 {
                     println!("Failed to emit deep link {:?}", &argv[1]);
                 }
             }
-            else 
+            else
             {
                 let window = _app.get_webview_window("main");
 
@@ -737,12 +737,11 @@ pub fn run() {
                     let _ = window.unminimize();
                     let _ = window.set_focus();
                 }
-                else 
+                else
                 {
                     println!("Failed to get window to focus");
                 }
             }
-            
           }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
@@ -785,13 +784,13 @@ pub fn run() {
                     if let Ok(mut file) = File::create(loc)
                     {
                         let _ = writeln!(file, "Panic occurred: {error_message}\n{info}\n{:#?}", info);
-                    } 
+                    }
 
                     println!("Panic occurred: {error_message}\n{:?}", info);
                 }));
 
                 let config = read_configuration(&app_data_path);
-                
+
                 let db = db::db::setup_db(&config, &app_data_path).await;
 
                 let mut initial_state = InitialState {
@@ -808,7 +807,7 @@ pub fn run() {
                 {
                     let arg = argv.skip(1).next().unwrap();
                     let deep_link = extract_deep_link(&arg);
-    
+
                     if let Some(deep_link) = deep_link
                     {
                         initial_state.deep_link_url = Some(deep_link);

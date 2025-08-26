@@ -3,7 +3,6 @@ use std::thread;
 
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use tauri::utils::config;
 
 use crate::service::slicer_service::Slicer;
 

@@ -1,7 +1,6 @@
 use bitflags::bitflags;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use sqlx::Row;
 use sqlx::{self, types::chrono};
 
 bitflags! {
