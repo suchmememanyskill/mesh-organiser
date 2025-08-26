@@ -14,6 +14,7 @@
 @import './themes/perpetuity.css';
 @import './themes/nature.css';
 @import './themes/sunsethorizon.css';
+@import './themes/amethysthaze.css';
 
 @tailwind base;
 @tailwind components;

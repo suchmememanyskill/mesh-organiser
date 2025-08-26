@@ -18,6 +18,7 @@ const availableThemes = {
     "perpetuity": "Perpetuity",
     "nature": "Nature",
     "sunsethorizon": "Sunset Horizon",
+    "amethysthaze": "Amethyst Haze",
     "custom": "Custom",
 }
 

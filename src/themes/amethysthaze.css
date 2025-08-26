@@ -1,0 +1,73 @@
+/* https://tweakcn.com/editor/theme */
+
+@layer base {
+    [data-theme="amethysthaze"]:root {
+        --background: 260 23.0769% 97.4510%;
+        --foreground: 243.1579 13.6691% 27.2549%;
+        --card: 0 0% 100%;
+        --card-foreground: 243.1579 13.6691% 27.2549%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 243.1579 13.6691% 27.2549%;
+        --primary: 260.4000 22.9358% 57.2549%;
+        --primary-foreground: 260 23.0769% 97.4510%;
+        --secondary: 258.9474 33.3333% 88.8235%;
+        --secondary-foreground: 243.1579 13.6691% 27.2549%;
+        --muted: 258.0000 15.1515% 87.0588%;
+        --muted-foreground: 247.5000 10.3448% 45.4902%;
+        --accent: 342.4615 56.5217% 77.4510%;
+        --accent-foreground: 343.4483 23.9669% 23.7255%;
+        --destructive: 0 62.1891% 60.5882%;
+        --destructive-foreground: 260 23.0769% 97.4510%;
+        --border: 258.7500 17.3913% 81.9608%;
+        --input: 260.0000 23.0769% 92.3529%;
+        --ring: 260.4000 22.9358% 57.2549%;
+        --sidebar: 260.0000 23.0769% 94.9020%;
+        --sidebar-foreground: 243.1579 13.6691% 27.2549%;
+        --sidebar-primary: 260.4000 22.9358% 57.2549%;
+        --sidebar-primary-foreground: 260 23.0769% 97.4510%;
+        --sidebar-accent: 342.4615 56.5217% 77.4510%;
+        --sidebar-accent-foreground: 343.4483 23.9669% 23.7255%;
+        --sidebar-border: 261.4286 18.4211% 85.0980%;
+        --sidebar-ring: 260.4000 22.9358% 57.2549%;
+        --font-sans: Geist, sans-serif;
+        --font-serif: "Lora", Georgia, serif;
+        --font-mono: "Fira Code", "Courier New", monospace;
+        --radius: 0.5rem;
+        --tracking-normal: 0em;
+        --spacing: 0.25rem;
+    }
+
+    [data-theme="amethysthaze"].dark {
+        --background: 250.9091 18.6441% 11.5686%;
+        --foreground: 250.0000 36.0000% 90.1961%;
+        --card: 251.2500 20% 15.6863%;
+        --card-foreground: 250.0000 36.0000% 90.1961%;
+        --popover: 251.2500 20% 15.6863%;
+        --popover-foreground: 250.0000 36.0000% 90.1961%;
+        --primary: 263.0769 32.5000% 68.6275%;
+        --primary-foreground: 250.9091 18.6441% 11.5686%;
+        --secondary: 254.4828 14.8718% 38.2353%;
+        --secondary-foreground: 250.0000 36.0000% 90.1961%;
+        --muted: 254.1176 20.9877% 15.8824%;
+        --muted-foreground: 258.9474 10.3825% 64.1176%;
+        --accent: 271.7647 15.5963% 21.3725%;
+        --accent-foreground: 345.5172 69.0476% 83.5294%;
+        --destructive: 0 68.6747% 67.4510%;
+        --destructive-foreground: 250.9091 18.6441% 11.5686%;
+        --border: 252 18.5185% 21.1765%;
+        --input: 249.4737 19.5876% 19.0196%;
+        --ring: 263.0769 32.5000% 68.6275%;
+        --sidebar: 252 20.0000% 9.8039%;
+        --sidebar-foreground: 250.0000 36.0000% 90.1961%;
+        --sidebar-primary: 263.0769 32.5000% 68.6275%;
+        --sidebar-primary-foreground: 250.9091 18.6441% 11.5686%;
+        --sidebar-accent: 271.7647 15.5963% 21.3725%;
+        --sidebar-accent-foreground: 345.5172 69.0476% 83.5294%;
+        --sidebar-border: 249.4737 19.5876% 19.0196%;
+        --sidebar-ring: 263.0769 32.5000% 68.6275%;
+        --font-sans: Geist, sans-serif;
+        --font-serif: "Lora", Georgia, serif;
+        --font-mono: "Fira Code", "Courier New", monospace;
+        --radius: 0.5rem;
+    }
+}
