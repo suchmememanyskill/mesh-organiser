@@ -62,7 +62,7 @@ export async function setTheme(theme : string)
         });
 
         let style = document.createElement('style');
-        style.innerHTML = custom_css;
+        style.textContent = custom_css;
         style.id = "custom-theme";
         document.head.appendChild(style);
     }
