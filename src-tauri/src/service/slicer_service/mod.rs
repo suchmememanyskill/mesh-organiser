@@ -1,8 +1,10 @@
 mod base;
 use std::path::PathBuf;
 
+use crate::{
+    db::model::Model, error::ApplicationError, service::export_service::export_to_temp_folder,
+};
 pub use base::*;
-use crate::{db::model::Model, error::ApplicationError, service::export_service::export_to_temp_folder};
 use std::process::Command;
 
 use super::app_state::AppState;
@@ -23,15 +25,15 @@ pub fn open_with_paths(program: &str, paths: Vec<PathBuf>) -> Result<(), Applica
         )));
     }
 
-    Command::new(program)
-        .args(paths)
-        .spawn()?;
-    
+    Command::new(program).args(paths).spawn()?;
+
     Ok(())
 }
 
-pub fn open_custom_slicer(models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError>
-{
+pub fn open_custom_slicer(
+    models: Vec<Model>,
+    app_state: &AppState,
+) -> Result<(), ApplicationError> {
     let path = app_state.get_configuration().custom_slicer_path.clone();
     let pathbuf = PathBuf::from(path.clone());
 

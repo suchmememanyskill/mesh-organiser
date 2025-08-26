@@ -34,29 +34,28 @@ pub fn export_to_temp_folder(
 
 pub fn get_bytes_from_model(
     model: &Model,
-    app_state: &AppState
+    app_state: &AppState,
 ) -> Result<Vec<u8>, ApplicationError> {
     let base_dir = PathBuf::from(app_state.get_model_dir());
     let src_file_path = base_dir.join(format!("{}.{}", model.sha256, model.filetype));
     let mut file = File::open(src_file_path)?;
     let mut buffer = Vec::new();
 
-    if is_zipped_file_extension(&model.filetype)
-    {
+    if is_zipped_file_extension(&model.filetype) {
         let mut archive = zip::ZipArchive::new(file)?;
         let mut file = archive.by_index(0)?;
         std::io::copy(&mut file, &mut buffer)?;
     } else {
         std::io::copy(&mut file, &mut buffer)?;
     }
-    
+
     Ok(buffer)
 }
 
 fn ensure_unique_file(base_path: &PathBuf, file_name: &str, extension: &str) -> PathBuf {
     let mut counter = 1;
     let mut new_file_name = base_path.join(format!("{}.{}", file_name, extension));
-    
+
     while new_file_name.exists() {
         new_file_name = base_path.join(format!("{}_{}.{}", file_name, counter, extension));
         counter += 1;

@@ -3,6 +3,7 @@ use std::thread;
 
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
+use tauri::utils::config;
 
 use crate::service::slicer_service::Slicer;
 
@@ -21,26 +22,27 @@ pub struct StoredConfiguration {
     pub allow_importing_step: Option<bool>,
     pub size_option_models: Option<String>,
     pub size_option_groups: Option<String>,
-    pub show_grouped_count_on_labels : Option<bool>,
+    pub show_grouped_count_on_labels: Option<bool>,
     pub fallback_3mf_thumbnail: Option<bool>,
     pub prefer_3mf_thumbnail: Option<bool>,
     pub core_parallelism: Option<usize>,
-    pub collapse_sidebar : Option<bool>,
+    pub collapse_sidebar: Option<bool>,
     pub zoom_level: Option<u32>,
     pub export_metadata: Option<bool>,
     pub show_date_on_list_view: Option<bool>,
     pub default_enabled_recursive_import: Option<bool>,
     pub default_enabled_delete_after_import: Option<bool>,
     pub open_links_in_external_browser: Option<bool>,
-    pub max_size_model_3mf_preview : Option<u32>,
-    pub max_size_model_stl_preview : Option<u32>,
-    pub max_size_model_obj_preview : Option<u32>,
+    pub max_size_model_3mf_preview: Option<u32>,
+    pub max_size_model_stl_preview: Option<u32>,
+    pub max_size_model_obj_preview: Option<u32>,
     pub allow_importing_gcode: Option<bool>,
-    pub only_show_single_image_in_groups : Option<bool>,
+    pub only_show_single_image_in_groups: Option<bool>,
     pub custom_slicer_path: Option<String>,
     pub elegoo_deep_link: Option<bool>,
-    pub group_split_view : Option<String>,
+    pub group_split_view: Option<String>,
     pub label_exported_model_as_printed: Option<bool>,
+    pub theme: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -73,11 +75,12 @@ pub struct Configuration {
     pub max_size_model_stl_preview: u32,
     pub max_size_model_obj_preview: u32,
     pub allow_importing_gcode: bool,
-    pub only_show_single_image_in_groups : bool,
+    pub only_show_single_image_in_groups: bool,
     pub custom_slicer_path: String,
     pub elegoo_deep_link: bool,
     pub group_split_view: String,
-    pub label_exported_model_as_printed : bool,
+    pub label_exported_model_as_printed: bool,
+    pub theme: String,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -115,9 +118,7 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         collapse_sidebar: configuration
             .collapse_sidebar
             .unwrap_or(default.collapse_sidebar),
-        zoom_level: configuration
-            .zoom_level
-            .unwrap_or(default.zoom_level),
+        zoom_level: configuration.zoom_level.unwrap_or(default.zoom_level),
         export_metadata: configuration
             .export_metadata
             .unwrap_or(default.export_metadata),
@@ -163,6 +164,7 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         label_exported_model_as_printed: configuration
             .label_exported_model_as_printed
             .unwrap_or(default.label_exported_model_as_printed),
+        theme: configuration.theme.unwrap_or(default.theme),
     }
 }
 
@@ -187,7 +189,10 @@ impl Default for Configuration {
             show_grouped_count_on_labels: true,
             fallback_3mf_thumbnail: true,
             prefer_3mf_thumbnail: false,
-            core_parallelism: thread::available_parallelism().unwrap_or(NonZeroUsize::new(6).unwrap()).get() / 2,
+            core_parallelism: thread::available_parallelism()
+                .unwrap_or(NonZeroUsize::new(6).unwrap())
+                .get()
+                / 2,
             collapse_sidebar: false,
             zoom_level: 100,
             export_metadata: false,
@@ -204,6 +209,7 @@ impl Default for Configuration {
             elegoo_deep_link: false,
             group_split_view: String::from("no_split"),
             label_exported_model_as_printed: false,
+            theme: String::from("default"),
         }
     }
 }

@@ -15,6 +15,22 @@
     "shell:default",
     "core:window:allow-set-focus",
     "core:window:allow-unminimize",
-    "core:webview:allow-set-webview-zoom"
+    "core:webview:allow-set-webview-zoom",
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPDATA/custom.css" }]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{ "path": "$APPDATA/custom.css" }]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "$APPDATA/custom.css" }]
+    },
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "$APPDATA/custom.css" }]
+    }
   ]
 }

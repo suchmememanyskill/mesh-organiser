@@ -1,8 +1,8 @@
+use bitflags::bitflags;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use sqlx::{self, types::chrono};
-use bitflags::bitflags;
-use indexmap::IndexMap;
 
 bitflags! {
     pub struct ResourceFlags: u32 {
@@ -66,7 +66,8 @@ pub async fn get_resources(db: &super::db::Db) -> Vec<Resource> {
         let entry = model_map.entry(row.resource_id).or_insert(Resource {
             id: row.resource_id,
             name: row.resource_name,
-            flags: ResourceFlags::from_bits(row.resource_flags as u32).unwrap_or(ResourceFlags::empty()),
+            flags: ResourceFlags::from_bits(row.resource_flags as u32)
+                .unwrap_or(ResourceFlags::empty()),
             group_ids: match row.group_id {
                 Some(id) => vec![id],
                 None => Vec::new(),
@@ -100,15 +101,14 @@ pub async fn get_resource_by_id(id: i64, db: &super::db::Db) -> Option<Resource>
     .await;
 
     match row {
-        Ok(row) => {
-            Some(Resource {
-                id: row.resource_id,
-                name: row.resource_name,
-                flags: ResourceFlags::from_bits(row.resource_flags as u32).unwrap_or(ResourceFlags::empty()),
-                group_ids: vec![],
-                created: row.resource_created,
-            })
-        }
+        Ok(row) => Some(Resource {
+            id: row.resource_id,
+            name: row.resource_name,
+            flags: ResourceFlags::from_bits(row.resource_flags as u32)
+                .unwrap_or(ResourceFlags::empty()),
+            group_ids: vec![],
+            created: row.resource_created,
+        }),
         Err(_) => None,
     }
 }

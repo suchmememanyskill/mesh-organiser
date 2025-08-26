@@ -1,16 +1,14 @@
 use super::Slicer;
+use crate::db::model::Model;
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
-use crate::db::model::Model;
+use crate::service::export_service::export_to_temp_folder;
 use crate::service::slicer_service::open_custom_slicer;
 use std::process::Command;
-use crate::service::export_service::export_to_temp_folder;
 
-impl Slicer 
-{
+impl Slicer {
     pub fn is_installed(&self) -> bool {
-        if let Slicer::Custom = self
-        {
+        if let Slicer::Custom = self {
             return true;
         }
 
@@ -20,11 +18,7 @@ impl Slicer
             return false;
         }
 
-        match Command::new("flatpak")
-            .arg("info")
-            .arg(package)
-            .output()
-        {
+        match Command::new("flatpak").arg("info").arg(package).output() {
             Ok(output) => {
                 return output.status.success();
             }
@@ -35,8 +29,7 @@ impl Slicer
     }
 
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
-        if let Slicer::Custom = self
-        {
+        if let Slicer::Custom = self {
             return open_custom_slicer(models, app_state);
         }
 
@@ -69,13 +62,13 @@ impl Slicer
     }
 }
 
-fn get_flatpak_slicer_package(slicer : &Slicer) -> String
-{
+fn get_flatpak_slicer_package(slicer: &Slicer) -> String {
     match slicer {
         Slicer::PrusaSlicer => "com.prusa3d.PrusaSlicer",
         Slicer::OrcaSlicer => "io.github.softfever.OrcaSlicer",
         Slicer::Cura => "com.ultimaker.cura",
         Slicer::BambuStudio => "com.bambulab.BambuStudio",
         _ => "",
-    }.to_string()
+    }
+    .to_string()
 }

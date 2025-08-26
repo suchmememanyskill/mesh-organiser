@@ -63,8 +63,9 @@ pub async fn generate_thumbnails(
         child: tauri_plugin_shell::process::CommandChild,
     }
 
-    let mut commands : Vec<C> = paths.chunks(100)
-        .map(|slice | {
+    let mut commands: Vec<C> = paths
+        .chunks(100)
+        .map(|slice| {
             let len = slice.len();
 
             let mut command = app_handle.shell().sidecar("mesh-thumbnail").unwrap();
@@ -82,15 +83,15 @@ pub async fn generate_thumbnails(
             if fallback_3mf_thumbnail {
                 command = command.arg("--fallback-3mf-thumbnail");
             }
-        
+
             if fallback_3mf_thumbnail && prefer_3mf_thumbnail {
                 command = command.arg("--prefer-3mf-thumbnail");
             }
-        
+
             if overwrite {
                 command = command.arg("--overwrite");
             }
-        
+
             command = command.args(slice);
 
             C {
@@ -99,35 +100,34 @@ pub async fn generate_thumbnails(
             }
         })
         .collect();
-/*
-    #[cfg(debug_assertions)]
-    {
-        while !commands.is_empty() {
-            let command_wrapper = commands.pop().unwrap();
-            let result = command_wrapper.command.output().await;
-            match result {
-                Ok(output) => {
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        println!("Error: {}", stderr);
+    /*
+        #[cfg(debug_assertions)]
+        {
+            while !commands.is_empty() {
+                let command_wrapper = commands.pop().unwrap();
+                let result = command_wrapper.command.output().await;
+                match result {
+                    Ok(output) => {
+                        if !output.status.success() {
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            println!("Error: {}", stderr);
+                        }
+                    }
+                    Err(e) => {
+                        println!("Failed to execute command: {}", e);
                     }
                 }
-                Err(e) => {
-                    println!("Failed to execute command: {}", e);
-                }
             }
-        }
 
-        return Ok(());
-    }
-*/
+            return Ok(());
+        }
+    */
 
     let mut running = Vec::new();
 
     println!("Using {} threads for thumbnail generation", max_concurrent);
 
-    while !commands.is_empty() || !running.is_empty()
-    {
+    while !commands.is_empty() || !running.is_empty() {
         if !commands.is_empty() && running.len() < max_concurrent {
             let command = commands.pop().unwrap();
             let a = command.command.spawn().expect("Failed to spawn command");
@@ -137,18 +137,15 @@ pub async fn generate_thumbnails(
                 listener: a.0,
                 child: a.1,
             });
-        }
-        else {
+        } else {
             let mut i = 0;
-            while i < running.len()
-            {
+            while i < running.len() {
                 let run = &mut running[i];
 
                 let res = run.listener.try_recv();
 
                 if let Err(e) = res {
-                    if e == TryRecvError::Disconnected 
-                    {
+                    if e == TryRecvError::Disconnected {
                         imported_amount += run.thumbnail_count;
                         let _ = app_handle.emit("thumbnail-count", imported_amount);
                         running.remove(i);

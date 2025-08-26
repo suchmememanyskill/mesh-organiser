@@ -1,16 +1,15 @@
 use super::Slicer;
+use crate::db::model::Model;
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
-use crate::db::model::Model;
+use crate::service::export_service::export_to_temp_folder;
 use crate::service::slicer_service::open_custom_slicer;
 use std::path::PathBuf;
 use std::process::Command;
-use crate::service::export_service::export_to_temp_folder;
 
 impl Slicer {
     pub fn is_installed(&self) -> bool {
-        if let Slicer::Custom = self
-        {
+        if let Slicer::Custom = self {
             return true;
         }
 
@@ -18,8 +17,7 @@ impl Slicer {
     }
 
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
-        if let Slicer::Custom = self
-        {
+        if let Slicer::Custom = self {
             return open_custom_slicer(models, app_state);
         }
 
@@ -40,7 +38,7 @@ impl Slicer {
         }
 
         let slicer_path = get_slicer_path(&self).unwrap();
-        
+
         Command::new("open")
             .arg("-a")
             .arg(slicer_path)
@@ -55,7 +53,8 @@ impl Slicer {
 fn get_slicer_path(slicer: &Slicer) -> Option<PathBuf> {
     match slicer {
         Slicer::PrusaSlicer => {
-            let path: PathBuf = PathBuf::from("/Applications/Original Prusa Drivers/PrusaSlicer.app");
+            let path: PathBuf =
+                PathBuf::from("/Applications/Original Prusa Drivers/PrusaSlicer.app");
             let second_path = PathBuf::from("/Applications/PrusaSlicer.app");
 
             if path.exists() {
@@ -67,28 +66,28 @@ fn get_slicer_path(slicer: &Slicer) -> Option<PathBuf> {
             }
 
             return None;
-        },
+        }
         Slicer::OrcaSlicer => {
             let path = PathBuf::from("/Applications/OrcaSlicer.app");
             if path.exists() {
                 return Some(path);
             }
             return None;
-        },
+        }
         Slicer::Cura => {
             let path = PathBuf::from("/Applications/UltiMaker Cura.app");
             if path.exists() {
                 return Some(path);
             }
             return None;
-        },
+        }
         Slicer::BambuStudio => {
             let path = PathBuf::from("/Applications/BambuStudio.app");
             if path.exists() {
                 return Some(path);
             }
             return None;
-        },
+        }
         _ => None,
     }
 }

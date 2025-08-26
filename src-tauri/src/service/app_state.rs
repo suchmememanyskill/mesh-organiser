@@ -53,7 +53,8 @@ impl AppState {
         path_buff.push("resources");
 
         if !path_buff.exists() {
-            std::fs::create_dir_all(path_buff.clone()).expect("Failed to create resources directory");
+            std::fs::create_dir_all(path_buff.clone())
+                .expect("Failed to create resources directory");
         }
 
         path_buff

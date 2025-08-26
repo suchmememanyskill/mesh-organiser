@@ -62,9 +62,14 @@ fn backup_db(configuration: &Configuration, data_path: &str) {
 
     let mut backups: Vec<_> = std::fs::read_dir(&backup_dir)
         .expect("Failed to read backup directory")
-        .filter_map(|entry| entry.ok().filter(|e| {
-            e.path().extension().map(|ext| ext == "sqlite").unwrap_or(false)
-        }))
+        .filter_map(|entry| {
+            entry.ok().filter(|e| {
+                e.path()
+                    .extension()
+                    .map(|ext| ext == "sqlite")
+                    .unwrap_or(false)
+            })
+        })
         .collect();
 
     backups.sort_by_key(|entry| entry.metadata().and_then(|m| m.modified()).unwrap());

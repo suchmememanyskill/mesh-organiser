@@ -1,19 +1,17 @@
 use super::{open_custom_slicer, Slicer};
-use winreg::*;
+use crate::db::model::Model;
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
-use crate::db::model::Model;
-use crate::service::slicer_service::open_with_paths;
-use std::path::PathBuf;
 use crate::service::export_service::export_to_temp_folder;
+use crate::service::slicer_service::open_with_paths;
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
+use winreg::*;
 
-impl Slicer 
-{
+impl Slicer {
     pub fn is_installed(&self) -> bool {
-        if let Slicer::Custom = self
-        {
+        if let Slicer::Custom = self {
             return true;
         }
 
@@ -21,8 +19,7 @@ impl Slicer
     }
 
     pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
-        if let Slicer::Custom = self
-        {
+        if let Slicer::Custom = self {
             return open_custom_slicer(models, app_state);
         }
 
@@ -61,9 +58,8 @@ fn get_registry_key(root: HKEY, subkey: &str, field: &str) -> Option<String> {
     }
 }
 
-fn get_slicer_path(slicer : &Slicer) -> Option<PathBuf> {
-    match slicer 
-    {
+fn get_slicer_path(slicer: &Slicer) -> Option<PathBuf> {
+    match slicer {
         Slicer::PrusaSlicer => {
             let key = get_registry_key(
                 winreg::enums::HKEY_LOCAL_MACHINE,
@@ -94,12 +90,12 @@ fn get_slicer_path(slicer : &Slicer) -> Option<PathBuf> {
                 "InstallPath",
             ) {
                 let path = PathBuf::from(key).join("bambu-studio.exe");
-                
+
                 if path.exists() {
                     return Some(path);
                 }
             }
-                
+
             let path = PathBuf::from("C:\\Program Files\\Bambu Studio\\bambu-studio.exe");
 
             if path.exists() {
@@ -120,7 +116,7 @@ fn get_slicer_path(slicer : &Slicer) -> Option<PathBuf> {
                     return Some(path);
                 }
             }
-                
+
             let path = PathBuf::from("C:\\Program Files\\OrcaSlicer\\orca-slicer.exe");
 
             if path.exists() {
@@ -147,7 +143,7 @@ fn get_slicer_path(slicer : &Slicer) -> Option<PathBuf> {
                     }
                 }
             }
-        
+
             return None;
         }
         _ => None,

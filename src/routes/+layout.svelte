@@ -17,6 +17,7 @@
     import { IsMobile } from "$lib/hooks/is-mobile.svelte";
     import { getCurrentWebview } from "@tauri-apps/api/webview";
     import { debounce } from "$lib/utils";
+    import { setTheme } from "$lib/theme";
 
     let { children } = $props();
     let loaded_config = false;
@@ -134,6 +135,7 @@
 
 
         await initConfiguration();
+        await setTheme(c.configuration.theme);
 
         const webview = await getCurrentWebview();
         webview.setZoom(c.configuration.zoom_level / 100);

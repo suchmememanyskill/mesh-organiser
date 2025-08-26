@@ -1,0 +1,51 @@
+/* Mesh organiser default theme */ 
+/* The default theme was downloaded from https://www.tinte.dev/shadcn */
+/* Mesh organiser uses tailwind v3 (hsl) for theming */
+/* See also https://tweakcn.com/editor/theme and https://tweakcn.com/editor/theme for making your own themes */
+
+@layer base {
+  [data-theme="default"]:root {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 20%;
+    --popover: 0 0% 95%;
+    --popover-foreground: 0 0% 20%;
+    --primary: 340 100% 85%;
+    --primary-foreground: 0 0% 20%;
+    --secondary: 130 50% 85%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 30%;
+    --accent: 340 100% 70%;
+    --accent-foreground: 0 0% 20%;
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 95%;
+    --ring: 340 100% 70%;
+    --radius: 0.5rem;
+  }
+
+  [data-theme="default"].dark {
+    --background: 0 0% 18%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 20%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 22%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 340 100% 75%;
+    --primary-foreground: 0 0% 20%;
+    --secondary: 150 40% 75%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 90%;
+    --accent: 340 100% 60%;
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 100% 55%;
+    --destructive-foreground: 0 0% 18%;
+    --border: 0 0% 30%;
+    --input: 0 0% 20%;
+    --ring: 340 100% 70%;
+  }
+}

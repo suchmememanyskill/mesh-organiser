@@ -1,0 +1,67 @@
+/* https://www.shadcn.studio/ */
+
+@layer base {
+  [data-theme="vintageretro"]:root {
+    --background: 40 15% 96%;
+    --foreground: 40 25% 20%;
+    --card: 40 15% 96%;
+    --card-foreground: 40 25% 20%;
+    --popover: 40 15% 96%;
+    --popover-foreground: 40 25% 20%;
+    --primary: 30 50% 45%;
+    --primary-foreground: 30 70% 95%;
+    --secondary: 60 30% 65%;
+    --secondary-foreground: 60 25% 20%;
+    --muted: 40 15% 88%;
+    --muted-foreground: 40 25% 40%;
+    --accent: 40 15% 88%;
+    --accent-foreground: 40 25% 20%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 10% 95%;
+    --border: 40 15% 80%;
+    --input: 40 15% 80%;
+    --ring: 30 50% 45%;
+    --radius: 0.5rem;
+    
+    --sidebar-background: 40 15% 93%;
+    --sidebar-foreground: 40 25% 31%;
+    --sidebar-primary: 30 50% 42%;
+    --sidebar-primary-foreground: 30 70% 100%;
+    --sidebar-accent: 40 15% 85%;
+    --sidebar-accent-foreground: 40 25% 20%;
+    --sidebar-border: 40 15% 77%;
+    --sidebar-ring: 30 50% 42%;
+  }
+
+  [data-theme="vintageretro"].dark {
+    --background: 40 20% 10%;
+    --foreground: 30 50% 80%;
+    --card: 40 20% 10%;
+    --card-foreground: 30 50% 80%;
+    --popover: 40 20% 10%;
+    --popover-foreground: 30 50% 80%;
+    --primary: 30 50% 45%;
+    --primary-foreground: 30 70% 95%;
+    --secondary: 60 40% 35%;
+    --secondary-foreground: 60 50% 75%;
+    --muted: 40 20% 20%;
+    --muted-foreground: 40 30% 60%;
+    --accent: 40 20% 20%;
+    --accent-foreground: 30 50% 80%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 10% 95%;
+    --border: 40 20% 30%;
+    --input: 40 20% 30%;
+    --ring: 30 50% 45%;
+    --radius: 0.5rem;
+    
+    --sidebar-background: 40 20% 2%;
+    --sidebar-foreground: 30 50% 50%;
+    --sidebar-primary: 30 50% 37%;
+    --sidebar-primary-foreground: 30 70% 95%;
+    --sidebar-accent: 40 20% 12%;
+    --sidebar-accent-foreground: 30 50% 80%;
+    --sidebar-border: 40 20% 22%;
+    --sidebar-ring: 30 50% 37%;
+  }
+}

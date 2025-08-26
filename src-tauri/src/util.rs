@@ -1,16 +1,20 @@
 use regex::Regex;
+use std::ffi::OsStr;
 use std::process::Command;
 use std::{io::Read, path::PathBuf};
-use std::ffi::OsStr;
 
 use crate::error::ApplicationError;
 
-pub fn prettify_file_name(file: &PathBuf, is_dir : bool) -> String {
+pub fn prettify_file_name(file: &PathBuf, is_dir: bool) -> String {
     let extension = file.extension();
-    let mut file_name: String = String::from(file.file_name().unwrap_or(OsStr::new("unknown_filename")).to_str().unwrap());
+    let mut file_name: String = String::from(
+        file.file_name()
+            .unwrap_or(OsStr::new("unknown_filename"))
+            .to_str()
+            .unwrap(),
+    );
 
-    if !is_dir
-    {
+    if !is_dir {
         match extension {
             Some(ext) => {
                 file_name = String::from(&file_name[0..file_name.len() - ext.len() - 1]);
@@ -51,26 +55,17 @@ pub fn cleanse_evil_from_name(name: &str) -> String {
 pub fn open_folder_in_explorer(path: &str) {
     #[cfg(target_os = "windows")]
     {
-        let _ = Command::new("explorer")
-            .arg(path)
-            .output()
-            .unwrap();
+        let _ = Command::new("explorer").arg(path).output().unwrap();
     }
 
     #[cfg(target_os = "macos")]
     {
-        let _ = Command::new("open")
-            .arg(path)
-            .output()
-            .unwrap();
+        let _ = Command::new("open").arg(path).output().unwrap();
     }
 
     #[cfg(target_os = "linux")]
     {
-        let _ = Command::new("xdg-open")
-            .arg(path)
-            .output()
-            .unwrap();
+        let _ = Command::new("xdg-open").arg(path).output().unwrap();
     }
 }
 

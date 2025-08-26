@@ -59,11 +59,21 @@ pub async fn add_empty_group(group_name: &str, db: &super::db::Db) -> i64 {
     return result.unwrap().last_insert_rowid();
 }
 
-pub fn edit_group_sync(group_id: i64, group_resource_id : Option<i64>, group_name: &str, db: &super::db::Db) {
+pub fn edit_group_sync(
+    group_id: i64,
+    group_resource_id: Option<i64>,
+    group_name: &str,
+    db: &super::db::Db,
+) {
     block_on(edit_group(group_id, group_name, group_resource_id, db))
 }
 
-pub async fn edit_group(group_id: i64, group_name: &str, group_resource_id : Option<i64>, db: &super::db::Db) {
+pub async fn edit_group(
+    group_id: i64,
+    group_name: &str,
+    group_resource_id: Option<i64>,
+    db: &super::db::Db,
+) {
     sqlx::query!(
         "UPDATE models_group SET group_name = ?, group_resource_id = ? WHERE group_id = ?",
         group_name,

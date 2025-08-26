@@ -25,22 +25,25 @@ pub fn import_path(
     path: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-    recursive : bool,
-    delete_imported : bool,
+    recursive: bool,
+    delete_imported: bool,
 ) -> Result<Vec<CreationResult>, ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let configuration = app_state.get_configuration();
-    let creation_result : Vec<CreationResult>;
+    let creation_result: Vec<CreationResult>;
 
     if path_buff.is_dir() {
-        if recursive
-        {
-            creation_result = import_models_from_dir_recursive(&path_buff, app_state, app_handle, delete_imported)?;
-        }
-        else 
-        {
-            let result = import_models_from_dir(path, &name, &app_state, &app_handle, delete_imported)?;
+        if recursive {
+            creation_result = import_models_from_dir_recursive(
+                &path_buff,
+                app_state,
+                app_handle,
+                delete_imported,
+            )?;
+        } else {
+            let result =
+                import_models_from_dir(path, &name, &app_state, &app_handle, delete_imported)?;
             creation_result = vec![result];
         }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
@@ -56,8 +59,7 @@ pub fn import_path(
             result = import_single_model(&mut file, extension, size, &name, None, &app_state)?;
         }
 
-        if delete_imported
-        {
+        if delete_imported {
             let _ = fs::remove_file(&path_buff);
         }
 
@@ -65,9 +67,7 @@ pub fn import_path(
             group_id: None,
             model_ids: vec![result],
         }];
-    }
-    else 
-    {
+    } else {
         return Err(ApplicationError::InternalError(String::from(
             "Unsupported file type",
         )));
@@ -78,55 +78,63 @@ pub fn import_path(
     Ok(creation_result)
 }
 
-pub fn add_labels_by_keywords(
-    new_models: &Vec<CreationResult>,
-    app_state: &AppState,
-)
-{
+pub fn add_labels_by_keywords(new_models: &Vec<CreationResult>, app_state: &AppState) {
     let db = &app_state.db;
-    let model_ids = new_models.iter().flat_map(|r| r.model_ids.iter()).cloned().unique().collect::<Vec<i64>>();
+    let model_ids = new_models
+        .iter()
+        .flat_map(|r| r.model_ids.iter())
+        .cloned()
+        .unique()
+        .collect::<Vec<i64>>();
     let models = model::get_models_by_id_sync(model_ids, db);
 
     let all_keywords = label_keywords::get_all_keywords_sync(db);
     let mut all_keywords_map: IndexMap<String, Vec<i64>> = IndexMap::new();
 
-    for keyword in all_keywords.iter()
-    {
-        if all_keywords_map.contains_key(&keyword.name)
-        {
+    for keyword in all_keywords.iter() {
+        if all_keywords_map.contains_key(&keyword.name) {
             all_keywords_map[&keyword.name].push(keyword.label_id);
-        }
-        else 
-        {
+        } else {
             all_keywords_map.insert(keyword.name.clone(), vec![keyword.label_id]);
         }
     }
 
-    for model in models.iter()
-    {
-        let mut name_parts: Vec<String> = model.name.split(|c: char| !c.is_alphanumeric()).map(|s| s.to_lowercase()).collect();
+    for model in models.iter() {
+        let mut name_parts: Vec<String> = model
+            .name
+            .split(|c: char| !c.is_alphanumeric())
+            .map(|s| s.to_lowercase())
+            .collect();
 
-        if let Some(group) = &model.group
-        {
-            name_parts.extend(group.name.split(|c: char| !c.is_alphanumeric()).map(|s| s.to_lowercase()));
+        if let Some(group) = &model.group {
+            name_parts.extend(
+                group
+                    .name
+                    .split(|c: char| !c.is_alphanumeric())
+                    .map(|s| s.to_lowercase()),
+            );
         }
 
-        let label_ids : Vec<i64> = name_parts.iter()
+        let label_ids: Vec<i64> = name_parts
+            .iter()
             .flat_map(|part| {
-                if all_keywords_map.contains_key(part)
-                {
+                if all_keywords_map.contains_key(part) {
                     return all_keywords_map[part].clone();
                 }
-                
+
                 return vec![];
             })
-            .filter(|l| !model.labels.iter().any(|existing_labels| existing_labels.id == *l))
+            .filter(|l| {
+                !model
+                    .labels
+                    .iter()
+                    .any(|existing_labels| existing_labels.id == *l)
+            })
             .unique()
             .collect();
 
-        if !label_ids.is_empty()
-        {
-           label::add_labels_on_model_sync(label_ids, model.id, db);
+        if !label_ids.is_empty() {
+            label::add_labels_on_model_sync(label_ids, model.id, db);
         }
     }
 }
@@ -135,26 +143,34 @@ fn import_models_from_dir_recursive(
     path: &PathBuf,
     app_state: &AppState,
     app_handle: &AppHandle,
-    delete_imported : bool,
+    delete_imported: bool,
 ) -> Result<Vec<CreationResult>, ApplicationError> {
-    let mut results : Vec<CreationResult> = vec![];
-    let entries : Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
+    let mut results: Vec<CreationResult> = vec![];
+    let entries: Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
     let configuration = app_state.get_configuration();
 
-    for folder in entries.iter().filter(|f| f.path().is_dir())
-    {
-        if let Ok(result) = import_models_from_dir_recursive(&folder.path(), app_state, app_handle, delete_imported)
+    for folder in entries.iter().filter(|f| f.path().is_dir()) {
+        if let Ok(result) =
+            import_models_from_dir_recursive(&folder.path(), app_state, app_handle, delete_imported)
         {
             results.extend(result);
         }
     }
 
-    if entries.iter().filter(|f| f.path().is_file()).any(|f| is_supported_extension(&f.path(), &configuration))
+    if entries
+        .iter()
+        .filter(|f| f.path().is_file())
+        .any(|f| is_supported_extension(&f.path(), &configuration))
     {
         let group_name = util::prettify_file_name(path, true);
 
-        if let Ok(result) = import_models_from_dir(path.to_str().unwrap(), &group_name, app_state, app_handle, delete_imported)
-        {
+        if let Ok(result) = import_models_from_dir(
+            path.to_str().unwrap(),
+            &group_name,
+            app_state,
+            app_handle,
+            delete_imported,
+        ) {
             results.push(result);
         }
     }
@@ -167,7 +183,7 @@ fn import_models_from_dir(
     group_name: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-    delete_imported : bool,
+    delete_imported: bool,
 ) -> Result<CreationResult, ApplicationError> {
     let mut model_ids = Vec::new();
     let configuration = app_state.get_configuration();
@@ -204,8 +220,7 @@ fn import_models_from_dir(
 
         model_ids.push(id);
 
-        if delete_imported
-        {
+        if delete_imported {
             let _ = fs::remove_file(&entry);
         }
 
@@ -232,7 +247,7 @@ fn import_models_from_zip(
     group_name: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-    delete_imported : bool,
+    delete_imported: bool,
 ) -> Result<CreationResult, ApplicationError> {
     let mut model_ids = Vec::new();
     let configuration = app_state.get_configuration();
@@ -244,30 +259,30 @@ fn import_models_from_zip(
     {
         let zip_file = File::open(&path)?;
         let mut archive = zip::ZipArchive::new(zip_file)?;
-    
+
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
             let outpath = match file.enclosed_name() {
                 Some(path) => path,
                 None => continue,
             };
-    
+
             if outpath.file_name().take().unwrap() == ".link" {
                 let mut file_contents: Vec<u8> = Vec::new();
                 file.read_to_end(&mut file_contents)?;
                 temp_str = String::from_utf8(file_contents).unwrap();
                 link = Some(temp_str.as_str());
             }
-    
+
             if !is_supported_extension(&outpath, &configuration) {
                 continue;
             }
-    
+
             if file.is_file() {
                 let file_name = util::prettify_file_name(&outpath, false);
                 let extension = outpath.extension().unwrap().to_str().unwrap();
                 let file_size = file.size() as usize;
-    
+
                 let id = import_single_model(
                     &mut file, extension, file_size, &file_name, link, &app_state,
                 )?;
@@ -277,8 +292,7 @@ fn import_models_from_zip(
         }
     }
 
-    if delete_imported
-    {
+    if delete_imported {
         let _ = fs::remove_file(path);
     }
 

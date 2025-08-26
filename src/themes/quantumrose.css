@@ -1,0 +1,88 @@
+/* https://tweakcn.com/editor/theme */
+@layer base {
+    [data-theme="quantumrose"]:root {
+        --background: 328 100% 97.0588%;
+        --foreground: 326.2810 71.5976% 33.1373%;
+        --card: 322.5000 100.0000% 98.4314%;
+        --card-foreground: 326.2810 71.5976% 33.1373%;
+        --popover: 322.5000 100.0000% 98.4314%;
+        --popover-foreground: 326.2810 71.5976% 33.1373%;
+        --primary: 328.9286 94.9153% 46.2745%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 300 100.0000% 91.9608%;
+        --secondary-foreground: 326.2810 71.5976% 33.1373%;
+        --muted: 327.8571 100% 94.5098%;
+        --muted-foreground: 329.0476 50.0000% 50.5882%;
+        --accent: 327.0968 100% 87.8431%;
+        --accent-foreground: 326.2810 71.5976% 33.1373%;
+        --destructive: 340.7843 62.4490% 51.9608%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 326.7857 100.0000% 89.0196%;
+        --input: 300 100.0000% 91.9608%;
+        --ring: 328.9286 94.9153% 46.2745%;
+        --sidebar: 330 100% 96.4706%;
+        --sidebar-foreground: 326.2810 71.5976% 33.1373%;
+        --sidebar-primary: 328.9286 94.9153% 46.2745%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 327.0968 100% 87.8431%;
+        --sidebar-accent-foreground: 326.2810 71.5976% 33.1373%;
+        --sidebar-border: 326.4706 100% 93.3333%;
+        --sidebar-ring: 328.9286 94.9153% 46.2745%;
+        --font-sans: Poppins, sans-serif;
+        --font-serif: Playfair Display, serif;
+        --font-mono: Space Mono, monospace;
+        --radius: 0.5rem;
+        --shadow-2xs: 0px 3px 0px 0px hsl(330 70% 30% / 0.09);
+        --shadow-xs: 0px 3px 0px 0px hsl(330 70% 30% / 0.09);
+        --shadow-sm: 0px 3px 0px 0px hsl(330 70% 30% / 0.18), 0px 1px 2px -1px hsl(330 70% 30% / 0.18);
+        --shadow: 0px 3px 0px 0px hsl(330 70% 30% / 0.18), 0px 1px 2px -1px hsl(330 70% 30% / 0.18);
+        --shadow-md: 0px 3px 0px 0px hsl(330 70% 30% / 0.18), 0px 2px 4px -1px hsl(330 70% 30% / 0.18);
+        --shadow-lg: 0px 3px 0px 0px hsl(330 70% 30% / 0.18), 0px 4px 6px -1px hsl(330 70% 30% / 0.18);
+        --shadow-xl: 0px 3px 0px 0px hsl(330 70% 30% / 0.18), 0px 8px 10px -1px hsl(330 70% 30% / 0.18);
+        --shadow-2xl: 0px 3px 0px 0px hsl(330 70% 30% / 0.45);
+        --tracking-normal: 0em;
+        --spacing: 0.25rem;
+    }
+
+    [data-theme="quantumrose"].dark {
+        --background: 280.8000 58.1395% 8.4314%;
+        --foreground: 300 100% 85.0980%;
+        --card: 280 45.2055% 14.3137%;
+        --card-foreground: 300 100% 85.0980%;
+        --popover: 280 45.2055% 14.3137%;
+        --popover-foreground: 300 100% 85.0980%;
+        --primary: 306.4865 100% 70.9804%;
+        --primary-foreground: 300 65.5172% 5.6863%;
+        --secondary: 288.5106 42.3423% 21.7647%;
+        --secondary-foreground: 300 100% 85.0980%;
+        --muted: 279 44.4444% 17.6471%;
+        --muted-foreground: 300 52.8736% 65.8824%;
+        --accent: 297.0968 50.0000% 24.3137%;
+        --accent-foreground: 300 100% 85.0980%;
+        --destructive: 338.2326 100.0000% 57.8431%;
+        --destructive-foreground: 0 0% 97.6471%;
+        --border: 281.4706 55.7377% 23.9216%;
+        --input: 288.5106 42.3423% 21.7647%;
+        --ring: 306.4865 100% 70.9804%;
+        --sidebar: 277.5000 48.0000% 9.8039%;
+        --sidebar-foreground: 300 100% 85.0980%;
+        --sidebar-primary: 306.4865 100% 70.9804%;
+        --sidebar-primary-foreground: 300 65.5172% 5.6863%;
+        --sidebar-accent: 297.0968 50.0000% 24.3137%;
+        --sidebar-accent-foreground: 300 100% 85.0980%;
+        --sidebar-border: 281.4706 55.7377% 23.9216%;
+        --sidebar-ring: 306.4865 100% 70.9804%;
+        --font-sans: Quicksand, sans-serif;
+        --font-serif: Playfair Display, serif;
+        --font-mono: Space Mono, monospace;
+        --radius: 0.5rem;
+        --shadow-2xs: 0px 3px 0px 0px hsl(300 80% 50% / 0.09);
+        --shadow-xs: 0px 3px 0px 0px hsl(300 80% 50% / 0.09);
+        --shadow-sm: 0px 3px 0px 0px hsl(300 80% 50% / 0.18), 0px 1px 2px -1px hsl(300 80% 50% / 0.18);
+        --shadow: 0px 3px 0px 0px hsl(300 80% 50% / 0.18), 0px 1px 2px -1px hsl(300 80% 50% / 0.18);
+        --shadow-md: 0px 3px 0px 0px hsl(300 80% 50% / 0.18), 0px 2px 4px -1px hsl(300 80% 50% / 0.18);
+        --shadow-lg: 0px 3px 0px 0px hsl(300 80% 50% / 0.18), 0px 4px 6px -1px hsl(300 80% 50% / 0.18);
+        --shadow-xl: 0px 3px 0px 0px hsl(300 80% 50% / 0.18), 0px 8px 10px -1px hsl(300 80% 50% / 0.18);
+        --shadow-2xl: 0px 3px 0px 0px hsl(300 80% 50% / 0.45);
+    }
+}

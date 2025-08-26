@@ -23,8 +23,8 @@
         clazz?: ClassValue;
         onEdit?: Function;
         value: string[];
-        title: String;
-        description: String;
+        title: string;
+        description: string;
     } = $props();
 
     function deleteAtIndex(index: number) {

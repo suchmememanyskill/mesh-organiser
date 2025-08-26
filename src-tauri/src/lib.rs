@@ -1,7 +1,16 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}, thread};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+    thread,
+};
 
+use arboard::Clipboard;
+use base64::prelude::*;
 use configuration::Configuration;
-use db::{model::ModelFlags, resource::{Resource, ResourceFlags}};
+use db::{
+    model::ModelFlags,
+    resource::{Resource, ResourceFlags},
+};
 use error::ApplicationError;
 use serde::Serialize;
 use service::{
@@ -10,14 +19,17 @@ use service::{
     model_service::{self, CreationResult},
     slicer_service::Slicer,
 };
-use strum::IntoEnumIterator;
-use tauri::{async_runtime::block_on, menu::{MenuBuilder, SubmenuBuilder}, webview::{DownloadEvent, PageLoadEvent}, WebviewUrl, WebviewWindowBuilder};
-use tauri::{AppHandle, Emitter, Manager, State};
-use urlencoding::decode;
 use std::fs::File;
 use std::io::prelude::*;
-use arboard::Clipboard;
-use base64::prelude::*;
+use strum::IntoEnumIterator;
+use tauri::{
+    async_runtime::block_on,
+    menu::{MenuBuilder, SubmenuBuilder},
+    webview::{DownloadEvent, PageLoadEvent},
+    WebviewUrl, WebviewWindowBuilder,
+};
+use tauri::{AppHandle, Emitter, Manager, State};
+use urlencoding::decode;
 mod configuration;
 mod db;
 mod error;
@@ -27,8 +39,8 @@ mod util;
 #[tauri::command]
 async fn add_model(
     path: &str,
-    recursive : bool,
-    delete_imported : bool,
+    recursive: bool,
+    delete_imported: bool,
     state: State<'_, AppState>,
     app_handle: AppHandle,
 ) -> Result<Vec<CreationResult>, ApplicationError> {
@@ -37,8 +49,14 @@ async fn add_model(
 
     // TODO: can this not just be removed?
     let result = tauri::async_runtime::spawn_blocking(move || {
-        let result = model_service::import_path(&path_clone, &state_clone, &app_handle, recursive, delete_imported)?;
-        let model_ids : Vec<i64> = result.iter().flat_map(|f| f.model_ids.clone()).collect();
+        let result = model_service::import_path(
+            &path_clone,
+            &state_clone,
+            &app_handle,
+            recursive,
+            delete_imported,
+        )?;
+        let model_ids: Vec<i64> = result.iter().flat_map(|f| f.model_ids.clone()).collect();
         let models = db::model::get_models_by_id_sync(model_ids, &state_clone.db);
         block_on(service::thumbnail_service::generate_thumbnails(
             models,
@@ -68,7 +86,7 @@ async fn edit_model(
     model_name: &str,
     model_url: Option<&str>,
     model_description: Option<&str>,
-    model_flags : ModelFlags,
+    model_flags: ModelFlags,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     db::model::edit_model(
@@ -149,14 +167,17 @@ async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(), A
     let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
 
     if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from("Failed to find model to delete")));
+        return Err(ApplicationError::InternalError(String::from(
+            "Failed to find model to delete",
+        )));
     }
 
     let model = &model[0];
 
     db::model::delete_model(model_id, &state.db).await;
 
-    let model_path = PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.sha256, model.filetype));
+    let model_path =
+        PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.sha256, model.filetype));
     let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.sha256));
 
     if model_path.exists() {
@@ -166,7 +187,7 @@ async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(), A
     if image_path.exists() {
         std::fs::remove_file(image_path)?;
     }
-    
+
     Ok(())
 }
 
@@ -347,7 +368,9 @@ async fn get_model_as_base64(
     let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
 
     if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from("Failed to find model to delete")));
+        return Err(ApplicationError::InternalError(String::from(
+            "Failed to find model to delete",
+        )));
     }
 
     let model = &model[0];
@@ -359,8 +382,7 @@ async fn get_model_as_base64(
 }
 
 #[derive(Serialize, Clone)]
-struct DownloadFinishedEvent 
-{
+struct DownloadFinishedEvent {
     path: String,
     url: String,
 }
@@ -371,19 +393,15 @@ struct Site {
 }
 
 #[tauri::command]
-async fn new_window_with_url(
-    url: &str,
-    app_handle: AppHandle,
-) -> Result<(), ApplicationError> {
-    if let Some(window) = app_handle.webview_windows().get("secondary")
-    {
+async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), ApplicationError> {
+    if let Some(window) = app_handle.webview_windows().get("secondary") {
         window.set_focus()?;
         window.navigate(url.parse().unwrap())?;
         window.set_title("Browse models")?;
         return Ok(());
     }
 
-    let sites : Vec<Site> = vec![
+    let sites: Vec<Site> = vec![
         Site {
             name: "Thingiverse",
             url: "https://www.thingiverse.com/",
@@ -399,7 +417,7 @@ async fn new_window_with_url(
         Site {
             name: "Makerworld",
             url: "https://www.makerworld.com",
-        }
+        },
     ];
 
     println!("Opening new window with URL: {}", url);
@@ -437,22 +455,21 @@ async fn new_window_with_url(
         let webview = webviews.first().unwrap();
         let id = event.id().0.as_str();
 
-        match id
-        {
+        match id {
             "back" => {
                 let _ = webview.eval("window.history.back()");
-            },
+            }
             "forward" => {
                 let _ = webview.eval("window.history.forward()");
-            },
+            }
             "reload" => {
                 let _ = webview.eval("window.location.reload()");
-            },
+            }
             "copy_url" => {
                 let url = webview.url().unwrap();
                 let mut clipboard = Clipboard::new().unwrap();
                 let _ = clipboard.set_text(url.to_string());
-            },
+            }
             _ => {
                 let _ = webview.navigate(id.parse().unwrap());
             }
@@ -463,7 +480,7 @@ async fn new_window_with_url(
             let _ = f.eval(include_str!("./inject.js"));
         }
     })
-    .on_download(|f, event | {
+    .on_download(|f, event| {
         if let DownloadEvent::Requested { url, destination } = &event {
             println!("Download started: {:?}", url);
             let _ = f.app_handle().emit("download-started", url).unwrap();
@@ -476,10 +493,15 @@ async fn new_window_with_url(
                 let handle = f.app_handle();
 
                 println!("Download finished: {:?}", path);
-                let _ = handle.emit("download-finished", DownloadFinishedEvent {
-                    path: String::from(path.to_str().unwrap()),
-                    url: String::from(f.url().unwrap()),
-                }).unwrap();
+                let _ = handle
+                    .emit(
+                        "download-finished",
+                        DownloadFinishedEvent {
+                            path: String::from(path.to_str().unwrap()),
+                            url: String::from(f.url().unwrap()),
+                        },
+                    )
+                    .unwrap();
 
                 let _ = f.window().set_title("Download complete");
             }
@@ -563,7 +585,9 @@ async fn remove_resource(
     let resource = db::resource::get_resource_by_id(resource_id, &state.db).await;
 
     if resource.is_none() {
-        return Err(ApplicationError::InternalError(String::from("Resource not found")));
+        return Err(ApplicationError::InternalError(String::from(
+            "Resource not found",
+        )));
     }
 
     let resource = resource.unwrap();
@@ -582,7 +606,9 @@ async fn open_resource_folder(
     let resource = db::resource::get_resource_by_id(resource_id, &state.db).await;
 
     if resource.is_none() {
-        return Err(ApplicationError::InternalError(String::from("Resource not found")));
+        return Err(ApplicationError::InternalError(String::from(
+            "Resource not found",
+        )));
     }
 
     let resource = resource.unwrap();
@@ -684,6 +710,7 @@ pub fn run() {
     });
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
             println!("a new app instance was opened with {argv:?} and the deep link event was already triggered");
@@ -845,14 +872,11 @@ pub fn run() {
         .expect("error while running tauri application");
 
     app.run(|_app_handle, e| {
-        if let tauri::RunEvent::ExitRequested {  .. } = e {
+        if let tauri::RunEvent::ExitRequested { .. } = e {
             // Close sqlite db
             tauri::async_runtime::block_on(async move {
                 let app_state = _app_handle.state::<AppState>();
-                app_state
-                    .db
-                    .close()
-                    .await;
+                app_state.db.close().await;
             });
         }
     });

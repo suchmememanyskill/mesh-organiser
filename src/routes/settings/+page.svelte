@@ -12,6 +12,7 @@
     import { toReadableSize } from "$lib/utils";
     import { Input } from "$lib/components/ui/input/index.js";
     import { configurationDefault, type SlicerEntry } from "$lib/model";
+    import { openPath } from '@tauri-apps/plugin-opener';
 
     import {
         Card,
@@ -24,8 +25,9 @@
     import { Label } from "$lib/components/ui/label/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import CardFooter from "$lib/components/ui/card/card-footer.svelte";
-    import { appDataDir } from "@tauri-apps/api/path";
+    import { appDataDir, join } from "@tauri-apps/api/path";
     import { open } from "@tauri-apps/plugin-dialog";
+    import { setTheme, getAvailableThemes, getThemeName } from "$lib/theme";
 
     let models_size = $derived(data.entries.map(e => e.size).reduce((partialSum, a) => partialSum + a, 0));
     let model_dir_size = $state(0);
@@ -71,6 +73,17 @@
     async function onInternalStateChange()
     {
         await updateState();
+    }
+
+    async function openCustomCss()
+    {
+        const appDataDirPath = await appDataDir();
+        const filePath = await join(
+            appDataDirPath,
+            "custom.css"
+        );
+
+        await openPath(filePath);
     }
 
     let destroy_thumbnail_counter: UnlistenFn | null = null;
@@ -352,6 +365,24 @@
                         </Select.Content>
                     </Select.Root>                    
                 </div>
+
+                <div class="flex flex-col space-y-1.5">
+                    <Label>Theme</Label>
+                    <Select.Root type="single" bind:value={c.configuration.theme} onValueChange={(val) => setTheme(val)}>
+                        <Select.Trigger class="w-[180px]">{getThemeName(c.configuration.theme)}</Select.Trigger>
+                        <Select.Content>
+                            {#each getAvailableThemes() as theme}
+                                <Select.Item value={theme}>{getThemeName(theme)}</Select.Item>
+                            {/each}
+                        </Select.Content>
+                    </Select.Root>   
+                    {#if c.configuration.theme === "custom"}
+                        <div class="grid grid-cols-2 gap-2">
+                                <Button onclick={() => setTheme("custom")}>Reload theme</Button>
+                                <Button onclick={openCustomCss}>Open custom.css</Button>
+                        </div>
+                    {/if}
+                </div>                
             </CardContent>
         </Card>
 

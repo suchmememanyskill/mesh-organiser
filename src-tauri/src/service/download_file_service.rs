@@ -47,16 +47,13 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ApplicationError
     if url.contains("makerworld") {
         file_name = url.split("name=").last().unwrap_or("model.stl");
         source_uri = Some(String::from("https://makerworld.com"));
-    }
-    else if url.contains("thingiverse") {
+    } else if url.contains("thingiverse") {
         file_name = &redirect_url_filename;
         source_uri = Some(String::from("https://www.thingiverse.com/"));
-    }
-    else if url.starts_with("https://files.printables.com/media/prints/") {
+    } else if url.starts_with("https://files.printables.com/media/prints/") {
         let id = String::from(url[42..].split("/").next().unwrap());
         source_uri = Some(format!("https://www.printables.com/model/{}", id));
-    }
-    else if url.contains("nexprint") {
+    } else if url.contains("nexprint") {
         let re = Regex::new(r#"filename="([^"]+)""#).unwrap();
         let decoded_url = decode(url).unwrap().into_owned();
         if let Some(caps) = re.captures(&decoded_url) {

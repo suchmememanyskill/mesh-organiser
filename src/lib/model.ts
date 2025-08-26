@@ -236,6 +236,7 @@ export interface Configuration {
     custom_slicer_path : string;
     group_split_view: "no_split" | "split-left-right" | "split-top-bottom";
     label_exported_model_as_printed : boolean;
+    theme : string;
 }
 
 export function configurationDefault() : Configuration
@@ -274,6 +275,7 @@ export function configurationDefault() : Configuration
         custom_slicer_path: "",
         group_split_view: "no_split",
         label_exported_model_as_printed: false,
+        theme: "default",
     }
 }
 

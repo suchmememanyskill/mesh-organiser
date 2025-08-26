@@ -1,11 +1,11 @@
 use super::label::LabelMin;
 use super::model_group::ModelGroup;
+use bitflags::bitflags;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use sqlx::{self, types::chrono};
 use tauri::async_runtime::block_on;
-use bitflags::bitflags;
-use indexmap::IndexMap;
 
 bitflags! {
     pub struct ModelFlags: u32 {
@@ -247,7 +247,7 @@ pub fn edit_model_sync(
     name: &str,
     link: Option<&str>,
     description: Option<&str>,
-    flags : ModelFlags,
+    flags: ModelFlags,
     db: &super::db::Db,
 ) {
     block_on(edit_model(id, name, link, description, flags, db))
@@ -258,7 +258,7 @@ pub async fn edit_model(
     name: &str,
     link: Option<&str>,
     description: Option<&str>,
-    flags : ModelFlags,
+    flags: ModelFlags,
     db: &super::db::Db,
 ) {
     let bits = flags.bits() as i64;

@@ -1,8 +1,7 @@
-
+use indexmap::IndexMap;
 use serde::Serialize;
 use sqlx::{self, QueryBuilder};
 use tauri::async_runtime::block_on;
-use indexmap::IndexMap;
 
 #[derive(Serialize, Debug)]
 pub struct Label {
@@ -10,8 +9,8 @@ pub struct Label {
     pub name: String,
     pub color: i64,
     pub children: Vec<LabelMin>,
-    pub effective_labels : Vec<LabelMin>,
-    pub has_parent : bool,
+    pub effective_labels: Vec<LabelMin>,
+    pub has_parent: bool,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -25,7 +24,11 @@ pub fn get_labels_sync(db: &super::db::Db) -> Vec<Label> {
     block_on(get_labels(db))
 }
 
-fn get_effective_labels(label_id : i64, effective_labels : &mut Vec<LabelMin>, label_map : &mut IndexMap<i64, Label>) {
+fn get_effective_labels(
+    label_id: i64,
+    effective_labels: &mut Vec<LabelMin>,
+    label_map: &mut IndexMap<i64, Label>,
+) {
     let label = label_map.get(&label_id).unwrap();
 
     if !effective_labels.iter().any(|l| l.id == label.id) {
@@ -132,7 +135,8 @@ pub async fn add_labels_on_model(label_ids: Vec<i64>, model_id: i64, db: &super:
         return;
     }
 
-    let mut query_builder: QueryBuilder<'_, sqlx::Sqlite> = QueryBuilder::new("INSERT INTO models_labels (label_id, model_id) ");
+    let mut query_builder: QueryBuilder<'_, sqlx::Sqlite> =
+        QueryBuilder::new("INSERT INTO models_labels (label_id, model_id) ");
 
     query_builder.push_values(label_ids, |mut b, label_id| {
         b.push_bind(label_id).push_bind(model_id);
@@ -227,7 +231,8 @@ pub async fn add_childs_to_label(
         return;
     }
 
-    let mut query_builder: QueryBuilder<'_, sqlx::Sqlite> = QueryBuilder::new("INSERT INTO labels_labels (parent_label_id, child_label_id) ");
+    let mut query_builder: QueryBuilder<'_, sqlx::Sqlite> =
+        QueryBuilder::new("INSERT INTO labels_labels (parent_label_id, child_label_id) ");
 
     query_builder.push_values(child_label_ids, |mut b, child_label_id| {
         b.push_bind(parent_label_id).push_bind(child_label_id);
@@ -242,9 +247,9 @@ pub async fn add_childs_to_label(
 }
 
 pub async fn remove_childs_from_label(
-    parent_label_id: i64, 
-    child_label_ids: Vec<i64>, 
-    db: &super::db::Db
+    parent_label_id: i64,
+    child_label_ids: Vec<i64>,
+    db: &super::db::Db,
 ) {
     let in_query = child_label_ids
         .iter()
@@ -264,12 +269,12 @@ pub async fn remove_childs_from_label(
         .expect("Failed to remove label from models");
 }
 
-pub async fn remove_all_childs_from_label(
-    parent_label_id: i64, 
-    db: &super::db::Db
-) {
-    sqlx::query!("DELETE FROM labels_labels WHERE parent_label_id = ?", parent_label_id)
-        .execute(db)
-        .await
-        .expect("Failed to remove label from models");
+pub async fn remove_all_childs_from_label(parent_label_id: i64, db: &super::db::Db) {
+    sqlx::query!(
+        "DELETE FROM labels_labels WHERE parent_label_id = ?",
+        parent_label_id
+    )
+    .execute(db)
+    .await
+    .expect("Failed to remove label from models");
 }

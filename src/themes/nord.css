@@ -1,0 +1,67 @@
+/* https://www.shadcn.studio/ */
+
+@layer base {
+    [data-theme="nord"]:root {
+        --background: 217.5 26.7% 94.1%;
+        --foreground: 220 16.4% 21.6%;
+        --card: 217.5 26.7% 94.1%;
+        --card-foreground: 220 16.4% 21.6%;
+        --popover: 217.5 26.7% 94.1%;
+        --popover-foreground: 220 16.4% 21.6%;
+        --primary: 213.1 32% 52.2%;
+        --primary-foreground: 218.5 57.3% 2.7%;
+        --secondary: 218.2 26.8% 92%;
+        --secondary-foreground: 220 16.4% 51.6%;
+        --muted: 218.8 27.9% 88%;
+        --muted-foreground: 220 16.4% 51.6%;
+        --accent: 218.8 27.9% 88%;
+        --accent-foreground: 220 16.4% 41.6%;
+        --destructive: 354.3 42.3% 56.5%;
+        --destructive-foreground: 220 16.4% 21.6%;
+        --border: 220 16.4% 51.6%;
+        --input: 220 16.4% 51.6%;
+        --ring: 213.1 32% 52.2%;
+        --radius: 0.5rem;
+
+        --sidebar-background: 217 27% 91%;
+        --sidebar-foreground: 220 16% 38%;
+        --sidebar-primary: 213 32% 49%;
+        --sidebar-primary-foreground: 218.5 57.3% 2.7%;
+        --sidebar-accent: 219 28% 85%;
+        --sidebar-accent-foreground: 220 16% 0%;
+        --sidebar-border: 220 16% 49%;
+        --sidebar-ring: 213 32% 49%;
+    }
+
+    [data-theme="nord"].dark {
+        --background: 217.5 36.7% 10%;
+        --foreground: 220 26.4% 78.4%;
+        --card: 217.5 36.7% 10%;
+        --card-foreground: 220 26.4% 78.4%;
+        --popover: 217.5 36.7% 10%;
+        --popover-foreground: 220 26.4% 78.4%;
+        --primary: 213.1 42% 47.8%;
+        --primary-foreground: 218.5 67.3% 90%;
+        --secondary: 218.2 36.8% 10%;
+        --secondary-foreground: 220 26.4% 48.4%;
+        --muted: 218.8 37.9% 12%;
+        --muted-foreground: 220 26.4% 48.4%;
+        --accent: 218.8 37.9% 12%;
+        --accent-foreground: 220 26.4% 58.4%;
+        --destructive: 354.3 52.3% 43.5%;
+        --destructive-foreground: 220 26.4% 78.4%;
+        --border: 220 26.4% 48.4%;
+        --input: 220 26.4% 48.4%;
+        --ring: 213.1 42% 47.8%;
+        --radius: 0.5rem;
+
+        --sidebar-background: 218 37% 2%;
+        --sidebar-foreground: 220 26% 63%;
+        --sidebar-primary: 213 42% 40%;
+        --sidebar-primary-foreground: 218.5 67.3% 90%;
+        --sidebar-accent: 219 38% 25%;
+        --sidebar-accent-foreground: 220 26% 100%;
+        --sidebar-border: 220 26% 40%;
+        --sidebar-ring: 213 42% 40%;
+    }
+}
