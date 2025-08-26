@@ -36,6 +36,13 @@ mod error;
 mod service;
 mod util;
 
+#[derive(Serialize, Clone)]
+struct DeepLinkEmit 
+{
+    download_url: String,
+    source_url: Option<String>
+}
+
 #[tauri::command]
 async fn add_model(
     path: &str,
@@ -394,6 +401,7 @@ struct Site {
 
 #[tauri::command]
 async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), ApplicationError> {
+    let cloned_handle = app_handle.clone();
     if let Some(window) = app_handle.webview_windows().get("secondary") {
         window.set_focus()?;
         window.navigate(url.parse().unwrap())?;
@@ -474,6 +482,27 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
                 let _ = webview.navigate(id.parse().unwrap());
             }
         }
+    })
+    .on_navigation(move |f| {   
+        let url = f.to_string();
+        println!("Navigated to: {}", url);
+
+        if let Some(deep_link) = extract_deep_link(&url) {
+            println!("Extracted deep link: {:?}", &deep_link);
+
+            let window = cloned_handle.get_webview_window("secondary");
+
+            if let Some(window) = window {
+                if let Ok(source_url) = window.url()
+                {
+                    let _ = cloned_handle.emit("deep-link", DeepLinkEmit { download_url: deep_link, source_url: Some(source_url.to_string()) });
+                }
+             }
+
+             return false;
+        }
+
+        true
     })
     .on_page_load(|f, e| {
         if e.event() == PageLoadEvent::Finished {
@@ -722,11 +751,11 @@ pub fn run() {
                 if let Some(deep_link) = deep_link
                 {
                     println!("Emitting deep link {:?}", deep_link);
-                    _app.emit("deep-link", deep_link).unwrap();
+                    _app.emit("deep-link", DeepLinkEmit { download_url: deep_link, source_url: None } ).unwrap();
                 }
                 else
                 {
-                    println!("Failed to emit deep link {:?}", &argv[1]);
+                    println!("Failed to extract deep link {:?}", &argv[1]);
                 }
             }
             else

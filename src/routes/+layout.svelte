@@ -35,12 +35,18 @@
         url: string,
     }
 
+    interface DeepLinkEmit
+    {
+        download_url: string,
+        source_url: string | null,
+    }
+
     function getFileFromUrl(url: string) {
         const url_parts = url.split('/');
         return url_parts[url_parts.length - 1].split('?')[0];
     }
 
-    async function handleDownload(url : string)
+    async function handleDownload(url : string, source: string | null = null)
     {
         if (c.configuration.focus_after_link_import)
         {
@@ -57,9 +63,12 @@
             parts.push("open=true");
         }
 
-        if (download_result.source_uri)
+        let source_uri = source ?? download_result.source_uri;
+        
+        if (source_uri)
         {
-            parts.push("source=" + download_result.source_uri);
+            console.log(source_uri);
+            parts.push("source=" + encodeURIComponent(source_uri));
         }
 
         goto("/import?" + parts.join("&"));
@@ -82,12 +91,13 @@
     }
 
     onMount(async () => {
-        await listen<string>('deep-link', async (event) => {
+        await listen<DeepLinkEmit>('deep-link', async (event) => {
             console.log('deep link (deep-link):', event);
-            await toast.promise(handleDownload(event.payload), {
-                loading: `Downloading model ${getFileFromUrl(event.payload)}`,
-                success: `Downloaded model ${getFileFromUrl(event.payload)}`,
-                error: `Failed to download model ${getFileFromUrl(event.payload)}`
+            let display_url = event.payload.source_url ?? event.payload.download_url;
+            await toast.promise(handleDownload(event.payload.download_url, event.payload.source_url), {
+                loading: `Downloading model ${getFileFromUrl(display_url)}`,
+                success: `Downloaded model ${getFileFromUrl(display_url)}`,
+                error: `Failed to download model ${getFileFromUrl(display_url)}`
             })
         });
 
