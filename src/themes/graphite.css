@@ -1,0 +1,73 @@
+/* https://tweakcn.com/editor/theme */
+
+@layer base {
+    [data-theme="graphite"]:root {
+        --background: 0 0% 94.1176%;
+        --foreground: 0 0% 20%;
+        --card: 0 0% 96.0784%;
+        --card-foreground: 0 0% 20%;
+        --popover: 0 0% 96.0784%;
+        --popover-foreground: 0 0% 20%;
+        --primary: 0 0% 37.6471%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 87.8431%;
+        --secondary-foreground: 0 0% 20%;
+        --muted: 0 0% 85.0980%;
+        --muted-foreground: 0 0% 40%;
+        --accent: 0 0% 75.2941%;
+        --accent-foreground: 0 0% 20%;
+        --destructive: 0 60.0000% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 81.5686%;
+        --input: 0 0% 87.8431%;
+        --ring: 0 0% 37.6471%;
+        --sidebar: 0 0% 91.7647%;
+        --sidebar-foreground: 0 0% 20%;
+        --sidebar-primary: 0 0% 37.6471%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 0 0% 75.2941%;
+        --sidebar-accent-foreground: 0 0% 20%;
+        --sidebar-border: 0 0% 81.5686%;
+        --sidebar-ring: 0 0% 37.6471%;
+        --font-sans: Montserrat, sans-serif;
+        --font-serif: Georgia, serif;
+        --font-mono: Fira Code, monospace;
+        --radius: 0.35rem;
+        --tracking-normal: 0em;
+        --spacing: 0.25rem;
+    }
+
+    [data-theme="graphite"].dark {
+        --background: 0 0% 10.1961%;
+        --foreground: 0 0% 85.0980%;
+        --card: 0 0% 12.5490%;
+        --card-foreground: 0 0% 85.0980%;
+        --popover: 0 0% 12.5490%;
+        --popover-foreground: 0 0% 85.0980%;
+        --primary: 0 0% 62.7451%;
+        --primary-foreground: 0 0% 10.1961%;
+        --secondary: 0 0% 18.8235%;
+        --secondary-foreground: 0 0% 85.0980%;
+        --muted: 0 0% 16.4706%;
+        --muted-foreground: 0 0% 50.1961%;
+        --accent: 0 0% 25.0980%;
+        --accent-foreground: 0 0% 85.0980%;
+        --destructive: 0 66.3043% 63.9216%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 20.7843%;
+        --input: 0 0% 18.8235%;
+        --ring: 0 0% 62.7451%;
+        --sidebar: 0 0% 12.1569%;
+        --sidebar-foreground: 0 0% 85.0980%;
+        --sidebar-primary: 0 0% 62.7451%;
+        --sidebar-primary-foreground: 0 0% 10.1961%;
+        --sidebar-accent: 0 0% 25.0980%;
+        --sidebar-accent-foreground: 0 0% 85.0980%;
+        --sidebar-border: 0 0% 20.7843%;
+        --sidebar-ring: 0 0% 62.7451%;
+        --font-sans: Inter, sans-serif;
+        --font-serif: Georgia, serif;
+        --font-mono: Fira Code, monospace;
+        --radius: 0.35rem;
+    }
+}

@@ -10,6 +10,10 @@
 @import "./themes/vintageretro.css";
 @import './themes/synthwave.css';
 @import './themes/quantumrose.css';
+@import './themes/graphite.css';
+@import './themes/perpetuity.css';
+@import './themes/nature.css';
+@import './themes/sunsethorizon.css';
 
 @tailwind base;
 @tailwind components;

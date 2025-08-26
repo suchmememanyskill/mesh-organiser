@@ -1,0 +1,73 @@
+/* https://tweakcn.com/editor/theme */
+
+@layer base {
+    [data-theme="sunsethorizon"]:root {
+        --background: 24.0000 100.0000% 98.0392%;
+        --foreground: 346.6667 7.9646% 22.1569%;
+        --card: 0 0% 100%;
+        --card-foreground: 346.6667 7.9646% 22.1569%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 346.6667 7.9646% 22.1569%;
+        --primary: 11.6250 100% 68.6275%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 8.5714 100.0000% 95.8824%;
+        --secondary-foreground: 9.9130 47.3251% 47.6471%;
+        --muted: 15.0000 100.0000% 96.0784%;
+        --muted-foreground: 25.0000 5.2632% 44.7059%;
+        --accent: 26.1069 98.4962% 73.9216%;
+        --accent-foreground: 346.6667 7.9646% 22.1569%;
+        --destructive: 355.4913 77.5785% 56.2745%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 14.6341 100.0000% 91.9608%;
+        --input: 14.6341 100.0000% 91.9608%;
+        --ring: 11.6250 100% 68.6275%;
+        --sidebar: 15.0000 100.0000% 96.0784%;
+        --sidebar-foreground: 346.6667 7.9646% 22.1569%;
+        --sidebar-primary: 11.6250 100% 68.6275%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 26.1069 98.4962% 73.9216%;
+        --sidebar-accent-foreground: 346.6667 7.9646% 22.1569%;
+        --sidebar-border: 14.6341 100.0000% 91.9608%;
+        --sidebar-ring: 11.6250 100% 68.6275%;
+        --font-sans: Montserrat, sans-serif;
+        --font-serif: Merriweather, serif;
+        --font-mono: Ubuntu Mono, monospace;
+        --radius: 0.625rem;
+        --tracking-normal: 0em;
+        --spacing: 0.25rem;
+    }
+
+    [data-theme="sunsethorizon"].dark {
+        --background: 336 13.5135% 14.5098%;
+        --foreground: 21.4286 35.0000% 92.1569%;
+        --card: 324 9.6154% 20.3922%;
+        --card-foreground: 21.4286 35.0000% 92.1569%;
+        --popover: 324 9.6154% 20.3922%;
+        --popover-foreground: 21.4286 35.0000% 92.1569%;
+        --primary: 11.6250 100% 68.6275%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 325 9.3750% 25.0980%;
+        --secondary-foreground: 21.4286 35.0000% 92.1569%;
+        --muted: 324 9.6154% 20.3922%;
+        --muted-foreground: 22.2222 25.2336% 79.0196%;
+        --accent: 26.1069 98.4962% 73.9216%;
+        --accent-foreground: 336 13.5135% 14.5098%;
+        --destructive: 355.4913 77.5785% 56.2745%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 325 9.3750% 25.0980%;
+        --input: 325 9.3750% 25.0980%;
+        --ring: 11.6250 100% 68.6275%;
+        --sidebar: 336 13.5135% 14.5098%;
+        --sidebar-foreground: 21.4286 35.0000% 92.1569%;
+        --sidebar-primary: 11.6250 100% 68.6275%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 26.1069 98.4962% 73.9216%;
+        --sidebar-accent-foreground: 336 13.5135% 14.5098%;
+        --sidebar-border: 325 9.3750% 25.0980%;
+        --sidebar-ring: 11.6250 100% 68.6275%;
+        --font-sans: Montserrat, sans-serif;
+        --font-serif: Merriweather, serif;
+        --font-mono: Ubuntu Mono, monospace;
+        --radius: 0.625rem;
+    }
+}

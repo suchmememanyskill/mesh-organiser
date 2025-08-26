@@ -1,0 +1,73 @@
+/* https://tweakcn.com/editor/theme */
+
+@layer base {
+    [data-theme="nature"]:root {
+        --background: 37.5000 36.3636% 95.6863%;
+        --foreground: 8.8889 27.8351% 19.0196%;
+        --card: 37.5000 36.3636% 95.6863%;
+        --card-foreground: 8.8889 27.8351% 19.0196%;
+        --popover: 37.5000 36.3636% 95.6863%;
+        --popover-foreground: 8.8889 27.8351% 19.0196%;
+        --primary: 123.0380 46.1988% 33.5294%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 124.6154 39.3939% 93.5294%;
+        --secondary-foreground: 124.4776 55.3719% 23.7255%;
+        --muted: 33.7500 34.7826% 90.9804%;
+        --muted-foreground: 15.0000 25.2874% 34.1176%;
+        --accent: 122 37.5000% 84.3137%;
+        --accent-foreground: 124.4776 55.3719% 23.7255%;
+        --destructive: 0 66.3866% 46.6667%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 33.9130 27.0588% 83.3333%;
+        --input: 33.9130 27.0588% 83.3333%;
+        --ring: 123.0380 46.1988% 33.5294%;
+        --sidebar: 33.7500 34.7826% 90.9804%;
+        --sidebar-foreground: 8.8889 27.8351% 19.0196%;
+        --sidebar-primary: 123.0380 46.1988% 33.5294%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 122 37.5000% 84.3137%;
+        --sidebar-accent-foreground: 124.4776 55.3719% 23.7255%;
+        --sidebar-border: 33.9130 27.0588% 83.3333%;
+        --sidebar-ring: 123.0380 46.1988% 33.5294%;
+        --font-sans: Montserrat, sans-serif;
+        --font-serif: Merriweather, serif;
+        --font-mono: Source Code Pro, monospace;
+        --radius: 0.5rem;
+        --tracking-normal: 0em;
+        --spacing: 0.25rem;
+    }
+
+    [data-theme="nature"].dark {
+        --background: 132.8571 20% 13.7255%;
+        --foreground: 32.7273 26.8293% 91.9608%;
+        --card: 124.6154 12.6214% 20.1961%;
+        --card-foreground: 32.7273 26.8293% 91.9608%;
+        --popover: 124.6154 12.6214% 20.1961%;
+        --popover-foreground: 32.7273 26.8293% 91.9608%;
+        --primary: 122.4242 39.4422% 49.2157%;
+        --primary-foreground: 125.7143 51.2195% 8.0392%;
+        --secondary: 115.3846 9.6296% 26.4706%;
+        --secondary-foreground: 114.0000 13.8889% 85.8824%;
+        --muted: 124.6154 12.6214% 20.1961%;
+        --muted-foreground: 34.7368 19.1919% 80.5882%;
+        --accent: 122.7907 43.4343% 38.8235%;
+        --accent-foreground: 32.7273 26.8293% 91.9608%;
+        --destructive: 0 66.3866% 46.6667%;
+        --destructive-foreground: 32.7273 26.8293% 91.9608%;
+        --border: 115.3846 9.6296% 26.4706%;
+        --input: 115.3846 9.6296% 26.4706%;
+        --ring: 122.4242 39.4422% 49.2157%;
+        --sidebar: 132.8571 20% 13.7255%;
+        --sidebar-foreground: 32.7273 26.8293% 91.9608%;
+        --sidebar-primary: 122.4242 39.4422% 49.2157%;
+        --sidebar-primary-foreground: 125.7143 51.2195% 8.0392%;
+        --sidebar-accent: 122.7907 43.4343% 38.8235%;
+        --sidebar-accent-foreground: 32.7273 26.8293% 91.9608%;
+        --sidebar-border: 115.3846 9.6296% 26.4706%;
+        --sidebar-ring: 122.4242 39.4422% 49.2157%;
+        --font-sans: Montserrat, sans-serif;
+        --font-serif: Merriweather, serif;
+        --font-mono: Source Code Pro, monospace;
+        --radius: 0.5rem;
+    }
+}

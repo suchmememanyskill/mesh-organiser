@@ -1,0 +1,73 @@
+/* https://tweakcn.com/editor/theme */
+
+@layer base {
+    [data-theme="perpetuity"]:root {
+        --background: 180 21.0526% 92.5490%;
+        --foreground: 188.8000 78.9474% 18.6275%;
+        --card: 180 23.8095% 95.8824%;
+        --card-foreground: 188.8000 78.9474% 18.6275%;
+        --popover: 180 23.8095% 95.8824%;
+        --popover-foreground: 188.8000 78.9474% 18.6275%;
+        --primary: 183.9706 91.8919% 29.0196%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 180 28.8136% 88.4314%;
+        --secondary-foreground: 188.8000 78.9474% 18.6275%;
+        --muted: 180 19.2308% 89.8039%;
+        --muted-foreground: 184 31.2500% 37.6471%;
+        --accent: 184 38.4615% 84.7059%;
+        --accent-foreground: 188.8000 78.9474% 18.6275%;
+        --destructive: 0 62.4490% 51.9608%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 185.7143 26.5823% 84.5098%;
+        --input: 180 28.8136% 88.4314%;
+        --ring: 183.9706 91.8919% 29.0196%;
+        --sidebar: 186.3158 34.5455% 89.2157%;
+        --sidebar-foreground: 188.8000 78.9474% 18.6275%;
+        --sidebar-primary: 183.9706 91.8919% 29.0196%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 184 38.4615% 84.7059%;
+        --sidebar-accent-foreground: 188.8000 78.9474% 18.6275%;
+        --sidebar-border: 185.7143 26.5823% 84.5098%;
+        --sidebar-ring: 183.9706 91.8919% 29.0196%;
+        --font-sans: Courier New, monospace;
+        --font-serif: Courier New, monospace;
+        --font-mono: Courier New, monospace;
+        --radius: 0.125rem;
+        --tracking-normal: 0em;
+        --spacing: 0.25rem;
+    }
+
+    [data-theme="perpetuity"].dark {
+        --background: 196.3636 52.3810% 8.2353%;
+        --foreground: 180 77.1144% 60.5882%;
+        --card: 192 51.0204% 9.6078%;
+        --card-foreground: 180 77.1144% 60.5882%;
+        --popover: 192 51.0204% 9.6078%;
+        --popover-foreground: 180 77.1144% 60.5882%;
+        --primary: 180 77.1144% 60.5882%;
+        --primary-foreground: 196.3636 52.3810% 8.2353%;
+        --secondary: 191.4286 58.8785% 20.9804%;
+        --secondary-foreground: 180 77.1144% 60.5882%;
+        --muted: 192.8571 58.3333% 14.1176%;
+        --muted-foreground: 180 50.6849% 42.9412%;
+        --accent: 191.4286 58.8785% 20.9804%;
+        --accent-foreground: 180 77.1144% 60.5882%;
+        --destructive: 0 78.8991% 57.2549%;
+        --destructive-foreground: 0 0% 94.9020%;
+        --border: 191.4286 58.8785% 20.9804%;
+        --input: 191.4286 58.8785% 20.9804%;
+        --ring: 180 77.1144% 60.5882%;
+        --sidebar: 196.3636 52.3810% 8.2353%;
+        --sidebar-foreground: 180 77.1144% 60.5882%;
+        --sidebar-primary: 180 77.1144% 60.5882%;
+        --sidebar-primary-foreground: 196.3636 52.3810% 8.2353%;
+        --sidebar-accent: 191.4286 58.8785% 20.9804%;
+        --sidebar-accent-foreground: 180 77.1144% 60.5882%;
+        --sidebar-border: 191.4286 58.8785% 20.9804%;
+        --sidebar-ring: 180 77.1144% 60.5882%;
+        --font-sans: Source Code Pro, monospace;
+        --font-serif: Source Code Pro, monospace;
+        --font-mono: Source Code Pro, monospace;
+        --radius: 0.125rem;
+    }
+}

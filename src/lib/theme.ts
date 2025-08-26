@@ -14,6 +14,10 @@ const availableThemes = {
     "vintageretro": "Vintage Retro",
     "synthwave": "Synthwave",
     "quantumrose": "Quantum Rose",
+    "graphite": "Graphite",
+    "perpetuity": "Perpetuity",
+    "nature": "Nature",
+    "sunsethorizon": "Sunset Horizon",
     "custom": "Custom",
 }
 
