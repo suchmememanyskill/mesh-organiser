@@ -125,59 +125,57 @@
 
 <div class="w-full overflow-y-auto hide-scrollbar h-full">
     <div
-        class="flex flex-col gap-5 w-[500px] mx-auto relative"
+        class="flex flex-row flex-wrap gap-5 justify-center relative my-3 fix-card-width"
     >
-        <Card class="mt-5">
+        <Card>
             <CardHeader>
                 <CardTitle>Thumbnail generation</CardTitle>
             </CardHeader>
-            <CardContent class="text-sm">
-                <div class="grid w-full items-center gap-4">
-                    {#if thumbnail_regen_button_enabled}
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <Button
-                            onclick={() => replaceAllThumbnails(true)}>
-                                Regenerate all thumbnails
-                            </Button>
-                            <Button
-                                onclick={() => replaceAllThumbnails(false)}>
-                                Generate missing thumbnails
-                            </Button>
-                        </div>
-                    {:else}
-                        <Label class="p-2 mx-auto">Progress: {(thumbnail_count/data.entries.length*100).toFixed(1)}%</Label>
-                    {/if}
-
-                    <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3MF files" />
-                    {#if c.configuration.fallback_3mf_thumbnail}
-                        <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
-                    {/if}
-
-                    <div class="flex flex-col space-y-1.5">
-                        <Label>Max Parallelism</Label>
-                        <Input
-                            type="number"
-                            min="1"
-                            max={max_parallelism}
-                            bind:value={c.configuration.core_parallelism} />
+            <CardContent class="text-sm flex flex-col gap-5">
+                {#if thumbnail_regen_button_enabled}
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <Button
+                        onclick={() => replaceAllThumbnails(true)}>
+                            Regenerate all thumbnails
+                        </Button>
+                        <Button
+                            onclick={() => replaceAllThumbnails(false)}>
+                            Generate missing thumbnails
+                        </Button>
                     </div>
+                {:else}
+                    <Label class="p-2 mx-auto">Progress: {(thumbnail_count/data.entries.length*100).toFixed(1)}%</Label>
+                {/if}
 
-                    <div class="flex flex-col space-y-1.5">
-                        <Label for="color">Color of the thumbnails</Label>
-                        <div class="flex flex-row gap-2">
-                            <Input
-                                id="color"
-                                placeholder="color"
-                                type="color"
-                                class="flex-grow"
-                                bind:value={c.configuration.thumbnail_color}
-                            />
-                            <Button
-                                onclick={() =>
-                                    (c.configuration.thumbnail_color = "#EEEEEE")}
-                                >Default</Button
-                            >
-                        </div>
+                <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3MF files" />
+                {#if c.configuration.fallback_3mf_thumbnail}
+                    <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
+                {/if}
+
+                <div class="flex flex-col space-y-1.5">
+                    <Label>Max Parallelism</Label>
+                    <Input
+                        type="number"
+                        min="1"
+                        max={max_parallelism}
+                        bind:value={c.configuration.core_parallelism} />
+                </div>
+
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="color">Color of the thumbnails</Label>
+                    <div class="flex flex-row gap-2">
+                        <Input
+                            id="color"
+                            placeholder="color"
+                            type="color"
+                            class="flex-grow"
+                            bind:value={c.configuration.thumbnail_color}
+                        />
+                        <Button
+                            onclick={() =>
+                                (c.configuration.thumbnail_color = "#EEEEEE")}
+                            >Default</Button
+                        >
                     </div>
                 </div>
             </CardContent>
@@ -196,7 +194,7 @@
             <CardHeader>
                 <CardTitle>Model preview</CardTitle>
             </CardHeader>
-            <CardContent class="text-sm flex flex-col gap-6">
+            <CardContent class="text-sm flex flex-col gap-5">
                 <div class="flex flex-col gap-3">
                     <Label>Max filesize where STL models are automatically loaded (in MB)</Label>
 
@@ -386,7 +384,7 @@
             </CardContent>
         </Card>
 
-        <Card class="mb-5">
+        <Card>
             <CardHeader>
                 <CardTitle>Window Zoom</CardTitle>
             </CardHeader>
@@ -397,3 +395,9 @@
         </Card>
     </div>
 </div>
+
+<style scoped>
+    .fix-card-width > :global(.bg-card) {
+        width: 500px;
+    }
+</style>
