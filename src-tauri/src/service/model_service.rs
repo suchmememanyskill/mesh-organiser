@@ -11,74 +11,82 @@ use sha2::{Digest, Sha256};
 use std::fs::{self, read_dir, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle};
 use zip;
 use zip::write::SimpleFileOptions;
-
-#[derive(Serialize)]
-pub struct CreationResult {
-    pub group_id: Option<i64>,
-    pub model_ids: Vec<i64>,
-}
+use crate::service::import_state::{ImportState, ImportStatus, ImportedModelsSet};
 
 pub fn import_path(
     path: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-    recursive: bool,
-    delete_imported: bool,
-) -> Result<Vec<CreationResult>, ApplicationError> {
+    import_state: &mut ImportState,
+) -> Result<(), ApplicationError> {
+    import_state.status = ImportStatus::ProcessingModels;
+    import_state.emit_all(app_handle);
+
+    match import_path_inner(path, app_state, app_handle, import_state)
+    {
+        Ok(()) => {
+            import_state.update_status(ImportStatus::FinishedModels, app_handle);
+            Ok(())
+        }
+        Err(application_error) => {
+            import_state.set_failure(application_error.to_string(), app_handle);
+            Err(application_error)
+        }
+    }
+}
+
+pub fn import_path_inner(
+    path: &str,
+    app_state: &AppState,
+    app_handle: &AppHandle,
+    import_state: &mut ImportState,
+) -> Result<(), ApplicationError> 
+{
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let configuration = app_state.get_configuration();
-    let creation_result: Vec<CreationResult>;
-
+    
     if path_buff.is_dir() {
-        if recursive {
-            creation_result = import_models_from_dir_recursive(
+        if import_state.recursive {
+            import_models_from_dir_recursive(
                 &path_buff,
                 app_state,
                 app_handle,
-                delete_imported,
+                import_state,
             )?;
         } else {
-            let result =
-                import_models_from_dir(path, &name, &app_state, &app_handle, delete_imported)?;
-            creation_result = vec![result];
+            import_models_from_dir(path, app_state, app_handle, import_state, name.clone())?;
         }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
-        let result = import_models_from_zip(path, &name, &app_state, &app_handle, delete_imported)?;
-        creation_result = vec![result];
+        import_models_from_zip(path, app_state, app_handle, import_state, name.clone())?;
     } else if is_supported_extension(&path_buff, &configuration) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
-        let result;
 
         {
             let mut file = File::open(&path_buff)?;
-            result = import_single_model(&mut file, extension, size, &name, None, &app_state)?;
+            let id = import_single_model(&mut file, extension, size, &name, import_state.origin_url.clone(), app_state)?;
+            import_state.add_model_id_to_current_set(id, app_handle);
         }
 
-        if delete_imported {
+        if import_state.delete_after_import {
             let _ = fs::remove_file(&path_buff);
         }
-
-        creation_result = vec![CreationResult {
-            group_id: None,
-            model_ids: vec![result],
-        }];
     } else {
         return Err(ApplicationError::InternalError(String::from(
             "Unsupported file type",
         )));
     }
 
-    add_labels_by_keywords(&creation_result, app_state);
+    add_labels_by_keywords(&import_state.imported_models, app_state);
 
-    Ok(creation_result)
+    Ok(())
 }
 
-pub fn add_labels_by_keywords(new_models: &Vec<CreationResult>, app_state: &AppState) {
+pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &AppState) {
     let db = &app_state.db;
     let model_ids = new_models
         .iter()
@@ -143,18 +151,13 @@ fn import_models_from_dir_recursive(
     path: &PathBuf,
     app_state: &AppState,
     app_handle: &AppHandle,
-    delete_imported: bool,
-) -> Result<Vec<CreationResult>, ApplicationError> {
-    let mut results: Vec<CreationResult> = vec![];
+    import_state: &mut ImportState,
+) -> Result<(), ApplicationError> {
     let entries: Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
     let configuration = app_state.get_configuration();
 
     for folder in entries.iter().filter(|f| f.path().is_dir()) {
-        if let Ok(result) =
-            import_models_from_dir_recursive(&folder.path(), app_state, app_handle, delete_imported)
-        {
-            results.extend(result);
-        }
+        let _ = import_models_from_dir_recursive(&folder.path(), app_state, app_handle, import_state);
     }
 
     if entries
@@ -164,33 +167,29 @@ fn import_models_from_dir_recursive(
     {
         let group_name = util::prettify_file_name(path, true);
 
-        if let Ok(result) = import_models_from_dir(
+        let _ = import_models_from_dir(
             path.to_str().unwrap(),
-            &group_name,
             app_state,
             app_handle,
-            delete_imported,
-        ) {
-            results.push(result);
-        }
+            import_state,
+            group_name,
+        );
     }
 
-    Ok(results)
+    Ok(())
 }
 
 fn import_models_from_dir(
     path: &str,
-    group_name: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-    delete_imported: bool,
-) -> Result<CreationResult, ApplicationError> {
-    let mut model_ids = Vec::new();
+    import_state: &mut ImportState,
+    group_name: String,
+) -> Result<(), ApplicationError> {
     let configuration = app_state.get_configuration();
     let mut temp_str;
-    let mut link = None;
-    let _ = app_handle.emit("import-count", 0 as usize);
-    let _ = app_handle.emit("import-group", group_name);
+    let mut link;
+    import_state.add_new_import_set(Some(group_name), app_handle);
 
     for entry in read_dir(path)?
         .map(|f| f.unwrap().path())
@@ -198,7 +197,9 @@ fn import_models_from_dir(
     {
         if entry.file_name().take().unwrap() == ".link" {
             temp_str = read_file_as_text(&entry)?;
-            link = Some(temp_str.as_str());
+            link = Some(temp_str);
+        } else {
+            link = import_state.origin_url.clone();
         }
 
         if !is_supported_extension(&entry, &configuration) {
@@ -208,53 +209,37 @@ fn import_models_from_dir(
         let file_name = util::prettify_file_name(&entry, false);
         let extension = entry.extension().unwrap().to_str().unwrap();
         let file_size = entry.metadata()?.len() as usize;
-        let id;
 
         {
             let mut file = File::open(&entry)?;
 
-            id = import_single_model(
-                &mut file, extension, file_size, &file_name, link, &app_state,
+            let id = import_single_model(
+                &mut file, extension, file_size, &file_name, link, app_state,
             )?;
+            import_state.add_model_id_to_current_set(id, app_handle);
         }
 
-        model_ids.push(id);
-
-        if delete_imported {
+        if import_state.delete_after_import {
             let _ = fs::remove_file(&entry);
         }
-
-        let _ = app_handle.emit("import-count", model_ids.len());
     }
 
-    if model_ids.is_empty() {
-        return Err(ApplicationError::InternalError(String::from(
-            "No models found in directory",
-        )));
-    }
+    import_state.create_group_from_current_set(app_state)?;
 
-    let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
-    model_group::set_group_id_on_models_sync(Some(group_id), model_ids.clone(), &app_state.db);
-
-    Ok(CreationResult {
-        group_id: Some(group_id),
-        model_ids: model_ids,
-    })
+    Ok(())
 }
 
 fn import_models_from_zip(
     path: &str,
-    group_name: &str,
     app_state: &AppState,
     app_handle: &AppHandle,
-    delete_imported: bool,
-) -> Result<CreationResult, ApplicationError> {
-    let mut model_ids = Vec::new();
+    import_state: &mut ImportState,
+    group_name: String,
+) -> Result<(), ApplicationError> {
     let configuration = app_state.get_configuration();
     let mut temp_str;
-    let mut link = None;
-    let _ = app_handle.emit("import-count", 0 as usize);
-    let _ = app_handle.emit("import-group", group_name);
+    let mut link;
+    import_state.add_new_import_set(Some(group_name), app_handle);
 
     {
         let zip_file = File::open(&path)?;
@@ -271,7 +256,10 @@ fn import_models_from_zip(
                 let mut file_contents: Vec<u8> = Vec::new();
                 file.read_to_end(&mut file_contents)?;
                 temp_str = String::from_utf8(file_contents).unwrap();
-                link = Some(temp_str.as_str());
+                link = Some(temp_str);
+            }
+            else {
+                link = import_state.origin_url.clone();
             }
 
             if !is_supported_extension(&outpath, &configuration) {
@@ -284,31 +272,20 @@ fn import_models_from_zip(
                 let file_size = file.size() as usize;
 
                 let id = import_single_model(
-                    &mut file, extension, file_size, &file_name, link, &app_state,
+                    &mut file, extension, file_size, &file_name, link, app_state
                 )?;
-                model_ids.push(id);
-                let _ = app_handle.emit("import-count", model_ids.len());
+                import_state.add_model_id_to_current_set(id, app_handle);
             }
         }
     }
 
-    if delete_imported {
+    if import_state.delete_after_import {
         let _ = fs::remove_file(path);
     }
 
-    if model_ids.is_empty() {
-        return Err(ApplicationError::InternalError(String::from(
-            "No models found in zip file",
-        )));
-    }
+    import_state.create_group_from_current_set(app_state)?;
 
-    let group_id = model_group::add_empty_group_sync(group_name, &app_state.db);
-    model_group::set_group_id_on_models_sync(Some(group_id), model_ids.clone(), &app_state.db);
-
-    Ok(CreationResult {
-        group_id: Some(group_id),
-        model_ids: model_ids,
-    })
+    Ok(())
 }
 
 fn import_single_model<W>(
@@ -316,7 +293,7 @@ fn import_single_model<W>(
     file_type: &str,
     file_size: usize,
     name: &str,
-    link: Option<&str>,
+    link: Option<String>,
     app_state: &AppState,
 ) -> Result<i64, ApplicationError>
 where
@@ -362,7 +339,7 @@ where
         &hash,
         &new_extension,
         file_size as i64,
-        link,
+        link.as_deref(),
         &app_state.db,
     );
 

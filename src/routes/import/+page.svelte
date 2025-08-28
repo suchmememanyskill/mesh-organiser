@@ -18,7 +18,7 @@
     import File from "@lucide/svelte/icons/file";
     import Folder from "@lucide/svelte/icons/folder";
     import Undo2 from "@lucide/svelte/icons/undo-2";
-    import type { Model, AddModelResult, GroupedEntry } from "$lib/model";
+    import { type Model, type AddModelResult, type GroupedEntry, ImportStatus } from "$lib/model";
     import { c, data, updateState } from "$lib/data.svelte";
     import { openInSlicer, importModel, editModel, newWindow } from "$lib/tauri";
     import { page } from '$app/state';
@@ -26,9 +26,10 @@
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index";
     import { countWriter } from "$lib/utils";
     import Flame from "@lucide/svelte/icons/flame";
+    import {importState, resetImportState, startImportProcess } from "$lib/import.svelte";
 
-    let imported_group_ids : number[] = $state([]);
-    let imported_model_ids : number[] = $state([]);
+    let imported_group_ids : number[] = $derived(importState.imported_models.map((res) => res.group_id).filter((id) => !!id) as number[]);
+    let imported_model_ids : number[] = $derived(importState.imported_models.map((res) => res.model_ids).flat());
 
     let imported_groups: GroupedEntry[] = $derived(data.grouped_entries.filter((entry) => imported_group_ids.includes(entry.group.id)));
 
@@ -40,10 +41,7 @@
 
     let recursive = $state($state.snapshot(c.configuration.default_enabled_recursive_import));
     let delete_after_import = $state($state.snapshot(c.configuration.default_enabled_delete_after_import));
-    let import_count = $state(0);
-    let thumbnail_count = $state(0);
-    let importing_group = $state("");
-    let busy: boolean = $state(false);
+    let dialog_open = $state(false);
 
     const model_sites = [
         {
@@ -68,81 +66,8 @@
         }
     ]
 
-    interface ImportModelSettings
-    {
-        delete_after_import: boolean;
-        recursive: boolean;
-        direct_open_in_slicer: boolean;
-    }
-
-    async function handle_import(paths?: string[], source?: string|null, settings?: ImportModelSettings) {
-        settings ??= {
-            delete_after_import: $state.snapshot(delete_after_import),
-            recursive: $state.snapshot(recursive),
-            direct_open_in_slicer: false,
-        }
-
-        busy = true;
-        if (!paths || paths.length === 0) {
-            return;
-        }
-
-        let results: AddModelResult[] = [];
-
-        for (let i = 0; i < paths.length; i++) {
-            import_count = 0;
-            thumbnail_count = 0;
-            let res : AddModelResult[] = [];
-            try 
-            {
-                console.log("Importing model at path:", paths[i]);
-                res = await importModel(paths[i], settings.recursive, settings.delete_after_import);
-            }
-            catch (reason : any) 
-            {
-                toast.error(reason.error_message, {
-                    description: reason.error_inner_message
-                });
-                console.error("Failed to import model:", reason);
-                continue;
-            }
-            
-            import_count = 0;
-            thumbnail_count = 0;
-            importing_group = "";
-
-            if (!res) {
-                console.error("Failed to import model at path:", paths[i]);
-                continue;
-            }
-
-            results.push(...res);
-        }
-
-        await updateState();
-
-        imported_group_ids = results.filter((res) => !!res.group_id).map((res) => res.group_id!);
-        imported_model_ids = results.map((res) => res.model_ids).flat();
-
-        if (settings.direct_open_in_slicer)
-        {
-            openAllInSlicer();
-        }
-
-        if (source)
-        {
-            for (const model of imported_models)
-            {
-                model.link = source;
-                await editModel(model);
-            }
-        }
-
-        busy = false;
-    }
-
     async function handle_open(directory: boolean) {
-        busy = true;
+        dialog_open = true;
 
         let filters = undefined;
 
@@ -162,7 +87,7 @@
         });
 
         if (!result) {
-            busy = false;
+            dialog_open = false;
             return;
         }
 
@@ -170,7 +95,12 @@
             result = [result];
         }
 
-        await handle_import(result);
+        await startImportProcess(result, {
+            delete_after_import: delete_after_import,
+            recursive: directory ? recursive : false
+        });
+
+        dialog_open = false;
     }
 
     async function handle_open_file() {
@@ -180,111 +110,28 @@
     async function handle_open_folder() {
         await handle_open(true);
     }
-
-    let destroy_listener: UnlistenFn | null = null;
-    let destroy_import_counter: UnlistenFn | null = null;
-    let destroy_thumbnail_counter: UnlistenFn | null = null;
-    let destroy_importing_group: UnlistenFn | null = null;
-
-    onMount(async () => {
-        destroy_listener = await listen("tauri://drag-drop", async (event) => {
-            console.log(event);
-
-            if (!event) {
-                return;
-            }
-
-            let payload: any = event.payload;
-
-            if (!payload || !payload.paths || !payload.paths.length) {
-                return;
-            }
-
-            await handle_import(payload.paths);
-        });
-
-        destroy_import_counter = await listen<number>("import-count", (e) => {
-            import_count = e.payload;
-        });
-
-        destroy_thumbnail_counter = await listen<number>("thumbnail-count", (e) => {
-            thumbnail_count = e.payload;
-        });
-
-        destroy_importing_group = await listen<string>("import-group", (e) => {
-            importing_group = e.payload;
-        });
-    });
-
-    onDestroy(() => {
-        if (destroy_listener) {
-            destroy_listener();
-        }
-
-        if (destroy_import_counter) {
-            destroy_import_counter();
-        }
-
-        if (destroy_thumbnail_counter) {
-            destroy_thumbnail_counter();
-        }
-
-        if (destroy_importing_group) {
-            destroy_importing_group();
-        }
-    });
-
-    function clearCurrentModel() {
-        imported_group_ids = [];
-        imported_model_ids = [];
-    }
-
-    function openAllInSlicer() {
-        if (!imported_models) {
-            return;
-        }
-
-        openInSlicer(imported_models);
-    }
-
-    $effect(() => 
-    {
-        const possiblePath = page.url.searchParams.get("path");
-        const direct_open_param = page.url.searchParams.get("open");
-        const source_param = page.url.searchParams.get("source");
-        const delete_after_import = page.url.searchParams.get("delete_after_import") === "true";
-
-        if (!possiblePath)
-        {
-            return;
-        }
-
-        handle_import([possiblePath], source_param, { 
-            delete_after_import: delete_after_import, 
-            recursive: false,
-            direct_open_in_slicer: direct_open_param === "true" 
-        });
-    })
 </script>
 
 <div class="flex justify-center h-full">
-    {#if busy}
-        <div class="flex flex-col items-center gap-2 my-auto">
-            {#if importing_group}
-                <h1>Group: {importing_group}</h1>
-            {/if}
-            {#if thumbnail_count > 0}
-                <h1>Generated {thumbnail_count} thumbnails...</h1>
-            {:else if import_count > 0}
-                <h1>Imported {import_count} models...</h1>
-            {:else}
-                <h1>Importing model...</h1>
-            {/if}
-            <div class="animate">
-                <LoaderCircle class="w-10 h-10" />
+    {#if importState.status == ImportStatus.Finished}
+        <div class="flex flex-col w-full gap-1">
+            <div class="flex flex-row gap-5 justify-center mt-4">
+                <Button onclick={resetImportState}><Undo2 /> Import another model</Button>
+                <div class="my-auto">
+                    Imported {countWriter("group", imported_groups)}, {countWriter("model", imported_models)}
+                </div>
             </div>
+            {#if imported_groups.length === 1}
+                <div class="overflow-hidden">
+                    <GroupPage initialEditMode={true} group={imported_groups[0]} />
+                </div>
+            {:else}
+                <div class="overflow-hidden flex-grow w-full">
+                    <ModelGrid models={imported_models} default_show_multiselect_all={true} initialEditMode={true}  />
+                </div>
+            {/if}
         </div>
-    {:else if imported_models.length <= 0}
+    {:else if importState.status == ImportStatus.Idle}
         <div class="flex flex-col gap-5 max-w-xxl h-fit my-auto">
             <Card>
                 <CardHeader>
@@ -293,10 +140,10 @@
                 </CardHeader>
                 <CardContent class="flex gap-4 flex-col">
                     <div class="grid grid-cols-2 gap-4">
-                        <Button class="grow" onclick={handle_open_file}
+                        <Button class="grow" onclick={handle_open_file} disabled={dialog_open}
                             ><File /> Import File</Button
                         >
-                        <Button class="grow" onclick={handle_open_folder}
+                        <Button class="grow" onclick={handle_open_folder} disabled={dialog_open}
                             ><Folder /> Import Folder
                         </Button>
                     </div>
@@ -329,23 +176,28 @@
                 </CardContent>
             </Card>
         </div>
+    {:else if importState.status == ImportStatus.Failure}
+        <div class="flex flex-col items-center gap-4 my-auto">
+            <h1>Import failed</h1>
+            <p class="text-sm">An error occurred during the import process. Please try again.</p>
+            <p class="text-sm">{importState.failure_reason}</p>
+            <Button onclick={resetImportState} class="mt-4"><Undo2 /> Go back</Button>
+        </div>
     {:else}
-        <div class="flex flex-col w-full gap-1">
-            <div class="flex flex-row gap-5 justify-center mt-4">
-                <Button onclick={clearCurrentModel}><Undo2 /> Import another model</Button>
-                <div class="my-auto">
-                    Imported {countWriter("group", imported_groups)}, {countWriter("model", imported_models)}
-                </div>
-            </div>
-            {#if imported_groups.length === 1}
-                <div class="overflow-hidden">
-                    <GroupPage initialEditMode={true} group={imported_groups[0]} />
-                </div>
-            {:else}
-                <div class="overflow-hidden flex-grow w-full">
-                    <ModelGrid models={imported_models} default_show_multiselect_all={true} initialEditMode={true}  />
-                </div>
+        <div class="flex flex-col items-center gap-2 my-auto">
+            {#if importState.current_importing_group}
+                <h1>Group: {importState.current_importing_group}</h1>
             {/if}
+            {#if importState.status == ImportStatus.ProcessingThumbnails}
+                <h1>Generated {importState.finished_thumbnails_count}/{importState.imported_models_count} thumbnails...</h1>
+            {:else if importState.imported_models_count > 0}
+                <h1>Imported {importState.imported_models_count} models...</h1>
+            {:else}
+                <h1>Importing model...</h1>
+            {/if}
+            <div class="animate">
+                <LoaderCircle class="w-10 h-10" />
+            </div>
         </div>
     {/if}
 </div>

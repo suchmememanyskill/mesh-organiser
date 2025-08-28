@@ -18,6 +18,7 @@
     import { getCurrentWebview } from "@tauri-apps/api/webview";
     import { debounce } from "$lib/utils";
     import { setTheme } from "$lib/theme";
+    import { handleDeepLink, initImportListeners } from "$lib/import.svelte";
 
     let { children } = $props();
     let loaded_config = false;
@@ -29,107 +30,16 @@
         error_type: string
     }
 
-    interface DownloadFinishedEvent
-    {
-        path: string,
-        url: string,
-    }
-
-    interface DeepLinkEmit
-    {
-        download_url: string,
-        source_url: string | null,
-    }
-
-    function getFileFromUrl(url: string) {
-        const url_parts = url.split('/');
-        return url_parts[url_parts.length - 1].split('?')[0];
-    }
-
-    async function handleDownload(url : string, source: string | null = null)
-    {
-        if (c.configuration.focus_after_link_import)
-        {
-            await getCurrentWindow().unminimize();
-            await getCurrentWindow().setFocus();
-        }
-
-        const download_result = await downloadFile(url);
-
-        let parts = ["path=" + encodeURIComponent(download_result.path)];
-
-        if (c.configuration.open_slicer_on_remote_model_import)
-        {
-            parts.push("open=true");
-        }
-
-        let source_uri = source ?? download_result.source_uri;
-        
-        if (source_uri)
-        {
-            console.log(source_uri);
-            parts.push("source=" + encodeURIComponent(source_uri));
-        }
-
-        goto("/import?" + parts.join("&"));
-    }
-
-    async function handleDownloadFinished(event: DownloadFinishedEvent) {
-        let parts = ["path=" + encodeURIComponent(event.path), "delete_after_import=true"];
-
-        if (event.url)
-        {
-            parts.push("source=" + event.url);
-        }
-
-        if (c.configuration.open_slicer_on_remote_model_import)
-        {
-            parts.push("open=true");
-        }
-
-        goto("/import?" + parts.join("&"));
-    }
-
     onMount(async () => {
-        await listen<DeepLinkEmit>('deep-link', async (event) => {
-            console.log('deep link (deep-link):', event);
-            let display_url = event.payload.source_url ?? event.payload.download_url;
-            await toast.promise(handleDownload(event.payload.download_url, event.payload.source_url), {
-                loading: `Downloading model ${getFileFromUrl(display_url)}`,
-                success: `Downloaded model ${getFileFromUrl(display_url)}`,
-                error: `Failed to download model ${getFileFromUrl(display_url)}`
-            })
-        });
-
-        let complete : ((value: unknown) => void)[] = []; 
-
-        await listen<string>('download-started', async (event) => {
-            toast.promise(new Promise((resolve) => {
-                complete.push(resolve);
-            }), {
-                loading: `Downloading model ${getFileFromUrl(event.payload)}`,
-                success: `Downloaded model ${getFileFromUrl(event.payload)}`,
-                error: `Failed to download model ${getFileFromUrl(event.payload)}`
-            });
-
-            await getCurrentWindow().unminimize();
-            await getCurrentWindow().setFocus();
-        });
-
-        await listen<DownloadFinishedEvent>('download-finished', async (event) => {
-            if (complete.length > 0) {
-                complete.pop()!(null);
-            }
-
-            console.log('download finished (download-finished):', event);
-            await handleDownloadFinished(event.payload);
-        });
-
+        await initImportListeners();
         const state = await getInitialState();
         console.log('initial state:', state);
         if (state.deep_link_url)
         {
-            await handleDownload(state.deep_link_url);
+            await handleDeepLink({
+                download_url: state.deep_link_url,
+                source_url: null
+            });
         }
 
         window.onerror = function (message, source, lineno, colno, error) {

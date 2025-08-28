@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawModedlFlags, convertModelFlagsToRaw, defaultFlags, type LabelMin, type RawResource, convertResourceFlagsToRaw, type Resource, type LabelKeyword } from "./model";
+import { type RawModel, type RawLabel, type RawGroup, type Model, type Group, type Label, type InitialState, type Configuration, type SlicerEntry, type AddModelResult, type DownloadResult, type RawModedlFlags, convertModelFlagsToRaw, defaultFlags, type LabelMin, type RawResource, convertResourceFlagsToRaw, type Resource, type LabelKeyword, type ImportState } from "./model";
 
 export async function getModels() : Promise<RawModel[]>
 {
@@ -176,12 +176,14 @@ export async function updateImages(overwrite : boolean) : Promise<void>
     await invoke("update_images", { overwrite: overwrite });
 }
 
-export async function importModel(path : string, recursive : boolean, delete_imported : boolean) : Promise<AddModelResult[]>
+export async function importModel(path : string, recursive : boolean, delete_imported : boolean, origin_url : string|null, open_in_slicer: boolean) : Promise<ImportState>
 {
     return await invoke("add_model", {
         path: path,
         recursive : recursive,
         deleteImported : delete_imported,
+        originUrl : origin_url,
+        openInSlicer: open_in_slicer,
     });
 }
 

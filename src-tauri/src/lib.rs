@@ -16,7 +16,7 @@ use serde::Serialize;
 use service::{
     app_state::{read_configuration, AppState, InitialState},
     download_file_service,
-    model_service::{self, CreationResult},
+    model_service,
     slicer_service::Slicer,
 };
 use std::fs::File;
@@ -30,6 +30,8 @@ use tauri::{
 };
 use tauri::{AppHandle, Emitter, Manager, State};
 use urlencoding::decode;
+
+use crate::service::import_state::{ImportState, ImportStatus};
 mod configuration;
 mod db;
 mod error;
@@ -48,36 +50,48 @@ async fn add_model(
     path: &str,
     recursive: bool,
     delete_imported: bool,
+    origin_url: Option<String>,
+    open_in_slicer: bool,
     state: State<'_, AppState>,
     app_handle: AppHandle,
-) -> Result<Vec<CreationResult>, ApplicationError> {
+) -> Result<ImportState, ApplicationError> {
     let path_clone = String::from(path);
     let state_clone = state.real_clone();
+    let handle_clone = app_handle.clone();
+    let mut import_state = ImportState::new(origin_url, recursive, delete_imported);
 
-    // TODO: can this not just be removed?
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        let result = model_service::import_path(
+    import_state = tauri::async_runtime::spawn_blocking(move || {
+        model_service::import_path(
             &path_clone,
             &state_clone,
-            &app_handle,
-            recursive,
-            delete_imported,
+            &handle_clone,
+            &mut import_state,
         )?;
-        let model_ids: Vec<i64> = result.iter().flat_map(|f| f.model_ids.clone()).collect();
-        let models = db::model::get_models_by_id_sync(model_ids, &state_clone.db);
-        block_on(service::thumbnail_service::generate_thumbnails(
-            models,
-            &state_clone,
-            &app_handle,
-            false,
-        ))?;
 
-        Result::<Vec<CreationResult>, ApplicationError>::Ok(result)
+        Result::<ImportState, ApplicationError>::Ok(import_state)
     })
     .await
     .unwrap()?;
 
-    Ok(result)
+    let model_ids: Vec<i64> = import_state.imported_models.iter().flat_map(|f| f.model_ids.clone()).collect();
+    let models = db::model::get_models_by_id(model_ids, &state.db).await;
+    service::thumbnail_service::generate_thumbnails(
+        &models,
+        &state,
+        &app_handle,
+        false,
+        &mut import_state,
+    ).await?;
+
+    if open_in_slicer && models.len() > 0
+    {
+        if let Some(slicer) = &state.get_configuration().slicer {
+            slicer.open(models, &state)?;
+        }
+    }
+
+    import_state.status = ImportStatus::Finished;
+    Ok(import_state)
 }
 
 #[tauri::command]

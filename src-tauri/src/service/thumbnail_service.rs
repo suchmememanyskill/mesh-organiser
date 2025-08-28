@@ -1,9 +1,9 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use tokio::sync::mpsc::error::TryRecvError;
 
-use crate::error::ApplicationError;
+use crate::{error::ApplicationError, service::import_state::{ImportState, ImportStatus}};
 
 use super::app_state::AppState;
 use crate::db::model::{self, Model};
@@ -17,17 +17,21 @@ pub async fn generate_all_thumbnails(
 ) -> Result<(), ApplicationError> {
     let models = model::get_models(&app_state.db).await;
 
-    generate_thumbnails(models, app_state, app_handle, overwrite).await?;
+    let mut import_state = &mut ImportState::new(None, false, false);
+
+    generate_thumbnails(&models, app_state, app_handle, overwrite, &mut import_state).await?;
 
     Ok(())
 }
 
 pub async fn generate_thumbnails(
-    models: Vec<Model>,
+    models: &Vec<Model>,
     app_state: &AppState,
     app_handle: &AppHandle,
     overwrite: bool,
+    import_state: &mut ImportState,
 ) -> Result<(), ApplicationError> {
+    import_state.update_status(ImportStatus::ProcessingThumbnails, app_handle);
     let image_path = PathBuf::from(app_state.get_image_dir());
     let model_path = PathBuf::from(app_state.get_model_dir());
     let fallback_3mf_thumbnail = app_state.get_configuration().fallback_3mf_thumbnail;
@@ -50,12 +54,10 @@ pub async fn generate_thumbnails(
         })
         .collect();
 
-    let mut imported_amount: usize = 0;
-
     struct C {
         command: Command,
         thumbnail_count: usize,
-    };
+    }
 
     struct D {
         thumbnail_count: usize,
@@ -143,11 +145,10 @@ pub async fn generate_thumbnails(
                 let run = &mut running[i];
 
                 let res = run.listener.try_recv();
-
+                
                 if let Err(e) = res {
                     if e == TryRecvError::Disconnected {
-                        imported_amount += run.thumbnail_count;
-                        let _ = app_handle.emit("thumbnail-count", imported_amount);
+                        import_state.update_finished_thumbnails_count(run.thumbnail_count, app_handle);
                         running.remove(i);
                     } else {
                         i += 1;
@@ -158,6 +159,8 @@ pub async fn generate_thumbnails(
             }
         }
     }
+
+    import_state.update_status(ImportStatus::FinishedThumbnails, app_handle);
 
     Ok(())
 }

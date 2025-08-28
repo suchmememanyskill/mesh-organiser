@@ -23,6 +23,7 @@
     import { resetMode, setMode } from "mode-watcher";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
+    import ImportProgressIndicator from "$lib/components/view/import-progress-indicator.svelte";
 
     import {
         createLabel,
@@ -36,10 +37,11 @@
     import Slice from "@lucide/svelte/icons/slice";
     import Check from "@lucide/svelte/icons/check";
     import { onMount } from "svelte";
-    import type { LabelMin, SlicerEntry } from "$lib/model";
+    import { ImportStatus, type LabelMin, type SlicerEntry } from "$lib/model";
     import { int, label } from "three/tsl";
     import ChevronRight from "@lucide/svelte/icons/chevron-right";
     import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
+    import { importState } from "$lib/import.svelte";
 
     let slicers = $state([] as SlicerEntry[]);
 
@@ -294,6 +296,9 @@
         </Sidebar.Group>
     </Sidebar.Content>
     <Sidebar.Footer>
+        {#if importState.status !== ImportStatus.Idle}
+            <ImportProgressIndicator />
+        {/if}
         <DropdownMenu.Root>
             <DropdownMenu.Trigger
                 class="{buttonVariants({
