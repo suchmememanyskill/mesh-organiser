@@ -108,7 +108,7 @@ export interface ImportModelSettings
     direct_open_in_slicer?: boolean;
     source_url?: string;
 }
-// TODO: Put direct open in slicer/delete after import flags here so dragging folders/files in with options set in the import screen works as expected.
+
 export async function startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<void>
 {
     let delete_after_import = settings.delete_after_import ?? globalImportSettings.delete_after_import;
