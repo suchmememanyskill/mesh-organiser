@@ -16,7 +16,7 @@ use serde::Serialize;
 use service::{
     app_state::{read_configuration, AppState, InitialState},
     download_file_service,
-    model_service,
+    import_service,
     slicer_service::Slicer,
 };
 use std::fs::File;
@@ -61,7 +61,7 @@ async fn add_model(
     let mut import_state = ImportState::new(origin_url, recursive, delete_imported);
 
     import_state = tauri::async_runtime::spawn_blocking(move || {
-        model_service::import_path(
+        import_service::import_path(
             &path_clone,
             &state_clone,
             &handle_clone,

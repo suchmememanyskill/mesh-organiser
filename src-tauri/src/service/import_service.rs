@@ -1,6 +1,6 @@
 use super::app_state::AppState;
 use crate::configuration::Configuration;
-use crate::db::{label, label_keywords, model_group};
+use crate::db::{label, label_keywords};
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use crate::{db::model, error::ApplicationError};
@@ -26,6 +26,10 @@ pub fn import_path(
     import_state.status = ImportStatus::ProcessingModels;
     import_state.emit_all(app_handle);
 
+    let configuration = app_state.get_configuration();
+    let model_count = get_model_count(path, &configuration, import_state.recursive)?;
+    import_state.update_total_model_count(model_count, app_handle);
+
     match import_path_inner(path, app_state, app_handle, import_state)
     {
         Ok(()) => {
@@ -36,6 +40,31 @@ pub fn import_path(
             import_state.set_failure(application_error.to_string(), app_handle);
             Err(application_error)
         }
+    }
+}
+
+pub fn get_model_count(
+    path: &str,
+    configuration: &Configuration,
+    recursive: bool,
+) -> Result<usize, ApplicationError> 
+{
+    let path_buff = PathBuf::from(path);
+    
+    if path_buff.is_dir() {
+        if recursive {
+            get_model_count_from_dir_recursive(path, configuration)
+        } else {
+            get_model_count_from_dir(path, configuration)
+        }
+    } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
+        get_model_count_from_zip(path, configuration)
+    } else if is_supported_extension(&path_buff, &configuration) {
+        Ok(1)
+    } else {
+        Err(ApplicationError::InternalError(String::from(
+            "Unsupported file type",
+        )))
     }
 }
 
@@ -371,4 +400,59 @@ fn is_supported_extension(path: &PathBuf, configuration: &Configuration) -> bool
         }
         None => false,
     }
+}
+
+fn get_model_count_from_dir_recursive(
+    path: &str,
+    configuration: &Configuration,
+) -> Result<usize, ApplicationError> {
+    let entries: Vec<std::fs::DirEntry> = read_dir(path)?.map(|x| x.unwrap()).collect();
+    let mut count = 0;
+
+    for folder in entries.iter().filter(|f| f.path().is_dir()) {
+        count += get_model_count_from_dir_recursive(
+            folder.path().to_str().unwrap(),
+            configuration,
+        )?;
+    }
+
+    count += get_model_count_from_dir(path, configuration)?;
+
+    Ok(count)
+}
+
+fn get_model_count_from_dir(
+    path: &str,
+    configuration: &Configuration,
+) -> Result<usize, ApplicationError> {
+    let size = read_dir(path)?
+        .map(|f| f.unwrap().path())
+        .filter(|f| f.is_file() && is_supported_extension(&f, &configuration))
+        .count();
+
+    Ok(size)
+}
+
+fn get_model_count_from_zip(
+    path: &str,
+    configuration: &Configuration,
+) -> Result<usize, ApplicationError>
+{
+    let zip_file = File::open(&path)?;
+    let mut archive = zip::ZipArchive::new(zip_file)?;
+    let mut count = 0;
+
+    for i in 0..archive.len() {
+        let file = archive.by_index(i)?;
+        let outpath = match file.enclosed_name() {
+            Some(path) => path,
+            None => continue,
+        };
+
+        if is_supported_extension(&outpath, &configuration) {
+            count += 1;
+        }        
+    }
+
+    Ok(count)
 }

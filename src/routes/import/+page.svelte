@@ -26,7 +26,7 @@
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index";
     import { countWriter } from "$lib/utils";
     import Flame from "@lucide/svelte/icons/flame";
-    import {importState, resetImportState, startImportProcess } from "$lib/import.svelte";
+    import {globalImportSettings, importState, resetImportState, startImportProcess } from "$lib/import.svelte";
 
     let imported_group_ids : number[] = $derived(importState.imported_models.map((res) => res.group_id).filter((id) => !!id) as number[]);
     let imported_model_ids : number[] = $derived(importState.imported_models.map((res) => res.model_ids).flat());
@@ -39,8 +39,6 @@
             : data.entries.filter((entry) => imported_model_ids.includes(entry.id));
     });
 
-    let recursive = $state($state.snapshot(c.configuration.default_enabled_recursive_import));
-    let delete_after_import = $state($state.snapshot(c.configuration.default_enabled_delete_after_import));
     let dialog_open = $state(false);
 
     const model_sites = [
@@ -95,10 +93,7 @@
             result = [result];
         }
 
-        await startImportProcess(result, {
-            delete_after_import: delete_after_import,
-            recursive: directory ? recursive : false
-        });
+        await startImportProcess(result, {});
 
         dialog_open = false;
     }
@@ -110,6 +105,14 @@
     async function handle_open_folder() {
         await handle_open(true);
     }
+
+    function setDefaultImportSettings() {
+        globalImportSettings.recursive = c.configuration.default_enabled_recursive_import;
+        globalImportSettings.delete_after_import = c.configuration.default_enabled_delete_after_import;
+    }
+
+    onMount(setDefaultImportSettings);
+    onDestroy(setDefaultImportSettings);
 </script>
 
 <div class="flex justify-center h-full">
@@ -154,8 +157,8 @@
                         <p>Drag and drop files here</p>
                     </div>
 
-                    <CheckboxWithLabel label="Import folder recursively" bind:value={recursive} />
-                    <CheckboxWithLabel label="Delete files after import" bind:value={delete_after_import} />
+                    <CheckboxWithLabel label="Import folder recursively" bind:value={globalImportSettings.recursive} />
+                    <CheckboxWithLabel label="Delete files after import" bind:value={globalImportSettings.delete_after_import} />
                 </CardContent>
             </Card>
 
@@ -189,9 +192,9 @@
                 <h1>Group: {importState.current_importing_group}</h1>
             {/if}
             {#if importState.status == ImportStatus.ProcessingThumbnails}
-                <h1>Generated {importState.finished_thumbnails_count}/{importState.imported_models_count} thumbnails...</h1>
+                <h1>Generated {importState.finished_thumbnails_count}/{importState.model_count} thumbnails...</h1>
             {:else if importState.imported_models_count > 0}
-                <h1>Imported {importState.imported_models_count} models...</h1>
+                <h1>Imported {importState.imported_models_count}/{importState.model_count} models...</h1>
             {:else}
                 <h1>Importing model...</h1>
             {/if}

@@ -339,6 +339,7 @@ export interface ImportedModelsSet {
 export interface ImportState {
     imported_models: ImportedModelsSet[],
     imported_models_count: number,
+    model_count: number,
     finished_thumbnails_count: number,
     status: ImportStatus,
     origin_url: string,

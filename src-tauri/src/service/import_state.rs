@@ -24,7 +24,8 @@ pub enum ImportStatus {
 #[derive(Serialize, Clone)]
 pub struct ImportState {
     pub imported_models: Vec<ImportedModelsSet>,
-    pub imported_models_count: usize,
+    pub imported_models_count: usize, // TODO: should it be model or models?
+    pub model_count: usize,
     pub finished_thumbnails_count: usize,
     pub status: ImportStatus,
     pub origin_url: Option<String>,
@@ -35,6 +36,7 @@ pub struct ImportState {
 
 const IMPORT_STATUS_EVENT : &'static str = "import-status";
 const IMPORT_MODEL_GROUP_EVENT : &'static str = "import-model-group";
+const IMPORT_MODEL_TOTAL_EVENT : &'static str = "import-model-total";
 const IMPORT_MODEL_COUNT_EVENT : &'static str = "import-model-count";
 const IMPORT_THUMBNAIL_COUNT_EVENT : &'static str = "import-thumbnail-count";
 const IMPORT_FAILURE_REASON_EVENT : &'static str = "import-failure-reason";
@@ -46,6 +48,7 @@ impl ImportState {
         Self {
             imported_models: Vec::new(),
             imported_models_count: 0,
+            model_count: 0,
             finished_thumbnails_count: 0,
             status: ImportStatus::Idle,
             failure_reason: None,
@@ -53,6 +56,12 @@ impl ImportState {
             recursive,
             delete_after_import,
         }
+    }
+
+    pub fn update_total_model_count(&mut self, count: usize, handle : &AppHandle)
+    {
+        self.model_count = count;
+        let _ = handle.emit(IMPORT_MODEL_TOTAL_EVENT, self.model_count);
     }
 
     pub fn update_status(&mut self, status: ImportStatus, handle: &AppHandle) 
@@ -124,6 +133,8 @@ impl ImportState {
                     &state.db,
                 );
 
+                crate::db::model_group::set_group_id_on_models_sync(Some(group_id), last.model_ids.clone(), &state.db);
+
                 last.group_id = Some(group_id);
                 return Ok(group_id);
             }
@@ -138,6 +149,7 @@ impl ImportState {
         let _ = handle.emit(IMPORT_STATUS_EVENT, self.status.to_string());
         let _ = handle.emit(IMPORT_MODEL_COUNT_EVENT, self.imported_models_count);
         let _ = handle.emit(IMPORT_THUMBNAIL_COUNT_EVENT, self.finished_thumbnails_count);
+        let _ = handle.emit(IMPORT_MODEL_TOTAL_EVENT, self.model_count);
 
         if let Some(last) = self.imported_models.last() {
             if let Some(group_name) = &last.group_name {

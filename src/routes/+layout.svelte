@@ -31,17 +31,6 @@
     }
 
     onMount(async () => {
-        await initImportListeners();
-        const state = await getInitialState();
-        console.log('initial state:', state);
-        if (state.deep_link_url)
-        {
-            await handleDeepLink({
-                download_url: state.deep_link_url,
-                source_url: null
-            });
-        }
-
         window.onerror = function (message, source, lineno, colno, error) {
             toast.error(`Error: ${message}`);
         };
@@ -53,9 +42,19 @@
             });
         });
 
-
         await initConfiguration();
         await setTheme(c.configuration.theme);
+
+        await initImportListeners();
+        const state = await getInitialState();
+        console.log('initial state:', state);
+        if (state.deep_link_url)
+        {
+            await handleDeepLink({
+                download_url: state.deep_link_url,
+                source_url: null
+            });
+        }
 
         const webview = await getCurrentWebview();
         webview.setZoom(c.configuration.zoom_level / 100);
