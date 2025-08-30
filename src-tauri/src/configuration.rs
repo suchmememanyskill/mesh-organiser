@@ -170,6 +170,14 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
 impl Default for Configuration {
     fn default() -> Self {
         let installed_slicer = Slicer::iter().find(|f| f.is_installed());
+        let mut parallelism = thread::available_parallelism()
+                .unwrap_or(NonZeroUsize::new(3).unwrap())
+                .get()
+                / 2;
+
+        if parallelism <= 0 {
+            parallelism = 1;
+        }
 
         Configuration {
             data_path: String::from(""),
@@ -188,10 +196,7 @@ impl Default for Configuration {
             show_grouped_count_on_labels: true,
             fallback_3mf_thumbnail: true,
             prefer_3mf_thumbnail: false,
-            core_parallelism: thread::available_parallelism()
-                .unwrap_or(NonZeroUsize::new(6).unwrap())
-                .get()
-                / 2,
+            core_parallelism: parallelism,
             collapse_sidebar: false,
             zoom_level: 100,
             export_metadata: false,
