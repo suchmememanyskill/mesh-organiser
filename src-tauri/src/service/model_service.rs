@@ -6,11 +6,12 @@ use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use crate::{db::model, error::ApplicationError};
 use indexmap::IndexMap;
 use itertools::Itertools;
-use serde::Serialize;
+use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use std::fs::{self, read_dir, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::sync::Mutex;
 use tauri::{AppHandle};
 use zip;
 use zip::write::SimpleFileOptions;
@@ -187,44 +188,56 @@ fn import_models_from_dir(
     group_name: String,
 ) -> Result<(), ApplicationError> {
     let configuration = app_state.get_configuration();
-    let mut temp_str;
-    let mut link;
+    
     import_state.add_new_import_set(Some(group_name), app_handle);
 
-    for entry in read_dir(path)?
+    let origin_url = import_state.origin_url.clone();
+    let delete_after_import = import_state.delete_after_import;
+    let import_state_mutex = Mutex::new(import_state);
+    
+    let entries : Vec<PathBuf> = read_dir(path)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file())
-    {
-        if entry.file_name().take().unwrap() == ".link" {
-            temp_str = read_file_as_text(&entry)?;
-            link = Some(temp_str);
-        } else {
-            link = import_state.origin_url.clone();
-        }
+        .collect();
 
-        if !is_supported_extension(&entry, &configuration) {
-            continue;
-        }
+    let thread_pool = rayon::ThreadPoolBuilder::new().num_threads(configuration.core_parallelism).build().unwrap();
 
-        let file_name = util::prettify_file_name(&entry, false);
-        let extension = entry.extension().unwrap().to_str().unwrap();
-        let file_size = entry.metadata()?.len() as usize;
+    thread_pool.install(|| {
+        entries.par_iter().for_each(|entry| {
+            let link;
 
-        {
-            let mut file = File::open(&entry)?;
+            if entry.file_name().take().unwrap() == ".link" {
+                link = Some(read_file_as_text(&entry).unwrap());
+            } else {
+                link = origin_url.clone();
+            }
 
-            let id = import_single_model(
-                &mut file, extension, file_size, &file_name, link, app_state,
-            )?;
-            import_state.add_model_id_to_current_set(id, app_handle);
-        }
+            if !is_supported_extension(&entry, &configuration) {
+                return;
+            }
 
-        if import_state.delete_after_import {
-            let _ = fs::remove_file(&entry);
-        }
-    }
+            let file_name = util::prettify_file_name(&entry, false);
+            let extension = entry.extension().unwrap().to_str().unwrap();
+            let file_size = entry.metadata().unwrap().len() as usize;
 
-    import_state.create_group_from_current_set(app_state)?;
+            {
+                let mut file = File::open(&entry).unwrap();
+
+                let id = import_single_model(
+                    &mut file, extension, file_size, &file_name, link, app_state
+                ).unwrap();
+
+                let import_state = &mut import_state_mutex.lock().unwrap();
+                import_state.add_model_id_to_current_set(id, app_handle);
+            }
+
+            if delete_after_import {
+                let _ = fs::remove_file(&entry);
+            }
+        });
+    });
+
+    import_state_mutex.lock().unwrap().create_group_from_current_set(app_state)?;
 
     Ok(())
 }

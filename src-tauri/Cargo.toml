@@ -44,6 +44,7 @@ base64 = "0.22.1"
 indexmap = "2.9"
 itertools = "0"
 tauri-plugin-fs = "2"
+rayon = "1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
