@@ -28,19 +28,19 @@
     import { appDataDir, join } from "@tauri-apps/api/path";
     import { open } from "@tauri-apps/plugin-dialog";
     import { setTheme, getAvailableThemes, getThemeName } from "$lib/theme";
+    import { importState, resetImportState } from "$lib/import.svelte";
 
     let models_size = $derived(data.entries.map(e => e.size).reduce((partialSum, a) => partialSum + a, 0));
     let model_dir_size = $state(0);
-    let thumbnail_count = $state(0);
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
     let app_data_dir = "";
 
     async function replaceAllThumbnails(overwrite : boolean) {
         thumbnail_regen_button_enabled = false;
-        thumbnail_count = 0;
+        importState.model_count = data.entries.length;
         await updateImages(overwrite);
-        thumbnail_count = 0;
+        resetImportState();
         thumbnail_regen_button_enabled = true;
     }
 
@@ -86,27 +86,12 @@
         await openPath(filePath);
     }
 
-    let destroy_thumbnail_counter: UnlistenFn | null = null;
-
     onMount(async () => {
-        destroy_thumbnail_counter = await listen<number>(
-            "thumbnail-count",
-            (e) => {
-                thumbnail_count = e.payload;
-            },
-        );
-
         const state = await getInitialState();
 
         if (state.max_parallelism)
         {
             max_parallelism = state.max_parallelism;
-        }
-    });
-
-    onDestroy(() => {
-        if (destroy_thumbnail_counter) {
-            destroy_thumbnail_counter();
         }
     });
 
@@ -144,7 +129,7 @@
                         </Button>
                     </div>
                 {:else}
-                    <Label class="p-2 mx-auto">Progress: {(thumbnail_count/data.entries.length*100).toFixed(1)}%</Label>
+                    <Label class="p-2 mx-auto">Progress: {(importState.finished_thumbnails_count/importState.model_count*100).toFixed(1)}%</Label>
                 {/if}
 
                 <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3MF files" />

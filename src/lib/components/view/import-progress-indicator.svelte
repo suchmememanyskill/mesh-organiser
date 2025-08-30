@@ -40,7 +40,7 @@
         }
         else 
         {
-            return 50 + Math.round((importState.finished_thumbnails_count / importState.imported_models_count) * 50);
+            return 50 + Math.round((importState.finished_thumbnails_count / importState.model_count) * 50);
         }
     });
 </script>
