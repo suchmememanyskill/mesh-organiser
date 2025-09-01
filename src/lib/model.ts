@@ -201,6 +201,8 @@ export interface LabelEntry
 
 export type SizeOptionModels = "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
 export const SizeOptionModelsAsList = ["Grid_Small", "Grid_Medium", "Grid_Large", "List_Small", "List_Medium", "List_Large"] as SizeOptionModels[];
+export type OrderOptionModels = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "size-asc" | "size-desc";
+export type OrderOptionGroups = "date-asc" | "date-desc" | "name-asc" | "name-desc";
 
 export interface Configuration {
     data_path: string;
@@ -237,6 +239,8 @@ export interface Configuration {
     group_split_view: "no_split" | "split-left-right" | "split-top-bottom";
     label_exported_model_as_printed : boolean;
     theme : string;
+    order_option_models : OrderOptionModels;
+    order_option_groups : OrderOptionGroups;
 }
 
 export function configurationDefault() : Configuration
@@ -276,6 +280,8 @@ export function configurationDefault() : Configuration
         group_split_view: "no_split",
         label_exported_model_as_printed: false,
         theme: "default",
+        order_option_models: "date-desc",
+        order_option_groups: "date-desc",
     }
 }
 

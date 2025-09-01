@@ -42,6 +42,8 @@ pub struct StoredConfiguration {
     pub group_split_view: Option<String>,
     pub label_exported_model_as_printed: Option<bool>,
     pub theme: Option<String>,
+    pub order_option_models: Option<String>,
+    pub order_option_groups: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -80,6 +82,8 @@ pub struct Configuration {
     pub group_split_view: String,
     pub label_exported_model_as_printed: bool,
     pub theme: String,
+    pub order_option_models: String,
+    pub order_option_groups: String,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -164,6 +168,12 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
             .label_exported_model_as_printed
             .unwrap_or(default.label_exported_model_as_printed),
         theme: configuration.theme.unwrap_or(default.theme),
+        order_option_models: configuration
+            .order_option_models
+            .unwrap_or(default.order_option_models),
+        order_option_groups: configuration
+            .order_option_groups
+            .unwrap_or(default.order_option_groups),
     }
 }
 
@@ -214,6 +224,8 @@ impl Default for Configuration {
             group_split_view: String::from("no_split"),
             label_exported_model_as_printed: false,
             theme: String::from("default"),
+            order_option_models: String::from("date-desc"),
+            order_option_groups: String::from("date-desc"),
         }
     }
 }

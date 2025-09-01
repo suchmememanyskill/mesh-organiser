@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { SizeOptionModelsAsList, type LabelMin, type Model } from "$lib/model";
+    import { SizeOptionModelsAsList, type LabelMin, type Model, type OrderOptionModels } from "$lib/model";
     import ModelTiny from "$lib/components/view/model-tiny.svelte";
     import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
     import ModelEdit from "$lib/components/edit/model.svelte";
@@ -16,36 +16,21 @@
 
     const props: { models: Model[], default_show_multiselect_all? : boolean, initialEditMode? : boolean } = $props();
     let selected = $state.raw<Model[]>([]);
-
-    interface SearchFilters {
-        search: string;
-        order:
-            | "date-asc"
-            | "date-desc"
-            | "name-asc"
-            | "name-desc"
-            | "size-asc"
-            | "size-desc";
-    }
-
-    const currentFilter = $state<SearchFilters>({
-        search: "",
-        order: "date-desc",
-    });
+    let searchFilter = $state.raw<string>("");
 
     const readableOrders = {
         "date-asc": "Date (Asc)",
         "date-desc": "Date (Desc)",
-        "name-asc": "Name (Asc)",
-        "name-desc": "Name (Desc)",
+        "name-asc": "Name (A->Z)",
+        "name-desc": "Name (Z->A)",
         "size-asc": "Size (Asc)",
         "size-desc": "Size (Desc)",
     };
 
-    const readableOrder = $derived(readableOrders[currentFilter.order]);
+    const readableOrder = $derived(readableOrders[c.configuration.order_option_models]);
 
     const filteredCollection = $derived.by(() => {
-        let search_lower = currentFilter.search.toLowerCase();
+        let search_lower = searchFilter.toLowerCase();
 
         return props.models
             .filter(
@@ -61,7 +46,7 @@
                             .includes(search_lower)),
             )
             .sort((a, b) => {
-                switch (currentFilter.order) {
+                switch (c.configuration.order_option_models) {
                     case "date-asc":
                         return (
                             new Date(a.added).getTime() -
@@ -90,9 +75,9 @@
 <div class="flex flex-row h-full">
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
-            <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search..." />
+            <Input bind:value={searchFilter} class="border-primary" placeholder="Search..." />
     
-            <Select.Root type="single" name="Sort" bind:value={currentFilter.order}>
+            <Select.Root type="single" name="Sort" bind:value={c.configuration.order_option_models}>
                 <Select.Trigger class="border-primary">
                     {readableOrder}
                 </Select.Trigger>

@@ -32,28 +32,15 @@
 
     let scrollContainer : HTMLElement;
 
-    interface SearchFilters {
-        search: string;
-        order:
-            | "date-asc"
-            | "date-desc"
-            | "name-asc"
-            | "name-desc";
-        limit: number;
-    }
-
-    const currentFilter = $state<SearchFilters>({
-        search: "",
-        order: "date-desc",
-        limit: 100,
-    });
+    let searchFilter = $state.raw<string>("");
+    let limitFilter = $state.raw<number>(100);
 
     function handleScroll()
     {
-        if (scrollContainer && currentFilter.limit < filteredCollection.length) {
+        if (scrollContainer && limitFilter < filteredCollection.length) {
             const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
             if (scrollTop + clientHeight >= scrollHeight) {
-                currentFilter.limit += 100;
+                limitFilter += 100;
             }
         }
     }
@@ -72,14 +59,14 @@
     const readableOrders = {
         "date-asc": "Date (Asc)",
         "date-desc": "Date (Desc)",
-        "name-asc": "Name (Asc)",
-        "name-desc": "Name (Desc)",
+        "name-asc": "Name (A->Z)",
+        "name-desc": "Name (Z->A)",
     };
 
-    const readableOrder = $derived(readableOrders[currentFilter.order]);
+    const readableOrder = $derived(readableOrders[c.configuration.order_option_groups]);
 
     const filteredCollection = $derived.by(() => {
-        let search_lower = currentFilter.search.toLowerCase();
+        let search_lower = searchFilter.toLowerCase();
 
         return props.groups
             .filter(
@@ -89,7 +76,7 @@
                         .includes(search_lower)
             )
             .sort((a, b) => {
-                switch (currentFilter.order) {
+                switch (c.configuration.order_option_groups) {
                     case "date-asc":
                         return (
                             new Date(a.group.createdAt).getTime() -
@@ -210,9 +197,9 @@
 <div class="flex flex-row h-full">
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
-            <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search..." />
+            <Input bind:value={searchFilter} class="border-primary" placeholder="Search..." />
     
-            <Select.Root type="single" name="Sort" bind:value={currentFilter.order}>
+            <Select.Root type="single" name="Sort" bind:value={c.configuration.order_option_groups}>
                 <Select.Trigger class="border-primary">
                     {readableOrder}
                 </Select.Trigger>
@@ -310,13 +297,13 @@
     <div class="overflow-y-scroll h-full" bind:this={scrollContainer} onscroll={handleScroll}>
         <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center content-start gap-2 flex-wrap outline-0">
             {#if c.configuration.size_option_groups.includes("List")}
-                {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
                     <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="w-full">
                         <GroupTinyList group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
                     </div>
                 {/each}
             {:else}
-                {#each filteredCollection.slice(0, currentFilter.limit) as group (group.group.id)}
+                {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
                     <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
                         <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
                     </div>
