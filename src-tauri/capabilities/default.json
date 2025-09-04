@@ -16,6 +16,7 @@
     "core:window:allow-set-focus",
     "core:window:allow-unminimize",
     "core:webview:allow-set-webview-zoom",
+    "os:allow-platform",
     {
       "identifier": "fs:allow-exists",
       "allow": [{ "path": "$APPDATA/custom.css" }]

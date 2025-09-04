@@ -241,6 +241,7 @@ export interface Configuration {
     theme : string;
     order_option_models : OrderOptionModels;
     order_option_groups : OrderOptionGroups;
+    ignore_update : string;
 }
 
 export function configurationDefault() : Configuration
@@ -282,6 +283,7 @@ export function configurationDefault() : Configuration
         theme: "default",
         order_option_models: "date-desc",
         order_option_groups: "date-desc",
+        ignore_update: "",
     }
 }
 

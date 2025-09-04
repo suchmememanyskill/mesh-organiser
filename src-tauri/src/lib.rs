@@ -15,8 +15,7 @@ use error::ApplicationError;
 use serde::Serialize;
 use service::{
     app_state::{read_configuration, AppState, InitialState},
-    download_file_service,
-    import_service,
+    download_file_service, import_service,
     slicer_service::Slicer,
 };
 use std::fs::File;
@@ -39,10 +38,9 @@ mod service;
 mod util;
 
 #[derive(Serialize, Clone)]
-struct DeepLinkEmit 
-{
+struct DeepLinkEmit {
     download_url: String,
-    source_url: Option<String>
+    source_url: Option<String>,
 }
 
 #[tauri::command]
@@ -61,19 +59,18 @@ async fn add_model(
     let mut import_state = ImportState::new(origin_url, recursive, delete_imported);
 
     import_state = tauri::async_runtime::spawn_blocking(move || {
-        import_service::import_path(
-            &path_clone,
-            &state_clone,
-            &handle_clone,
-            &mut import_state,
-        )?;
+        import_service::import_path(&path_clone, &state_clone, &handle_clone, &mut import_state)?;
 
         Result::<ImportState, ApplicationError>::Ok(import_state)
     })
     .await
     .unwrap()?;
 
-    let model_ids: Vec<i64> = import_state.imported_models.iter().flat_map(|f| f.model_ids.clone()).collect();
+    let model_ids: Vec<i64> = import_state
+        .imported_models
+        .iter()
+        .flat_map(|f| f.model_ids.clone())
+        .collect();
     let models = db::model::get_models_by_id(model_ids, &state.db).await;
     service::thumbnail_service::generate_thumbnails(
         &models,
@@ -81,10 +78,10 @@ async fn add_model(
         &app_handle,
         false,
         &mut import_state,
-    ).await?;
+    )
+    .await?;
 
-    if open_in_slicer && models.len() > 0
-    {
+    if open_in_slicer && models.len() > 0 {
         if let Some(slicer) = &state.get_configuration().slicer {
             slicer.open(models, &state)?;
         }
@@ -497,7 +494,7 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
             }
         }
     })
-    .on_navigation(move |f| {   
+    .on_navigation(move |f| {
         let url = f.to_string();
         println!("Navigated to: {}", url);
 
@@ -507,13 +504,18 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
             let window = cloned_handle.get_webview_window("secondary");
 
             if let Some(window) = window {
-                if let Ok(source_url) = window.url()
-                {
-                    let _ = cloned_handle.emit("deep-link", DeepLinkEmit { download_url: deep_link, source_url: Some(source_url.to_string()) });
+                if let Ok(source_url) = window.url() {
+                    let _ = cloned_handle.emit(
+                        "deep-link",
+                        DeepLinkEmit {
+                            download_url: deep_link,
+                            source_url: Some(source_url.to_string()),
+                        },
+                    );
                 }
-             }
+            }
 
-             return false;
+            return false;
         }
 
         true
@@ -753,6 +755,7 @@ pub fn run() {
     });
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {

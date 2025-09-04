@@ -1,6 +1,7 @@
 use super::app_state::AppState;
 use crate::configuration::Configuration;
 use crate::db::{label, label_keywords};
+use crate::service::import_state::{ImportState, ImportStatus, ImportedModelsSet};
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use crate::{db::model, error::ApplicationError};
@@ -12,10 +13,9 @@ use std::fs::{self, read_dir, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{AppHandle};
+use tauri::AppHandle;
 use zip;
 use zip::write::SimpleFileOptions;
-use crate::service::import_state::{ImportState, ImportStatus, ImportedModelsSet};
 
 pub fn import_path(
     path: &str,
@@ -30,8 +30,7 @@ pub fn import_path(
     let model_count = get_model_count(path, &configuration, import_state.recursive)?;
     import_state.update_total_model_count(model_count, app_handle);
 
-    match import_path_inner(path, app_state, app_handle, import_state)
-    {
+    match import_path_inner(path, app_state, app_handle, import_state) {
         Ok(()) => {
             import_state.update_status(ImportStatus::FinishedModels, app_handle);
             Ok(())
@@ -47,10 +46,9 @@ pub fn get_model_count(
     path: &str,
     configuration: &Configuration,
     recursive: bool,
-) -> Result<usize, ApplicationError> 
-{
+) -> Result<usize, ApplicationError> {
     let path_buff = PathBuf::from(path);
-    
+
     if path_buff.is_dir() {
         if recursive {
             get_model_count_from_dir_recursive(path, configuration)
@@ -73,20 +71,14 @@ pub fn import_path_inner(
     app_state: &AppState,
     app_handle: &AppHandle,
     import_state: &mut ImportState,
-) -> Result<(), ApplicationError> 
-{
+) -> Result<(), ApplicationError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let configuration = app_state.get_configuration();
-    
+
     if path_buff.is_dir() {
         if import_state.recursive {
-            import_models_from_dir_recursive(
-                &path_buff,
-                app_state,
-                app_handle,
-                import_state,
-            )?;
+            import_models_from_dir_recursive(&path_buff, app_state, app_handle, import_state)?;
         } else {
             import_models_from_dir(path, app_state, app_handle, import_state, name.clone())?;
         }
@@ -98,7 +90,14 @@ pub fn import_path_inner(
 
         {
             let mut file = File::open(&path_buff)?;
-            let id = import_single_model(&mut file, extension, size, &name, import_state.origin_url.clone(), app_state)?;
+            let id = import_single_model(
+                &mut file,
+                extension,
+                size,
+                &name,
+                import_state.origin_url.clone(),
+                app_state,
+            )?;
             import_state.add_model_id_to_current_set(id, app_handle);
         }
 
@@ -187,7 +186,8 @@ fn import_models_from_dir_recursive(
     let configuration = app_state.get_configuration();
 
     for folder in entries.iter().filter(|f| f.path().is_dir()) {
-        let _ = import_models_from_dir_recursive(&folder.path(), app_state, app_handle, import_state);
+        let _ =
+            import_models_from_dir_recursive(&folder.path(), app_state, app_handle, import_state);
     }
 
     if entries
@@ -217,19 +217,22 @@ fn import_models_from_dir(
     group_name: String,
 ) -> Result<(), ApplicationError> {
     let configuration = app_state.get_configuration();
-    
+
     import_state.add_new_import_set(Some(group_name), app_handle);
 
     let origin_url = import_state.origin_url.clone();
     let delete_after_import = import_state.delete_after_import;
     let import_state_mutex = Mutex::new(import_state);
-    
-    let entries : Vec<PathBuf> = read_dir(path)?
+
+    let entries: Vec<PathBuf> = read_dir(path)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file())
         .collect();
 
-    let thread_pool = rayon::ThreadPoolBuilder::new().num_threads(configuration.core_parallelism).build().unwrap();
+    let thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(configuration.core_parallelism)
+        .build()
+        .unwrap();
 
     thread_pool.install(|| {
         entries.par_iter().for_each(|entry| {
@@ -253,8 +256,9 @@ fn import_models_from_dir(
                 let mut file = File::open(&entry).unwrap();
 
                 let id = import_single_model(
-                    &mut file, extension, file_size, &file_name, link, app_state
-                ).unwrap();
+                    &mut file, extension, file_size, &file_name, link, app_state,
+                )
+                .unwrap();
 
                 let import_state = &mut import_state_mutex.lock().unwrap();
                 import_state.add_model_id_to_current_set(id, app_handle);
@@ -266,7 +270,10 @@ fn import_models_from_dir(
         });
     });
 
-    import_state_mutex.lock().unwrap().create_group_from_current_set(app_state)?;
+    import_state_mutex
+        .lock()
+        .unwrap()
+        .create_group_from_current_set(app_state)?;
 
     Ok(())
 }
@@ -299,8 +306,7 @@ fn import_models_from_zip(
                 file.read_to_end(&mut file_contents)?;
                 temp_str = String::from_utf8(file_contents).unwrap();
                 link = Some(temp_str);
-            }
-            else {
+            } else {
                 link = import_state.origin_url.clone();
             }
 
@@ -314,7 +320,7 @@ fn import_models_from_zip(
                 let file_size = file.size() as usize;
 
                 let id = import_single_model(
-                    &mut file, extension, file_size, &file_name, link, app_state
+                    &mut file, extension, file_size, &file_name, link, app_state,
                 )?;
                 import_state.add_model_id_to_current_set(id, app_handle);
             }
@@ -410,10 +416,8 @@ fn get_model_count_from_dir_recursive(
     let mut count = 0;
 
     for folder in entries.iter().filter(|f| f.path().is_dir()) {
-        count += get_model_count_from_dir_recursive(
-            folder.path().to_str().unwrap(),
-            configuration,
-        )?;
+        count +=
+            get_model_count_from_dir_recursive(folder.path().to_str().unwrap(), configuration)?;
     }
 
     count += get_model_count_from_dir(path, configuration)?;
@@ -436,8 +440,7 @@ fn get_model_count_from_dir(
 fn get_model_count_from_zip(
     path: &str,
     configuration: &Configuration,
-) -> Result<usize, ApplicationError>
-{
+) -> Result<usize, ApplicationError> {
     let zip_file = File::open(&path)?;
     let mut archive = zip::ZipArchive::new(zip_file)?;
     let mut count = 0;
@@ -451,7 +454,7 @@ fn get_model_count_from_zip(
 
         if is_supported_extension(&outpath, &configuration) {
             count += 1;
-        }        
+        }
     }
 
     Ok(count)

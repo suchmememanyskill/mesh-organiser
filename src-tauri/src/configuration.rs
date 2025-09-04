@@ -44,6 +44,7 @@ pub struct StoredConfiguration {
     pub theme: Option<String>,
     pub order_option_models: Option<String>,
     pub order_option_groups: Option<String>,
+    pub ignore_update: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -84,6 +85,7 @@ pub struct Configuration {
     pub theme: String,
     pub order_option_models: String,
     pub order_option_groups: String,
+    pub ignore_update: String,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -174,6 +176,7 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         order_option_groups: configuration
             .order_option_groups
             .unwrap_or(default.order_option_groups),
+        ignore_update: configuration.ignore_update.unwrap_or(default.ignore_update),
     }
 }
 
@@ -181,9 +184,9 @@ impl Default for Configuration {
     fn default() -> Self {
         let installed_slicer = Slicer::iter().find(|f| f.is_installed());
         let mut parallelism = thread::available_parallelism()
-                .unwrap_or(NonZeroUsize::new(3).unwrap())
-                .get()
-                / 2;
+            .unwrap_or(NonZeroUsize::new(3).unwrap())
+            .get()
+            / 2;
 
         if parallelism <= 0 {
             parallelism = 1;
@@ -226,6 +229,7 @@ impl Default for Configuration {
             theme: String::from("default"),
             order_option_models: String::from("date-desc"),
             order_option_groups: String::from("date-desc"),
+            ignore_update: String::from(""),
         }
     }
 }

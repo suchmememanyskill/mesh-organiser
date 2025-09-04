@@ -11,7 +11,7 @@
     import { goto } from '$app/navigation';
     import { updateState, initConfiguration, c, on_save_configuration } from '$lib/data.svelte';
     import { getCurrentWindow } from '@tauri-apps/api/window';
-    import { check } from '@tauri-apps/plugin-updater';
+    import { check, type Update } from '@tauri-apps/plugin-updater';
     import { relaunch } from '@tauri-apps/plugin-process';
     import { confirm } from '@tauri-apps/plugin-dialog';
     import { IsMobile } from "$lib/hooks/is-mobile.svelte";
@@ -19,9 +19,11 @@
     import { debounce } from "$lib/utils";
     import { setTheme } from "$lib/theme";
     import { handleDeepLink, initImportListeners } from "$lib/import.svelte";
+    import UpdatePopup from "$lib/components/view/update-popup.svelte";
 
     let { children } = $props();
     let loaded_config = false;
+    let availableUpdate = $state<Update|null>(null);
 
     interface Error
     {
@@ -81,24 +83,9 @@
             const update = await check();
             console.log(update);
 
-            if (update && update.version)
+            if (update && update.version && update.version !== c.configuration.ignore_update && c.configuration.ignore_update !== "always")
             {
-                const confirm_update = await confirm(`A new version of Mesh Organiser (v${update.currentVersion} -> v${update.version}) is available. Do you want to update?`,
-                    { title: "Update available" }
-                );
-
-                if (confirm_update)
-                {
-                    await update.downloadAndInstall((event) => {
-                        switch (event.event) {
-                        case 'Started':
-                            toast.info("Downloading update...");
-                            break;
-                        }
-                    });
-
-                    await relaunch();
-                }
+                availableUpdate = update;
             }
         }
         catch
@@ -132,4 +119,7 @@
             {@render children?.()}
         </div>
     </main>
+    {#if availableUpdate}
+        <UpdatePopup update={availableUpdate} onDismiss={() => availableUpdate = null} />
+    {/if}
 </Sidebar.Provider>

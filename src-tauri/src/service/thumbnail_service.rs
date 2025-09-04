@@ -3,7 +3,10 @@ use std::{path::PathBuf, time::Duration};
 use tauri::AppHandle;
 use tokio::sync::mpsc::error::TryRecvError;
 
-use crate::{error::ApplicationError, service::import_state::{ImportState, ImportStatus}};
+use crate::{
+    error::ApplicationError,
+    service::import_state::{ImportState, ImportStatus},
+};
 
 use super::app_state::AppState;
 use crate::db::model::{self, Model};
@@ -145,10 +148,11 @@ pub async fn generate_thumbnails(
                 let run = &mut running[i];
 
                 let res = run.listener.try_recv();
-                
+
                 if let Err(e) = res {
                     if e == TryRecvError::Disconnected {
-                        import_state.update_finished_thumbnails_count(run.thumbnail_count, app_handle);
+                        import_state
+                            .update_finished_thumbnails_count(run.thumbnail_count, app_handle);
                         running.remove(i);
                     } else {
                         i += 1;
