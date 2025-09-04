@@ -79,8 +79,9 @@
         try 
         {
             const update = await check();
+            console.log(update);
 
-            if (update)
+            if (update && update.version)
             {
                 const confirm_update = await confirm(`A new version of Mesh Organiser (v${update.currentVersion} -> v${update.version}) is available. Do you want to update?`,
                     { title: "Update available" }

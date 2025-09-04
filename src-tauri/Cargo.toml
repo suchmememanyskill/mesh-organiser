@@ -1,8 +1,8 @@
 [package]
 name = "mesh-organiser"
-version = "1.0.0"
+version = "1.7.0"
 description = "Organise your 3d models"
-authors = ["you"]
+authors = ["suchmememanyskill"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,27 +20,27 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
-tauri-plugin-shell = "2.0.0"
+tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { git = "https://github.com/suchmememanyskill/sqlx", features = ["sqlite", "runtime-tokio", "chrono"] }
-futures = "0.3.31"
-sha2 = "0.10"
-thiserror = "2.0.12"
-chrono = "0.4.40"
-zip = { version = "2.2"}
+futures = "0"
+sha2 = "0"
+thiserror = "2"
+chrono = "0"
+zip = { version = "2"}
 tauri-plugin-dialog = "2"
 tauri-plugin-deep-link = "2"
 urlencoding = "2"
-reqwest = "0.12"
+reqwest = "0"
 regex = "1.11.1"
-strum = { version = "0.27", features = ["derive"] }
+strum = { version = "0", features = ["derive"] }
 tauri-plugin-updater = "2"
-tauri-plugin-process = "2.0.0"
+tauri-plugin-process = "2"
 tokio = { version = "1.44.1", features = ["full"] }
-bitflags = { version = "2.9.0" }
+bitflags = { version = "2.9" }
 arboard = "3.5"
-base64 = "0.22.1"
+base64 = "0.22"
 indexmap = "2.9"
 itertools = "0"
 tauri-plugin-fs = "2"
@@ -50,4 +50,4 @@ rayon = "1"
 winreg = "0.55"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-single-instance = { version = "2.0.0", features = ["deep-link"] }
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
