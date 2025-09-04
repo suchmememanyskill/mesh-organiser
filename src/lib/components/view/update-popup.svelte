@@ -48,14 +48,14 @@
 </script>
 
 <div class="fixed w-full h-full flex items-center justify-center z-50 bg-black/50">
-    <Card class="w-180">
+    <Card>
         <CardHeader>
-            <CardTitle class="text-center">Update available</CardTitle>
+            <CardTitle>Update available</CardTitle>
         </CardHeader>
         <CardContent class="flex flex-col gap-4">
             <p>A new version of Mesh Organiser (v{props.update.currentVersion} -&gt; v{props.update.version}) is available. Do you want to update?</p>
 
-            <a href="https://github.com/suchmememanyskill/mesh-organiser/releases" target="_blank" class="{buttonVariants({ variant: "ghost"})} w-full flex items-center justify-center gap-2">
+            <a href="https://github.com/suchmememanyskill/mesh-organiser/releases" target="_blank" class="{buttonVariants({ variant: "ghost"})} w-full flex gap-2">
                 <Link /> 
                 View changelog
             </a>
