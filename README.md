@@ -1,6 +1,6 @@
 # Mesh Organiser
 
-Competes with your downloads folder for storing models.
+Competes with your downloads folder for storing 3d models.
 
 ![Preview image](./readme/app.png)
 
