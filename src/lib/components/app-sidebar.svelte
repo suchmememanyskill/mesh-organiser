@@ -134,14 +134,14 @@
             clone.getAttribute("class") +
                 " bg-sidebar-accent text-sidebar-accent-foreground tooltip",
         );
-        clone.id = target.innerText;
+        clone.classList.add("hover-clone");
         document.body.appendChild(clone);
     }
 
     function destroyOnLeave(event: MouseEvent) {
-        let target = event.target as HTMLElement;
-        let clone = document.getElementById(target.innerText);
-        clone?.remove();
+        Array.from(document.getElementsByClassName("hover-clone")).forEach((el) =>
+            el.remove(),
+        );
     }
 
     function onClickScrollIntoView(event: any) {
