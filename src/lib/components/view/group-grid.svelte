@@ -15,9 +15,12 @@
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
     import { IsSplitGridSize } from "$lib/hooks/is-split-grid-size.svelte";
+    import { type ClassValue } from "svelte/elements";
+    import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
 
     const props: { groups: GroupedEntry[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
+    const selectedSet = $derived(new Set(selected.map(x => x.group.id)));
 
     let gridSizeMonitor = new IsSplitGridSize();
 
@@ -135,7 +138,7 @@
         }
         else if (event.ctrlKey || event.metaKey)
         {
-            if (selected.some(x => x.group.id == group.group.id))
+            if (selectedSet.has(group.group.id))
             {
                 selected = selected.filter(x => x.group.id !== group.group.id);
             }
@@ -298,17 +301,33 @@
         <RightClickModels models={selected.map(x => x.models).flat()} class="flex flex-row justify-center content-start gap-2 flex-wrap outline-0">
             {#if c.configuration.size_option_groups.includes("List")}
                 {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
-                    <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="w-full">
-                        <GroupTinyList group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
+                    <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
+                        {@render GroupCheckbox(group, "")}
+                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="min-w-0">
+                            <GroupTinyList group={group} class="{size} pointer-events-none select-none {selectedSet.has(group.group.id) ? "border-primary" : "" }" />
+                        </div>
                     </div>
                 {/each}
             {:else}
                 {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
-                    <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
-                        <GroupTiny group={group} class="{size} pointer-events-none select-none {selected.some(x => x.group.id === group.group.id) ? "border-primary" : "" }" />
+                    <div class="relative">
+                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
+                            <GroupTiny group={group} class="{size} pointer-events-none select-none {selectedSet.has(group.group.id) ? "border-primary" : "" }" />
+                        </div>
+                        {@render GroupCheckbox(group, "absolute top-0 left-0 rounded-tl-lg")}
                     </div>
+
                 {/each}
             {/if}
         </RightClickModels>
     </div>
+{/snippet}
+
+{#snippet GroupCheckbox(group : GroupedEntry, clazz: ClassValue) }
+    {#if c.configuration.show_multiselect_checkboxes}
+        <Checkbox class={clazz} bind:checked={
+            () => selectedSet.has(group.group.id),
+            (val) => val ? selected = [...selected, group] : selected = selected.filter(x => x.group.id !== group.group.id)
+        } />
+    {/if}
 {/snippet}

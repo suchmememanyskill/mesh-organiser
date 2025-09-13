@@ -7,6 +7,8 @@
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
     import ModelTiny from "$lib/components/view/model-tiny.svelte";
     import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
+    import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
+    import { c } from "$lib/data.svelte";
 
     let {
         value = $bindable(),
@@ -24,6 +26,7 @@
     let scrollContainer : HTMLElement;
 
     const interval = setInterval(handleScroll, 1000);
+    const valueHashSet = $derived(new Set(value.map(x => x.id)));
 
     let destroyStateChangeListener: UnlistenFn | null = null;
 
@@ -145,16 +148,32 @@
     <RightClickModels models={value} class="flex flex-row justify-center content-start gap-2 flex-wrap outline-0">
         {#if itemSize.includes("List")}
             {#each availableModels.slice(0, limit) as model (model.id)}
-                <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="w-full">
-                    <ModelTinyList {model} class="{sizeClasses} pointer-events-none select-none {value.some(x => model.id === x.id) ? "border-primary" : "" }" />
+                <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
+                    {@render ModelCheckbox(model, "")}
+                    <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="min-w-0">
+                        <ModelTinyList {model} class="{sizeClasses} pointer-events-none select-none {valueHashSet.has(model.id) ? "border-primary" : "" }" />
+                    </div>
                 </div>
             {/each}
         {:else}
             {#each availableModels.slice(0, limit) as model (model.id)}
-                <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
-                    <ModelTiny {model} class="{sizeClasses} pointer-events-none select-none {value.some(x => model.id === x.id) ? "border-primary" : "" }" />
+                <div class="relative">
+                    <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
+                        <ModelTiny {model} class="{sizeClasses} pointer-events-none select-none {valueHashSet.has(model.id) ? "border-primary" : "" }" />
+                    </div>
+                    {@render ModelCheckbox(model, "absolute top-0 left-0 rounded-tl-lg")}
                 </div>
+
             {/each}
         {/if}
     </RightClickModels>
 </div>
+
+{#snippet ModelCheckbox(model : Model, clazz: ClassValue) }
+    {#if c.configuration.show_multiselect_checkboxes}
+        <Checkbox class={clazz} bind:checked={
+            () => valueHashSet.has(model.id),
+            (val) => val ? value = [...value, model] : value = value.filter(x => x.id !== model.id)
+        } />
+    {/if}
+{/snippet}

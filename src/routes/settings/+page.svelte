@@ -326,21 +326,40 @@
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
                 <CheckboxWithLabel bind:value={c.configuration.open_slicer_on_remote_model_import} label="Open slicer after importing from website" />
+                <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
+                <CheckboxWithLabel bind:value={c.configuration.open_links_in_external_browser} label="Open links in external browser" />
+                <CheckboxWithLabel bind:value={c.configuration.label_exported_model_as_printed} label="Label exported models as printed" />             
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Window Zoom</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-5">
+                <Label>Current zoom level: {c.configuration.zoom_level}%</Label>
+                <Label>Change the zoom level using Control and +/-</Label>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>User Interface</CardTitle>
+            </CardHeader>
+            <CardContent class="text-sm flex flex-col gap-5">
                 <CheckboxWithLabel bind:value={
                     () => c.configuration.show_ungrouped_models_in_groups,
                     (val) => { c.configuration.show_ungrouped_models_in_groups = val; onInternalStateChange(); }
                 } label="Show ungrouped models in groups" />
-                <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
                 <CheckboxWithLabel bind:value={c.configuration.show_grouped_count_on_labels} label="Show grouped model count on labels" />
                 <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
-                <CheckboxWithLabel bind:value={c.configuration.open_links_in_external_browser} label="Open links in external browser" />
                 <CheckboxWithLabel bind:value={c.configuration.only_show_single_image_in_groups} label="Only show first image of group" />
-                <CheckboxWithLabel bind:value={c.configuration.label_exported_model_as_printed} label="Label exported models as printed" />
+                <CheckboxWithLabel bind:value={c.configuration.show_multiselect_checkboxes} label="Show multiselect checkboxes" />
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Split group view</Label>
                     <Select.Root type="single" bind:value={c.configuration.group_split_view}>
-                        <Select.Trigger class="w-[180px]">{splitConversions[c.configuration.group_split_view]}</Select.Trigger>
+                        <Select.Trigger class="w-full">{splitConversions[c.configuration.group_split_view]}</Select.Trigger>
                         <Select.Content>
                             <Select.Item value="no_split">{splitConversions["no_split"]}</Select.Item>
                             <Select.Item value="split-left-right">{splitConversions["split-left-right"]}</Select.Item>
@@ -352,7 +371,7 @@
                 <div class="flex flex-col space-y-1.5">
                     <Label>Theme</Label>
                     <Select.Root type="single" bind:value={c.configuration.theme} onValueChange={(val) => setTheme(val)}>
-                        <Select.Trigger class="w-[180px]">{getThemeName(c.configuration.theme)}</Select.Trigger>
+                        <Select.Trigger class="w-full">{getThemeName(c.configuration.theme)}</Select.Trigger>
                         <Select.Content>
                             {#each getAvailableThemes() as theme}
                                 <Select.Item value={theme}>{getThemeName(theme)}</Select.Item>
@@ -365,17 +384,7 @@
                                 <Button onclick={openCustomCss}>Open custom.css</Button>
                         </div>
                     {/if}
-                </div>                
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Window Zoom</CardTitle>
-            </CardHeader>
-            <CardContent class="text-sm flex flex-col gap-5">
-                <Label>Current zoom level: {c.configuration.zoom_level}%</Label>
-                <Label>Change the zoom level using Control and +/-</Label>
+                </div>   
             </CardContent>
         </Card>
     </div>
