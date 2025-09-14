@@ -240,7 +240,7 @@ impl Default for Configuration {
             order_option_models: String::from("date-desc"),
             order_option_groups: String::from("date-desc"),
             ignore_update: String::from(""),
-            show_multiselect_checkboxes: false,
+            show_multiselect_checkboxes: true,
         }
     }
 }

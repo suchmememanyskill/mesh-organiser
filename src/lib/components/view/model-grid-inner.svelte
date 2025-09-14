@@ -145,34 +145,35 @@
 </script>
 
 <div class="overflow-y-scroll {clazz}" bind:this={scrollContainer} onscroll={handleScroll}>
-    <RightClickModels models={value} class="flex flex-row justify-center content-start gap-2 flex-wrap outline-0">
+    <RightClickModels models={value} class={`flex flex-row justify-center content-start gap-2 flex-wrap outline-0 ${c.configuration.show_multiselect_checkboxes && itemSize.includes("Grid") ? "pt-[5px]" : ""}`}>
         {#if itemSize.includes("List")}
             {#each availableModels.slice(0, limit) as model (model.id)}
+                {@const isSelected = valueHashSet.has(model.id)}
                 <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
-                    {@render ModelCheckbox(model, "")}
+                    {@render ModelCheckbox(model, "", isSelected)}
                     <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="min-w-0">
-                        <ModelTinyList {model} class="{sizeClasses} pointer-events-none select-none {valueHashSet.has(model.id) ? "border-primary" : "" }" />
+                        <ModelTinyList {model} class="{sizeClasses} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
                     </div>
                 </div>
             {/each}
         {:else}
             {#each availableModels.slice(0, limit) as model (model.id)}
-                <div class="relative">
+                {@const isSelected = valueHashSet.has(model.id)}
+                <div class="relative group">
                     <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
-                        <ModelTiny {model} class="{sizeClasses} pointer-events-none select-none {valueHashSet.has(model.id) ? "border-primary" : "" }" />
+                        <ModelTiny {model} class="{sizeClasses} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
                     </div>
-                    {@render ModelCheckbox(model, "absolute top-0 left-0 rounded-tl-lg")}
+                    {@render ModelCheckbox(model, `absolute top-[-5px] left-[-5px] bg-card rounded-lg ${isSelected ? "" : "group-hover:opacity-100 opacity-0"}`, isSelected)}
                 </div>
-
             {/each}
         {/if}
     </RightClickModels>
 </div>
 
-{#snippet ModelCheckbox(model : Model, clazz: ClassValue) }
+{#snippet ModelCheckbox(model : Model, clazz: ClassValue, isSelected : boolean) }
     {#if c.configuration.show_multiselect_checkboxes}
         <Checkbox class={clazz} bind:checked={
-            () => valueHashSet.has(model.id),
+            () => isSelected,
             (val) => val ? value = [...value, model] : value = value.filter(x => x.id !== model.id)
         } />
     {/if}
