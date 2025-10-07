@@ -161,12 +161,13 @@ function extractResources(rawResources : RawResource[], groupedEntries : Grouped
 
     return rawResources.map(rawResource => {
         let groups = rawResource.group_ids.map(groupId => groupMap.get(groupId)) as GroupedEntry[];
+        groups = groups.filter(group => group !== undefined)
 
         let resource: Resource = {
             id: rawResource.id,
             name: rawResource.name,
             flags: convertRawToResourceFlags(rawResource.flags),
-            groups: groups.filter(group => group !== undefined),
+            groups,
             createdAt: new Date(rawResource.created),
         };
 
