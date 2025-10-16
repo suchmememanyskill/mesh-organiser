@@ -44,6 +44,7 @@
             });
         });
 
+        await removeDeadGroups();
         await initConfiguration();
         await setTheme(c.configuration.theme);
 
@@ -75,7 +76,6 @@
         addEventListener("resize", debounced_resize);
 
         await updateState();
-        await removeDeadGroups();
         loaded_config = true;
 
         try 

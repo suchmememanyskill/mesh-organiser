@@ -166,7 +166,7 @@ function extractResources(rawResources : RawResource[], groupedEntries : Grouped
             id: rawResource.id,
             name: rawResource.name,
             flags: convertRawToResourceFlags(rawResource.flags),
-            groups: groups.filter(group => group !== undefined),
+            groups: groups,
             createdAt: new Date(rawResource.created),
         };
 
