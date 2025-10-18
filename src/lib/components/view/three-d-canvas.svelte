@@ -9,7 +9,7 @@
     import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
     import { toByteArray } from "base64-js";
     import LoaderCircle from "@lucide/svelte/icons/loader-circle";
-    import { BufferGeometry, Mesh, ObjectLoader, Group as GGroup } from 'three';
+    import { BufferGeometry, Mesh, ObjectLoader, Group as GGroup, Matrix4 } from 'three';
     import { mergeGeometries, toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
     import ThreeScene from "$lib/components/view/three-d-scene.svelte";
@@ -23,46 +23,17 @@
     function convertGeometry(group : GGroup) : BufferGeometry
     {
         let geometries: BufferGeometry[] = [];
-        let maxX = 0;
-        let maxY = 0;
-        let perRow = 2;
+        group.updateMatrixWorld(true);
 
         group.traverse((object) => {
             if (object instanceof Mesh)
             {
                 let mesh = object as Mesh;
                 let clone = mesh.geometry.clone();
-                clone.computeBoundingBox();
-                clone.center();
-
-                let lengthX = clone.boundingBox!.max.x - clone.boundingBox!.min.x;
-                let lengthY = clone.boundingBox!.max.y - clone.boundingBox!.min.y;
-
-                if (lengthX > maxX) {
-                    maxX = lengthX;
-                }
-
-                if (lengthY > maxY) {
-                    maxY = lengthY;
-                }
-
-                geometries.push(clone);
+                clone.applyMatrix4(mesh.matrixWorld);
+                geometries.push(clone.index ? clone.toNonIndexed() : clone);
             }
         });
-
-        if (geometries.length >= 4)
-        {
-            perRow = Math.ceil(Math.sqrt(geometries.length));
-        }
-
-        for (let i = 0; i < geometries.length; i++) {
-            let geometry = geometries[i];
-            let row = Math.floor(i / perRow);
-            let column = i % perRow;
-            let x = (maxX * 1.1) * column;
-            let y = (maxY * 1.1) * row;
-            geometry.translate(x, y, 0);
-        }
 
         var merge = mergeGeometries(geometries, false);
 
