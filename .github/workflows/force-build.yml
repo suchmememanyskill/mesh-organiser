@@ -80,12 +80,15 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           args: ${{ matrix.args }}
+          includeDebug: true
       
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: tauri-build-${{ matrix.name }}
           path: |
+            src-tauri/target/${{ matrix.target }}/debug/bundle/**/*
+            src-tauri/target/debug/bundle/**/*
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*
             src-tauri/target/release/bundle/**/*
           if-no-files-found: error
