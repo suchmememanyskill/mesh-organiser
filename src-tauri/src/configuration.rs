@@ -46,6 +46,7 @@ pub struct StoredConfiguration {
     pub order_option_groups: Option<String>,
     pub ignore_update: Option<String>,
     pub show_multiselect_checkboxes: Option<bool>,
+    pub use_worker_for_model_parsing: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -88,6 +89,7 @@ pub struct Configuration {
     pub order_option_groups: String,
     pub ignore_update: String,
     pub show_multiselect_checkboxes: bool,
+    pub use_worker_for_model_parsing: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -186,7 +188,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         show_multiselect_checkboxes: configuration
             .show_multiselect_checkboxes
             .unwrap_or(default.show_multiselect_checkboxes),
-            
+        use_worker_for_model_parsing: configuration
+            .use_worker_for_model_parsing
+            .unwrap_or(default.use_worker_for_model_parsing),
     }
 }
 
@@ -241,6 +245,7 @@ impl Default for Configuration {
             order_option_groups: String::from("date-desc"),
             ignore_update: String::from(""),
             show_multiselect_checkboxes: true,
+            use_worker_for_model_parsing: true,
         }
     }
 }

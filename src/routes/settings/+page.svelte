@@ -355,6 +355,7 @@
                 <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
                 <CheckboxWithLabel bind:value={c.configuration.only_show_single_image_in_groups} label="Only show first image of group" />
                 <CheckboxWithLabel bind:value={c.configuration.show_multiselect_checkboxes} label="Show multiselect checkboxes" />
+                <CheckboxWithLabel bind:value={c.configuration.use_worker_for_model_parsing} label="Use worker thread for model loading" />
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Split group view</Label>

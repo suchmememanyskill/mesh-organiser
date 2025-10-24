@@ -50,6 +50,9 @@ importers:
       three:
         specifier: ^0.175.0
         version: 0.175.0
+      threejs-webworker-3mf-loader:
+        specifier: github:manyfold3d/threejs-webworker-3mf-loader
+        version: https://codeload.github.com/manyfold3d/threejs-webworker-3mf-loader/tar.gz/cd9967b4e50e0ee07d511d481f525a97d98a0876
     devDependencies:
       '@lucide/svelte':
         specifier: ^0.483.0
@@ -608,6 +611,10 @@ packages:
 
   '@webgpu/types@0.1.64':
     resolution: {integrity: sha512-84kRIAGV46LJTlJZWxShiOrNL30A+9KokD7RB3dRCIqODFjodS5tCD5yyiZ8kIReGVZSDfA3XkkwyyOIF6K62A==}
+
+  '@xmldom/xmldom@0.8.11':
+    resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
+    engines: {node: '>=10.0.0'}
 
   acorn@8.15.0:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
@@ -1221,8 +1228,15 @@ packages:
     peerDependencies:
       three: '>=0.162.0 <1.0.0'
 
+  three@0.164.1:
+    resolution: {integrity: sha512-iC/hUBbl1vzFny7f5GtqzVXYjMJKaTPxiCxXfrvVdBi1Sf+jhd1CAkitiFwC7mIBFCo3MrDLJG97yisoaWig0w==}
+
   three@0.175.0:
     resolution: {integrity: sha512-nNE3pnTHxXN/Phw768u0Grr7W4+rumGg/H6PgeseNJojkJtmeHJfZWi41Gp2mpXl1pg1pf1zjwR4McM1jTqkpg==}
+
+  threejs-webworker-3mf-loader@https://codeload.github.com/manyfold3d/threejs-webworker-3mf-loader/tar.gz/cd9967b4e50e0ee07d511d481f525a97d98a0876:
+    resolution: {tarball: https://codeload.github.com/manyfold3d/threejs-webworker-3mf-loader/tar.gz/cd9967b4e50e0ee07d511d481f525a97d98a0876}
+    version: 1.0.0
 
   tinyglobby@0.2.14:
     resolution: {integrity: sha512-tX5e7OM1HnYr2+a2C/4V0htOcSQcoSTH9KgJnVvNm5zm/cyEWKJ7j7YutsH9CxMdtOkkLFy2AHrMci9IM8IPZQ==}
@@ -1739,6 +1753,8 @@ snapshots:
   '@types/webxr@0.5.23': {}
 
   '@webgpu/types@0.1.64': {}
+
+  '@xmldom/xmldom@0.8.11': {}
 
   acorn@8.15.0: {}
 
@@ -2355,7 +2371,14 @@ snapshots:
     dependencies:
       three: 0.175.0
 
+  three@0.164.1: {}
+
   three@0.175.0: {}
+
+  threejs-webworker-3mf-loader@https://codeload.github.com/manyfold3d/threejs-webworker-3mf-loader/tar.gz/cd9967b4e50e0ee07d511d481f525a97d98a0876:
+    dependencies:
+      '@xmldom/xmldom': 0.8.11
+      three: 0.164.1
 
   tinyglobby@0.2.14:
     dependencies:

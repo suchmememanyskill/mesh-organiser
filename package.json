@@ -26,7 +26,8 @@
     "@threlte/extras": "^9.5.2",
     "@types/three": "^0.175.0",
     "base64-js": "^1.5.1",
-    "three": "^0.175.0"
+    "three": "^0.175.0",
+    "threejs-webworker-3mf-loader": "github:manyfold3d/threejs-webworker-3mf-loader"
   },
   "devDependencies": {
     "@lucide/svelte": "^0.483.0",
