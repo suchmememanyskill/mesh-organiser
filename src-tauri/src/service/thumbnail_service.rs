@@ -39,6 +39,7 @@ pub async fn generate_thumbnails(
     let model_path = PathBuf::from(app_state.get_model_dir());
     let fallback_3mf_thumbnail = app_state.get_configuration().fallback_3mf_thumbnail;
     let prefer_3mf_thumbnail = app_state.get_configuration().prefer_3mf_thumbnail;
+    let prefer_gcode_thumbnail = app_state.get_configuration().prefer_gcode_thumbnail;
     let max_concurrent = app_state.get_configuration().core_parallelism;
 
     let color = app_state
@@ -93,11 +94,17 @@ pub async fn generate_thumbnails(
                 command = command.arg("--prefer-3mf-thumbnail");
             }
 
+            if prefer_gcode_thumbnail {
+                command = command.arg("--prefer-gcode-thumbnail");
+            }
+
             if overwrite {
                 command = command.arg("--overwrite");
             }
 
             command = command.args(slice);
+
+            println!("{:?}", command);
 
             C {
                 command,

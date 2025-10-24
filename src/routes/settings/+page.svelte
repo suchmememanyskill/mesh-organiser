@@ -132,9 +132,10 @@
                     <Label class="p-2 mx-auto">Progress: {(importState.finished_thumbnails_count/importState.model_count*100).toFixed(1)}%</Label>
                 {/if}
 
-                <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3MF files" />
+                <CheckboxWithLabel bind:value={c.configuration.prefer_gcode_thumbnail} label="Prefer gcode thumbnail over gcode model" />
+                <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3mf files" />
                 {#if c.configuration.fallback_3mf_thumbnail}
-                    <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3MF thumbnail over 3MF model" />
+                    <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3mf thumbnail over 3mf model" />
                 {/if}
 
                 <div class="flex flex-col space-y-1.5">

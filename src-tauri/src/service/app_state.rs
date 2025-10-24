@@ -93,6 +93,7 @@ impl AppState {
         configuration.allow_importing_gcode = new_configuration.allow_importing_gcode;
         configuration.custom_slicer_path = new_configuration.custom_slicer_path.clone();
         configuration.elegoo_deep_link = new_configuration.elegoo_deep_link;
+        configuration.prefer_gcode_thumbnail = new_configuration.prefer_gcode_thumbnail;
 
         deep_link_setting_changed
     }

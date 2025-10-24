@@ -244,6 +244,7 @@ export interface Configuration {
     ignore_update : string;
     show_multiselect_checkboxes : boolean;
     use_worker_for_model_parsing : boolean;
+    prefer_gcode_thumbnail : boolean;
 }
 
 export function configurationDefault() : Configuration
@@ -288,6 +289,7 @@ export function configurationDefault() : Configuration
         ignore_update: "",
         show_multiselect_checkboxes: false,
         use_worker_for_model_parsing: true,
+        prefer_gcode_thumbnail: true,
     }
 }
 

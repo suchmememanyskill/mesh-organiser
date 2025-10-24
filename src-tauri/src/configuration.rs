@@ -47,6 +47,7 @@ pub struct StoredConfiguration {
     pub ignore_update: Option<String>,
     pub show_multiselect_checkboxes: Option<bool>,
     pub use_worker_for_model_parsing: Option<bool>,
+    pub prefer_gcode_thumbnail: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -90,6 +91,7 @@ pub struct Configuration {
     pub ignore_update: String,
     pub show_multiselect_checkboxes: bool,
     pub use_worker_for_model_parsing: bool,
+    pub prefer_gcode_thumbnail: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -191,6 +193,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         use_worker_for_model_parsing: configuration
             .use_worker_for_model_parsing
             .unwrap_or(default.use_worker_for_model_parsing),
+        prefer_gcode_thumbnail: configuration
+            .prefer_gcode_thumbnail
+            .unwrap_or(default.prefer_gcode_thumbnail),
     }
 }
 
@@ -246,6 +251,7 @@ impl Default for Configuration {
             ignore_update: String::from(""),
             show_multiselect_checkboxes: true,
             use_worker_for_model_parsing: true,
+            prefer_gcode_thumbnail: true,
         }
     }
 }
