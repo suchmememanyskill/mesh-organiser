@@ -20,6 +20,7 @@
     import { setTheme } from "$lib/theme";
     import { handleDeepLink, initImportListeners } from "$lib/import.svelte";
     import UpdatePopup from "$lib/components/view/update-popup.svelte";
+    import DragSelectedModelsRoot from "$lib/components/view/drag-selected-models-root.svelte";
 
     let { children } = $props();
     let loaded_config = false;
@@ -109,17 +110,20 @@
 
 <ModeWatcher />
 <Toaster />
-<Sidebar.Provider class="w-full h-full">
-    <AppSidebar />
-    <main class="h-full flex-1 flex flex-row" style="min-width: 0;">
-        {#if is_mobile.current}
-            <Sidebar.Trigger class="aspect-square absolute" />
+<DragSelectedModelsRoot class="w-full h-full">
+    <Sidebar.Provider class="w-full h-full">
+        <AppSidebar />
+        <main class="h-full flex-1 flex flex-row" style="min-width: 0;">
+            {#if is_mobile.current}
+                <Sidebar.Trigger class="aspect-square absolute" />
+            {/if}
+            <div class="flex-1 pl-2" style="min-width: 0;">
+                {@render children?.()}
+            </div>
+        </main>
+        {#if availableUpdate}
+            <UpdatePopup update={availableUpdate} onDismiss={() => availableUpdate = null} />
         {/if}
-        <div class="flex-1 pl-2" style="min-width: 0;">
-            {@render children?.()}
-        </div>
-    </main>
-    {#if availableUpdate}
-        <UpdatePopup update={availableUpdate} onDismiss={() => availableUpdate = null} />
-    {/if}
-</Sidebar.Provider>
+    </Sidebar.Provider>
+</DragSelectedModelsRoot>
+

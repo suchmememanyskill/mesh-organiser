@@ -337,7 +337,7 @@
 
     {#if labelWithChildren}
         {#if labelWithChildren.label.children.length <= 0 || level > 5}
-            <Sidebar.MenuItem>
+            <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.label.id}>
                 <Sidebar.MenuButton
                     class={current_url === `/label/${labelWithChildren.label.id}`
                         ? "border-l-2 border-secondary"
@@ -376,7 +376,7 @@
                         (c) => c.id === currentUrlChild.id,
                     )}
             >
-                <Sidebar.MenuItem>
+                <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.label.id}>
                     <Sidebar.MenuButton
                         class={current_url === `/label/${labelWithChildren.label.id}` && !thisLabelOnly
                             ? "border-l-2 border-secondary"
@@ -411,7 +411,7 @@
                     <Collapsible.Content>
                         <Sidebar.MenuSub>
                             {#if labelWithChildren.entries.length > 0 }
-                                <Sidebar.MenuItem>
+                                <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.label.id}>
                                     <Sidebar.MenuButton
                                         class={current_url === `/label/${labelWithChildren.label.id}` && thisLabelOnly
                                             ? "border-l-2 border-secondary"

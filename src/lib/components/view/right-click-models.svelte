@@ -49,7 +49,7 @@
 
 <ContextMenu.Root>
     <ContextMenu.Trigger
-        class={props.class}
+        class="{props.class} relative"
     >
         {@render props.children?.()}
     </ContextMenu.Trigger>

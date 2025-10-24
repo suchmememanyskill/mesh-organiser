@@ -9,6 +9,7 @@
     import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
     import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
     import { c } from "$lib/data.svelte";
+    import DragSelectedModels from "./drag-selected-models.svelte";
 
     let {
         value = $bindable(),
@@ -54,7 +55,15 @@
         }
     }
 
-    async function onClick(model: Model, event : MouseEvent) {
+    let preventOnClick = $state.raw(false);
+
+    function onClick(model: Model, event : MouseEvent) {
+        if (preventOnClick)
+        {
+            preventOnClick = false;
+            return;
+        }
+
         if (event.shiftKey && value.length === 1)
         {
             let start = availableModels.indexOf(value[0]);
@@ -85,24 +94,27 @@
         }
         else
         {
-            if (value.length === 1 && value[0].id === model.id)
-            {
-                value = [];
-            }
-            else
-            {
-                value = [model];
+            value = [model];
 
-                setTimeout(() => {
-                    if (event.target instanceof HTMLElement)
-                    {
-                        event.target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center',
-                        });
-                    }
-                }, 30);
-            }
+            setTimeout(() => {
+                if (event.target instanceof HTMLElement)
+                {
+                    event.target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }
+            }, 30);
+        }
+    }
+
+    function earlyOnClick(model : Model, event : MouseEvent, isSelected : boolean)
+    {
+        preventOnClick = false;
+        if (!isSelected)
+        {
+            onClick(model, event);
+            preventOnClick = true;
         }
     }
     
@@ -133,41 +145,34 @@
     };
 
     const sizeClasses = $derived(sizes[itemSize]);
-
-    /* TODO: Figure out how to do change detection in a way updating a model doesn't cause this to trigger
-    $effect.pre(() => {
-        // Fire whenever avialableModels changes
-        let models = availableModels;
-        limit = 100;
-        scrollContainer?.scrollTo(0, 0);
-    })
-    */
 </script>
 
 <div class="overflow-y-scroll {clazz}" bind:this={scrollContainer} onscroll={handleScroll}>
-    <RightClickModels models={value} class={`flex flex-row justify-center content-start gap-2 flex-wrap outline-0 ${c.configuration.show_multiselect_checkboxes && itemSize.includes("Grid") ? "pt-[5px]" : ""}`}>
-        {#if itemSize.includes("List")}
-            {#each availableModels.slice(0, limit) as model (model.id)}
-                {@const isSelected = valueHashSet.has(model.id)}
-                <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
-                    {@render ModelCheckbox(model, "", isSelected)}
-                    <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}" class="min-w-0">
-                        <ModelTinyList {model} class="{sizeClasses} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+    <DragSelectedModels models={value} class="select-none">
+        <RightClickModels models={value} class={`flex flex-row justify-center content-start gap-2 flex-wrap outline-0 ${c.configuration.show_multiselect_checkboxes && itemSize.includes("Grid") ? "pt-[5px]" : ""}`}>
+            {#if itemSize.includes("List")}
+                {#each availableModels.slice(0, limit) as model (model.id)}
+                    {@const isSelected = valueHashSet.has(model.id)}
+                    <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
+                        {@render ModelCheckbox(model, "", isSelected)}
+                        <div oncontextmenu={(e) => onRightClick(model, e)} onclick={(e) => onClick(model, e)} onmousedown={(e) => earlyOnClick(model, e, isSelected)} class="min-w-0">
+                            <ModelTinyList {model} class="{sizeClasses} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+                        </div>
                     </div>
-                </div>
-            {/each}
-        {:else}
-            {#each availableModels.slice(0, limit) as model (model.id)}
-                {@const isSelected = valueHashSet.has(model.id)}
-                <div class="relative group">
-                    <div oncontextmenu={(e) => onRightClick(model, e)} onclick="{(e) => onClick(model, e)}">
-                        <ModelTiny {model} class="{sizeClasses} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+                {/each}
+            {:else}
+                {#each availableModels.slice(0, limit) as model (model.id)}
+                    {@const isSelected = valueHashSet.has(model.id)}
+                    <div class="relative group">
+                        <div oncontextmenu={(e) => onRightClick(model, e)} onclick={(e) => onClick(model, e)} onmousedown={(e) => earlyOnClick(model, e, isSelected)}>
+                            <ModelTiny {model} class="{sizeClasses} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+                        </div>
+                        {@render ModelCheckbox(model, `absolute top-[-5px] left-[-5px] bg-card rounded-lg ${isSelected ? "" : "group-hover:opacity-100 opacity-0"}`, isSelected)}
                     </div>
-                    {@render ModelCheckbox(model, `absolute top-[-5px] left-[-5px] bg-card rounded-lg ${isSelected ? "" : "group-hover:opacity-100 opacity-0"}`, isSelected)}
-                </div>
-            {/each}
-        {/if}
-    </RightClickModels>
+                {/each}
+            {/if}
+        </RightClickModels>
+    </DragSelectedModels>
 </div>
 
 {#snippet ModelCheckbox(model : Model, clazz: ClassValue, isSelected : boolean) }

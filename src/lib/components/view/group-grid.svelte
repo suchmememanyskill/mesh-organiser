@@ -17,6 +17,7 @@
     import { IsSplitGridSize } from "$lib/hooks/is-split-grid-size.svelte";
     import { type ClassValue } from "svelte/elements";
     import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
+    import DragSelectedModels from "$lib/components/view/drag-selected-models.svelte";
 
     const props: { groups: GroupedEntry[], default_show_multiselect_all? : boolean } = $props();
     let selected = $state.raw<GroupedEntry[]>([]);
@@ -118,7 +119,15 @@
             destroyStateChangeListener();
     });
 
+    let preventOnClick = $state.raw(false);
+
     async function onClick(group: GroupedEntry, event : MouseEvent) {
+        if (preventOnClick)
+        {
+            preventOnClick = false;
+            return;
+        }
+
         if (event.shiftKey && selected.length === 1)
         {
             let start = filteredCollection.indexOf(selected[0]);
@@ -149,24 +158,27 @@
         }
         else
         {
-            if (selected.length === 1 && selected[0].group.id === group.group.id)
-            {
-                selected = [];
-            }
-            else
-            {
-                selected = [group];
+            selected = [group];
 
-                setTimeout(() => {
-                    if (event.target instanceof HTMLElement)
-                    {
-                        event.target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center',
-                        });
-                    }
-                }, 30);
-            }
+            setTimeout(() => {
+                if (event.target instanceof HTMLElement)
+                {
+                    event.target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }
+            }, 30);
+        }
+    }
+
+    function earlyOnClick(group : GroupedEntry, event : MouseEvent, isSelected : boolean)
+    {
+        preventOnClick = false;
+        if (!isSelected)
+        {
+            onClick(group, event);
+            preventOnClick = true;
         }
     }
 
@@ -298,30 +310,32 @@
 
 {#snippet GroupGrid()}
     <div class="overflow-y-scroll h-full" bind:this={scrollContainer} onscroll={handleScroll}>
-        <RightClickModels models={selected.map(x => x.models).flat()} class={`flex flex-row justify-center content-start gap-2 flex-wrap outline-0 ${c.configuration.show_multiselect_checkboxes && c.configuration.size_option_groups.includes("Grid") ? "pt-[5px]" : ""}`}>
-            {#if c.configuration.size_option_groups.includes("List")}
-                {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
-                    {@const isSelected = selectedSet.has(group.group.id)}
-                    <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
-                        {@render GroupCheckbox(group, "", isSelected)}
-                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}" class="min-w-0">
-                            <GroupTinyList group={group} class="{size} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+        <DragSelectedModels models={selected.map(x => x.models).flat()} class="select-none">
+            <RightClickModels models={selected.map(x => x.models).flat()} class={`flex flex-row justify-center content-start gap-2 flex-wrap outline-0 ${c.configuration.show_multiselect_checkboxes && c.configuration.size_option_groups.includes("Grid") ? "pt-[5px]" : ""}`}>
+                {#if c.configuration.size_option_groups.includes("List")}
+                    {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
+                        {@const isSelected = selectedSet.has(group.group.id)}
+                        <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
+                            {@render GroupCheckbox(group, "", isSelected)}
+                            <div oncontextmenu={(e) => onRightClick(group, e)} onclick={(e) => onClick(group, e)} onmousedown={(e) => earlyOnClick(group, e, isSelected)} class="min-w-0">
+                                <GroupTinyList group={group} class="{size} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+                            </div>
                         </div>
-                    </div>
-                {/each}
-            {:else}
-                {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
-                    {@const isSelected = selectedSet.has(group.group.id)}
-                    <div class="relative group">
-                        <div oncontextmenu={(e) => onRightClick(group, e)} onclick="{(e) => onClick(group, e)}">
-                            <GroupTiny group={group} class="{size} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+                    {/each}
+                {:else}
+                    {#each filteredCollection.slice(0, limitFilter) as group (group.group.id)}
+                        {@const isSelected = selectedSet.has(group.group.id)}
+                        <div class="relative group">
+                            <div oncontextmenu={(e) => onRightClick(group, e)} onclick={(e) => onClick(group, e)} onmousedown={(e) => earlyOnClick(group, e, isSelected)}>
+                                <GroupTiny group={group} class="{size} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
+                            </div>
+                            {@render GroupCheckbox(group, `absolute top-[-5px] left-[-5px] bg-card rounded-lg ${isSelected ? "" : "group-hover:opacity-100 opacity-0"}`, isSelected)}
                         </div>
-                        {@render GroupCheckbox(group, `absolute top-[-5px] left-[-5px] bg-card rounded-lg ${isSelected ? "" : "group-hover:opacity-100 opacity-0"}`, isSelected)}
-                    </div>
 
-                {/each}
-            {/if}
-        </RightClickModels>
+                    {/each}
+                {/if}
+            </RightClickModels>       
+        </DragSelectedModels>
     </div>
 {/snippet}
 
