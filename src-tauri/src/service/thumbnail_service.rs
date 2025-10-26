@@ -104,7 +104,7 @@ pub async fn generate_thumbnails(
 
             command = command.args(slice);
 
-            println!("{:?}", command);
+            //println!("{:?}", command);
 
             C {
                 command,

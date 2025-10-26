@@ -59,8 +59,9 @@ async fn add_model(
     let mut import_state = ImportState::new(origin_url, recursive, delete_imported);
 
     import_state = tauri::async_runtime::spawn_blocking(move || {
+        let lock = state_clone.import_mutex.lock().unwrap();
         import_service::import_path(&path_clone, &state_clone, &handle_clone, &mut import_state)?;
-
+    
         Result::<ImportState, ApplicationError>::Ok(import_state)
     })
     .await
@@ -865,6 +866,7 @@ pub fn run() {
                     configuration: Mutex::new(config),
                     initial_state: initial_state,
                     app_data_path: app_data_path,
+                    import_mutex: Arc::new(Mutex::new(())),
                 };
 
                 state.configure_deep_links(&app.handle());

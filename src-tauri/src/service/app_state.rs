@@ -19,6 +19,7 @@ pub struct InitialState {
 pub struct AppState {
     pub db: Arc<db::db::Db>,
     pub configuration: Mutex<Configuration>,
+    pub import_mutex: Arc<Mutex<()>>,
     pub initial_state: InitialState,
     pub app_data_path: String,
 }
@@ -104,6 +105,7 @@ impl AppState {
             configuration: Mutex::new(self.get_configuration()),
             initial_state: self.initial_state.clone(),
             app_data_path: self.app_data_path.clone(),
+            import_mutex: Arc::clone(&self.import_mutex),
         }
     }
 
