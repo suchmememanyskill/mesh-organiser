@@ -1,5 +1,5 @@
 use sqlx;
-use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Pool, Sqlite};
+use sqlx::{Pool, Sqlite, migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use std::path::PathBuf;
 
 use crate::configuration::Configuration;

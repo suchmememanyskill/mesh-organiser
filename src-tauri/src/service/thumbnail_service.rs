@@ -11,7 +11,7 @@ use crate::{
 use super::app_state::AppState;
 use crate::db::model::{self, Model};
 
-use tauri_plugin_shell::{process::Command, ShellExt};
+use tauri_plugin_shell::{ShellExt, process::Command};
 
 pub async fn generate_all_thumbnails(
     app_state: &AppState,

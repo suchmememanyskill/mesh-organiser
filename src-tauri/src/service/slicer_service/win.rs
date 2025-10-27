@@ -1,4 +1,4 @@
-use super::{open_custom_slicer, Slicer};
+use super::{Slicer, open_custom_slicer};
 use crate::db::model::Model;
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;

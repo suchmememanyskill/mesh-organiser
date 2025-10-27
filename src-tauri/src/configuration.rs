@@ -175,18 +175,14 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         label_exported_model_as_printed: configuration
             .label_exported_model_as_printed
             .unwrap_or(default.label_exported_model_as_printed),
-        theme: configuration
-            .theme
-            .unwrap_or(default.theme),
+        theme: configuration.theme.unwrap_or(default.theme),
         order_option_models: configuration
             .order_option_models
             .unwrap_or(default.order_option_models),
         order_option_groups: configuration
             .order_option_groups
             .unwrap_or(default.order_option_groups),
-        ignore_update: configuration
-            .ignore_update
-            .unwrap_or(default.ignore_update),
+        ignore_update: configuration.ignore_update.unwrap_or(default.ignore_update),
         show_multiselect_checkboxes: configuration
             .show_multiselect_checkboxes
             .unwrap_or(default.show_multiselect_checkboxes),

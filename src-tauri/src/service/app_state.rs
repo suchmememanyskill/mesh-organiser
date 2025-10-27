@@ -4,7 +4,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 
 use crate::configuration;
 use crate::db;
-use configuration::{stored_to_configuration, Configuration, StoredConfiguration};
+use configuration::{Configuration, StoredConfiguration, stored_to_configuration};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;

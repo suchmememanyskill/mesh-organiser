@@ -14,20 +14,20 @@ use db::{
 use error::ApplicationError;
 use serde::Serialize;
 use service::{
-    app_state::{read_configuration, AppState, InitialState},
+    app_state::{AppState, InitialState, read_configuration},
     download_file_service, import_service,
     slicer_service::Slicer,
 };
 use std::fs::File;
 use std::io::prelude::*;
 use strum::IntoEnumIterator;
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri::{
+    WebviewUrl, WebviewWindowBuilder,
     async_runtime::block_on,
     menu::{MenuBuilder, SubmenuBuilder},
     webview::{DownloadEvent, PageLoadEvent},
-    WebviewUrl, WebviewWindowBuilder,
 };
-use tauri::{AppHandle, Emitter, Manager, State};
 use urlencoding::decode;
 
 use crate::service::import_state::{ImportState, ImportStatus};
@@ -61,7 +61,7 @@ async fn add_model(
     import_state = tauri::async_runtime::spawn_blocking(move || {
         let lock = state_clone.import_mutex.lock().unwrap();
         import_service::import_path(&path_clone, &state_clone, &handle_clone, &mut import_state)?;
-    
+
         Result::<ImportState, ApplicationError>::Ok(import_state)
     })
     .await

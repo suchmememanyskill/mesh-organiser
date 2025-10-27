@@ -3,7 +3,7 @@ name = "mesh-organiser"
 version = "1.7.0"
 description = "Organise your 3d models"
 authors = ["suchmememanyskill"]
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

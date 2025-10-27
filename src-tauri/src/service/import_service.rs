@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
-use std::fs::{self, read_dir, File};
+use std::fs::{self, File, read_dir};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
