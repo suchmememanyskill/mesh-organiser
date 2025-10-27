@@ -28,7 +28,7 @@ futures = "0"
 sha2 = "0"
 thiserror = "2"
 chrono = "0"
-zip = { version = "4"}
+zip = { version = "6"}
 tauri-plugin-dialog = "2"
 tauri-plugin-deep-link = "2"
 urlencoding = "2"
@@ -51,7 +51,7 @@ tauri-plugin-os = "2"
 winreg = "0"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-single-instance = { version = "2.3", features = ["deep-link"] }
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 
 [profile.release]
 strip = true
