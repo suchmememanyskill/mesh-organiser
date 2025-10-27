@@ -7,7 +7,7 @@
     let clicked = $state.raw(false);
     let originX = $state.raw(0);
     let originY = $state.raw(0);
-    const DISTANCE_UNTIL_DRAGGING = 30;
+    const DISTANCE_UNTIL_DRAGGING = 5;
 
     function onmousedown(event: MouseEvent) {
         clicked = event.button === 0;
