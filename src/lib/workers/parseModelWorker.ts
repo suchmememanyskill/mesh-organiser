@@ -1,6 +1,6 @@
 import { FileType } from '$lib/model';
 import { BufferGeometry, Mesh, ObjectLoader, Group, Matrix4 } from 'three';
-import { mergeGeometries, toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices, toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { ThreeMFLoader } from "threejs-webworker-3mf-loader";    
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
@@ -30,29 +30,31 @@ function convertGeometry(group: Group): BufferGeometry {
     return merge;
 }
 
-async function load(buffer : Uint8Array, fileType : FileType) : Promise<BufferGeometry | null> {
+async function load(address : string, fileType : FileType) : Promise<BufferGeometry | null> {
     let localResult;
 
     if (fileType === FileType.STL) {
         let loader = new STLLoader();
-        localResult = loader.parse((buffer as any).buffer);
+        localResult = await loader.loadAsync(address);
     }
     else if (fileType === FileType.THREEMF) {
         let loader = new ThreeMFLoader();
-        let result = loader.parse((buffer as any).buffer);
+        let result = await loader.loadAsync(address);
 
         localResult = convertGeometry(result);
     }
     else if (fileType === FileType.OBJ) {
         let loader = new OBJLoader();
-        // This is slow!
-        let result = loader.parse(atob(fromByteArray(buffer)));
+        let result = await loader.loadAsync(address);
 
         localResult = convertGeometry(result);
     }
 
     if (localResult) {
-        localResult = toCreasedNormals(localResult, 0.1);
+        if (!localResult.attributes.normal) {
+            localResult.computeVertexNormals();
+        }
+
         localResult.computeBoundingSphere();
         localResult.center();
         localResult.rotateX(Math.PI / -2);
@@ -62,10 +64,10 @@ async function load(buffer : Uint8Array, fileType : FileType) : Promise<BufferGe
 }
 
 self.onmessage = async (e) => {
-    const { buffer, fileType } = e.data;
+    const { address, fileType } = e.data;
 
     try {
-        let geometry = await load(buffer, fileType);
+        let geometry = await load(address, fileType);
 
         if (geometry) {
             const position = geometry.attributes.position.array.buffer;

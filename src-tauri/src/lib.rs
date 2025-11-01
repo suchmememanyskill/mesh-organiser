@@ -36,6 +36,7 @@ mod db;
 mod error;
 mod service;
 mod util;
+mod web_server;
 
 #[derive(Serialize, Clone)]
 struct DeepLinkEmit {
@@ -398,6 +399,27 @@ async fn get_model_as_base64(
     let base64 = BASE64_STANDARD.encode(bytes);
 
     Ok(base64)
+}
+
+#[tauri::command]
+async fn get_model_bytes(
+    model_id: i64,
+    state: State<'_, AppState>,
+) -> Result<Vec<u8>, ApplicationError> {
+    let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
+
+    if model.len() <= 0 {
+        return Err(ApplicationError::InternalError(String::from(
+            "Failed to find model to delete",
+        )));
+    }
+
+    let model = &model[0];
+
+
+    let bytes = service::export_service::get_bytes_from_model(model, &state).unwrap();
+
+    Ok(bytes)
 }
 
 #[derive(Serialize, Clone)]
@@ -872,6 +894,12 @@ pub fn run() {
                 state.configure_deep_links(&app.handle());
 
                 app.manage(state);
+
+                let handle = app.handle().clone();
+
+                thread::spawn(move || {
+                    web_server::init(handle).unwrap();
+                });               
             });
             Ok(())
         })
@@ -914,6 +942,7 @@ pub fn run() {
             open_resource_folder,
             set_keywords_on_label,
             get_keywords_for_label,
+            get_model_bytes,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

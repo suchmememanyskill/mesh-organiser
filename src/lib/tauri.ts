@@ -202,6 +202,11 @@ export async function getModelAsBase64(model : Model) : Promise<string>
     return await invoke("get_model_as_base64", { modelId: model.id });
 }
 
+export async function getModelBytes(model : Model) : Promise<Uint8Array>
+{
+    return await invoke("get_model_bytes", { modelId: model.id });
+}
+
 export async function addChildsToLabel(parent : LabelMin, childs : LabelMin[]) : Promise<void>
 {
     let childIds = childs.map(child => child.id);

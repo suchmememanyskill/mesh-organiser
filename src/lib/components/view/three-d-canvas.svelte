@@ -24,7 +24,7 @@
     } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
     import ThreeScene from "$lib/components/view/three-d-scene.svelte";
-    import { getModelAsBase64 } from "$lib/tauri";
+    import { getModelAsBase64, getModelBytes } from "$lib/tauri";
     import { untrack } from "svelte";
     import { c } from "$lib/data.svelte";
 
@@ -54,8 +54,8 @@
         return merge;
     }
 
-    async function loadUsingBase64(
-        buffer: Uint8Array,
+    async function loadUsingWorker(
+        address: string,
         fileType: FileType,
     ): Promise<BufferGeometry | null> {
         const worker = new Worker(
@@ -101,8 +101,8 @@
                 }
             };
 
-            let obj = { buffer, fileType };
-            worker.postMessage(obj, [buffer.buffer]);
+            let obj = { address, fileType };
+            worker.postMessage(obj);
         });
     }
 
@@ -111,35 +111,35 @@
         geometry = null;
         localGeometry?.dispose();
         localGeometry = null;
-        let base64 = await getModelAsBase64(model);
 
         if (model.id !== props.model.id) {
             return;
         }
 
+        let address = "http://127.0.0.1:35615/models/" + model.id;
         if (c.configuration.use_worker_for_model_parsing) {
-            let byteArray = toByteArray(base64);
-            localGeometry = await loadUsingBase64(byteArray, model.filetype);
+            localGeometry = await loadUsingWorker(address, model.filetype);
         } else {
             if (model.filetype === FileType.STL) {
                 let loader = new STLLoader();
-                let buffer: any = toByteArray(base64);
-                localGeometry = loader.parse(buffer.buffer);
+                localGeometry = await loader.loadAsync(address);
             } else if (model.filetype === FileType.THREEMF) {
                 let loader = new ThreeMFLoader();
-                let buffer: any = toByteArray(base64);
-                let result = loader.parse(buffer.buffer);
+                let result = await loader.loadAsync(address);
 
                 localGeometry = convertGeometry(result);
             } else if (model.filetype === FileType.OBJ) {
                 let loader = new OBJLoader();
-                let result = loader.parse(atob(base64));
+                let result = await loader.loadAsync(address);
 
                 localGeometry = convertGeometry(result);
             }
 
             if (localGeometry) {
-                localGeometry = toCreasedNormals(localGeometry, 0.1);
+                if (!localGeometry.attributes.normal) {
+                    localGeometry.computeVertexNormals();
+                }
+
                 localGeometry.computeBoundingSphere();
                 localGeometry.center();
                 localGeometry.rotateX(Math.PI / -2);
