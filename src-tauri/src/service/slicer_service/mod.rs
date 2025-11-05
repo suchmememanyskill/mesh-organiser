@@ -1,8 +1,10 @@
 mod base;
 use std::path::PathBuf;
 
+use db::model::Model;
+
 use crate::{
-    db::model::Model, error::ApplicationError, service::export_service::export_to_temp_folder,
+    error::ApplicationError, service::export_service::export_to_temp_folder,
 };
 pub use base::*;
 use std::process::Command;

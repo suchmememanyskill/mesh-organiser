@@ -1,5 +1,5 @@
 use super::{Slicer, open_custom_slicer};
-use crate::db::model::Model;
+use db::model::Model;
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
 use crate::service::export_service::export_to_temp_folder;

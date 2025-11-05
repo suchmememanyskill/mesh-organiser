@@ -1,9 +1,9 @@
+use db::db_context::DbContext;
 use serde::Serialize;
 use tauri::AppHandle;
 use tauri_plugin_deep_link::DeepLinkExt;
 
 use crate::configuration;
-use crate::db;
 use configuration::{Configuration, StoredConfiguration, stored_to_configuration};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -17,7 +17,7 @@ pub struct InitialState {
 }
 
 pub struct AppState {
-    pub db: Arc<db::db::Db>,
+    pub db: Arc<DbContext>,
     pub configuration: Mutex<Configuration>,
     pub import_mutex: Arc<Mutex<()>>,
     pub initial_state: InitialState,

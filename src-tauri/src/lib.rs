@@ -9,7 +9,7 @@ use base64::prelude::*;
 use configuration::Configuration;
 use db::{
     model::ModelFlags,
-    resource::{Resource, ResourceFlags},
+    model::{Resource, ResourceFlags},
 };
 use error::ApplicationError;
 use serde::Serialize;
@@ -32,7 +32,6 @@ use urlencoding::decode;
 
 use crate::service::import_state::{ImportState, ImportStatus};
 mod configuration;
-mod db;
 mod error;
 mod service;
 mod util;
@@ -860,6 +859,7 @@ pub fn run() {
 
                 let config = read_configuration(&app_data_path);
 
+                // Please do not touch this error. I will fix it later.
                 let db = db::db::setup_db(&config, &app_data_path).await;
 
                 let mut initial_state = InitialState {
