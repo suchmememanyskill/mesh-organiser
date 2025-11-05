@@ -1,0 +1,86 @@
+-- Add migration script here
+
+CREATE TABLE users (
+    user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_name TEXT NOT NULL UNIQUE,
+    user_email TEXT NOT NULL UNIQUE,
+    user_password_hash TEXT NOT NULL,
+    user_created_at TEXT NOT NULL,
+    user_permissions INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE blobs (
+    blob_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    blob_sha256 TEXT NOT NULL UNIQUE,
+    blob_filetype TEXT NOT NULL,
+    blob_size INTEGER NOT NULL,
+    blob_added TEXT NOT NULL
+);
+
+CREATE TABLE audit (
+    audit_unique_global_id TEXT NOT NULL PRIMARY KEY,
+    audit_user_id INTEGER NOT NULL,
+    audit_action_type INTEGER NOT NULL, -- e.g., 'CREATE' 0, 'UPDATE' 1, 'DELETE' 2
+    audit_entity_type INTEGER NOT NULL, -- e.g., 'MODEL' 0, 'RESOURCE' 1, 'LABEL' 2, 'GROUP' 3
+    audit_global_entity_id TEXT NOT NULL, -- unique_global_id of the affected entity
+    audit_created_at TEXT NOT NULL,
+    FOREIGN KEY (audit_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+UPDATE models SET model_added = strftime('%Y-%m-%dT%H:%M:%SZ', model_added);
+
+INSERT INTO users (user_name, user_email, user_password_hash, user_created_at, user_permissions) VALUES ('local', 'local@local', 'hashed_password_here', strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now')), 2147483647);
+
+ALTER TABLE models add model_unique_global_id TEXT NOT NULL DEFAULT '';
+UPDATE models SET model_unique_global_id = LOWER(HEX(RANDOMBLOB(16)));
+ALTER TABLE labels add label_unique_global_id TEXT NOT NULL DEFAULT '';
+UPDATE labels SET label_unique_global_id = LOWER(HEX(RANDOMBLOB(16)));
+ALTER TABLE models_group add group_unique_global_id TEXT NOT NULL DEFAULT '';
+UPDATE models_group SET group_unique_global_id = LOWER(HEX(RANDOMBLOB(16)));
+ALTER TABLE resources add resource_unique_global_id TEXT NOT NULL DEFAULT '';
+UPDATE resources SET resource_unique_global_id = LOWER(HEX(RANDOMBLOB(16)));
+
+ALTER TABLE models ADD model_user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE;
+UPDATE models SET model_user_id = 1 WHERE model_user_id IS NULL;
+ALTER TABLE labels ADD label_user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE;
+UPDATE labels SET label_user_id = 1 WHERE label_user_id IS NULL;
+ALTER TABLE models_group ADD group_user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE;
+UPDATE models_group SET group_user_id = 1 WHERE group_user_id IS NULL;
+ALTER TABLE resources ADD resource_user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE;
+UPDATE resources SET resource_user_id = 1 WHERE resource_user_id IS NULL;
+
+ALTER TABLE models ADD model_blob_id INTEGER REFERENCES blobs(blob_id) ON DELETE CASCADE;
+
+INSERT INTO blobs (blob_sha256, blob_filetype, blob_size, blob_added)
+SELECT model_sha256, model_filetype, model_size, model_added FROM models;
+
+UPDATE models SET model_blob_id = (
+    SELECT blob_id FROM blobs WHERE blobs.blob_sha256 = models.model_sha256 AND blobs.blob_filetype = models.model_filetype AND blobs.blob_size = models.model_size LIMIT 1
+);
+
+ALTER TABLE models DROP model_sha256;
+ALTER TABLE models DROP model_filetype;
+ALTER TABLE models DROP model_size;
+
+CREATE INDEX idx_model_user_id ON models(model_user_id);
+CREATE INDEX idx_labels_user_id ON labels(label_user_id);
+CREATE INDEX idx_models_group_user_id ON models_group(group_user_id);
+CREATE INDEX idx_resources_user_id ON resources(resource_user_id);
+CREATE INDEX idx_audit_user_id ON audit(audit_user_id);
+CREATE INDEX idx_models_labels_model_id ON models_labels(model_id);
+CREATE INDEX idx_models_labels_model_id_label_id ON models_labels(model_id, label_id);
+
+INSERT INTO audit (audit_unique_global_id, audit_user_id, audit_action_type, audit_entity_type, audit_global_entity_id, audit_created_at)
+SELECT LOWER(HEX(RANDOMBLOB(16))), 1, 0, 0, model_unique_global_id, strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now')) FROM models;
+
+INSERT INTO audit (audit_unique_global_id, audit_user_id, audit_action_type, audit_entity_type, audit_global_entity_id, audit_created_at)
+SELECT LOWER(HEX(RANDOMBLOB(16))), 1, 0, 3, group_unique_global_id, strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now')) FROM models_group;
+
+INSERT INTO audit (audit_unique_global_id, audit_user_id, audit_action_type, audit_entity_type, audit_global_entity_id, audit_created_at)
+SELECT LOWER(HEX(RANDOMBLOB(16))), 1, 0, 2, label_unique_global_id, strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now')) FROM labels;
+
+INSERT INTO audit (audit_unique_global_id, audit_user_id, audit_action_type, audit_entity_type, audit_global_entity_id, audit_created_at)
+SELECT LOWER(HEX(RANDOMBLOB(16))), 1, 0, 1, resource_unique_global_id, strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now')) FROM resources;
+
+-- TODO: This transaction is quite messy. models has an unused model_group_id column now. labels/models_group/resources have a new unconstrained (nullable) unique_global_id and user_id column.
+-- Consider cleaning this up in a future migration.

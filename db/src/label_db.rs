@@ -1,0 +1,341 @@
+use indexmap::IndexMap;
+use itertools::join;
+use sqlx::Row;
+use crate::{audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Label, LabelMeta, User, random_hex_32}, model_db};
+
+
+pub async fn get_labels_min(db: &DbContext) -> Result<Vec<LabelMeta>, sqlx::Error> {
+    let rows = sqlx::query!("SELECT label_id, label_name, label_color, label_unique_global_id FROM labels")
+        .fetch_all(db)
+        .await?;
+
+    let mut labels = Vec::new();
+
+    for row in rows {
+        labels.push(LabelMeta {
+            id: row.label_id,
+            name: row.label_name,
+            color: row.label_color,
+            unique_global_id: row.label_unique_global_id,
+        });
+    }
+    
+    return Ok(labels);
+}
+
+fn get_effective_labels(
+    label_id: i64,
+    effective_labels: &mut Vec<LabelMeta>,
+    label_map: &mut IndexMap<i64, Label>,
+) {
+    let label = label_map.get(&label_id).unwrap();
+
+    if !effective_labels.iter().any(|l| l.id == label.meta.id) {
+        effective_labels.push(label.meta.clone());
+    }
+
+    let label_child_ids = label.children.iter().map(|l| l.id).collect::<Vec<i64>>();
+
+    label_child_ids.iter().for_each(|f| {
+        if !effective_labels.iter().any(|l| l.id == *f) {
+            get_effective_labels(f.clone(), effective_labels, label_map);
+        }
+    });
+}
+
+pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : bool) -> Result<Vec<Label>, sqlx::Error> {
+    let rows = sqlx::query(
+    "SELECT 
+            parent_labels.label_id  as parent_label_id,
+            parent_labels.label_name as parent_label_name,
+            parent_labels.label_color as parent_label_color,
+            parent_labels.label_unique_global_id as parent_label_unique_global_id,
+            (SELECT COUNT(*) FROM models_labels WHERE models_labels.label_id = parent_labels.label_id) as \"parent_label_model_count: i64\",
+            (SELECT COUNT(DISTINCT group_id) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id INNER JOIN models_group ON models.model_group_id = models_group.group_id WHERE models_labels.label_id = parent_labels.label_id) as \"parent_label_group_count: i64\",
+            (SELECT COUNT(*) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id WHERE models_labels.label_id = parent_labels.label_id AND models.model_group_id IS NULL) as \"parent_label_ungrouped_count: i64\",
+            child_labels.label_id as child_label_id, 
+            child_labels.label_name as child_label_name, 
+            child_labels.label_color as child_label_color
+          FROM labels as parent_labels
+          LEFT JOIN labels_labels ON parent_labels.label_id = labels_labels.parent_label_id
+          LEFT JOIN labels as child_labels ON labels_labels.child_label_id = child_labels.label_id
+          WHERE parent_labels.label_user_id = ?
+          ORDER BY parent_labels.label_name ASC"
+    )
+    .bind(user.id)
+    .fetch_all(db)
+    .await
+    .expect("Failed to get labels");
+
+    let mut label_map: IndexMap<i64, Label> = IndexMap::new();
+    let mut has_parents = vec![];
+
+    for row in rows {
+        let parent_label_id: i64 = row.get("parent_label_id");
+        let parent_label_name: String = row.get("parent_label_name");
+        let parent_label_color: i64 = row.get("parent_label_color");
+        let parent_label_unique_global_id: String = row.get("parent_label_unique_global_id");
+
+        let parent_label_model_count: i64 = row.get("parent_label_model_count");
+        let parent_label_group_count: i64 = row.get("parent_label_group_count");
+        let parent_label_ungrouped_count: i64 = row.get("parent_label_ungrouped_count");
+
+        let child_label_id: Option<i64> = row.get("child_label_id");
+        let child_label_name: Option<String> = row.get("child_label_name");
+        let child_label_color: Option<i64> = row.get("child_label_color");
+
+        let entry = label_map.entry(parent_label_id).or_insert(Label {
+            meta: LabelMeta { 
+                id: parent_label_id, 
+                name: parent_label_name, 
+                color: parent_label_color, 
+                unique_global_id: parent_label_unique_global_id
+            },
+            children: Vec::new(),
+            effective_labels: Vec::new(),
+            has_parent: false,
+            model_count: parent_label_model_count,
+            group_count: parent_label_group_count,
+            self_model_count: parent_label_model_count,
+            self_group_count: parent_label_group_count,
+        });
+
+        if include_ungrouped_models {
+            entry.self_group_count += parent_label_ungrouped_count;
+            entry.group_count += parent_label_ungrouped_count;
+        }
+
+        if let Some(child_id) = child_label_id && child_id > 0 {
+            entry.children.push(LabelMeta {
+                id: child_id,
+                name: child_label_name.unwrap(),
+                color: child_label_color.unwrap(),
+                unique_global_id: "".into(),
+            });
+            
+            has_parents.push(child_id);
+        }
+    }
+
+    for entry in has_parents {
+        if let Some(label) = label_map.get_mut(&entry) {
+            label.has_parent = true;
+        }
+    }
+
+    for label_id in label_map.values().map(|l| l.meta.id).collect::<Vec<i64>>() {
+        let mut effective_labels = Vec::new();
+        get_effective_labels(label_id, &mut effective_labels, &mut label_map);
+        let group_count = effective_labels.iter().map(|l| label_map.get(&l.id).unwrap().self_group_count).sum();
+        let model_count = effective_labels.iter().map(|l| label_map.get(&l.id).unwrap().self_model_count).sum();
+        let label = label_map.get_mut(&label_id).unwrap();
+        label.effective_labels = effective_labels;
+        label.group_count = group_count;
+        label.model_count = model_count;
+    }
+
+    Ok(label_map.into_values().collect())
+}
+
+pub async fn get_unique_id_from_label_id(db: &DbContext, user: &User, label_id: i64) -> Result<String, sqlx::Error>
+{
+    let row = sqlx::query!(
+        "SELECT label_unique_global_id FROM labels WHERE label_id = ? AND label_user_id = ?",
+        label_id,
+        user.id
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(row.label_unique_global_id)
+}
+
+pub async fn get_unique_ids_from_label_ids(db: &DbContext, user: &User, label_ids: &[i64]) -> Result<IndexMap<i64, String>, sqlx::Error>
+{
+    let ids_placeholder = join(label_ids.iter(), ",");
+
+    let query = format!(
+        "SELECT label_id, label_unique_global_id FROM labels WHERE label_id IN ({}) AND label_user_id = ?",
+        ids_placeholder
+    );
+
+    let rows = sqlx::query(&query)
+        .bind(user.id)
+        .fetch_all(db)
+        .await?;
+
+    let mut id_map = IndexMap::new();
+    for row in rows {
+        let label_id: i64 = row.get("label_id");
+        let label_unique_global_id: String = row.get("label_unique_global_id");
+        id_map.insert(label_id, label_unique_global_id);
+    }
+
+    Ok(id_map)
+}
+
+pub async fn add_labels_on_models(db: &DbContext, user: &User, label_ids: Vec<i64>, model_ids: Vec<i64>, update_audit : bool) -> Result<(), sqlx::Error>
+{
+    for label_id in label_ids {
+        let hex = get_unique_id_from_label_id(db, user, label_id).await?;
+
+        for model_id in &model_ids {
+            sqlx::query!(
+                "INSERT INTO models_labels (label_id, model_id) VALUES (?, ?)",
+                label_id,
+                model_id
+            )
+            .execute(db)
+            .await?;
+        }
+
+        if update_audit {
+            audit_db::add_audit_entry(&db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, hex)).await?;
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn remove_labels_from_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_audit : bool) -> Result<(), sqlx::Error>
+{
+    let label_global_ids = get_unique_ids_from_label_ids(db, user, label_ids).await?;
+
+    if label_global_ids.values().len() != label_ids.len() {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    let model_global_ids = model_db::get_unique_ids_from_model_ids(db, model_ids.to_vec()).await?;
+
+    if model_global_ids.values().len() != model_ids.len() {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    let joined_labels = join(label_ids.iter(), ",");
+    let joined_models = join(model_ids.iter(), ",");
+
+    let formatted_query = format!(
+        "DELETE FROM models_labels WHERE label_id IN ({}) AND model_id IN ({})",
+        joined_labels,
+        joined_models
+    );
+
+    sqlx::query(&formatted_query)
+        .execute(db)
+        .await?;
+
+    if update_audit {
+        for label_global_id in label_global_ids.values() {
+            audit_db::add_audit_entry(&db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, label_global_id.clone())).await?;
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn add_label(db: &DbContext, user: &User, name: &str, color: i64, update_audit : bool) -> Result<i64, sqlx::Error>
+{
+    let unique_global_id = random_hex_32();
+
+    let result = sqlx::query!(
+        "INSERT INTO labels (label_name, label_color, label_user_id, label_unique_global_id) VALUES (?, ?, ?, ?)",
+        name,
+        color,
+        user.id,
+        unique_global_id
+    )
+    .execute(db)
+    .await?;
+
+    let label_id = result.last_insert_rowid();
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Create, EntityType::Label, unique_global_id)).await?;
+    }
+
+    Ok(label_id)
+}
+
+pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, color: i64, update_audit : bool) -> Result<(), sqlx::Error>
+{
+    let unique_global_id = get_unique_id_from_label_id(db, user, label_id).await?;
+
+    sqlx::query!(
+        "UPDATE labels SET label_name = ?, label_color = ? WHERE label_id = ? AND label_user_id = ?",
+        name,
+        color,
+        label_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, unique_global_id)).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn delete_label(db: &DbContext, user: &User, label_id: i64, update_audit : bool) -> Result<(), sqlx::Error>
+{
+    let unique_global_id = get_unique_id_from_label_id(db, user, label_id).await?;
+
+    sqlx::query!(
+        "DELETE FROM labels WHERE label_id = ? AND label_user_id = ?",
+        label_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Delete, EntityType::Label, unique_global_id)).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_audit : bool) -> Result<(), sqlx::Error>
+{
+    let parent_hex = get_unique_id_from_label_id(db, user, parent_label_id).await?;
+    let access_check = get_unique_ids_from_label_ids(db, user, &child_label_ids).await?;
+
+    if access_check.values().len() != child_label_ids.len() {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    for child_label_id in &child_label_ids {
+        sqlx::query!(
+            "INSERT INTO labels_labels (parent_label_id, child_label_id) VALUES (?, ?)",
+            parent_label_id,
+            child_label_id
+        )
+        .execute(db)
+        .await?;
+    }
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, parent_hex)).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn remove_all_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, update_audit : bool) -> Result<(), sqlx::Error>
+{
+    let unique_global_id = get_unique_id_from_label_id(db, user, parent_label_id).await?;
+
+    sqlx::query!(
+        "DELETE FROM labels_labels WHERE parent_label_id = ?",
+        parent_label_id
+    )
+    .execute(db)
+    .await?;
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, unique_global_id)).await?;
+    }
+
+    Ok(())
+}

@@ -1,0 +1,261 @@
+use std::{cmp::Reverse, u32};
+use itertools::join;
+use indexmap::IndexMap;
+
+use crate::{PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
+
+
+pub enum GroupOrderBy
+{
+    CreatedAsc,
+    CreatedDesc,
+    NameAsc,
+    NameDesc,
+}
+
+pub struct GroupFilterOptions
+{
+    pub group_ids: Option<Vec<i64>>,
+    pub label_ids: Option<Vec<i64>>,
+    pub order_by: Option<GroupOrderBy>,
+    pub text_search: Option<String>,
+    pub page : u32,
+    pub page_size : u32,
+    pub include_ungrouped_models : bool,
+}
+
+// TODO: This is insanely inefficient
+fn convert_model_list_to_groups(models : Vec<model::Model>, include_ungrouped_models : bool) -> Vec<ModelGroup>
+{
+    let mut index_map: IndexMap<i64, ModelGroup> = IndexMap::new();
+
+    for model in models 
+    {
+        let group_meta = match model.group.clone()
+        {
+            Some(g) => g,
+            None => {
+                if !include_ungrouped_models {
+                    continue;
+                }
+
+                ModelGroupMeta {
+                    id: model.id * -1,
+                    name: model.name.clone(),
+                    created: model.added.clone(),
+                    resource_id: None,
+                    unique_global_id: String::from("")
+                }
+            }
+        };
+
+        let group = index_map.entry(group_meta.id).or_insert(ModelGroup::from_meta(group_meta));
+
+        for label in &model.labels {
+            if group.labels.iter().any(|f| f.id == label.id)
+            {
+                continue;
+            }
+
+            group.labels.push(label.clone());
+        }
+
+        group.models.push(model);
+    }
+
+    index_map.into_values().collect()
+}
+
+pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptions) -> Result<PaginatedResponse<ModelGroup>, sqlx::Error> {
+    let filtered_on_labels = options.label_ids.is_some();
+    let filtered_on_text = options.text_search.is_some();
+
+    let models = model_db::get_models(db, user, ModelFilterOptions {
+        group_ids: options.group_ids,
+        label_ids: options.label_ids,
+        model_ids: None,
+        order_by: None,
+        text_search: options.text_search,
+        page: 1,
+        page_size: u32::MAX
+    }).await?;
+
+    let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models);
+
+    // It's possible we don't have the entire group here. Re-fetching groups
+    if filtered_on_labels || filtered_on_text {
+        let group_ids : Vec<i64> = groups.iter().filter(|f| f.meta.id >= 0).map(|f| f.meta.id).collect();
+        let fake_models : Vec<ModelGroup> = groups.into_iter().filter(|f| f.meta.id < 0).collect();
+
+        let models = model_db::get_models(db, user, ModelFilterOptions { 
+            model_ids: None, 
+            group_ids: Some(group_ids), 
+            label_ids: None, 
+            order_by: None, 
+            text_search: None, 
+            page: 1, 
+            page_size: u32::MAX 
+        }).await?;
+
+        groups = convert_model_list_to_groups(models.items, false);
+        groups.extend(fake_models);
+    }
+
+    match options.order_by.unwrap_or(GroupOrderBy::CreatedDesc) {
+        GroupOrderBy::CreatedAsc => groups.sort_by_cached_key(|f| f.meta.created.clone()),
+        GroupOrderBy::CreatedDesc => groups.sort_by_cached_key(|f| Reverse(f.meta.created.clone())),
+        GroupOrderBy::NameAsc => groups.sort_by_cached_key(|f| f.meta.name.clone()),
+        GroupOrderBy::NameDesc => groups.sort_by_cached_key(|f| Reverse(f.meta.name.clone())),
+    }
+
+    let offset = ((options.page as u32 - 1) * options.page_size as u32) as usize;
+
+    Ok(PaginatedResponse {
+        items: groups.into_iter().skip(offset).take(options.page_size as usize).collect(),
+        page: options.page,
+        page_size: options.page_size
+    })
+}
+
+async fn get_unique_id_from_group_id(db: &DbContext, group_id: i64) -> Result<String, sqlx::Error>
+{
+    let row = sqlx::query!(
+        "SELECT group_unique_global_id FROM models_group WHERE group_id = ?",
+        group_id
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(row.group_unique_global_id)
+}
+
+pub async fn set_group_id_on_models(
+    db: &DbContext,
+    user: &User,
+    group_id: Option<i64>,
+    model_ids: Vec<i64>,
+    update_audit: bool,
+) -> Result<(), sqlx::Error> {
+    let ids_placeholder = join(model_ids.iter(), ",");
+
+    let formatted_query = format!(
+        "UPDATE models
+         SET model_group_id = ?
+         WHERE model_id IN ({})",
+        ids_placeholder
+    );
+
+    sqlx::query(&formatted_query)
+        .bind(group_id)
+        .execute(db)
+        .await?;
+
+    if update_audit {
+        let hex_ids = model_db::get_unique_ids_from_model_ids(db, model_ids).await?;
+
+        for id in hex_ids.into_values() {
+            audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Model, id)).await?;
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, update_audit : bool) -> Result<i64, sqlx::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    let result = sqlx::query!(
+        "INSERT INTO models_group (group_name, group_created, group_user_id) VALUES (?, ?, ?)",
+        group_name,
+        now,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    let group_id = result.last_insert_rowid();
+
+    if update_audit {
+        let hex = get_unique_id_from_group_id(db, group_id).await?;
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Create, EntityType::Group, hex)).await?;
+    }
+
+    Ok(group_id)
+}
+
+pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_resource_id: Option<i64>, group_name: &str, update_audit : bool) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE models_group SET group_name = ?, group_resource_id = ? WHERE group_id = ? AND group_user_id = ?",
+        group_name,
+        group_resource_id,
+        group_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    if update_audit {
+        let hex = get_unique_id_from_group_id(db, group_id).await?;
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Group, hex)).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn delete_group(db: &DbContext, user : &User, group_id: i64, update_audit : bool) -> Result<(), sqlx::Error> {
+    let hex = get_unique_id_from_group_id(db, group_id).await?;
+
+    sqlx::query!(
+        "DELETE FROM models_group WHERE group_id = ? AND group_user_id = ?",
+        group_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Delete, EntityType::Group, hex)).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn delete_dead_groups(db: &DbContext) -> Result<(), sqlx::Error> {
+    let dead_group_ids = sqlx::query!(
+        "SELECT group_id, group_user_id FROM models_group
+         WHERE group_id NOT IN (SELECT DISTINCT model_group_id FROM models WHERE model_group_id IS NOT NULL)"
+    )
+    .fetch_all(db)
+    .await?;
+
+    for row in dead_group_ids {
+        delete_group(db, &User { id: row.group_user_id.unwrap(), username: "".into(), email: "".into(), password_hash: "".into(), user_created_at: "".into()}, row.group_id.unwrap(), true).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn get_group_count(db: &DbContext, user : &User, include_ungrouped_models : bool) -> Result<usize, sqlx::Error> {
+    let mut group_count = 0;
+
+    let group_query = sqlx::query!(
+        "SELECT COUNT(DISTINCT model_group_id) as count FROM models WHERE model_user_id = ?",
+        user.id
+    )
+    .fetch_one(db)
+    .await?;
+
+    group_count += group_query.count as usize;
+
+    if include_ungrouped_models {
+        let ungrouped_query = sqlx::query!(
+            "SELECT COUNT(*) as count FROM models WHERE model_user_id = ? AND model_group_id IS NULL",
+            user.id
+        )
+        .fetch_one(db)
+        .await?;
+
+        group_count += ungrouped_query.count as usize;
+    }
+
+    Ok(group_count)
+}

@@ -1,0 +1,71 @@
+use indexmap::IndexMap;
+
+use crate::{audit_db, db_context::DbContext, label_db, model::{ActionType, AuditEntry, EntityType, LabelKeyword, User}};
+
+pub async fn get_keywords_for_label(db: &DbContext, user: &User, label_id: i64) -> Result<Vec<LabelKeyword>, sqlx::Error> {
+    let rows = sqlx::query!(
+        "SELECT keyword_id, keyword_name FROM label_keywords JOIN labels ON label_keywords.keyword_label_id = labels.label_id WHERE keyword_label_id = ? AND label_user_id = ?",
+        label_id,
+        user.id
+    )
+    .fetch_all(db)
+    .await?;
+
+    let mut result: Vec<LabelKeyword> = Vec::new();
+    for row in rows {
+        result.push(LabelKeyword {
+            id: row.keyword_id.unwrap(),
+            name: row.keyword_name,
+        });
+    }
+
+    Ok(result)
+}
+
+pub async fn get_all_keywords(db: &DbContext, user: &User) -> Result<IndexMap<i64, Vec<LabelKeyword>>, sqlx::Error> {
+    let rows = sqlx::query!(
+        "SELECT keyword_id, keyword_name, keyword_label_id FROM label_keywords JOIN labels ON label_keywords.keyword_label_id = labels.label_id WHERE label_user_id = ?",
+        user.id
+    )
+    .fetch_all(db)
+    .await?;
+
+    let mut result = IndexMap::new();
+
+    for row in rows {
+        let entry = result.entry(row.keyword_label_id).or_insert(Vec::new());
+        entry.push(LabelKeyword {
+            id: row.keyword_id.unwrap(),
+            name: row.keyword_name,
+        });
+    }
+
+    Ok(result)
+}
+
+pub async fn set_keywords_for_label(db: &DbContext, user: &User, label_id: i64, keywords: Vec<String>, update_audit : bool) -> Result<(), sqlx::Error> {
+    let hex = label_db::get_unique_id_from_label_id(db, user, label_id).await?;
+
+    sqlx::query!(
+        "DELETE FROM label_keywords WHERE keyword_label_id = ?",
+        label_id,
+    )
+    .execute(db)
+    .await?;
+
+    for keyword in keywords {
+        sqlx::query!(
+            "INSERT INTO label_keywords (keyword_name, keyword_label_id) VALUES (?, ?)",
+            keyword,
+            label_id
+        )
+        .execute(db)
+        .await?;
+    }
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, hex)).await?;
+    }
+
+    Ok(())
+}

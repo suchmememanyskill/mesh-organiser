@@ -1,0 +1,15 @@
+[package]
+name = "db"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bitflags = { version = "2" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0"
+hex = "0"
+chrono = "0"
+sqlx = { git = "https://github.com/suchmememanyskill/sqlx", features = ["sqlite", "runtime-tokio", "chrono"] }
+indexmap = "2"
+itertools = "0"
