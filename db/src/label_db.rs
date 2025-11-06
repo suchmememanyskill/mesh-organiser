@@ -351,6 +351,32 @@ pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i
     Ok(())
 }
 
+pub async fn remove_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_audit : bool) -> Result<(), DbError>
+{
+    let parent_hex = get_unique_id_from_label_id(db, user, parent_label_id).await?;
+    let access_check = get_unique_ids_from_label_ids(db, user, &child_label_ids).await?;
+
+    if access_check.values().len() != child_label_ids.len() {
+        return Err(DbError::RowNotFound);
+    }
+
+    for child_label_id in &child_label_ids {
+        sqlx::query!(
+            "DELETE FROM labels_labels WHERE parent_label_id = ? AND child_label_id = ?",
+            parent_label_id,
+            child_label_id
+        )
+        .execute(db)
+        .await?;
+    }
+
+    if update_audit {
+        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, parent_hex)).await?;
+    }
+
+    Ok(())
+}
+
 pub async fn remove_all_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, update_audit : bool) -> Result<(), DbError>
 {
     let unique_global_id = get_unique_id_from_label_id(db, user, parent_label_id).await?;

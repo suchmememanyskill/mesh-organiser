@@ -409,7 +409,7 @@ where
     }
 
     let blob_id = tauri::async_runtime::block_on(async {
-        db::blobs_db::add_or_create_blob_using_sha256(&app_state.db, &hash, &new_extension, file_size as i64)
+        db::blob_db::add_or_create_blob_using_sha256(&app_state.db, &hash, &new_extension, file_size as i64)
             .await
     })?;
 

@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-
+use db::user_db;
 use arboard::Clipboard;
 use base64::prelude::*;
 use configuration::Configuration;
@@ -28,12 +28,12 @@ use tauri::{
 };
 use urlencoding::decode;
 
-use crate::service::import_state::{ImportState, ImportStatus};
 mod configuration;
 mod error;
 mod service;
 mod util;
 mod web_server;
+mod api;
 
 #[derive(Serialize, Clone)]
 struct DeepLinkEmit {
@@ -41,93 +41,6 @@ struct DeepLinkEmit {
     source_url: Option<String>,
 }
 
-#[tauri::command]
-async fn add_model(
-    path: &str,
-    recursive: bool,
-    delete_imported: bool,
-    origin_url: Option<String>,
-    open_in_slicer: bool,
-    state: State<'_, AppState>,
-    app_handle: AppHandle,
-) -> Result<ImportState, ApplicationError> {
-    let path_clone = String::from(path);
-    let state_clone = state.real_clone();
-    let handle_clone = app_handle.clone();
-    let mut import_state = ImportState::new(origin_url, recursive, delete_imported);
-
-    import_state = tauri::async_runtime::spawn_blocking(move || {
-        let _lock = state_clone.import_mutex.lock().unwrap();
-        import_service::import_path(&path_clone, &state_clone, &handle_clone, &mut import_state)?;
-
-        Result::<ImportState, ApplicationError>::Ok(import_state)
-    })
-    .await
-    .unwrap()?;
-
-    let model_ids: Vec<i64> = import_state
-        .imported_models
-        .iter()
-        .flat_map(|f| f.model_ids.clone())
-        .collect();
-    let models = model_db::get_models_via_ids(&state.db, &User::default(), model_ids).await?;
-    service::thumbnail_service::generate_thumbnails(
-        &models,
-        &state,
-        &app_handle,
-        false,
-        &mut import_state,
-    )
-    .await?;
-
-    if open_in_slicer && models.len() > 0 {
-        if let Some(slicer) = &state.get_configuration().slicer {
-            slicer.open(models, &state)?;
-        }
-    }
-
-    import_state.status = ImportStatus::Finished;
-    Ok(import_state)
-}
-
-#[tauri::command]
-async fn get_models(state: State<'_, AppState>) -> Result<Vec<db::model::Model>, ApplicationError> {
-    //let models = db_compat::get_models(&state.db).await;
-
-    Ok(Vec::new())
-}
-
-#[tauri::command]
-async fn edit_model(
-    model_id: i64,
-    model_name: &str,
-    model_url: Option<&str>,
-    model_description: Option<&str>,
-    model_flags: ModelFlags,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::model_db::edit_model(
-        &state.db,
-        &User::default(),
-        model_id,
-        model_name,
-        model_url,
-        model_description,
-        model_flags,
-        true,
-    )
-    .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_labels(state: State<'_, AppState>) -> Result<Vec<db::model::Label>, ApplicationError> {
-    let labels = db::label_db::get_labels(&state.db, &User::default(), false)
-        .await?;
-
-    Ok(labels)
-}
 
 #[tauri::command]
 async fn get_configuration(
@@ -183,160 +96,6 @@ async fn update_images(
 }
 
 #[tauri::command]
-async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    let model = model_db::get_models_via_ids(&state.db, &User::default(), vec![model_id]).await?;
-
-    if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from(
-            "Failed to find model to delete",
-        )));
-    }
-
-    let model = &model[0];
-
-    db::model_db::delete_model(&state.db, &User::default(), model_id, true)
-        .await?;
-
-    let model_path =
-        PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
-    let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
-
-    if model_path.exists() {
-        std::fs::remove_file(model_path)?;
-    }
-
-    if image_path.exists() {
-        std::fs::remove_file(image_path)?;
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn add_label(
-    label_name: &str,
-    label_color: i64,
-    state: State<'_, AppState>,
-) -> Result<i64, ApplicationError> {
-    let id = db::label_db::add_label(&state.db, &User::default(), label_name, label_color, true)
-        .await?;
-
-    Ok(id)
-}
-
-#[tauri::command]
-async fn add_group(group_name: &str, state: State<'_, AppState>) -> Result<i64, ApplicationError> {
-    let id = db::group_db::add_empty_group(&state.db, &User::default(), group_name, true)
-        .await?;
-
-    Ok(id)
-}
-
-#[tauri::command]
-async fn add_models_to_group(
-    group_id: i64,
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::group_db::set_group_id_on_models(&state.db, &User::default(), Some(group_id), model_ids, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_models_from_group(
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::group_db::set_group_id_on_models(&state.db, &User::default(), None, model_ids, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn ungroup(group_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    db::group_db::delete_group(&state.db, &User::default(), group_id, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn edit_group(
-    group_id: i64,
-    group_name: &str,
-    group_resource_id: Option<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::group_db::edit_group(&state.db, &User::default(), group_id, group_resource_id, group_name, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_labels_on_model(
-    label_ids: Vec<i64>,
-    model_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    label_db::remove_all_labels_from_models(&state.db, &User::default(), &[model_id], true).await?;
-    label_db::add_labels_on_models(&state.db, &User::default(), &label_ids, &[model_id], true).await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_label_on_models(
-    label_id: i64,
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    let _ = db::label_db::remove_labels_from_models(&state.db, &User::default(), &[label_id], &model_ids, true)
-        .await?;
-    
-    db::label_db::add_labels_on_models(&state.db, &User::default(), &[label_id], &model_ids, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_label_from_models(
-    label_id: i64,
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label_db::remove_labels_from_models(&state.db, &User::default(), &[label_id], &model_ids, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn edit_label(
-    label_id: i64,
-    label_name: &str,
-    label_color: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label_db::edit_label(&state.db, &User::default(), label_id, label_name, label_color, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn delete_label(label_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    db::label_db::delete_label(&state.db, &User::default(), label_id, true)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
 async fn open_in_slicer(
     model_ids: Vec<i64>,
     state: State<'_, AppState>,
@@ -379,13 +138,6 @@ async fn open_in_folder(
     Ok(())
 }
 
-#[tauri::command]
-async fn remove_dead_groups(state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    db::group_db::delete_dead_groups(&state.db)
-        .await?;
-
-    Ok(())
-}
 
 #[tauri::command]
 async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, ApplicationError> {
@@ -394,47 +146,7 @@ async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, Ap
     Ok(size)
 }
 
-#[tauri::command]
-async fn get_model_as_base64(
-    model_id: i64,
-    state: State<'_, AppState>,
-) -> Result<String, ApplicationError> {
-    let model = model_db::get_models_via_ids(&state.db, &User::default(), vec![model_id]).await?;
 
-    if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from(
-            "Failed to find model to delete",
-        )));
-    }
-
-    let model = &model[0];
-
-    let bytes = service::export_service::get_bytes_from_model(model, &state).unwrap();
-    let base64 = BASE64_STANDARD.encode(bytes);
-
-    Ok(base64)
-}
-
-#[tauri::command]
-async fn get_model_bytes(
-    model_id: i64,
-    state: State<'_, AppState>,
-) -> Result<Vec<u8>, ApplicationError> {
-    let model = model_db::get_models_via_ids(&state.db, &User::default(), vec![model_id]).await?;
-
-    if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from(
-            "Failed to find model to delete",
-        )));
-    }
-
-    let model = &model[0];
-
-
-    let bytes = service::export_service::get_bytes_from_model(model, &state).unwrap();
-
-    Ok(bytes)
-}
 
 #[derive(Serialize, Clone)]
 struct DownloadFinishedEvent {
@@ -596,176 +308,7 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
     Ok(())
 }
 
-#[tauri::command]
-async fn add_childs_to_label(
-    parent_label_id: i64,
-    child_label_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label_db::add_childs_to_label(&state.db, &User::default(), parent_label_id, child_label_ids, true)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_childs_from_label(
-    parent_label_id: i64,
-    child_label_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    // Need to implement remove_childs_from_label - it might not exist in new API
-    // For now, let's remove all and re-add the ones we want to keep
-    let all_labels = db::label_db::get_labels(&state.db, &User::default(), false)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-    
-    let parent = all_labels.iter().find(|l| l.meta.id == parent_label_id);
-    if let Some(parent) = parent {
-        let remaining_child_ids: Vec<i64> = parent.children.iter()
-            .map(|c| c.id)
-            .filter(|id| !child_label_ids.contains(id))
-            .collect();
-        
-        db::label_db::remove_all_childs_from_label(&state.db, &User::default(), parent_label_id, true)
-            .await
-            .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-        
-        if !remaining_child_ids.is_empty() {
-            db::label_db::add_childs_to_label(&state.db, &User::default(), parent_label_id, remaining_child_ids, true)
-                .await
-                .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-        }
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_childs_on_label(
-    parent_label_id: i64,
-    child_label_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label_db::remove_all_childs_from_label(&state.db, &User::default(), parent_label_id, true)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-    
-    if !child_label_ids.is_empty() {
-        db::label_db::add_childs_to_label(&state.db, &User::default(), parent_label_id, child_label_ids, true)
-            .await
-            .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_resources(state: State<'_, AppState>) -> Result<Vec<Resource>, ApplicationError> {
-    let resources = db::resource_db::get_resources(&state.db, &User::default())
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    Ok(resources)
-}
-
-#[tauri::command]
-async fn add_resource(
-    resource_name: &str,
-    state: State<'_, AppState>,
-) -> Result<i64, ApplicationError> {
-    let id = db::resource_db::add_resource(&state.db, &User::default(), resource_name, true)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    Ok(id)
-}
-
-#[tauri::command]
-async fn edit_resource(
-    resource_id: i64,
-    resource_name: &str,
-    resource_flags: ResourceFlags,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::resource_db::edit_resource(&state.db, &User::default(), resource_id, resource_name, resource_flags, true)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_resource(
-    resource_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    let resource = db::resource_db::get_resource_by_id(&state.db, &User::default(), resource_id)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    if resource.is_none() {
-        return Err(ApplicationError::InternalError(String::from(
-            "Resource not found",
-        )));
-    }
-
-    let resource = resource.unwrap();
-
-    service::resource_service::delete_resource_folder(&resource, &state).await?;
-    db::resource_db::delete_resource(&state.db, &User::default(), resource.id, true)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn open_resource_folder(
-    resource_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    let resource = db::resource_db::get_resource_by_id(&state.db, &User::default(), resource_id)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    if resource.is_none() {
-        return Err(ApplicationError::InternalError(String::from(
-            "Resource not found",
-        )));
-    }
-
-    let resource = resource.unwrap();
-
-    service::resource_service::open_resource_folder(&resource, &state).await?;
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_keywords_on_label(
-    label_id: i64,
-    keywords: Vec<String>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label_keyword_db::set_keywords_for_label(&state.db, &User::default(), label_id, keywords, true)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_keywords_for_label(
-    label_id: i64,
-    state: State<'_, AppState>,
-) -> Result<Vec<db::model::LabelKeyword>, ApplicationError> {
-    let keywords = db::label_keyword_db::get_keywords_for_label(&state.db, &User::default(), label_id)
-        .await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
-
-    Ok(keywords)
-}
 
 fn extract_deep_link(data: &str) -> Option<String> {
     let possible_starts = vec![
@@ -946,66 +489,77 @@ pub fn run() {
                     }
                 }
 
+                let user = user_db::get_user_by_id(&db, config.last_user_id).await.ok().flatten().unwrap_or(User::default());
+
                 let state = AppState {
                     db: Arc::new(db),
                     configuration: Mutex::new(config),
                     initial_state: initial_state,
                     app_data_path: app_data_path,
                     import_mutex: Arc::new(Mutex::new(())),
+                    current_user: Arc::new(Mutex::new(user)),
                 };
 
                 state.configure_deep_links(&app.handle());
 
                 app.manage(state);
 
+                /*
                 let handle = app.handle().clone();
 
                 thread::spawn(move || {
                     web_server::init(handle).unwrap();
-                });               
+                });
+                */
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            add_model,
-            get_models,
-            get_labels,
-            edit_model,
-            delete_model,
-            add_label,
-            ungroup,
-            edit_group,
-            set_labels_on_model,
+            api::add_model,
+            api::get_models,
+            api::get_labels,
+            api::edit_model,
+            api::delete_model,
+            api::add_label,
+            api::ungroup,
+            api::edit_group,
+            api::set_labels_on_model,
             open_in_slicer,
             get_initial_state,
             download_file,
             open_in_folder,
-            set_label_on_models,
-            remove_label_from_models,
-            add_group,
-            add_models_to_group,
-            remove_models_from_group,
-            remove_dead_groups,
-            edit_label,
-            delete_label,
+            api::set_label_on_models,
+            api::remove_label_from_models,
+            api::add_group,
+            api::add_models_to_group,
+            api::remove_models_from_group,
+            api::remove_dead_groups,
+            api::edit_label,
+            api::delete_label,
             update_images,
             get_slicers,
             set_configuration,
             get_configuration,
             compute_model_folder_size,
             new_window_with_url,
-            get_model_as_base64,
-            add_childs_to_label,
-            remove_childs_from_label,
-            set_childs_on_label,
-            get_resources,
-            add_resource,
-            edit_resource,
-            remove_resource,
-            open_resource_folder,
-            set_keywords_on_label,
-            get_keywords_for_label,
-            get_model_bytes,
+            api::add_childs_to_label,
+            api::remove_childs_from_label,
+            api::set_childs_on_label,
+            api::get_resources,
+            api::add_resource,
+            api::edit_resource,
+            api::remove_resource,
+            api::open_resource_folder,
+            api::set_keywords_on_label,
+            api::get_keywords_for_label,
+            api::get_model_bytes,
+            api::get_blob_bytes,
+            api::get_current_user,
+            api::set_current_user,
+            api::get_users,
+            api::add_user,
+            api::edit_user,
+            api::delete_user,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

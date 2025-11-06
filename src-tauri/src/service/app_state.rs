@@ -1,4 +1,5 @@
 use db::db_context::DbContext;
+use db::model::User;
 use serde::Serialize;
 use tauri::AppHandle;
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -22,9 +23,31 @@ pub struct AppState {
     pub import_mutex: Arc<Mutex<()>>,
     pub initial_state: InitialState,
     pub app_data_path: String,
+    pub current_user: Arc<Mutex<User>>,
 }
 
 impl AppState {
+    pub fn get_current_user(&self) -> User {
+        let user = self.current_user.lock().unwrap();
+        user.clone()
+    }
+
+    pub async fn set_current_user_by_id(&self, user_id: i64) -> Result<(), crate::error::ApplicationError> {
+        let user = db::user_db::get_user_by_id(&self.db, user_id).await?;
+
+        if user.is_none() {
+            return Err(crate::error::ApplicationError::InternalError("User not found".into()));
+        }
+
+        let mut current_user = self.current_user.lock().unwrap();
+        *current_user = user.unwrap();
+
+        let mut configuration = self.configuration.lock().unwrap();
+        configuration.last_user_id = user_id;
+
+        Ok(())
+    }
+
     // TODO: Change to pathbuf
     pub fn get_model_dir(&self) -> String {
         let mut path_buff = PathBuf::from(self.get_configuration().data_path.clone());
@@ -62,6 +85,8 @@ impl AppState {
     }
 
     pub fn write_configuration(&self, new_configuration: &Configuration) -> bool {
+        // TODO: This should have all settings, not just a select few
+        // TODO: We should probably split up settings per section anyway
         let path = PathBuf::from(self.app_data_path.clone());
         let path = path.join("settings.json");
 
@@ -106,6 +131,7 @@ impl AppState {
             initial_state: self.initial_state.clone(),
             app_data_path: self.app_data_path.clone(),
             import_mutex: Arc::clone(&self.import_mutex),
+            current_user: Arc::clone(&self.current_user),
         }
     }
 

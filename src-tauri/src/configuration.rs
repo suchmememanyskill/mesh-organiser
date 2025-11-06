@@ -48,6 +48,7 @@ pub struct StoredConfiguration {
     pub show_multiselect_checkboxes: Option<bool>,
     pub use_worker_for_model_parsing: Option<bool>,
     pub prefer_gcode_thumbnail: Option<bool>,
+    pub last_user_id: Option<i64>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -92,6 +93,7 @@ pub struct Configuration {
     pub show_multiselect_checkboxes: bool,
     pub use_worker_for_model_parsing: bool,
     pub prefer_gcode_thumbnail: bool,
+    pub last_user_id: i64,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -192,6 +194,7 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         prefer_gcode_thumbnail: configuration
             .prefer_gcode_thumbnail
             .unwrap_or(default.prefer_gcode_thumbnail),
+        last_user_id: configuration.last_user_id.unwrap_or(default.last_user_id),
     }
 }
 
@@ -248,6 +251,7 @@ impl Default for Configuration {
             show_multiselect_checkboxes: true,
             use_worker_for_model_parsing: true,
             prefer_gcode_thumbnail: true,
+            last_user_id: 1,
         }
     }
 }

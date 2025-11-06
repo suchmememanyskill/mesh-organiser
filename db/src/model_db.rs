@@ -3,10 +3,12 @@ use itertools::join;
 use serde::de;
 use sqlx::{QueryBuilder, query};
 use sqlx::Row;
+use strum::EnumString;
 use crate::audit_db;
 use crate::model::{ActionType, AuditEntry, Blob, EntityType, random_hex_32, time_now};
 use crate::{DbError, PaginatedResponse, db_context::DbContext, label_db, model::{Label, LabelMeta, Model, ModelFlags, ModelGroup, ModelGroupMeta, User, convert_label_meta_list_to_map}};
 
+#[derive(Debug, PartialEq, EnumString)]
 pub enum ModelOrderBy {
     AddedAsc,
     AddedDesc,

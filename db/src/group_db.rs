@@ -1,10 +1,11 @@
 use std::{cmp::Reverse, u32};
 use itertools::join;
 use indexmap::IndexMap;
-
+use sqlx::Row;
 use crate::{DbError, PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
+use strum::EnumString;
 
-
+#[derive(Debug, PartialEq, EnumString)]
 pub enum GroupOrderBy
 {
     CreatedAsc,
@@ -97,6 +98,8 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
             page_size: u32::MAX 
         }).await?;
 
+        // TODO: Make option to split off non-complete groups into their own groups
+
         groups = convert_model_list_to_groups(models.items, false);
         groups.extend(fake_models);
     }
@@ -129,6 +132,29 @@ async fn get_unique_id_from_group_id(db: &DbContext, group_id: i64) -> Result<St
     Ok(row.group_unique_global_id)
 }
 
+async fn get_unqiue_ids_from_group_ids(db: &DbContext, group_ids: &[i64]) -> Result<IndexMap<i64, String>, DbError>
+{
+    let mut id_map = IndexMap::new();
+    let ids = join(group_ids.iter(), ",");
+
+    let query = format!(
+        "SELECT group_id, group_unique_global_id FROM models_group WHERE group_id IN ({})",
+        ids
+    );
+
+    let rows = sqlx::query(
+        &query
+    )
+    .fetch_all(db)
+    .await?;
+
+    for row in rows {
+        id_map.insert(row.get("group_id"), row.get("group_unique_global_id"));
+    }
+
+    Ok(id_map)
+}
+
 pub async fn set_group_id_on_models(
     db: &DbContext,
     user: &User,
@@ -136,6 +162,20 @@ pub async fn set_group_id_on_models(
     model_ids: Vec<i64>,
     update_audit: bool,
 ) -> Result<(), DbError> {
+    // TODO: Remove clone
+    let models = model_db::get_models_via_ids(db, user, model_ids.clone()).await?;
+    let old_group_ids: Vec<i64> = models.iter().filter_map(|m| m.group.as_ref().map(|g| g.id)).collect();
+    let mut group_ids = get_unqiue_ids_from_group_ids(db, &old_group_ids).await?;
+    
+    if group_ids.len() != old_group_ids.len() {
+        return Err(DbError::RowNotFound);
+    }
+
+    if let Some(gid) = group_id {
+        let hex = get_unique_id_from_group_id(db, gid).await?;
+        group_ids.insert(gid, hex);
+    }
+
     let ids_placeholder = join(model_ids.iter(), ",");
 
     let formatted_query = format!(
@@ -151,10 +191,13 @@ pub async fn set_group_id_on_models(
         .await?;
 
     if update_audit {
-        let hex_ids = model_db::get_unique_ids_from_model_ids(db, model_ids).await?;
-
-        for id in hex_ids.into_values() {
-            audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Model, id)).await?;
+        for (_, hex) in group_ids {
+            audit_db::add_audit_entry(db, &AuditEntry::new(
+                user,
+                ActionType::Update,
+                EntityType::Group,
+                hex,
+            )).await?;
         }
     }
 
@@ -228,7 +271,7 @@ pub async fn delete_dead_groups(db: &DbContext) -> Result<(), DbError> {
     .await?;
 
     for row in dead_group_ids {
-        delete_group(db, &User { id: row.group_user_id.unwrap(), username: "".into(), email: "".into(), password_hash: "".into(), user_created_at: "".into()}, row.group_id.unwrap(), true).await?;
+        delete_group(db, &User { id: row.group_user_id.unwrap(), ..Default::default()}, row.group_id.unwrap(), true).await?;
     }
 
     Ok(())

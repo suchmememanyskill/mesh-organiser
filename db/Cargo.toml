@@ -13,3 +13,4 @@ chrono = "0"
 sqlx = { git = "https://github.com/suchmememanyskill/sqlx", features = ["sqlite", "runtime-tokio", "chrono"] }
 indexmap = "2"
 itertools = "0"
+strum = { version = "0.27", features = ["derive"] }

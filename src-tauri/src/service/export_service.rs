@@ -1,6 +1,6 @@
 use crate::util::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
 use crate::error::ApplicationError;
-use db::model::Model;
+use db::model::{Blob, Model};
 use chrono::Utc;
 use std::{fs::File, path::PathBuf};
 
@@ -37,12 +37,19 @@ pub fn get_bytes_from_model(
     model: &Model,
     app_state: &AppState,
 ) -> Result<Vec<u8>, ApplicationError> {
+    get_bytes_from_blob(&model.blob, app_state)
+}
+
+pub fn get_bytes_from_blob(
+    blob: &Blob,
+    app_state: &AppState,
+) -> Result<Vec<u8>, ApplicationError> {
     let base_dir = PathBuf::from(app_state.get_model_dir());
-    let src_file_path = base_dir.join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
+    let src_file_path = base_dir.join(format!("{}.{}", blob.sha256, blob.filetype));
     let mut file = File::open(src_file_path)?;
     let mut buffer = Vec::new();
 
-    if is_zipped_file_extension(&model.blob.filetype) {
+    if is_zipped_file_extension(&blob.filetype) {
         let mut archive = zip::ZipArchive::new(file)?;
         let mut file = archive.by_index(0)?;
         std::io::copy(&mut file, &mut buffer)?;

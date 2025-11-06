@@ -1,12 +1,15 @@
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct User {
     pub id : i64,
     pub username : String,
     pub email : String,
     pub password_hash : String,
-    pub user_created_at : String,
+    pub created_at : String,
+    pub sync_url : Option<String>,
+    pub sync_token : Option<String>,
+    pub last_sync : Option<String>,
 }
 
 impl Default for User {
@@ -16,7 +19,10 @@ impl Default for User {
             username: "".into(),
             email: "".into(),
             password_hash: "".into(),
-            user_created_at: "".into(),
+            created_at: "".into(),
+            sync_url: None,
+            sync_token: None,
+            last_sync: None,
         }
     }
 }

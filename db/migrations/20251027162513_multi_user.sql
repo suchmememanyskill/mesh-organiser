@@ -6,6 +6,9 @@ CREATE TABLE users (
     user_email TEXT NOT NULL UNIQUE,
     user_password_hash TEXT NOT NULL,
     user_created_at TEXT NOT NULL,
+    user_sync_url TEXT,
+    user_sync_token TEXT,
+    user_last_sync TEXT
     user_permissions INTEGER NOT NULL DEFAULT 0
 );
 
