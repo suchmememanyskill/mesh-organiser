@@ -134,13 +134,21 @@ impl ImportState {
             }
 
             if let Some(group_name) = &last.group_name {
-                let group_id = crate::db::model_group::add_empty_group_sync(group_name, &state.db);
+                let group_id = tauri::async_runtime::block_on(async {
+                    db::group_db::add_empty_group(&state.db, &db::model::User::default(), group_name, true)
+                        .await
+                })?;
 
-                crate::db::model_group::set_group_id_on_models_sync(
-                    Some(group_id),
-                    last.model_ids.clone(),
-                    &state.db,
-                );
+                tauri::async_runtime::block_on(async {
+                    db::group_db::set_group_id_on_models(
+                        &state.db,
+                        &db::model::User::default(),
+                        Some(group_id),
+                        last.model_ids.clone(),
+                        true,
+                    )
+                    .await
+                })?;
 
                 last.group_id = Some(group_id);
                 return Ok(group_id);

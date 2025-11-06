@@ -1,6 +1,6 @@
-use crate::{db_context::DbContext, model::{AuditEntry, random_hex_32, time_now}};
+use crate::{DbError, db_context::DbContext, model::{AuditEntry, random_hex_32, time_now}};
 
-pub async fn get_last_audit_entry(db: &DbContext) -> Result<Option<AuditEntry>, sqlx::Error>
+pub async fn get_last_audit_entry(db: &DbContext) -> Result<Option<AuditEntry>, DbError>
 {
     let row = sqlx::query!(
         "SELECT audit_unique_global_id, audit_user_id, audit_action_type, audit_entity_type, audit_global_entity_id, audit_created_at
@@ -35,7 +35,7 @@ pub async fn get_last_audit_entry(db: &DbContext) -> Result<Option<AuditEntry>, 
     }
 }
 
-pub async fn add_audit_entry(db: &DbContext, entry: &AuditEntry) -> Result<(), sqlx::Error>
+pub async fn add_audit_entry(db: &DbContext, entry: &AuditEntry) -> Result<(), DbError>
 {
     /* 
     let last_entry = get_last_audit_entry(db).await?;

@@ -1,10 +1,11 @@
 use indexmap::IndexMap;
 use itertools::join;
+use serde::de;
 use sqlx::{QueryBuilder, query};
 use sqlx::Row;
 use crate::audit_db;
 use crate::model::{ActionType, AuditEntry, Blob, EntityType, random_hex_32, time_now};
-use crate::{PaginatedResponse, db_context::DbContext, label_db, model::{Label, LabelMeta, Model, ModelFlags, ModelGroup, ModelGroupMeta, User, convert_label_meta_list_to_map}};
+use crate::{DbError, PaginatedResponse, db_context::DbContext, label_db, model::{Label, LabelMeta, Model, ModelFlags, ModelGroup, ModelGroupMeta, User, convert_label_meta_list_to_map}};
 
 pub enum ModelOrderBy {
     AddedAsc,
@@ -28,6 +29,7 @@ impl ModelOrderBy {
     }
 }
 
+#[derive(Default)]
 pub struct ModelFilterOptions {
     pub model_ids: Option<Vec<i64>>,
     pub group_ids: Option<Vec<i64>>,
@@ -38,7 +40,7 @@ pub struct ModelFilterOptions {
     pub page_size : u32,
 }
 
-pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptions) -> Result<PaginatedResponse<Model>, sqlx::Error> {
+pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptions) -> Result<PaginatedResponse<Model>, DbError> {
     let offset = (options.page as i64 - 1) * options.page_size as i64;
     let order_by = options.order_by.unwrap_or(ModelOrderBy::AddedDesc).to_sql();
 
@@ -138,7 +140,19 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
     });
 }
 
-pub async fn add_model(db: &DbContext, user: &User, name: &str, blob_id: i64, link: Option<&str>, update_audit : bool) -> Result<i64, sqlx::Error>
+pub async fn get_models_via_ids(db: &DbContext, user: &User, ids: Vec<i64>) -> Result<Vec<Model>, DbError> {
+    let options = ModelFilterOptions {
+        model_ids: Some(ids),
+        page: 1,
+        page_size: u32::MAX,
+        ..Default::default()
+    };
+
+    let paginated_response = get_models(db, user, options).await?;
+    Ok(paginated_response.items)
+}
+
+pub async fn add_model(db: &DbContext, user: &User, name: &str, blob_id: i64, link: Option<&str>, update_audit : bool) -> Result<i64, DbError>
 {
     let now = time_now();
     let hex = random_hex_32();
@@ -163,8 +177,9 @@ pub async fn add_model(db: &DbContext, user: &User, name: &str, blob_id: i64, li
     Ok(result.last_insert_rowid())
 }
 
-pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: Option<&str>, description: Option<&str>, flags: i64, update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: Option<&str>, description: Option<&str>, flags: ModelFlags, update_audit : bool) -> Result<(), DbError>
 {
+    let flags = flags.bits() as i64;
     sqlx::query!(
         "UPDATE models SET model_name = ?, model_url = ?, model_desc = ?, model_flags = ? WHERE model_id = ? AND model_user_id = ?",
         name,
@@ -185,7 +200,7 @@ pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: 
     Ok(())
 }
 
-pub async fn delete_model(db: &DbContext, user: &User, id: i64, update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn delete_model(db: &DbContext, user: &User, id: i64, update_audit : bool) -> Result<(), DbError>
 {
     let hex = get_unique_id_from_model_id(db, id).await?;
 
@@ -204,7 +219,7 @@ pub async fn delete_model(db: &DbContext, user: &User, id: i64, update_audit : b
     Ok(())
 }
 
-pub async fn get_unique_id_from_model_id(db: &DbContext, model_id: i64) -> Result<String, sqlx::Error>
+pub async fn get_unique_id_from_model_id(db: &DbContext, model_id: i64) -> Result<String, DbError>
 {
     let row = sqlx::query!(
         "SELECT model_unique_global_id FROM models WHERE model_id = ?",
@@ -216,7 +231,7 @@ pub async fn get_unique_id_from_model_id(db: &DbContext, model_id: i64) -> Resul
     Ok(row.model_unique_global_id)
 }
 
-pub async fn get_unique_ids_from_model_ids(db: &DbContext, model_ids: Vec<i64>) -> Result<IndexMap<i64, String>, sqlx::Error>
+pub async fn get_unique_ids_from_model_ids(db: &DbContext, model_ids: Vec<i64>) -> Result<IndexMap<i64, String>, DbError>
 {
     let ids_placeholder = join(model_ids.iter(), ",");
 
@@ -240,7 +255,7 @@ pub async fn get_unique_ids_from_model_ids(db: &DbContext, model_ids: Vec<i64>) 
     Ok(id_map)
 }
 
-pub async fn get_model_id_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<i64>, sqlx::Error> {
+pub async fn get_model_id_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<i64>, DbError> {
     let row = sqlx::query!(
         "SELECT model_id FROM models INNER JOIN blobs ON models.model_blob_id = blobs.blob_id WHERE blob_sha256 = ?",
         sha256
@@ -254,7 +269,7 @@ pub async fn get_model_id_via_sha256(db: &DbContext, sha256: &str) -> Result<Opt
     }
 }
 
-pub async fn get_model_count(db: &DbContext, user : &User) -> Result<i64, sqlx::Error> {
+pub async fn get_model_count(db: &DbContext, user : &User) -> Result<i64, DbError> {
     let row = sqlx::query!(
         "SELECT COUNT(*) as count FROM models WHERE model_user_id = ?",
         user.id

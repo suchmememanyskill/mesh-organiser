@@ -1,6 +1,6 @@
-use crate::{db_context::DbContext, model::Blob};
+use crate::{DbError, db_context::DbContext, model::Blob};
 
-pub async fn get_blob_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<Blob>, sqlx::Error> {
+pub async fn get_blob_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<Blob>, DbError> {
     let row = sqlx::query!(
         "SELECT blob_id, blob_sha256, blob_filetype, blob_size, blob_added FROM blobs WHERE blob_sha256 = ?",
         sha256
@@ -20,7 +20,7 @@ pub async fn get_blob_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<
     }
 }
 
-pub async fn add_blob(db: &DbContext, sha256: &str, filetype: &str, size: i64) -> Result<i64, sqlx::Error> {
+pub async fn add_blob(db: &DbContext, sha256: &str, filetype: &str, size: i64) -> Result<i64, DbError> {
     let now = chrono::Utc::now().to_rfc3339();
 
     let result = sqlx::query!(
@@ -36,7 +36,15 @@ pub async fn add_blob(db: &DbContext, sha256: &str, filetype: &str, size: i64) -
     Ok(result.last_insert_rowid())
 }
 
-pub async fn delete_dead_blobs(db: &DbContext) -> Result<(), sqlx::Error> {
+pub async fn add_or_create_blob_using_sha256(db: &DbContext, sha256: &str, filetype: &str, size: i64) -> Result<i64, DbError> {
+    if let Some(blob) = get_blob_via_sha256(db, sha256).await? {
+        Ok(blob.id)
+    } else {
+        add_blob(db, sha256, filetype, size).await
+    }
+}
+
+pub async fn delete_dead_blobs(db: &DbContext) -> Result<(), DbError> {
     sqlx::query!(
         "DELETE FROM blobs
             WHERE blob_id NOT IN 

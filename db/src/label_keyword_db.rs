@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 
-use crate::{audit_db, db_context::DbContext, label_db, model::{ActionType, AuditEntry, EntityType, LabelKeyword, User}};
+use crate::{DbError, audit_db, db_context::DbContext, label_db, model::{ActionType, AuditEntry, EntityType, LabelKeyword, User}};
 
-pub async fn get_keywords_for_label(db: &DbContext, user: &User, label_id: i64) -> Result<Vec<LabelKeyword>, sqlx::Error> {
+pub async fn get_keywords_for_label(db: &DbContext, user: &User, label_id: i64) -> Result<Vec<LabelKeyword>, DbError> {
     let rows = sqlx::query!(
         "SELECT keyword_id, keyword_name FROM label_keywords JOIN labels ON label_keywords.keyword_label_id = labels.label_id WHERE keyword_label_id = ? AND label_user_id = ?",
         label_id,
@@ -22,7 +22,7 @@ pub async fn get_keywords_for_label(db: &DbContext, user: &User, label_id: i64) 
     Ok(result)
 }
 
-pub async fn get_all_keywords(db: &DbContext, user: &User) -> Result<IndexMap<i64, Vec<LabelKeyword>>, sqlx::Error> {
+pub async fn get_all_keywords(db: &DbContext, user: &User) -> Result<IndexMap<i64, Vec<LabelKeyword>>, DbError> {
     let rows = sqlx::query!(
         "SELECT keyword_id, keyword_name, keyword_label_id FROM label_keywords JOIN labels ON label_keywords.keyword_label_id = labels.label_id WHERE label_user_id = ?",
         user.id
@@ -43,7 +43,7 @@ pub async fn get_all_keywords(db: &DbContext, user: &User) -> Result<IndexMap<i6
     Ok(result)
 }
 
-pub async fn set_keywords_for_label(db: &DbContext, user: &User, label_id: i64, keywords: Vec<String>, update_audit : bool) -> Result<(), sqlx::Error> {
+pub async fn set_keywords_for_label(db: &DbContext, user: &User, label_id: i64, keywords: Vec<String>, update_audit : bool) -> Result<(), DbError> {
     let hex = label_db::get_unique_id_from_label_id(db, user, label_id).await?;
 
     sqlx::query!(

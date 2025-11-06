@@ -17,6 +17,8 @@ pub enum ApplicationError {
     JsonError(#[from] serde_json::Error),
     #[error("Framework error")]
     FrameworkError(#[from] tauri::Error),
+    #[error("Database error")]
+    DatabaseError(#[from] db::DbError),
 }
 
 impl Serialize for ApplicationError {
@@ -58,6 +60,11 @@ impl Serialize for ApplicationError {
             }
             ApplicationError::FrameworkError(inner) => {
                 state.serialize_field("error_type", "FrameworkError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            }
+            ApplicationError::DatabaseError(inner) => {
+                state.serialize_field("error_type", "DatabaseError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }

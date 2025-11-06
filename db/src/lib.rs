@@ -9,3 +9,5 @@ pub mod label_keyword_db;
 pub mod resource_db;
 mod paginated_response;
 pub use paginated_response::PaginatedResponse;
+
+pub type DbError = sqlx::Error;

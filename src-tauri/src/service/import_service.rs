@@ -1,10 +1,11 @@
 use super::app_state::AppState;
 use crate::configuration::Configuration;
-use crate::db::{label, label_keywords};
 use crate::service::import_state::{ImportState, ImportStatus, ImportedModelsSet};
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
-use crate::{db::model, error::ApplicationError};
+use crate::error::ApplicationError;
+use db::model::{Model, User};
+use db::model_db::ModelFilterOptions;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use rayon::prelude::*;
@@ -123,16 +124,35 @@ pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &A
         .cloned()
         .unique()
         .collect::<Vec<i64>>();
-    let models = model::get_models_by_id_sync(model_ids, db);
+    
+    let models = tauri::async_runtime::block_on(async {
+        db::model_db::get_models_via_ids(db, &User::default(), model_ids).await
+    });
 
-    let all_keywords = label_keywords::get_all_keywords_sync(db);
+    let models = match models {
+        Ok(m) => m,
+        Err(_) => return,
+    };
+
+    let all_keywords = tauri::async_runtime::block_on(async {
+        db::label_keyword_db::get_all_keywords(db, &db::model::User::default())
+            .await
+    });
+
+    let all_keywords = match all_keywords {
+        Ok(k) => k,
+        Err(_) => return,
+    };
+    
     let mut all_keywords_map: IndexMap<String, Vec<i64>> = IndexMap::new();
 
-    for keyword in all_keywords.iter() {
-        if all_keywords_map.contains_key(&keyword.name) {
-            all_keywords_map[&keyword.name].push(keyword.label_id);
-        } else {
-            all_keywords_map.insert(keyword.name.clone(), vec![keyword.label_id]);
+    for (label_id, keywords) in all_keywords.iter() {
+        for keyword in keywords {
+            if all_keywords_map.contains_key(&keyword.name) {
+                all_keywords_map[&keyword.name].push(*label_id);
+            } else {
+                all_keywords_map.insert(keyword.name.clone(), vec![*label_id]);
+            }
         }
     }
 
@@ -171,7 +191,9 @@ pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &A
             .collect();
 
         if !label_ids.is_empty() {
-            label::add_labels_on_model_sync(label_ids, model.id, db);
+            tauri::async_runtime::block_on(async {
+                let _ = db::label_db::add_labels_on_models(db, &db::model::User::default(), &label_ids, &[model.id], true).await;
+            });
         }
     }
 }
@@ -359,9 +381,13 @@ where
     let bytes = hasher.finalize();
     let hash = String::from(&format!("{:x}", bytes)[0..32]);
 
-    match model::get_model_id_via_sha256_sync(&hash, &app_state.db) {
-        Some(id) => return Ok(id),
-        None => (),
+    let existing_id = tauri::async_runtime::block_on(async {
+        db::model_db::get_model_id_via_sha256(&app_state.db, &hash)
+            .await
+    })?;
+    
+    if let Some(id) = existing_id {
+        return Ok(id);
     }
 
     let new_extension = convert_extension_to_zip(file_type);
@@ -382,14 +408,22 @@ where
         file_handle.write_all(&file_contents)?;
     }
 
-    let id = model::add_model_sync(
-        name,
-        &hash,
-        &new_extension,
-        file_size as i64,
-        link.as_deref(),
-        &app_state.db,
-    );
+    let blob_id = tauri::async_runtime::block_on(async {
+        db::blobs_db::add_or_create_blob_using_sha256(&app_state.db, &hash, &new_extension, file_size as i64)
+            .await
+    })?;
+
+    let id = tauri::async_runtime::block_on(async {
+        db::model_db::add_model(
+            &app_state.db,
+            &db::model::User::default(),
+            name,
+            blob_id,
+            link.as_deref(),
+            true,
+        )
+        .await
+    })?;
 
     return Ok(id);
 }

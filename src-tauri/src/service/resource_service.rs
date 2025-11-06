@@ -1,4 +1,4 @@
-use crate::db::resource::Resource;
+use db::model::Resource;
 use crate::error::ApplicationError;
 use crate::util::open_folder_in_explorer;
 

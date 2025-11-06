@@ -1,10 +1,10 @@
 use indexmap::IndexMap;
-use itertools::join;
+use itertools::{Itertools, join};
 use sqlx::Row;
-use crate::{audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Label, LabelMeta, User, random_hex_32}, model_db};
+use crate::{DbError, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Label, LabelMeta, User, random_hex_32}, model_db};
 
 
-pub async fn get_labels_min(db: &DbContext) -> Result<Vec<LabelMeta>, sqlx::Error> {
+pub async fn get_labels_min(db: &DbContext) -> Result<Vec<LabelMeta>, DbError> {
     let rows = sqlx::query!("SELECT label_id, label_name, label_color, label_unique_global_id FROM labels")
         .fetch_all(db)
         .await?;
@@ -43,7 +43,7 @@ fn get_effective_labels(
     });
 }
 
-pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : bool) -> Result<Vec<Label>, sqlx::Error> {
+pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : bool) -> Result<Vec<Label>, DbError> {
     let rows = sqlx::query(
     "SELECT 
             parent_labels.label_id  as parent_label_id,
@@ -137,7 +137,7 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
     Ok(label_map.into_values().collect())
 }
 
-pub async fn get_unique_id_from_label_id(db: &DbContext, user: &User, label_id: i64) -> Result<String, sqlx::Error>
+pub async fn get_unique_id_from_label_id(db: &DbContext, user: &User, label_id: i64) -> Result<String, DbError>
 {
     let row = sqlx::query!(
         "SELECT label_unique_global_id FROM labels WHERE label_id = ? AND label_user_id = ?",
@@ -150,7 +150,7 @@ pub async fn get_unique_id_from_label_id(db: &DbContext, user: &User, label_id: 
     Ok(row.label_unique_global_id)
 }
 
-pub async fn get_unique_ids_from_label_ids(db: &DbContext, user: &User, label_ids: &[i64]) -> Result<IndexMap<i64, String>, sqlx::Error>
+pub async fn get_unique_ids_from_label_ids(db: &DbContext, user: &User, label_ids: &[i64]) -> Result<IndexMap<i64, String>, DbError>
 {
     let ids_placeholder = join(label_ids.iter(), ",");
 
@@ -174,12 +174,12 @@ pub async fn get_unique_ids_from_label_ids(db: &DbContext, user: &User, label_id
     Ok(id_map)
 }
 
-pub async fn add_labels_on_models(db: &DbContext, user: &User, label_ids: Vec<i64>, model_ids: Vec<i64>, update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn add_labels_on_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_audit : bool) -> Result<(), DbError>
 {
     for label_id in label_ids {
-        let hex = get_unique_id_from_label_id(db, user, label_id).await?;
+        let hex = get_unique_id_from_label_id(db, user, *label_id).await?;
 
-        for model_id in &model_ids {
+        for model_id in model_ids {
             sqlx::query!(
                 "INSERT INTO models_labels (label_id, model_id) VALUES (?, ?)",
                 label_id,
@@ -197,18 +197,18 @@ pub async fn add_labels_on_models(db: &DbContext, user: &User, label_ids: Vec<i6
     Ok(())
 }
 
-pub async fn remove_labels_from_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn remove_labels_from_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_audit : bool) -> Result<(), DbError>
 {
     let label_global_ids = get_unique_ids_from_label_ids(db, user, label_ids).await?;
 
     if label_global_ids.values().len() != label_ids.len() {
-        return Err(sqlx::Error::RowNotFound);
+        return Err(DbError::RowNotFound);
     }
 
     let model_global_ids = model_db::get_unique_ids_from_model_ids(db, model_ids.to_vec()).await?;
 
     if model_global_ids.values().len() != model_ids.len() {
-        return Err(sqlx::Error::RowNotFound);
+        return Err(DbError::RowNotFound);
     }
 
     let joined_labels = join(label_ids.iter(), ",");
@@ -233,7 +233,36 @@ pub async fn remove_labels_from_models(db: &DbContext, user: &User, label_ids: &
     Ok(())
 }
 
-pub async fn add_label(db: &DbContext, user: &User, name: &str, color: i64, update_audit : bool) -> Result<i64, sqlx::Error>
+pub async fn remove_all_labels_from_models(db: &DbContext, user: &User, model_ids: &[i64], update_audit : bool) -> Result<(), DbError>
+{
+    let models = model_db::get_models_via_ids(db, user, model_ids.iter().cloned().collect()).await?;
+
+    if models.len() != model_ids.len() {
+        return Err(DbError::RowNotFound);
+    }
+
+    let joined_models = join(models.iter().map(|f| f.id), ",");
+
+    let formatted_query = format!(
+        "DELETE FROM models_labels WHERE model_id IN ({})",
+        joined_models
+    );
+
+    sqlx::query(&formatted_query)
+        .execute(db)
+        .await?;
+
+    if update_audit {
+        let label_ids: Vec<String> = models.iter().flat_map(|m| m.labels.iter().map(|l| l.unique_global_id.clone())).unique().collect();
+        for label_id in label_ids {
+            audit_db::add_audit_entry(&db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, label_id)).await?;
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn add_label(db: &DbContext, user: &User, name: &str, color: i64, update_audit : bool) -> Result<i64, DbError>
 {
     let unique_global_id = random_hex_32();
 
@@ -256,7 +285,7 @@ pub async fn add_label(db: &DbContext, user: &User, name: &str, color: i64, upda
     Ok(label_id)
 }
 
-pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, color: i64, update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, color: i64, update_audit : bool) -> Result<(), DbError>
 {
     let unique_global_id = get_unique_id_from_label_id(db, user, label_id).await?;
 
@@ -277,7 +306,7 @@ pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, 
     Ok(())
 }
 
-pub async fn delete_label(db: &DbContext, user: &User, label_id: i64, update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn delete_label(db: &DbContext, user: &User, label_id: i64, update_audit : bool) -> Result<(), DbError>
 {
     let unique_global_id = get_unique_id_from_label_id(db, user, label_id).await?;
 
@@ -296,13 +325,13 @@ pub async fn delete_label(db: &DbContext, user: &User, label_id: i64, update_aud
     Ok(())
 }
 
-pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_audit : bool) -> Result<(), DbError>
 {
     let parent_hex = get_unique_id_from_label_id(db, user, parent_label_id).await?;
     let access_check = get_unique_ids_from_label_ids(db, user, &child_label_ids).await?;
 
     if access_check.values().len() != child_label_ids.len() {
-        return Err(sqlx::Error::RowNotFound);
+        return Err(DbError::RowNotFound);
     }
 
     for child_label_id in &child_label_ids {
@@ -322,7 +351,7 @@ pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i
     Ok(())
 }
 
-pub async fn remove_all_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, update_audit : bool) -> Result<(), sqlx::Error>
+pub async fn remove_all_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, update_audit : bool) -> Result<(), DbError>
 {
     let unique_global_id = get_unique_id_from_label_id(db, user, parent_label_id).await?;
 

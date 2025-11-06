@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 use tauri::AppHandle;
 use tokio::sync::mpsc::error::TryRecvError;
@@ -9,7 +9,7 @@ use crate::{
 };
 
 use super::app_state::AppState;
-use crate::db::model::{self, Model};
+use db::{model::{Model, User}, model_db::{self, ModelFilterOptions}};
 
 use tauri_plugin_shell::{ShellExt, process::Command};
 
@@ -18,7 +18,15 @@ pub async fn generate_all_thumbnails(
     app_handle: &AppHandle,
     overwrite: bool,
 ) -> Result<(), ApplicationError> {
-    let models = model::get_models(&app_state.db).await;
+    let models = model_db::get_models(
+        &app_state.db,
+        &User::default(),
+        ModelFilterOptions {
+            page: 1,
+            page_size: u32::MAX,
+            ..Default::default()
+        },
+    ).await?.items;
 
     let mut import_state = &mut ImportState::new(None, false, false);
 
@@ -51,7 +59,7 @@ pub async fn generate_thumbnails(
     let paths: Vec<String> = models
         .iter()
         .map(|f| {
-            let new_path = model_path.join(format!("{}.{}", f.sha256, f.filetype));
+            let new_path = model_path.join(format!("{}.{}", f.blob.sha256, f.blob.filetype));
             let text_path = new_path.to_str().unwrap().to_string();
 
             text_path

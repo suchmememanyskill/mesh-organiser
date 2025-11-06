@@ -1,6 +1,6 @@
-use crate::{audit_db, db_context::DbContext, model::{ActionType, AuditEntry, EntityType, Resource, ResourceFlags, User, random_hex_32, time_now}};
+use crate::{DbError, audit_db, db_context::DbContext, model::{ActionType, AuditEntry, EntityType, Resource, ResourceFlags, User, random_hex_32, time_now}};
 
-pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<Resource>, sqlx::Error> {
+pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<Resource>, DbError> {
     let rows = sqlx::query!(
         "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id,
             GROUP_CONCAT(models_group.group_id) as \"group_ids: String\"
@@ -34,7 +34,7 @@ pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<Resource>,
     Ok(resources)
 }
 
-pub async fn get_resource_by_id(db: &DbContext, user: &User, id: i64) -> Result<Option<Resource>, sqlx::Error> {
+pub async fn get_resource_by_id(db: &DbContext, user: &User, id: i64) -> Result<Option<Resource>, DbError> {
     let row = sqlx::query!(
         "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id
             FROM resources
@@ -55,12 +55,12 @@ pub async fn get_resource_by_id(db: &DbContext, user: &User, id: i64) -> Result<
             created: row.resource_created,
             unique_global_id: row.resource_unique_global_id,
         })),
-        Err(sqlx::Error::RowNotFound) => Ok(None),
+        Err(DbError::RowNotFound) => Ok(None),
         Err(e) => Err(e),
     }
 }
 
-pub async fn add_resource(db: &DbContext, user: &User, name: &str, update_audit : bool) -> Result<i64, sqlx::Error> {
+pub async fn add_resource(db: &DbContext, user: &User, name: &str, update_audit : bool) -> Result<i64, DbError> {
     let now = time_now();
     let hex = random_hex_32();
 
@@ -82,7 +82,7 @@ pub async fn add_resource(db: &DbContext, user: &User, name: &str, update_audit 
     Ok(result.last_insert_rowid())
 }
 
-pub async fn get_unique_id_from_resource_id(db: &DbContext, user: &User, resource_id: i64) -> Result<String, sqlx::Error> {
+pub async fn get_unique_id_from_resource_id(db: &DbContext, user: &User, resource_id: i64) -> Result<String, DbError> {
     let row = sqlx::query!(
         "SELECT resource_unique_global_id FROM resources WHERE resource_id = ? AND resource_user_id = ?",
         resource_id,
@@ -94,7 +94,7 @@ pub async fn get_unique_id_from_resource_id(db: &DbContext, user: &User, resourc
     Ok(row.resource_unique_global_id)
 }
 
-pub async fn delete_resource(db: &DbContext, user: &User, resource_id: i64, update_audit : bool) -> Result<(), sqlx::Error> {
+pub async fn delete_resource(db: &DbContext, user: &User, resource_id: i64, update_audit : bool) -> Result<(), DbError> {
     let hex = get_unique_id_from_resource_id(db, user, resource_id).await?;
 
     sqlx::query!(
@@ -112,7 +112,7 @@ pub async fn delete_resource(db: &DbContext, user: &User, resource_id: i64, upda
     Ok(())
 }
 
-pub async fn edit_resource(db: &DbContext, user: &User, resource_id: i64, name: &str, flags: ResourceFlags, update_audit : bool) -> Result<(), sqlx::Error> {
+pub async fn edit_resource(db: &DbContext, user: &User, resource_id: i64, name: &str, flags: ResourceFlags, update_audit : bool) -> Result<(), DbError> {
     let bits = flags.bits() as i64;
     let hex = get_unique_id_from_resource_id(db, user, resource_id).await?;
 

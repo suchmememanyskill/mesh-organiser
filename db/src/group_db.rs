@@ -2,7 +2,7 @@ use std::{cmp::Reverse, u32};
 use itertools::join;
 use indexmap::IndexMap;
 
-use crate::{PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
+use crate::{DbError, PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
 
 
 pub enum GroupOrderBy
@@ -66,7 +66,7 @@ fn convert_model_list_to_groups(models : Vec<model::Model>, include_ungrouped_mo
     index_map.into_values().collect()
 }
 
-pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptions) -> Result<PaginatedResponse<ModelGroup>, sqlx::Error> {
+pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptions) -> Result<PaginatedResponse<ModelGroup>, DbError> {
     let filtered_on_labels = options.label_ids.is_some();
     let filtered_on_text = options.text_search.is_some();
 
@@ -117,7 +117,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
     })
 }
 
-async fn get_unique_id_from_group_id(db: &DbContext, group_id: i64) -> Result<String, sqlx::Error>
+async fn get_unique_id_from_group_id(db: &DbContext, group_id: i64) -> Result<String, DbError>
 {
     let row = sqlx::query!(
         "SELECT group_unique_global_id FROM models_group WHERE group_id = ?",
@@ -135,7 +135,7 @@ pub async fn set_group_id_on_models(
     group_id: Option<i64>,
     model_ids: Vec<i64>,
     update_audit: bool,
-) -> Result<(), sqlx::Error> {
+) -> Result<(), DbError> {
     let ids_placeholder = join(model_ids.iter(), ",");
 
     let formatted_query = format!(
@@ -161,7 +161,7 @@ pub async fn set_group_id_on_models(
     Ok(())
 }
 
-pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, update_audit : bool) -> Result<i64, sqlx::Error> {
+pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, update_audit : bool) -> Result<i64, DbError> {
     let now = chrono::Utc::now().to_rfc3339();
     let result = sqlx::query!(
         "INSERT INTO models_group (group_name, group_created, group_user_id) VALUES (?, ?, ?)",
@@ -182,7 +182,7 @@ pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, upd
     Ok(group_id)
 }
 
-pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_resource_id: Option<i64>, group_name: &str, update_audit : bool) -> Result<(), sqlx::Error> {
+pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_resource_id: Option<i64>, group_name: &str, update_audit : bool) -> Result<(), DbError> {
     sqlx::query!(
         "UPDATE models_group SET group_name = ?, group_resource_id = ? WHERE group_id = ? AND group_user_id = ?",
         group_name,
@@ -201,7 +201,7 @@ pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_resou
     Ok(())
 }
 
-pub async fn delete_group(db: &DbContext, user : &User, group_id: i64, update_audit : bool) -> Result<(), sqlx::Error> {
+pub async fn delete_group(db: &DbContext, user : &User, group_id: i64, update_audit : bool) -> Result<(), DbError> {
     let hex = get_unique_id_from_group_id(db, group_id).await?;
 
     sqlx::query!(
@@ -219,7 +219,7 @@ pub async fn delete_group(db: &DbContext, user : &User, group_id: i64, update_au
     Ok(())
 }
 
-pub async fn delete_dead_groups(db: &DbContext) -> Result<(), sqlx::Error> {
+pub async fn delete_dead_groups(db: &DbContext) -> Result<(), DbError> {
     let dead_group_ids = sqlx::query!(
         "SELECT group_id, group_user_id FROM models_group
          WHERE group_id NOT IN (SELECT DISTINCT model_group_id FROM models WHERE model_group_id IS NOT NULL)"
@@ -234,7 +234,7 @@ pub async fn delete_dead_groups(db: &DbContext) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-pub async fn get_group_count(db: &DbContext, user : &User, include_ungrouped_models : bool) -> Result<usize, sqlx::Error> {
+pub async fn get_group_count(db: &DbContext, user : &User, include_ungrouped_models : bool) -> Result<usize, DbError> {
     let mut group_count = 0;
 
     let group_query = sqlx::query!(
