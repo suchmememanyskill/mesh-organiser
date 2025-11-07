@@ -87,3 +87,11 @@ pub async fn remove_dead_groups(state: State<'_, AppState>) -> Result<(), Applic
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn get_group_count(include_ungrouped_models : Option<bool>, state: State<'_, AppState>) -> Result<usize, ApplicationError> {
+    let count = db::group_db::get_group_count(&state.db, &state.get_current_user(), include_ungrouped_models.unwrap_or(false))
+        .await?;
+
+    Ok(count)
+}

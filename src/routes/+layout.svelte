@@ -21,6 +21,8 @@
     import { handleDeepLink, initImportListeners } from "$lib/import.svelte";
     import UpdatePopup from "$lib/components/view/update-popup.svelte";
     import DragSelectedModelsRoot from "$lib/components/view/drag-selected-models-root.svelte";
+    import { configuration, configurationLoaded, configurationMeta } from "$lib/configuration.svelte";
+    import { initApi } from "$lib/api/api";
 
     let { children } = $props();
     let loaded_config = false;
@@ -45,36 +47,9 @@
             });
         });
 
-        await removeDeadGroups();
-        await initConfiguration();
-        await setTheme(c.configuration.theme);
-
-        await initImportListeners();
-        const state = await getInitialState();
-        console.log('initial state:', state);
-        if (state.deep_link_url)
-        {
-            await handleDeepLink({
-                download_url: state.deep_link_url,
-                source_url: null
-            });
-        }
-
-        const webview = await getCurrentWebview();
-        webview.setZoom(c.configuration.zoom_level / 100);
-
-        const debounced_resize = debounce(() => {
-            const zoom_level = Math.round((window.outerWidth) / window.innerWidth * 100);
-            
-            if (zoom_level === c.configuration.zoom_level)
-            {
-                return;
-            }
-
-            c.configuration.zoom_level = zoom_level;
-        }, 100);
-
-        addEventListener("resize", debounced_resize);
+        await initApi();
+        configurationMeta.configurationLoaded = true;
+        await setTheme(configuration.theme);
 
         await updateState();
         loaded_config = true;
@@ -93,16 +68,6 @@
         {
             toast.error("Failed to check for updates");
         }
-    });
-
-    $effect(() => {
-        const modified_configuration = $state.snapshot(c.configuration);
-
-        if (!loaded_config) {
-            return;
-        }
-        
-        on_save_configuration(modified_configuration);
     });
 
     const is_mobile = new IsMobile();

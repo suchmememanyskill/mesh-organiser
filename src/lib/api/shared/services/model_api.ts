@@ -57,9 +57,11 @@ export enum ModelOrderBy {
     SizeDesc,
 }
 
+export const IModelApi = Symbol('IModelApi');
+
 export interface IModelApi {
-    getModels(model_ids : number[]|null, group_ids : number[]|null, label_ids : number[]|null, order_by: ModelOrderBy, text_search: string|null, page : number, page_size : number) : Promise<Model[]>;
-    editModel(model_id: number, name : string, link: string|null, description: string|null, flags: ModelFlags) : Promise<void>;
-    deleteModel(model_id: number) : Promise<void>;
-    getModelCount() : Promise<number>;
+    getModels(model_ids : number[]|null, group_ids : number[]|null, label_ids : number[]|null, order_by: ModelOrderBy, text_search: string|null, page : number, page_size : number, flags: ModelFlags|null) : Promise<Model[]>;
+    editModel(model : Model) : Promise<void>;
+    deleteModel(model : Model) : Promise<void>;
+    getModelCount(flags: ModelFlags|null) : Promise<number>;
 }

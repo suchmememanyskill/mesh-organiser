@@ -6,6 +6,8 @@ export interface ImportModelSettings
     source_url?: string;
 }
 
+export const ITauriImportApi = Symbol('ITauriImportApi');
+
 export interface ITauriImportApi {
     startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<void>;
 }

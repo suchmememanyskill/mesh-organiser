@@ -1,3 +1,5 @@
+import type { Model } from "./model_api";
+
 export class LabelMeta {
     id: number;
     name: string;
@@ -32,12 +34,14 @@ export class Label {
     }
 }
 
+export const ILabelApi = Symbol('ILabelApi');
+
 export interface ILabelApi {
     getLabels(includeUngroupedModels : boolean) : Promise<Label[]>;
     addLabel(name : string, color : string) : Promise<number>;
-    editLabel(label_id : number, name : string, color : string) : Promise<void>;
-    deleteLabel(label_id : number) : Promise<void>;
-    setLabelsOnModel(label_ids : number[], model_id : number) : Promise<void>;
-    addLabelToModels(label_id : number, model_ids : number[]) : Promise<void>;
-    removeLabelFromModels(label_id : number, model_ids : number[]) : Promise<void>;
+    editLabel(label : LabelMeta) : Promise<void>;
+    deleteLabel(label : LabelMeta) : Promise<void>;
+    setLabelsOnModel(Labels : LabelMeta[], model : Model) : Promise<void>;
+    addLabelToModels(label : LabelMeta, models : Model[]) : Promise<void>;
+    removeLabelFromModels(label : LabelMeta, models : Model[]) : Promise<void>;
 }

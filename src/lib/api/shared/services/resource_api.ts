@@ -29,10 +29,12 @@ export class ResourceMeta {
     }
 }
 
+export const IResourceApi = Symbol('IResourceApi');
+
 export interface IResourceApi {
     getResources() : Promise<ResourceMeta[]>;
     addResource(name : string) : Promise<number>;
-    editResource(resource_id : number, name : string, flags : ResourceFlags) : Promise<void>;
-    deleteResource(resource_id : number) : Promise<void>;
-    setResourceOnGroup(resource_id : number|null, group_id : number) : Promise<void>;
+    editResource(resource : ResourceMeta) : Promise<void>;
+    deleteResource(resource : ResourceMeta) : Promise<void>;
+    setResourceOnGroup(resource : ResourceMeta|null, group_id : number) : Promise<void>;
 }

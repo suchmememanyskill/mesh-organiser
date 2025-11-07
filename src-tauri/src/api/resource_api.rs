@@ -83,8 +83,8 @@ pub async fn open_resource_folder(
 
 #[tauri::command]
 pub async fn set_resource_on_group(
-    group_id: i64,
     resource_id: Option<i64>,
+    group_id: i64,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     resource_db::set_resource_on_group(&state.db, &state.get_current_user(), resource_id, group_id, true)

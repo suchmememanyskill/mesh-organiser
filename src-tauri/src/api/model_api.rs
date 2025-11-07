@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use db::model::{ModelFlags, User};
-use db::model_db::{self, ModelOrderBy};
+use db::model_db::{self, ModelFilterOptions, ModelOrderBy};
 use tauri::{AppHandle, State};
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
@@ -65,15 +65,17 @@ pub async fn get_models(
     label_ids: Option<Vec<i64>>,
     order_by: Option<String>,
     text_search: Option<String>,
+    model_flags: Option<ModelFlags>,
     page: u32,
     page_size: u32,
     state: State<'_, AppState>
 ) -> Result<Vec<db::model::Model>, ApplicationError> {
-    let models = db::model_db::get_models(&state.db, &state.get_current_user(), db::model_db::ModelFilterOptions {
+    let models = model_db::get_models(&state.db, &state.get_current_user(), ModelFilterOptions {
         model_ids,
         group_ids,
         label_ids,
         order_by: order_by.map(|s| ModelOrderBy::from_str(&s).unwrap_or(ModelOrderBy::AddedDesc)),
+        model_flags,
         text_search,
         page,
         page_size,
@@ -88,7 +90,7 @@ pub async fn edit_model(
     model_name: &str,
     model_url: Option<&str>,
     model_description: Option<&str>,
-    model_flags: ModelFlags,
+    model_flags: Option<ModelFlags>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     db::model_db::edit_model(
@@ -98,7 +100,7 @@ pub async fn edit_model(
         model_name,
         model_url,
         model_description,
-        model_flags,
+        model_flags.unwrap_or(ModelFlags::empty()),
         true,
     )
     .await?;
@@ -136,4 +138,11 @@ pub async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_model_count(flags : Option<ModelFlags>, state: State<'_, AppState>) -> Result<usize, ApplicationError> {
+    let count = db::model_db::get_model_count(&state.db, &state.get_current_user(), flags).await?;
+
+    Ok(count)
 }

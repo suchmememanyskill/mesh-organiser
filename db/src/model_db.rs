@@ -38,6 +38,7 @@ pub struct ModelFilterOptions {
     pub label_ids: Option<Vec<i64>>,
     pub order_by: Option<ModelOrderBy>, 
     pub text_search: Option<String>,
+    pub model_flags: Option<ModelFlags>,
     pub page : u32,
     pub page_size : u32,
 }
@@ -76,6 +77,11 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
     if let Some(label_ids) = options.label_ids
     {
         seperated.push(format!("labels.label_id IN ({})", join(label_ids, ",")));
+    }
+
+    if let Some(model_flags) = options.model_flags
+    {
+        seperated.push(format!("(models.model_flags & {}) = {}", model_flags.bits(), model_flags.bits()));
     }
 
     if let Some(text_search) = options.text_search
@@ -271,13 +277,26 @@ pub async fn get_model_id_via_sha256(db: &DbContext, sha256: &str) -> Result<Opt
     }
 }
 
-pub async fn get_model_count(db: &DbContext, user : &User) -> Result<i64, DbError> {
-    let row = sqlx::query!(
-        "SELECT COUNT(*) as count FROM models WHERE model_user_id = ?",
-        user.id
-    )
-    .fetch_one(db)
-    .await?;
+pub async fn get_model_count(db: &DbContext, user : &User, flags : Option<ModelFlags>) -> Result<usize, DbError> {
+    let count = match flags {
+        Some(f) => {
+            let bits = f.bits() as i64;
+            sqlx::query!(
+                "SELECT COUNT(*) as count FROM models WHERE model_user_id = ? AND (models.model_flags & ?) = ?",
+                user.id,
+                bits,
+                bits
+            )
+            .fetch_one(db)
+            .await?.count
+        },
+        None => sqlx::query!(
+            "SELECT COUNT(*) as count FROM models WHERE model_user_id = ?",
+            user.id
+        )
+        .fetch_one(db)
+        .await?.count
+    };
 
-    Ok(row.count)
+    Ok(count as usize)
 }

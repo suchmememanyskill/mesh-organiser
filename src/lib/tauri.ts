@@ -80,11 +80,6 @@ export async function getInitialState() : Promise<InitialState>
     return await invoke("get_initial_state");
 }
 
-export async function downloadFile(url : string) : Promise<DownloadResult>
-{
-    return await invoke("download_file", { url: url });
-}
-
 export async function openInFolder(models : Model[]) : Promise<void>
 {
     let modelIds = models.map(model => model.id);
@@ -176,25 +171,9 @@ export async function updateImages(overwrite : boolean) : Promise<void>
     await invoke("update_images", { overwrite: overwrite });
 }
 
-export async function importModel(path : string, recursive : boolean, delete_imported : boolean, origin_url : string|null, open_in_slicer: boolean) : Promise<ImportState>
-{
-    return await invoke("add_model", {
-        path: path,
-        recursive : recursive,
-        deleteImported : delete_imported,
-        originUrl : origin_url,
-        openInSlicer: open_in_slicer,
-    });
-}
-
 export async function computeModelFolderSize() : Promise<number>
 {
     return await invoke("compute_model_folder_size");
-}
-
-export async function newWindow(url : string) : Promise<void>
-{
-    await invoke("new_window_with_url", { url: url });
 }
 
 export async function getModelAsBase64(model : Model) : Promise<string>

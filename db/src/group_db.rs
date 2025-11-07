@@ -75,11 +75,10 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
     let models = model_db::get_models(db, user, ModelFilterOptions {
         group_ids: options.group_ids,
         label_ids: options.label_ids,
-        model_ids: None,
-        order_by: None,
         text_search: options.text_search,
         page: 1,
-        page_size: u32::MAX
+        page_size: u32::MAX,
+        ..Default::default()
     }).await?;
 
     let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models);
@@ -90,13 +89,10 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
         let fake_models : Vec<ModelGroup> = groups.into_iter().filter(|f| f.meta.id < 0).collect();
 
         let models = model_db::get_models(db, user, ModelFilterOptions { 
-            model_ids: None, 
             group_ids: Some(group_ids), 
-            label_ids: None, 
-            order_by: None, 
-            text_search: None, 
             page: 1, 
-            page_size: u32::MAX 
+            page_size: u32::MAX,
+            ..Default::default()
         }).await?;
 
         // TODO: Make option to split off non-complete groups into their own groups
@@ -306,12 +302,9 @@ pub async fn get_group_count(db: &DbContext, user : &User, include_ungrouped_mod
 pub async fn get_group_via_id(db: &DbContext, user : &User, group_id: i64) -> Result<Option<ModelGroup>, DbError> {
     let models = model_db::get_models(db, user, ModelFilterOptions {
         group_ids: Some(vec![group_id]),
-        label_ids: None,
-        model_ids: None,
-        order_by: None,
-        text_search: None,
         page: 1,
-        page_size: u32::MAX
+        page_size: u32::MAX,
+        ..Default::default()
     }).await?;
 
     let mut groups = convert_model_list_to_groups(models.items, false);

@@ -1,3 +1,7 @@
+import type { ResourceMeta } from "./resource_api";
+
+export const IResourceFolderApi = Symbol('IResourceFolderApi');
+
 export interface IResourceFolderApi {
-    openResourceFolder(resource_id : number) : Promise<void>;
+    openResourceFolder(resource : ResourceMeta) : Promise<void>;
 }

@@ -312,12 +312,6 @@ export interface AddModelResult
     model_ids: number[];
 }
 
-export interface DownloadResult 
-{
-    path : string;
-    source_uri : string|null;
-}
-
 export enum FileType
 {
     STL = "stl.zip",

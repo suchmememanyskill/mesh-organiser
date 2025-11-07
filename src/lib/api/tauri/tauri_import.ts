@@ -3,9 +3,9 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { ImportModelSettings, ITauriImportApi } from "../shared/services/tauri_import_api";
 import { updateState, c } from "$lib/data.svelte";
 import { ImportStatus, type ImportState } from "$lib/model";
-import { downloadFile, importModel } from "$lib/tauri";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "svelte-sonner";
+import { invoke } from "@tauri-apps/api/core";
 
 interface DeepLinkEmit
 {
@@ -17,6 +17,28 @@ interface DownloadFinishedEvent
 {
     path: string,
     url: string,
+}
+
+export interface DownloadResult 
+{
+    path : string;
+    source_uri : string|null;
+}
+
+async function downloadFile(url : string) : Promise<DownloadResult>
+{
+    return await invoke("download_file", { url: url });
+}
+
+async function importModel(path : string, recursive : boolean, delete_imported : boolean, origin_url : string|null, open_in_slicer: boolean) : Promise<ImportState>
+{
+    return await invoke("add_model", {
+        path: path,
+        recursive : recursive,
+        deleteImported : delete_imported,
+        originUrl : origin_url,
+        openInSlicer: open_in_slicer,
+    });
 }
 
 export class TauriImportApi implements ITauriImportApi {

@@ -562,6 +562,8 @@ pub fn run() {
             api::delete_user,
             api::get_groups,
             api::set_resource_on_group,
+            api::get_group_count,
+            api::get_model_count,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

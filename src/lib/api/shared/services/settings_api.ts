@@ -1,0 +1,114 @@
+
+export type SizeOptionModels = "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
+export const SizeOptionModelsAsList = ["Grid_Small", "Grid_Medium", "Grid_Large", "List_Small", "List_Medium", "List_Large"] as SizeOptionModels[];
+export type OrderOptionModels = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "size-asc" | "size-desc";
+export type OrderOptionGroups = "date-asc" | "date-desc" | "name-asc" | "name-desc";
+
+export interface Configuration {
+    data_path: string;
+    prusa_deep_link: boolean;
+    cura_deep_link: boolean;
+    bambu_deep_link: boolean;
+    orca_deep_link: boolean;
+    elegoo_deep_link: boolean;
+    open_slicer_on_remote_model_import: boolean;
+    show_ungrouped_models_in_groups: boolean;
+    slicer: string|null;
+    focus_after_link_import: boolean;
+    thumbnail_color : string;
+    allow_importing_step : boolean;
+    size_option_models : SizeOptionModels;
+    size_option_groups : SizeOptionModels;
+    show_grouped_count_on_labels: boolean;
+    fallback_3mf_thumbnail: boolean;
+    prefer_3mf_thumbnail: boolean;
+    core_parallelism: number;
+    collapse_sidebar: boolean;
+    zoom_level: number;
+    export_metadata: boolean;
+    show_date_on_list_view: boolean;
+    default_enabled_delete_after_import: boolean;
+    default_enabled_recursive_import: boolean;
+    open_links_in_external_browser: boolean;
+    max_size_model_3mf_preview: number; // in MB
+    max_size_model_stl_preview: number; // in MB
+    max_size_model_obj_preview: number; // in MB
+    allow_importing_gcode: boolean;
+    only_show_single_image_in_groups: boolean;
+    custom_slicer_path : string;
+    group_split_view: "no_split" | "split-left-right" | "split-top-bottom";
+    label_exported_model_as_printed : boolean;
+    theme : string;
+    order_option_models : OrderOptionModels;
+    order_option_groups : OrderOptionGroups;
+    ignore_update : string;
+    show_multiselect_checkboxes : boolean;
+    use_worker_for_model_parsing : boolean;
+    prefer_gcode_thumbnail : boolean;
+}
+
+export function configurationDefault() : Configuration
+{
+    return {
+        data_path: "",
+        prusa_deep_link: false,
+        cura_deep_link: false,
+        bambu_deep_link: false,
+        orca_deep_link: false,
+        elegoo_deep_link: false,
+        open_slicer_on_remote_model_import: false,
+        show_ungrouped_models_in_groups: true,
+        slicer: null,
+        focus_after_link_import: true,
+        thumbnail_color: "#DDDDDD",
+        allow_importing_step : false,
+        size_option_groups : "Grid_Medium",
+        size_option_models : "Grid_Medium",
+        show_grouped_count_on_labels: true,
+        fallback_3mf_thumbnail: true,
+        prefer_3mf_thumbnail: false,
+        core_parallelism: 3,
+        collapse_sidebar: false,
+        zoom_level: 100,
+        export_metadata: false,
+        show_date_on_list_view: true,
+        default_enabled_delete_after_import: false,
+        default_enabled_recursive_import: false,
+        open_links_in_external_browser: true,
+        max_size_model_3mf_preview: 15,
+        max_size_model_stl_preview: 30,
+        max_size_model_obj_preview: 30,
+        allow_importing_gcode: true,
+        only_show_single_image_in_groups: false,
+        custom_slicer_path: "",
+        group_split_view: "no_split",
+        label_exported_model_as_printed: false,
+        theme: "default",
+        order_option_models: "date-desc",
+        order_option_groups: "date-desc",
+        ignore_update: "",
+        show_multiselect_checkboxes: false,
+        use_worker_for_model_parsing: true,
+        prefer_gcode_thumbnail: true,
+    }
+}
+
+export enum SettingSection {
+    ThumbnailGeneration,
+    ModelPreview,
+    ImportExportSettings,
+    DeepLinkSettings,
+    CustomSlicer,
+    Behaviour,
+    WindowZoom,
+    UserInterface,
+    UsersLocal
+}
+
+export const ISettingsApi = Symbol('ISettingsApi');
+
+export interface ISettingsApi {
+    getConfiguration() : Promise<Configuration>;
+    saveConfiguration(config: Configuration) : Promise<void>;
+    availableSections() : SettingSection[];
+}

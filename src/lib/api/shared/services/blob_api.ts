@@ -14,6 +14,9 @@ export class Blob {
     }
 }
 
+export const IBlobApi = Symbol('IBlobApi');
+
 export interface IBlobApi {
-    getBlobBytes(blob_id : number) : Promise<Uint8Array>;
+    getBlobBytes(blob : Blob) : Promise<Uint8Array>;
+    getBlobThumbnailUrl(blob : Blob) : Promise<string>;
 }
