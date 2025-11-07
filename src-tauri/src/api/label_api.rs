@@ -1,11 +1,11 @@
-use db::label_db;
+use db::{label_db, model::Label};
 use tauri::State;
 
 use crate::{error::ApplicationError, service::app_state::AppState};
 
 
 #[tauri::command]
-pub async fn get_labels(include_ungrouped_models: Option<bool>, state: State<'_, AppState>) -> Result<Vec<db::model::Label>, ApplicationError> {
+pub async fn get_labels(include_ungrouped_models: Option<bool>, state: State<'_, AppState>) -> Result<Vec<Label>, ApplicationError> {
     let labels = label_db::get_labels(&state.db, &state.get_current_user(), include_ungrouped_models.unwrap_or(false))
         .await?;
 
@@ -42,11 +42,8 @@ pub async fn set_label_on_models(
     model_ids: Vec<i64>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
-    let _ = label_db::remove_labels_from_models(&state.db, &state.get_current_user(), &[label_id], &model_ids, true)
-        .await?;
-    
-    label_db::add_labels_on_models(&state.db, &state.get_current_user(), &[label_id], &model_ids, true)
-        .await?;
+    label_db::remove_labels_from_models(&state.db, &state.get_current_user(), &[label_id], &model_ids, true).await?;
+    label_db::add_labels_on_models(&state.db, &state.get_current_user(), &[label_id], &model_ids, true).await?;
 
     Ok(())
 }

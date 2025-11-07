@@ -85,8 +85,6 @@ impl AppState {
     }
 
     pub fn write_configuration(&self, new_configuration: &Configuration) -> bool {
-        // TODO: This should have all settings, not just a select few
-        // TODO: We should probably split up settings per section anyway
         let path = PathBuf::from(self.app_data_path.clone());
         let path = path.join("settings.json");
 
@@ -104,22 +102,7 @@ impl AppState {
                 && new_configuration.bambu_deep_link)
             || (configuration.orca_deep_link != new_configuration.orca_deep_link
                 && new_configuration.orca_deep_link);
-
-        configuration.prusa_deep_link = new_configuration.prusa_deep_link;
-        configuration.cura_deep_link = new_configuration.cura_deep_link;
-        configuration.bambu_deep_link = new_configuration.bambu_deep_link;
-        configuration.orca_deep_link = new_configuration.orca_deep_link;
-        configuration.slicer = new_configuration.slicer.clone();
-        configuration.thumbnail_color = new_configuration.thumbnail_color.clone();
-        configuration.allow_importing_step = new_configuration.allow_importing_step;
-        configuration.fallback_3mf_thumbnail = new_configuration.fallback_3mf_thumbnail;
-        configuration.prefer_3mf_thumbnail = new_configuration.prefer_3mf_thumbnail;
-        configuration.core_parallelism = new_configuration.core_parallelism;
-        configuration.export_metadata = new_configuration.export_metadata;
-        configuration.allow_importing_gcode = new_configuration.allow_importing_gcode;
-        configuration.custom_slicer_path = new_configuration.custom_slicer_path.clone();
-        configuration.elegoo_deep_link = new_configuration.elegoo_deep_link;
-        configuration.prefer_gcode_thumbnail = new_configuration.prefer_gcode_thumbnail;
+        *configuration = new_configuration.clone();
 
         deep_link_setting_changed
     }

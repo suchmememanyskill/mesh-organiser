@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use bitflags::bitflags;
 
+use crate::model::ModelGroup;
+
 bitflags! {
     pub struct ResourceFlags: u32 {
         const Completed  = 0b00000001;
@@ -38,11 +40,16 @@ impl<'de> Deserialize<'de> for ResourceFlags {
 }
 
 #[derive(Serialize)]
-pub struct Resource {
+pub struct ResourceMeta {
     pub id: i64,
     pub name: String,
     pub flags: ResourceFlags,
-    pub group_ids: Vec<i64>,
     pub created: String,
     pub unique_global_id: String,
+}
+
+#[derive(Serialize)]
+pub struct Resource {
+    pub meta: ResourceMeta,
+    pub groups: Vec<ModelGroup>,
 }

@@ -1,31 +1,24 @@
-use crate::{DbError, audit_db, db_context::DbContext, model::{ActionType, AuditEntry, EntityType, Resource, ResourceFlags, User, random_hex_32, time_now}};
+use crate::{DbError, audit_db, db_context::DbContext, group_db::{self, GroupFilterOptions, GroupOrderBy}, model::{ActionType, AuditEntry, EntityType, ModelGroup, Resource, ResourceFlags, ResourceMeta, User, random_hex_32, time_now}};
 
-pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<Resource>, DbError> {
+pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<ResourceMeta>, DbError> {
     let rows = sqlx::query!(
-        "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id,
-            GROUP_CONCAT(models_group.group_id) as \"group_ids: String\"
+        "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id
             FROM resources
-            LEFT JOIN models_group ON resources.resource_id = models_group.group_resource_id
             WHERE resources.resource_user_id = ?
-            GROUP BY resources.resource_id
             ORDER BY resources.resource_name ASC",
             user.id
     )
     .fetch_all(db)
     .await?;
 
-    let mut resources: Vec<Resource> = Vec::with_capacity(rows.len());
+    let mut resources: Vec<ResourceMeta> = Vec::with_capacity(rows.len());
 
     for row in rows {
-        resources.push(Resource {
+        resources.push(ResourceMeta {
             id: row.resource_id.unwrap(),
             name: row.resource_name,
             flags: ResourceFlags::from_bits(row.resource_flags as u32)
                 .unwrap_or(ResourceFlags::empty()),
-            group_ids: row.group_ids.and_then(|f| {
-                let ids: Vec<i64> = f.split(",").map(|f| f.parse().unwrap_or_default()).collect();
-                Some(ids)
-            }).unwrap_or_default(),
             created: row.resource_created,
             unique_global_id: row.resource_unique_global_id,
         });
@@ -34,7 +27,27 @@ pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<Resource>,
     Ok(resources)
 }
 
-pub async fn get_resource_by_id(db: &DbContext, user: &User, id: i64) -> Result<Option<Resource>, DbError> {
+pub async fn get_groups_for_resource(db: &DbContext, user: &User, resource_id: i64) -> Result<Vec<ModelGroup>, DbError> {
+    let rows = sqlx::query!(
+        "SELECT models_group.group_id FROM models_group WHERE models_group.group_resource_id = ? AND models_group.group_user_id = ?",
+        resource_id,
+        user.id
+    )
+    .fetch_all(db)
+    .await?;
+
+    let groups = group_db::get_groups(db, user, GroupFilterOptions {
+        group_ids: Some(rows.iter().map(|r| r.group_id.unwrap()).collect()),
+        order_by: Some(GroupOrderBy::NameAsc),
+        page: 1,
+        page_size: u32::MAX,
+        ..Default::default()
+    }).await?;
+
+    Ok(groups.items)
+}
+
+pub async fn get_resource_meta_by_id(db: &DbContext, user: &User, id: i64) -> Result<Option<ResourceMeta>, DbError> {
     let row = sqlx::query!(
         "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id
             FROM resources
@@ -46,12 +59,11 @@ pub async fn get_resource_by_id(db: &DbContext, user: &User, id: i64) -> Result<
     .await;
 
     match row {
-        Ok(row) => Ok(Some(Resource {
+        Ok(row) => Ok(Some(ResourceMeta {
             id: row.resource_id,
             name: row.resource_name,
             flags: ResourceFlags::from_bits(row.resource_flags as u32)
                 .unwrap_or(ResourceFlags::empty()),
-            group_ids: Vec::new(), // TODO: Group IDs are not fetched here
             created: row.resource_created,
             unique_global_id: row.resource_unique_global_id,
         })),
@@ -128,6 +140,42 @@ pub async fn edit_resource(db: &DbContext, user: &User, resource_id: i64, name: 
 
     if update_audit {
         audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Resource, hex)).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn set_resource_on_group(db: &DbContext, user: &User, resource_id: Option<i64>, group_id: i64, update_audit : bool) -> Result<(), DbError> {
+    let group = match group_db::get_group_via_id(db, user, group_id).await? {
+        Some(g) => g,
+        None => {
+            return Err(DbError::RowNotFound);
+        }
+    };
+
+    let hex = match resource_id {
+        Some(rid) => Some(get_unique_id_from_resource_id(db, user, rid).await?),
+        None => None,
+    };
+
+    sqlx::query!(
+        "UPDATE models_group SET group_resource_id = ? WHERE group_id = ? AND group_user_id = ?",
+        resource_id,
+        group_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    if update_audit {
+        if let Some(hex) = group.meta.resource_id {
+            let hex = get_unique_id_from_resource_id(db, user, hex).await?;
+            audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Resource, hex)).await?;
+        }
+
+        if let Some(hex) = hex {
+            audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Resource, hex)).await?;
+        }
     }
 
     Ok(())

@@ -560,6 +560,8 @@ pub fn run() {
             api::add_user,
             api::edit_user,
             api::delete_user,
+            api::get_groups,
+            api::set_resource_on_group,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

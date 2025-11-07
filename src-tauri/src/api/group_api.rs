@@ -72,10 +72,9 @@ pub async fn remove_models_from_group(
 pub async fn edit_group(
     group_id: i64,
     group_name: &str,
-    group_resource_id: Option<i64>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
-    db::group_db::edit_group(&state.db, &state.get_current_user(), group_id, group_resource_id, group_name, true)
+    db::group_db::edit_group(&state.db, &state.get_current_user(), group_id, group_name, true)
         .await?;
 
     Ok(())

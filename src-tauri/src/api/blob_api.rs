@@ -36,6 +36,7 @@ pub async fn get_blob_bytes(
         }
     };
 
+    // Todo: This is not a streamed response. Less efficient than the streaming we did before!
     let bytes = export_service::get_bytes_from_blob(&blob, &state)?;
 
     Ok(Response::new(bytes))

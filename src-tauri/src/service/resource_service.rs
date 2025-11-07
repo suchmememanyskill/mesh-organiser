@@ -1,11 +1,11 @@
-use db::model::{Resource, User};
+use db::model::{Resource, ResourceMeta, User};
 use crate::error::ApplicationError;
 use crate::util::open_folder_in_explorer;
 
 use super::app_state::AppState;
 
 pub async fn open_resource_folder(
-    resource: &Resource,
+    resource: &ResourceMeta,
     user: &User,
     app_state: &AppState,
 ) -> Result<(), ApplicationError> {
@@ -27,7 +27,7 @@ pub async fn open_resource_folder(
 }
 
 pub async fn delete_resource_folder(
-    resource: &Resource,
+    resource: &ResourceMeta,
     user: &User,
     app_state: &AppState,
 ) -> Result<(), ApplicationError> {

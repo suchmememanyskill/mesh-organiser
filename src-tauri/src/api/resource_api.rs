@@ -1,10 +1,10 @@
-use db::{model::{Resource, ResourceFlags}, resource_db};
+use db::{model::{Resource, ResourceFlags, ResourceMeta}, resource_db};
 use tauri::State;
 
 use crate::{error::ApplicationError, service::{app_state::AppState, resource_service}};
 
 #[tauri::command]
-pub async fn get_resources(state: State<'_, AppState>) -> Result<Vec<Resource>, ApplicationError> {
+pub async fn get_resources(state: State<'_, AppState>) -> Result<Vec<ResourceMeta>, ApplicationError> {
     let resources = resource_db::get_resources(&state.db, &state.get_current_user())
         .await?;
 
@@ -41,7 +41,7 @@ pub async fn remove_resource(
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     let user = state.get_current_user();
-    let resource = resource_db::get_resource_by_id(&state.db, &user, resource_id)
+    let resource = resource_db::get_resource_meta_by_id(&state.db, &user, resource_id)
         .await?;
 
     if resource.is_none() {
@@ -65,7 +65,7 @@ pub async fn open_resource_folder(
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
     let user = state.get_current_user();
-    let resource = resource_db::get_resource_by_id(&state.db, &user, resource_id)
+    let resource = resource_db::get_resource_meta_by_id(&state.db, &user, resource_id)
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
@@ -78,5 +78,17 @@ pub async fn open_resource_folder(
     let resource = resource.unwrap();
 
     resource_service::open_resource_folder(&resource, &user, &state).await?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_resource_on_group(
+    group_id: i64,
+    resource_id: Option<i64>,
+    state: State<'_, AppState>,
+) -> Result<(), ApplicationError> {
+    resource_db::set_resource_on_group(&state.db, &state.get_current_user(), resource_id, group_id, true)
+        .await?;
+
     Ok(())
 }

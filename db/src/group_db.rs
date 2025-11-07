@@ -14,6 +14,7 @@ pub enum GroupOrderBy
     NameDesc,
 }
 
+#[derive(Default)]
 pub struct GroupFilterOptions
 {
     pub group_ids: Option<Vec<i64>>,
@@ -225,11 +226,10 @@ pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, upd
     Ok(group_id)
 }
 
-pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_resource_id: Option<i64>, group_name: &str, update_audit : bool) -> Result<(), DbError> {
+pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_name: &str, update_audit : bool) -> Result<(), DbError> {
     sqlx::query!(
-        "UPDATE models_group SET group_name = ?, group_resource_id = ? WHERE group_id = ? AND group_user_id = ?",
+        "UPDATE models_group SET group_name = ? WHERE group_id = ? AND group_user_id = ?",
         group_name,
-        group_resource_id,
         group_id,
         user.id
     )
@@ -301,4 +301,24 @@ pub async fn get_group_count(db: &DbContext, user : &User, include_ungrouped_mod
     }
 
     Ok(group_count)
+}
+
+pub async fn get_group_via_id(db: &DbContext, user : &User, group_id: i64) -> Result<Option<ModelGroup>, DbError> {
+    let models = model_db::get_models(db, user, ModelFilterOptions {
+        group_ids: Some(vec![group_id]),
+        label_ids: None,
+        model_ids: None,
+        order_by: None,
+        text_search: None,
+        page: 1,
+        page_size: u32::MAX
+    }).await?;
+
+    let mut groups = convert_model_list_to_groups(models.items, false);
+
+    if groups.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(groups.remove(0)))
 }
