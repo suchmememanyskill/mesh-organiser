@@ -1,4 +1,3 @@
-import type { deleteModel } from "$lib/tauri";
 import type { Blob } from "./blob_api";
 import type { GroupMeta } from "./group_api";
 import type { LabelMeta } from "./label_api";

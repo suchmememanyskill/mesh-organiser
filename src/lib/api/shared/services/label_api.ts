@@ -44,4 +44,6 @@ export interface ILabelApi {
     setLabelsOnModel(Labels : LabelMeta[], model : Model) : Promise<void>;
     addLabelToModels(label : LabelMeta, models : Model[]) : Promise<void>;
     removeLabelFromModels(label : LabelMeta, models : Model[]) : Promise<void>;
+    setKeywordsOnLabel(label : LabelMeta, keywords : string[]) : Promise<void>;
+    getKeywordsForLabel(label : LabelMeta) : Promise<string[]>;
 }

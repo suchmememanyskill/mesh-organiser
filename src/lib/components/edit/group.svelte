@@ -9,14 +9,10 @@
     import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";
 
-    import type { Group } from "$lib/model";
-
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { ungroup, editGroup, openInSlicer, openInFolder, editModel, addResource, openResourceFolder } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
-    import { data, updateState } from "$lib/data.svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import LinkButton from "$lib/components/view/link-button.svelte";
     import Button from "../ui/button/button.svelte";

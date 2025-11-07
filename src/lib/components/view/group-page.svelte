@@ -1,9 +1,9 @@
 <script lang="ts">
     import ModelGrid from "$lib/components/view/model-grid.svelte";
-    import type { GroupedEntry } from "$lib/model";
     import EditGroup from "$lib/components/edit/group.svelte"
+    import type { Group } from "$lib/api/shared/services/group_api";
 
-    const props: { group: GroupedEntry|undefined|null, initialEditMode?: boolean } = $props();
+    const props: { group: Group|undefined|null, initialEditMode?: boolean } = $props();
     const group = $derived(props.group);
 
 </script>

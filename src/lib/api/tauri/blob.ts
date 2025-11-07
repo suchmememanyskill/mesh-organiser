@@ -3,6 +3,14 @@ import { Blob, IBlobApi } from "../shared/services/blob_api"
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { get } from "svelte/store";
 
+export interface RawBlob {
+    id: number;
+    sha256: string;
+    filetype: string;
+    size: number;
+    added: string;
+}
+
 export class BlobApi implements IBlobApi {
     private appDataDir : string;
 

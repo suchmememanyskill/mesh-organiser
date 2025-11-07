@@ -4,8 +4,6 @@
     import { Label } from "$lib/components/ui/label/index.js";
     import Button from "$lib/components/ui/button/button.svelte";
     import type { ClassValue } from "svelte/elements";
-    import { createLabel } from "$lib/tauri";
-    import { updateState } from "$lib/data.svelte";
 
     function generateRandomColor() {
         return "#" + Math.floor(Math.random() * 0xffffff).toString(16);

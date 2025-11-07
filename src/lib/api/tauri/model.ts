@@ -1,5 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { IModelApi, Model, ModelFlags, ModelOrderBy } from "../shared/services/model_api";
+import { Model, type IModelApi, type ModelFlags, type ModelOrderBy } from "../shared/services/model_api";
+import type { RawBlob } from "./blob";
+import type { RawGroupMeta } from "./group";
+import type { RawLabelMeta } from "./label";
+import { GroupMeta } from "../shared/services/group_api";
+import { LabelMeta } from "../shared/services/label_api";
+import { Blob } from "../shared/services/blob_api";
 
 function convertModelFlagsToRaw(flags : ModelFlags|null) : string[]|null
 {
@@ -26,9 +32,21 @@ function convertModelFlagsToRaw(flags : ModelFlags|null) : string[]|null
     return raw_flags;
 }
 
+export interface RawModel {
+    id: number;
+    name: string;
+    blob: RawBlob;
+    link: string|null;
+    description: string|null;
+    added: string;
+    group: RawGroupMeta|null;
+    labels: RawLabelMeta[];
+    flags: string[];
+}
+
 export class ModelApi implements IModelApi {
     async getModels(model_ids: number[] | null, group_ids: number[] | null, label_ids: number[] | null, order_by: ModelOrderBy, text_search: string | null, page: number, page_size: number, flags: ModelFlags|null): Promise<Model[]> {
-        return await invoke("get_models", {
+        let models = await invoke<RawModel[]>("get_models", {
             modelIds: model_ids,
             groupIds: group_ids,
             labelIds: label_ids,
@@ -37,7 +55,33 @@ export class ModelApi implements IModelApi {
             modelFlags: convertModelFlagsToRaw(flags),
             page: page,
             pageSize: page_size,
-        })
+        });
+
+        return models.map(model => new Model(
+            model.id,
+            model.name,
+            new Blob(
+                model.blob.id,
+                model.blob.sha256,
+                model.blob.filetype,
+                model.blob.size,
+                model.blob.added
+            ),
+            model.link,
+            model.description,
+            model.added,
+            model.group ? new GroupMeta(
+                model.group.id,
+                model.group.name,
+                model.group.created
+            ) : null,
+            model.labels.map(label => new LabelMeta(
+                label.id,
+                label.name,
+                label.color
+            )),
+            model.flags
+        ));
     }
 
     async editModel(model: Model): Promise<void> {

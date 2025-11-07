@@ -1,5 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { IResourceApi, ResourceFlags, ResourceMeta } from "../shared/services/resource_api";
+import { ResourceMeta, type IResourceApi, type ResourceFlags } from "../shared/services/resource_api";
+
+export interface RawResourceMeta {
+    id : number;
+    name : string;
+    flags : string[];
+    created: string;
+}
 
 function convertResourceFlagsToRaw(flags : ResourceFlags) : string[]
 {
@@ -15,7 +22,13 @@ function convertResourceFlagsToRaw(flags : ResourceFlags) : string[]
 
 export class ResourceApi implements IResourceApi {
     async getResources(): Promise<ResourceMeta[]> {
-        return await invoke("get_resources");
+        let raw = await invoke<RawResourceMeta[]>("get_resources");
+        return raw.map(resource => new ResourceMeta(
+            resource.id,
+            resource.name,
+            resource.flags,
+            resource.created,
+        ));
     }
 
     async addResource(name: string): Promise<number> {

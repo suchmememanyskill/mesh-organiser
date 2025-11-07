@@ -1,11 +1,11 @@
 import { getFileFromUrl, globalImportSettings, importState, navigateToImportPage, resetImportState } from "$lib/import.svelte";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { ImportModelSettings, ITauriImportApi } from "../shared/services/tauri_import_api";
-import { updateState, c } from "$lib/data.svelte";
-import { ImportStatus, type ImportState } from "$lib/model";
+import { ImportStatus, type ImportModelSettings, type ImportState, type ITauriImportApi } from "../shared/services/tauri_import_api";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "svelte-sonner";
 import { invoke } from "@tauri-apps/api/core";
+import { updateSidebarState } from "$lib/sidebar_data.svelte";
+import { configuration } from "$lib/configuration.svelte";
 
 interface DeepLinkEmit
 {
@@ -89,7 +89,7 @@ export class TauriImportApi implements ITauriImportApi {
             }
         }
 
-        await updateState();
+        await updateSidebarState();
         console.log("Finished importing models:", importState);
         importState.status = ImportStatus.Finished;
     };
@@ -143,8 +143,8 @@ export class TauriImportApi implements ITauriImportApi {
         this.eventListeners.push(await listen<DownloadFinishedEvent>('download-finished', async (event) => await this.handleBuiltInBrowserDownloadFinished(event.payload)));
         this.eventListeners.push(await listen("tauri://drag-drop", async (event) => await this.handleDragDropEvent(event)));
 
-        globalImportSettings.delete_after_import = c.configuration.default_enabled_delete_after_import;
-        globalImportSettings.recursive = c.configuration.default_enabled_recursive_import;
+        globalImportSettings.delete_after_import = configuration.default_enabled_delete_after_import;
+        globalImportSettings.recursive = configuration.default_enabled_recursive_import;
     };
 
     async focusWindow() : Promise<void>
@@ -160,7 +160,7 @@ export class TauriImportApi implements ITauriImportApi {
         // No await, don't want to block on this
         this.startImportProcess([download_result.path], {
             source_url: source_uri ?? undefined,
-            direct_open_in_slicer: c.configuration.open_slicer_on_remote_model_import,
+            direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
         });
         navigateToImportPage();
     }
@@ -169,7 +169,7 @@ export class TauriImportApi implements ITauriImportApi {
     {
         let display_url = event.download_url;
 
-        if (c.configuration.focus_after_link_import)
+        if (configuration.focus_after_link_import)
         {
             await this.focusWindow();
         }
@@ -205,7 +205,7 @@ export class TauriImportApi implements ITauriImportApi {
         // No await, don't want to block on this
         this.startImportProcess([event.path], {
             source_url: event.url,
-            direct_open_in_slicer: c.configuration.open_slicer_on_remote_model_import,
+            direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
         });
         navigateToImportPage();
     }

@@ -22,6 +22,7 @@ import { configuration } from "$lib/configuration.svelte";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { debounce } from "$lib/utils";
+import { DefaultSidebarStateApi, ISidebarStateApi } from "../shared/services/sidebar_state_api";
 
 interface InitialState
 {
@@ -49,6 +50,7 @@ export async function initTauriLocalApis() : Promise<void> {
     let resource = new ResourceApi();
     let settings = new SettingsApi();
     let tauriImport = new TauriImportApi();
+    let sidebarApi = new DefaultSidebarStateApi();
 
     // This should probably happen on the rust side
     await invoke("remove_dead_groups", {});
@@ -92,4 +94,5 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(IResourceApi, resource);
     container.addSingleton(ISettingsApi, settings);
     container.addSingleton(ITauriImportApi, tauriImport);
+    container.addSingleton(ISidebarStateApi, sidebarApi);
 }
