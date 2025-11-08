@@ -1,12 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Group, GroupMeta, type GroupOrderBy, type IGroupApi } from "../shared/services/group_api";
 import { Model } from "../shared/services/model_api";
-import type { RawLabelMeta } from "./label";
-import type { RawModel } from "./model";
-import type { RawResourceMeta } from "./resource";
+import { parseRawLabelMeta, type RawLabelMeta } from "./label";
+import { parseRawModel, type RawModel } from "./model";
+import { parseRawResourceMeta, type RawResourceMeta } from "./resource";
 import { Blob } from "../shared/services/blob_api";
 import { LabelMeta } from "../shared/services/label_api";
 import { ResourceMeta } from "../shared/services/resource_api";
+import { parse } from "svelte/compiler";
 
 export interface RawGroupMeta {
     id: number;
@@ -15,12 +16,30 @@ export interface RawGroupMeta {
     resource_id: number|null;
 }
 
+export function parseRawGroupMeta(raw: RawGroupMeta): GroupMeta {
+    return new GroupMeta(
+        raw.id,
+        raw.name,
+        raw.created,
+    );
+}
+
 export interface RawGroup {
     meta: RawGroupMeta;
     models: RawModel[];
     labels: RawLabelMeta[];
     resource: RawResourceMeta|null;
 }
+
+export function parseRawGroup(raw: RawGroup): Group {
+    return new Group(
+        parseRawGroupMeta(raw.meta),
+        raw.models.map(model => parseRawModel(model)),
+        raw.labels.map(label => parseRawLabelMeta(label)),
+        raw.resource ? parseRawResourceMeta(raw.resource) : null,
+    );
+}
+        
 
 export class GroupApi implements IGroupApi {
     async getGroups(group_ids: number[] | null, label_ids: number[] | null, order_by: GroupOrderBy, text_search: string | null, page: number, page_size: number, include_ungrouped_models: boolean): Promise<Group[]> {
@@ -34,53 +53,12 @@ export class GroupApi implements IGroupApi {
             includeUngroupedModels: include_ungrouped_models,
         });
 
-        return groups.map(group => new Group(
-            new GroupMeta(
-                group.meta.id,
-                group.meta.name,
-                group.meta.created,
-            ),
-            group.models.map(model => new Model(
-                model.id,
-                model.name,
-                new Blob(
-                    model.blob.id,
-                    model.blob.sha256,
-                    model.blob.filetype,
-                    model.blob.size,
-                    model.blob.added
-                ),
-                model.link,
-                model.description,
-                model.added,
-                model.group ? new GroupMeta(
-                    model.group.id,
-                    model.group.name,
-                    model.group.created,
-                ) : null,
-                model.labels.map(label => new LabelMeta(
-                    label.id,
-                    label.name,
-                    label.color
-                )),
-                model.flags
-            )),
-            group.labels.map(label => new LabelMeta(
-                label.id,
-                label.name,
-                label.color
-            )),
-            group.resource ? new ResourceMeta(
-                group.resource.id,
-                group.resource.name,
-                group.resource.flags,
-                group.resource.created,
-            ) : null,
-        ));
+        return groups.map(group => parseRawGroup(group));
     }
 
-    async addGroup(name: string): Promise<number> {
-        return await invoke("add_group", { group_name: name });
+    async addGroup(name: string): Promise<GroupMeta> {
+        let group = await invoke<RawGroupMeta>("add_group", { group_name: name });
+        return parseRawGroupMeta(group);
     }
 
     async editGroup(group: GroupMeta): Promise<void> {

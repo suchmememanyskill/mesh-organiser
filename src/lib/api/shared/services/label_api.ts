@@ -38,7 +38,7 @@ export const ILabelApi = Symbol('ILabelApi');
 
 export interface ILabelApi {
     getLabels(includeUngroupedModels : boolean) : Promise<Label[]>;
-    addLabel(name : string, color : string) : Promise<number>;
+    addLabel(name : string, color : string) : Promise<LabelMeta>;
     editLabel(label : LabelMeta) : Promise<void>;
     deleteLabel(label : LabelMeta) : Promise<void>;
     setLabelsOnModel(Labels : LabelMeta[], model : Model) : Promise<void>;
@@ -46,4 +46,6 @@ export interface ILabelApi {
     removeLabelFromModels(label : LabelMeta, models : Model[]) : Promise<void>;
     setKeywordsOnLabel(label : LabelMeta, keywords : string[]) : Promise<void>;
     getKeywordsForLabel(label : LabelMeta) : Promise<string[]>;
+    setChildrenOnLabel(label : LabelMeta, children : LabelMeta[]) : Promise<void>;
+    removeChildrenFromLabel(label : LabelMeta, children : LabelMeta[]) : Promise<void>;
 }

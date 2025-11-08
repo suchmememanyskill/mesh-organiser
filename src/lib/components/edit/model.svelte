@@ -9,7 +9,6 @@
     import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";
 
-    import type { Model, Group, ModelWithGroup } from "$lib/model";
     import FolderOpen from "@lucide/svelte/icons/folder-open";
     import Slice from "@lucide/svelte/icons/slice";
     import ListCheck from "@lucide/svelte/icons/list-check";
@@ -18,10 +17,8 @@
     import * as HoverCard from "$lib/components/ui/hover-card/index.js";
     import { debounce, isModelSlicable, fileTypeToColor, fileTypeToDisplayName } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editModel, deleteModel, setLabelsOnModel, openInSlicer, openInFolder, removeModelsFromGroup, addEmptyGroup, addModelsToGroup } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
-    import { updateState, data, c } from "$lib/data.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import Button, { buttonVariants } from "../ui/button/button.svelte";
@@ -41,28 +38,34 @@
     import Box from "@lucide/svelte/icons/box";
     import LabelSelect from "$lib/components/view/label-select.svelte";
     import { goto } from "$app/navigation";
+    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
+    import { configuration } from "$lib/configuration.svelte";
+    import { IGroupApi } from "$lib/api/shared/services/group_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { ILabelApi, LabelMeta } from "$lib/api/shared/services/label_api";
+    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { ILocalApi } from "$lib/api/shared/services/local_api";
     
-    const props: { model: Model|ModelWithGroup; class?: ClassValue, initialEditMode? : boolean } = $props();
+    const props: { model: Model; class?: ClassValue, initialEditMode? : boolean } = $props();
     let deleted = $derived({ deleted: !props.model });
 
     let model : Model = $derived(props.model);
-    let load3dPreview = $derived(loadModelAutomatically($state.snapshot(c.configuration), model));
+    let load3dPreview = $derived(loadModelAutomatically($state.snapshot(configuration), model));
     let editMode = $state(props.initialEditMode ?? false);
+    let group = $derived(model.group);
+    let availableLabels = $derived(sidebarState.labels.map(l => l.meta));
 
-    let group : Group | null = $derived.by(() => {
-        if (instanceOfModelWithGroup(props.model)) {
-            return props.model.group ?? null;
-        }
-
-        return null;
-    });
+    const modelApi = getContainer().require<IModelApi>(IModelApi);
+    const groupApi = getContainer().require<IGroupApi>(IGroupApi);
+    const labelApi = getContainer().require<ILabelApi>(ILabelApi);
 
     const save_model_debounced = debounce(async (edited_model: Model) => {
         console.log("Saving model");
         console.log(edited_model);
-        await editModel(edited_model);
-        await setLabelsOnModel(edited_model.labels, edited_model);
-        await updateState();
+        await modelApi.editModel(edited_model);
+        await labelApi.setLabelsOnModel(edited_model.labels, edited_model);
+        await updateSidebarState();
     }, 1000);
 
     async function onUpdateModel()
@@ -77,42 +80,47 @@
     }
 
     async function onDelete() {
-        await deleteModel(model);
-        await updateState();
+        await modelApi.deleteModel(model);
+        await updateSidebarState();
         deleted.deleted = true;
     }
 
     async function onOpenInSlicer()
     {
-        if (c.configuration.label_exported_model_as_printed && !model.flags.printed) {
+        if (configuration.label_exported_model_as_printed && !model.flags.printed) {
             model.flags.printed = true;
             await onUpdateModel();
         }
 
-        await openInSlicer([model]);
+        let slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
+
+        if (slicerApi){
+            await slicerApi.openInSlicer([model]);
+        }
     }
 
     async function onOpenInFolder()
     {
-        if (c.configuration.label_exported_model_as_printed && !model.flags.printed) {
+        if (configuration.label_exported_model_as_printed && !model.flags.printed) {
             model.flags.printed = true;
             await onUpdateModel();
         }
 
-        await openInFolder([model]);
+        let localApi = getContainer().optional<ILocalApi>(ILocalApi);
+
+        if (localApi){
+            await localApi.openInFolder([model]);
+        }
     }
 
     async function onUngroup()
     {
         if (group) 
         {
-            await removeModelsFromGroup([model], group);
-            if (instanceOfModelWithGroup(model)) {
-                model.group = undefined;
-            }
-        } 
-
-        await updateState();
+            await groupApi.removeModelsFromGroup([model]);
+            model.group = null;
+            await updateSidebarState();
+        }
     }
 
     async function createGroup()
@@ -122,9 +130,10 @@
             return;
         }
 
-        const newGroup = await addEmptyGroup(model.name);
-        await addModelsToGroup([model], newGroup);
-        await updateState();
+        const newGroup = await groupApi.addGroup(model.name);
+        await groupApi.addModelsToGroup(newGroup, [model]);
+        model.group = newGroup;
+        await updateSidebarState();
         
         goto("/group/" + newGroup.id);
     }
@@ -146,7 +155,7 @@
             </div>
 
             <div class="absolute left-7 h-9 m-0 flex flex-row">
-                <Badge class="h-fit my-auto text-sm {fileTypeToColor(model.filetype)}">{fileTypeToDisplayName(model.filetype)}</Badge>
+                <Badge class="h-fit my-auto text-sm {fileTypeToColor(model.blob.filetype)}">{fileTypeToDisplayName(model.blob.filetype)}</Badge>
             </div>
 
             <div class="absolute right-0 mr-6 flex flex-row gap-2 h-9">
@@ -243,7 +252,7 @@
                     </div>
                     <div class="text-right space-y-1">
                         <div>{model.added.toLocaleDateString()}</div>
-                        <div>{toReadableSize(model.size)}</div>
+                        <div>{toReadableSize(model.blob.size)}</div>
                         {#if group}
                             <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
                         {:else}
@@ -301,7 +310,7 @@
 
         <div class="flex flex-col space-y-1.5">
             <Label>Labels</Label>
-            <LabelSelect onchange={onUpdateModel} availableLabels={data.labels.map(x => x.label)} bind:value={model.labels} />
+            <LabelSelect onchange={onUpdateModel} availableLabels={availableLabels} bind:value={model.labels} />
         </div>
         <div class="flex flex-col space-y-1.5">
             <Label for="description">Description</Label>

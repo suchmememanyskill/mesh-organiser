@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use db::{group_db::GroupOrderBy, model::{ModelGroup, User}};
+use db::{group_db::GroupOrderBy, model::{ModelGroup, ModelGroupMeta, User, random_hex_32, time_now}};
 use tauri::State;
 
 use crate::{error::ApplicationError, service::app_state::AppState};
@@ -38,11 +38,17 @@ pub async fn ungroup(group_id: i64, state: State<'_, AppState>) -> Result<(), Ap
 }
 
 #[tauri::command]
-pub async fn add_group(group_name: &str, state: State<'_, AppState>) -> Result<i64, ApplicationError> {
+pub async fn add_group(group_name: &str, state: State<'_, AppState>) -> Result<ModelGroupMeta, ApplicationError> {
     let id = db::group_db::add_empty_group(&state.db, &state.get_current_user(), group_name, true)
         .await?;
 
-    Ok(id)
+    Ok(ModelGroupMeta {
+        id,
+        name: group_name.to_string(),
+        created: time_now(),
+        unique_global_id: random_hex_32(),
+        resource_id: None,
+    })
 }
 
 #[tauri::command]

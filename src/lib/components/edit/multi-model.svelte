@@ -13,23 +13,10 @@
     import LabelSelect from "$lib/components/view/label-select.svelte";
     import { countWriter } from "$lib/utils";
 
-    import type { Model, Label as LLabel, Group as GGroup, ModelWithGroup, LabelMin } from "$lib/model";
     import { goto } from "$app/navigation";
 
     import type { ClassValue } from "svelte/elements";
-    import {
-        deleteModel,
-        openInSlicer,
-        openInFolder,
-        setLabelOnModels,
-        removeLabelFromModels,
-        addEmptyGroup,
-        addModelsToGroup,
-        removeModelsFromGroup,
-        editModel,
-    } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-    import { updateState, data } from "$lib/data.svelte";
     import {
         buttonVariants,
         Button,
@@ -48,16 +35,19 @@
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Component from "@lucide/svelte/icons/component";
     import Boxes from "@lucide/svelte/icons/boxes";
+    import type { Model } from "$lib/api/shared/services/model_api";
+    import { sidebarState } from "$lib/sidebar_data.svelte";
 
     const props: { models: Model[]; class?: ClassValue } = $props();
 
-    const models: ModelWithGroup[] = $derived(props.models);
+    const models = $derived(props.models);
     const printed = $derived(models.every((x) => x.flags.printed));
     const favorited = $derived(models.every((x) => x.flags.favorite));
     const allModelGroups = $derived(models.map((x) => x.group).filter((g) => !!g).filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i));
     const availableGroups = $derived(allModelGroups.filter((g) => !models.every((x) => x.group?.id === g.id)));
-
-    let availableLabels = $derived(
+    
+    let availableLabels = $derived(sidebarState.labels.map(l => l.meta));
+    let appliedLabels = $derived(
         models
             .map((x) => x.labels)
             .flat()
@@ -164,9 +154,9 @@
 
     async function updateLabels(labels: LabelMin[]) {
         const added_label = labels.find(
-            (x) => !availableLabels.some((l) => l.id === x.id),
+            (x) => !appliedLabels.some((l) => l.id === x.id),
         );
-        const deleted_label = availableLabels.find(
+        const deleted_label = appliedLabels.find(
             (x) => !labels.some((l) => l.id === x.id),
         );
 
@@ -268,8 +258,8 @@
             <div class="flex flex-col gap-4">
                 <Label>Add/Remove labels</Label>
                 
-                <LabelSelect availableLabels={data.labels.map(x => x.label)} bind:value={
-                    () => availableLabels,
+                <LabelSelect appliedLabels={data.labels.map(x => x.label)} bind:value={
+                    () => appliedLabels,
                     (val) => updateLabels(val)
                 } />
             </div>

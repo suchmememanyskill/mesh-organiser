@@ -11,6 +11,16 @@ export interface RawBlob {
     added: string;
 }
 
+export function parseRawBlob(raw: RawBlob) : Blob {
+    return new Blob(
+        raw.id,
+        raw.sha256,
+        raw.filetype,
+        raw.size,
+        raw.added,
+    );
+}
+
 export class BlobApi implements IBlobApi {
     private appDataDir : string;
 

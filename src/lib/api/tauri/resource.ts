@@ -1,11 +1,22 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ResourceMeta, type IResourceApi, type ResourceFlags } from "../shared/services/resource_api";
+import type { Group } from "../shared/services/group_api";
+import { parseRawGroup, type RawGroup } from "./group";
 
 export interface RawResourceMeta {
     id : number;
     name : string;
     flags : string[];
     created: string;
+}
+
+export function parseRawResourceMeta(raw: RawResourceMeta) : ResourceMeta {
+    return new ResourceMeta(
+        raw.id,
+        raw.name,
+        raw.flags,
+        raw.created,
+    );
 }
 
 function convertResourceFlagsToRaw(flags : ResourceFlags) : string[]
@@ -23,16 +34,12 @@ function convertResourceFlagsToRaw(flags : ResourceFlags) : string[]
 export class ResourceApi implements IResourceApi {
     async getResources(): Promise<ResourceMeta[]> {
         let raw = await invoke<RawResourceMeta[]>("get_resources");
-        return raw.map(resource => new ResourceMeta(
-            resource.id,
-            resource.name,
-            resource.flags,
-            resource.created,
-        ));
+        return raw.map(resource => parseRawResourceMeta(resource));
     }
 
-    async addResource(name: string): Promise<number> {
-        return await invoke("add_resource", { resourceName: name });
+    async addResource(name: string): Promise<ResourceMeta> {
+        let resource = await invoke<RawResourceMeta>("add_resource", { resourceName: name });;
+        return parseRawResourceMeta(resource);
     }
     
     async editResource(resource: ResourceMeta): Promise<void> {
@@ -45,5 +52,10 @@ export class ResourceApi implements IResourceApi {
 
     async setResourceOnGroup(resource: ResourceMeta | null, group_id: number): Promise<void> {
         return await invoke("set_resource_on_group", { resourceId: resource ? resource.id : null, groupId: group_id });
+    }
+
+    async getGroupsForResource(resource: ResourceMeta): Promise<Group[]> {
+        let groups = await invoke<RawGroup[]>("get_groups_for_resource", { resourceId: resource.id });
+        return groups.map(group => parseRawGroup(group));
     }
 }

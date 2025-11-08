@@ -1,3 +1,5 @@
+import type { Group } from "./group_api";
+
 export interface ResourceFlags {
     completed: boolean;
 }
@@ -33,8 +35,9 @@ export const IResourceApi = Symbol('IResourceApi');
 
 export interface IResourceApi {
     getResources() : Promise<ResourceMeta[]>;
-    addResource(name : string) : Promise<number>;
+    addResource(name : string) : Promise<ResourceMeta>;
     editResource(resource : ResourceMeta) : Promise<void>;
     deleteResource(resource : ResourceMeta) : Promise<void>;
     setResourceOnGroup(resource : ResourceMeta|null, group_id : number) : Promise<void>;
+    getGroupsForResource(resource : ResourceMeta) : Promise<Group[]>;
 }

@@ -1,4 +1,4 @@
-use db::{model::{Resource, ResourceFlags, ResourceMeta}, resource_db};
+use db::{model::{ModelGroup, Resource, ResourceFlags, ResourceMeta, random_hex_32, time_now}, resource_db};
 use tauri::State;
 
 use crate::{error::ApplicationError, service::{app_state::AppState, resource_service}};
@@ -15,11 +15,17 @@ pub async fn get_resources(state: State<'_, AppState>) -> Result<Vec<ResourceMet
 pub async fn add_resource(
     resource_name: &str,
     state: State<'_, AppState>,
-) -> Result<i64, ApplicationError> {
+) -> Result<ResourceMeta, ApplicationError> {
     let id = resource_db::add_resource(&state.db, &state.get_current_user(), resource_name, true)
         .await?;
 
-    Ok(id)
+    Ok(ResourceMeta {
+        id: id,
+        name: resource_name.to_string(),
+        flags: ResourceFlags::empty(),
+        created: time_now(),
+        unique_global_id: random_hex_32(),
+    })
 }
 
 #[tauri::command]
@@ -91,4 +97,15 @@ pub async fn set_resource_on_group(
         .await?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_groups_for_resource(
+    resource_id: i64,
+    state: State<'_, AppState>,
+) -> Result<Vec<ModelGroup>, ApplicationError> {
+    let groups = resource_db::get_groups_for_resource(&state.db, &state.get_current_user(), resource_id)
+        .await?;
+
+    Ok(groups)
 }

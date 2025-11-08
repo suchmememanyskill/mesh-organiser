@@ -1,4 +1,4 @@
-use db::{label_db, model::Label};
+use db::{label_db, model::{Label, LabelMeta, random_hex_32}};
 use tauri::State;
 
 use crate::{error::ApplicationError, service::app_state::AppState};
@@ -17,11 +17,16 @@ pub async fn add_label(
     label_name: &str,
     label_color: i64,
     state: State<'_, AppState>,
-) -> Result<i64, ApplicationError> {
+) -> Result<LabelMeta, ApplicationError> {
     let id = label_db::add_label(&state.db, &state.get_current_user(), label_name, label_color, true)
         .await?;
 
-    Ok(id)
+    Ok(LabelMeta {
+        id: id,
+        name: label_name.to_string(),
+        color: label_color,
+        unique_global_id: random_hex_32(),
+    })
 }
 
 #[tauri::command]
