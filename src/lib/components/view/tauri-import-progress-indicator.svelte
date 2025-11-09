@@ -2,11 +2,11 @@
     import { Progress } from "$lib/components/ui/progress/index.js";
     import { importState } from "$lib/import.svelte";
     import * as Card from "$lib/components/ui/card/index.js";
-    import { ImportStatus } from "$lib/model";
     import FileDown from "@lucide/svelte/icons/file-down";
     import LoaderCircle from "@lucide/svelte/icons/loader-circle";
     import CircleCheck from "@lucide/svelte/icons/circle-check";
     import CircleX from "@lucide/svelte/icons/circle-x";
+    import { ImportStatus } from "$lib/api/shared/services/tauri_import_api";
 
     const state = $derived.by(() => {
         switch (importState.status) {

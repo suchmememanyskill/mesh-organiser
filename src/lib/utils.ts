@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export const debounce = (callback: any, wait: number) => {
+export const debounce = (callback: any, timeMs: number) => {
     let timeoutId: any = null;
 
     return (...args: any[]) => {
@@ -14,7 +14,7 @@ export const debounce = (callback: any, wait: number) => {
 
         timeoutId = window.setTimeout(() => {
             callback.apply(null, args);
-        }, wait);
+        }, timeMs);
     };
 }
 

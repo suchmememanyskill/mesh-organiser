@@ -28,7 +28,11 @@
     import { IResourceFolderApi } from "$lib/api/shared/services/resource_folder_api";
     import { onMount } from "svelte";
 
-    const props: { group: Group; class?: ClassValue; settingsVertical?: boolean } = $props();
+    interface Function {
+        (): void;
+    }
+
+    const props: { group: Group; class?: ClassValue; settingsVertical?: boolean, onDelete?: Function } = $props();
     const tracked_group = $derived(props.group);
     let deleted = $state(false);
     let editMode = $state(!props.settingsVertical);
@@ -56,6 +60,7 @@
     async function onUngroup() {
         await groupApi.deleteGroup(tracked_group.meta);
         await updateSidebarState();
+        props.onDelete?.();
         deleted = true;
     }
 

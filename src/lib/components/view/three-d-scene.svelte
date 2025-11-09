@@ -2,8 +2,8 @@
     import { T, useThrelte } from '@threlte/core'; 
     import type { BufferGeometry } from 'three';
     import { Gizmo, OrbitControls } from '@threlte/extras'
-    import { c } from '$lib/data.svelte';
     import { onDestroy } from 'svelte';
+    import { configuration } from '$lib/configuration.svelte';
     
     const { scene, renderer } = useThrelte();
 
@@ -42,6 +42,6 @@
     <T.Mesh>
         <T is={props.geometry} /> 
         <!-- Use same shader as mesh-thumbnail -->
-        <T.MeshMatcapMaterial color={$state.snapshot(c.configuration.thumbnail_color)} />
+        <T.MeshMatcapMaterial color={$state.snapshot(configuration.thumbnail_color)} />
     </T.Mesh>
 {/if}

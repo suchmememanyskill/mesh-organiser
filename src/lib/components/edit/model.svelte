@@ -47,7 +47,11 @@
     import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
     import { ILocalApi } from "$lib/api/shared/services/local_api";
     
-    const props: { model: Model; class?: ClassValue, initialEditMode? : boolean } = $props();
+    interface Function {
+        (): void;
+    }
+
+    const props: { model: Model; class?: ClassValue, initialEditMode? : boolean, onDelete?: Function } = $props();
     let deleted = $derived({ deleted: !props.model });
 
     let model : Model = $derived(props.model);
@@ -83,6 +87,7 @@
         await modelApi.deleteModel(model);
         await updateSidebarState();
         deleted.deleted = true;
+        props.onDelete?.();
     }
 
     async function onOpenInSlicer()

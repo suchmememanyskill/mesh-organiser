@@ -25,7 +25,11 @@
     import { getContainer } from "$lib/api/dependency_injection";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
 
-    const props: { label: LabelClass; class?: ClassValue } = $props();
+    interface Function {
+        (): void;
+    }
+
+    const props: { label: LabelClass; class?: ClassValue, onDelete?: Function } = $props();
     const tracked_label = $derived(props.label);
     const parentId = $derived(page.url.searchParams.get("parentId"));
     let lastId = $state(-1);
@@ -50,6 +54,7 @@
     {
         await labelApi.deleteLabel(tracked_label.meta);
         await updateSidebarState();
+        props.onDelete?.();
 
         if (parentId)
         {

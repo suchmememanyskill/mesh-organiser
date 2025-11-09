@@ -35,10 +35,19 @@
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Component from "@lucide/svelte/icons/component";
     import Boxes from "@lucide/svelte/icons/boxes";
-    import type { Model } from "$lib/api/shared/services/model_api";
-    import { sidebarState } from "$lib/sidebar_data.svelte";
+    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
+    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { ILabelApi, type LabelMeta } from "$lib/api/shared/services/label_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { GroupMeta, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { ILocalApi } from "$lib/api/shared/services/local_api";
 
-    const props: { models: Model[]; class?: ClassValue } = $props();
+    interface Function {
+        (): void;
+    }
+
+    const props: { models: Model[]; class?: ClassValue, onDelete?: Function } = $props();
 
     const models = $derived(props.models);
     const printed = $derived(models.every((x) => x.flags.printed));
@@ -54,12 +63,16 @@
             .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i),
     );
 
-    async function setLabelOnAllModels(label: LabelMin) {
+    let modelApi = getContainer().require<IModelApi>(IModelApi);
+    let groupApi = getContainer().require<IGroupApi>(IGroupApi);
+    let labelApi = getContainer().require<ILabelApi>(ILabelApi);
+
+    async function setLabelOnAllModels(label: LabelMeta) {
         const affected_models = models;
 
         affected_models.forEach((x) => x.labels.push(label));
 
-        let promise =  setLabelOnModels(affected_models, label);
+        let promise = labelApi.addLabelToModels(label,$state.snapshot(affected_models));
 
         toast.promise(
             promise,
@@ -72,17 +85,17 @@
         );
 
         await promise;
-        await updateState();
+        await updateSidebarState();
     }
 
-    async function removeLabelFromAllModels(label: LabelMin) {
+    async function removeLabelFromAllModels(label: LabelMeta) {
         const affected_models = models;
 
         affected_models.forEach(
             (x) => (x.labels = x.labels.filter((l) => l.id !== label.id)),
         );
 
-        let promise = removeLabelFromModels(affected_models, label);
+        let promise = labelApi.removeLabelFromModels(label, $state.snapshot(affected_models));
 
         toast.promise(
             promise,
@@ -95,7 +108,7 @@
         );
 
         await promise;
-        await updateState();
+        await updateSidebarState();
     }
 
     async function setPrintedFlagOnAllModels(printed: boolean) 
@@ -109,7 +122,7 @@
     }
 
     // TODO: this is terribly inefficient
-    async function setFlagOnAllModels(action : (m : ModelWithGroup) => void, set : boolean)
+    async function setFlagOnAllModels(action : (m : Model) => void, set : boolean)
     {
         const set_or_unset = set ? "Set" : "Unset";
         const affected_models = models;
@@ -118,7 +131,8 @@
 
         let promise = (async () => {
             for (const model of affected_models) {
-                await editModel(model);
+                // TODO: This might not work in the modern architecture
+                await modelApi.editModel($state.snapshot(model));
             }
         })();
 
@@ -133,14 +147,14 @@
         );
 
         await promise;
-        await updateState();
+        await updateSidebarState();
     }
 
-    async function onAddModelsToGroup(group : GGroup) {
+    async function onAddModelsToGroup(group : GroupMeta) {
         const affected_models = models;
 
-        await addModelsToGroup(affected_models, group);
-        await updateState();
+        await groupApi.addModelsToGroup(group, $state.snapshot(affected_models));
+        await updateSidebarState();
 
         toast.success(`Added ${countWriter("model", affected_models)} to group '${group.name}'`, {
             action : {
@@ -152,7 +166,7 @@
         });
     }
 
-    async function updateLabels(labels: LabelMin[]) {
+    async function updateLabels(labels: LabelMeta[]) {
         const added_label = labels.find(
             (x) => !appliedLabels.some((l) => l.id === x.id),
         );
@@ -168,35 +182,42 @@
     }
 
     async function onOpenInSlicer() {
-        await openInSlicer(models);
+        let slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
+
+        if (slicerApi){
+            await slicerApi.openInSlicer(models);
+        }
     }
 
     async function onOpenInFolder() {
-        await openInFolder(models);
+        let localApi = getContainer().optional<ILocalApi>(ILocalApi);
+
+        if (localApi){
+            await localApi.openInFolder(models);
+        }
     }
 
     async function onNewGroup() {
         const affected_models = models;
 
-        const group = await addEmptyGroup("New group");
+        const newGroup = await groupApi.addGroup("New group");
+        await groupApi.addModelsToGroup(newGroup, affected_models);
 
-        await addModelsToGroup(affected_models, group);
-        await updateState();
+        for (const model of affected_models) {
+            model.group = newGroup;
+        }
 
-        goto("/group/" + group.id);
+        await updateSidebarState();
+
+        goto("/group/" + newGroup.id);
     }
 
     async function onRemoveGroup() {
         let removed = 0;
 
-        for (const model of models) {
-            if (instanceOfModelWithGroup(model) && model.group) {
-                removed++;
-                await removeModelsFromGroup([model], model.group);
-            }
-        }
-
-        await updateState();
+        await groupApi.removeModelsFromGroup(models);
+        removed = models.filter(x => !!x.group).length;
+        await updateSidebarState();
         toast.success(`Ungrouped ${removed} model(s)`);
     }
 
@@ -205,7 +226,7 @@
 
         let promise = Promise.all(
             affected_models.map(async (x) => {
-                await deleteModel(x);
+                await modelApi.deleteModel(x);
             }),
         );
 
@@ -220,7 +241,8 @@
         );
 
         await promise;
-        await updateState();
+        await updateSidebarState();
+        props.onDelete?.();
     }
 </script>
 
@@ -258,7 +280,7 @@
             <div class="flex flex-col gap-4">
                 <Label>Add/Remove labels</Label>
                 
-                <LabelSelect appliedLabels={data.labels.map(x => x.label)} bind:value={
+                <LabelSelect availableLabels={availableLabels} bind:value={
                     () => appliedLabels,
                     (val) => updateLabels(val)
                 } />

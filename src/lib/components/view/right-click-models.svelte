@@ -1,15 +1,16 @@
 <script lang="ts">
     import * as ContextMenu from "$lib/components/ui/context-menu/index.js";
-    import type { Model, ModelWithGroup, Group } from "$lib/model";
-    import { openInSlicer, openInFolder } from "$lib/tauri";
-    import { data } from "$lib/data.svelte";
     import FolderOpen from "@lucide/svelte/icons/folder-open";
     import Slice from "@lucide/svelte/icons/slice";
     import GroupIcon from "@lucide/svelte/icons/group";
     import type { ClassValue } from "svelte/elements";
     import { goto } from '$app/navigation';
+    import type { Model } from "$lib/api/shared/services/model_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { ILocalApi } from "$lib/api/shared/services/local_api";
 
-    const props: { children : any, models: ModelWithGroup[], class? : ClassValue } = $props();
+    const props: { children : any, models: Model[], class? : ClassValue } = $props();
     const group = $derived.by(() => {
         if (props.models.length <= 0)
         {
@@ -30,12 +31,19 @@
 
     async function onOpenInSlicer()
     {
-        await openInSlicer(props.models);
+        let slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
+        if (slicerApi) {
+            await slicerApi.openInSlicer(props.models);
+        }
     }
 
     async function onOpenInFolder()
     {
-        await openInFolder(props.models);
+        let localApi = getContainer().optional<ILocalApi>(ILocalApi);
+
+        if (localApi){
+            await localApi.openInFolder(props.models);
+        }
     }
 
     async function onOpenGroup()

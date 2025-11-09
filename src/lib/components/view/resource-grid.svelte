@@ -3,22 +3,29 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import GroupTinyList from "./group-tiny-list.svelte";
     import { AsyncButton, buttonVariants } from "$lib/components/ui/button";
-    import { c, data, updateState } from "$lib/data.svelte";
-    import type { GroupedEntry, Resource } from "$lib/model";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import EditResource from "$lib/components/edit/resource.svelte";
     import NotebookText from "@lucide/svelte/icons/notebook-text";
     import ClipboardCheck from "@lucide/svelte/icons/clipboard-check";
     import Button from "../ui/button/button.svelte";
-    import { addResource, openInFolder, openInSlicer } from "$lib/tauri";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import { onMount } from "svelte";
     import FolderOpen from "@lucide/svelte/icons/folder-open";
     import Slice from "@lucide/svelte/icons/slice";
+    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/services/resource_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { Group, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { ILocalApi } from "$lib/api/shared/services/local_api";
+    import { configuration } from "$lib/configuration.svelte";
 
-    const props: { resources: Resource[] } = $props();
-    let selected = $state.raw<Resource|null>(null);
+    const props: { resources: ResourceMeta[] } = $props();
+    let selected = $state.raw<ResourceMeta|null>(null);
+    let groups = $state.raw<Group[]>([]);
     let newName = $state<string>("");
+
+    const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
 
     let scrollContainer : HTMLElement;
 
@@ -71,13 +78,13 @@
                 switch (currentFilter.order) {
                     case "date-asc":
                         return (
-                            new Date(a.createdAt).getTime() -
-                            new Date(b.createdAt).getTime()
+                            new Date(a.created).getTime() -
+                            new Date(b.created).getTime()
                         );
                     case "date-desc":
                         return (
-                            new Date(b.createdAt).getTime() -
-                            new Date(a.createdAt).getTime()
+                            new Date(b.created).getTime() -
+                            new Date(a.created).getTime()
                         );
                     case "name-asc":
                         return a.name.localeCompare(b.name);
@@ -89,7 +96,7 @@
             });
     });
 
-    async function onClick(resource: Resource, event : any) {
+    async function onClick(resource: ResourceMeta, event : any) {
         selected = resource;
 
         setTimeout(() => {
@@ -98,15 +105,18 @@
                 block: 'center',
             });
         }, 30);
+
+        groups = await resourceApi.getGroupsForResource(resource);
     }
 
     async function onNewResource() {
-        const newResource = await addResource(newName);
-        await updateState();
-        newName = "";
-        selected = props.resources.find(r => r.id === newResource.id) || null;
+        const newResource = await resourceApi.addResource(newName);
+        props.resources.push(newResource);
+        selected = newResource;
+        await updateSidebarState();
     }
 
+    /*
     let destroyStateChangeListener: UnlistenFn | null = null;
 
     onMount(async () => {
@@ -117,16 +127,21 @@
             }
         });
     });
+    */
 
-    async function onOpenInFolder(group : GroupedEntry) {
-        if (group) {
-            await openInFolder(group.models);
+    async function onOpenInSlicer(group : Group) {
+        let slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
+
+        if (slicerApi){
+            await slicerApi.openInSlicer(group.models);
         }
     }
 
-    async function onOpenInSlicer(group : GroupedEntry) {
-        if (group) {
-            await openInSlicer(group.models);
+    async function onOpenInFolder(group : Group) {
+        let localApi = getContainer().optional<ILocalApi>(ILocalApi);
+
+        if (localApi){
+            await localApi.openInFolder(group.models);
         }
     }
 </script>
@@ -165,12 +180,10 @@
 
                     <div class="my-auto flex-1 h-fit overflow-hidden">
                         <h2 class="truncate font-bold">{resource.name}</h2>
-                        {#if c.configuration.show_date_on_list_view}
-                            <p class="hidden-if-small text-xs font-thin ml-4">Created {resource.createdAt.toLocaleDateString()}</p>
+                        {#if configuration.show_date_on_list_view}
+                            <p class="hidden-if-small text-xs font-thin ml-4">Created {resource.created.toLocaleDateString()}</p>
                         {/if}
                     </div>
-
-                    <Badge class="h-fit my-auto">{resource.groups.length}</Badge>
                 </div>
             {/each}
         </div>
@@ -182,12 +195,12 @@
     </div> 
     <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
         {#if !!selected }
-            <EditResource resource={selected} ondelete={_ => selected = null} />
+            <EditResource resource={selected} onDelete={_ => {props.resources.slice(props.resources.indexOf(selected!), 1); selected = null; }} />
 
-            {#each selected.groups as group (group.group.id)}
+            {#each groups as group (group.meta.id)}
                 <div class="grid grid-cols-1 gap-2 border rounded-lg pt-1">
                     <GroupTinyList group={group} class="w-full h-14 [&_.imglist]:w-[165px] border-none" />
-                    <a href="/group/{group.group.id}" class="mx-3 {buttonVariants({ variant: "default"})}">
+                    <a href="/group/{group.meta.id}" class="mx-3 {buttonVariants({ variant: "default"})}">
                         Open group
                     </a>
                     <div class="grid grid-cols-2 gap-4 mb-4 mx-3 mt-2">

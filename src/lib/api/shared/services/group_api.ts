@@ -1,5 +1,5 @@
 import type { LabelMeta } from "./label_api";
-import type { Model } from "./model_api";
+import { stringArrayToModelFlags, type Model, type ModelFlags } from "./model_api";
 import type { ResourceMeta } from "./resource_api";
 
 export class GroupMeta {
@@ -22,12 +22,14 @@ export class Group
     models: Model[];
     labels: LabelMeta[];
     resource: ResourceMeta|null;
+    flags: ModelFlags;
 
-    constructor(meta: GroupMeta, models: Model[], labels: LabelMeta[], resource: ResourceMeta|null) {
+    constructor(meta: GroupMeta, models: Model[], labels: LabelMeta[], resource: ResourceMeta|null, flags: string[]) {
         this.meta = meta;
         this.models = models;
         this.labels = labels;
         this.resource = resource;
+        this.flags = stringArrayToModelFlags(flags);
     }
 }
 
@@ -48,4 +50,122 @@ export interface IGroupApi {
     addModelsToGroup(group : GroupMeta, models : Model[]) : Promise<void>;
     removeModelsFromGroup(models : Model[]) : Promise<void>;
     getGroupCount(include_ungrouped_models : boolean) : Promise<number>;
+}
+
+export async function* groupStream(groupApi : IGroupApi, groupIds : number[]|null, labelIds: number[]|null, orderBy: GroupOrderBy, textSearch: string|null, pageSize: number, includeUngroupedModels: boolean) : AsyncGenerator<Group[]> {
+    let page = 1;
+    let prefetchNextTask : Promise<Group[]>|null = null;
+
+    while (true) {
+        if (prefetchNextTask === null) {
+            prefetchNextTask = groupApi.getGroups(groupIds, labelIds, orderBy, textSearch, page, pageSize, includeUngroupedModels);
+        }
+
+        const groups = await prefetchNextTask;
+        if (groups.length === 0) {
+            break;
+        }
+
+        page += 1;
+        prefetchNextTask = groupApi.getGroups(groupIds, labelIds, orderBy, textSearch, page, pageSize, includeUngroupedModels);
+
+        yield groups;
+    }
+}
+
+export interface IGroupStreamManager {
+    setSearchText(text: string|null) : void;
+    setOrderBy(order_by: GroupOrderBy) : void;
+    fetch() : Promise<Group[]>;
+}
+
+export class PredefinedGroupStreamManager implements IGroupStreamManager {
+    private groups: Group[];
+    private textSearch: string|null = null;
+    private orderBy: GroupOrderBy = GroupOrderBy.CreatedDesc;
+    private alreadyFetched: boolean = false;
+
+    constructor(groups: Group[]) {
+        this.groups = groups;
+    }
+
+    setSearchText(text: string | null): void {
+        this.textSearch = text?.toLowerCase() ?? null;
+        this.alreadyFetched = false;
+    }
+
+    setOrderBy(order_by: GroupOrderBy): void {
+        this.orderBy = order_by;
+        this.alreadyFetched = false;
+    }
+
+    async fetch(): Promise<Group[]> {
+        if (this.alreadyFetched) {
+            return [];
+        }
+
+        let filter = !this.textSearch ? this.groups : this.groups.filter(group => 
+            group.meta.name.toLowerCase().includes(this.textSearch!) ||
+            group.models.some(model => model.name.toLowerCase().includes(this.textSearch!) || (model.description?.toLowerCase().includes(this.textSearch!) ?? false))
+        );
+
+        return filter.sort((a, b) => {
+            switch (this.orderBy) {
+                case GroupOrderBy.CreatedAsc:
+                    return a.meta.created.getTime() - b.meta.created.getTime();
+                case GroupOrderBy.CreatedDesc:
+                    return b.meta.created.getTime() - a.meta.created.getTime();
+                case GroupOrderBy.NameAsc:
+                    return a.meta.name.localeCompare(b.meta.name);
+                case GroupOrderBy.NameDesc:
+                    return b.meta.name.localeCompare(a.meta.name);
+                default:
+                    return 0;
+            }
+        })
+    }
+}
+
+export class GroupStreamManager implements IGroupStreamManager {
+    private groupApi: IGroupApi;
+    private groupIds: number[]|null;
+    private labelIds: number[]|null;
+    private orderBy: GroupOrderBy = GroupOrderBy.CreatedDesc;
+    private textSearch: string|null = null;
+    private includeUngroupedModels: boolean;
+    private pageSize: number;
+    private generator: AsyncGenerator<Group[]>|null = null;
+
+    constructor(groupApi: IGroupApi, groupIds: number[]|null, labelIds: number[]|null, includeUngroupedModels: boolean, pageSize: number = 50) {
+        this.groupApi = groupApi;
+        this.groupIds = groupIds;
+        this.labelIds = labelIds;
+        this.includeUngroupedModels = includeUngroupedModels;
+        this.pageSize = pageSize;
+        this.generateGenerator();
+    }
+
+    private generateGenerator() {
+        this.generator = groupStream(this.groupApi, this.groupIds, this.labelIds, this.orderBy, this.textSearch, this.pageSize, this.includeUngroupedModels);
+    }
+
+    setSearchText(text: string | null): void {
+        this.textSearch = text;
+    }
+
+    setOrderBy(order_by: GroupOrderBy): void {
+        this.orderBy = order_by;
+    }
+
+    async fetch(): Promise<Group[]> {
+        return (await this.generator!.next()).value ?? [];
+    }
+}
+
+export async function getGroupById(groupApi : IGroupApi, groupId: number) : Promise<Group|null> {
+    const groups = await groupApi.getGroups([groupId], null, GroupOrderBy.CreatedDesc, null, 1, 1, false);
+    if (groups.length === 0) {
+        return null;
+    }
+    return groups[0];
 }

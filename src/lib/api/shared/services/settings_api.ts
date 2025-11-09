@@ -1,3 +1,5 @@
+import { GroupOrderBy } from "./group_api";
+import { ModelOrderBy } from "./model_api";
 
 export type SizeOptionModels = "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
 export const SizeOptionModelsAsList = ["Grid_Small", "Grid_Medium", "Grid_Large", "List_Small", "List_Medium", "List_Large"] as SizeOptionModels[];
@@ -45,6 +47,40 @@ export interface Configuration {
     show_multiselect_checkboxes : boolean;
     use_worker_for_model_parsing : boolean;
     prefer_gcode_thumbnail : boolean;
+}
+
+export function convertOrderOptionModelsToEnum(orderOption : OrderOptionModels) : ModelOrderBy {
+    switch (orderOption) {
+        case "date-asc":
+            return ModelOrderBy.AddedAsc;
+        case "date-desc":
+            return ModelOrderBy.AddedDesc;
+        case "name-asc":
+            return ModelOrderBy.NameAsc;
+        case "name-desc":
+            return ModelOrderBy.NameDesc;
+        case "size-asc":
+            return ModelOrderBy.SizeAsc;
+        case "size-desc":
+            return ModelOrderBy.SizeDesc;
+        default:
+            return ModelOrderBy.AddedDesc;
+    }
+}
+
+export function convertOrderOptionGroupsToEnum(orderOption : OrderOptionGroups) : GroupOrderBy {
+    switch (orderOption) {
+        case "date-asc":
+            return GroupOrderBy.CreatedAsc;
+        case "date-desc":
+            return GroupOrderBy.CreatedDesc;
+        case "name-asc":
+            return GroupOrderBy.NameAsc;
+        case "name-desc":
+            return GroupOrderBy.NameDesc;
+        default:
+            return GroupOrderBy.CreatedDesc;
+    }
 }
 
 export function configurationDefault() : Configuration

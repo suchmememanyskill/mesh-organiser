@@ -2,7 +2,7 @@ use std::{cmp::Reverse, u32};
 use itertools::join;
 use indexmap::IndexMap;
 use sqlx::Row;
-use crate::{DbError, PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
+use crate::{DbError, PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelFlags, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
 use strum::EnumString;
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -27,13 +27,14 @@ pub struct GroupFilterOptions
 }
 
 // TODO: This is insanely inefficient
-fn convert_model_list_to_groups(models : Vec<model::Model>, include_ungrouped_models : bool) -> Vec<ModelGroup>
+fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : bool) -> Vec<ModelGroup>
 {
     let mut index_map: IndexMap<i64, ModelGroup> = IndexMap::new();
 
-    for model in models 
+    for mut model in models 
     {
-        let group_meta = match model.group.clone()
+        // TODO: Revert this to clone if model.group is needed in the UI
+        let group_meta = match model.group.take()
         {
             Some(g) => g,
             None => {
@@ -52,6 +53,8 @@ fn convert_model_list_to_groups(models : Vec<model::Model>, include_ungrouped_mo
         };
 
         let group = index_map.entry(group_meta.id).or_insert(ModelGroup::from_meta(group_meta));
+        // TODO: Figure out a better way to do this
+        group.flags |= unsafe { ModelFlags::from_bits(model.flags.bits()).unwrap_unchecked() };
 
         for label in &model.labels {
             if group.labels.iter().any(|f| f.id == label.id)
@@ -68,6 +71,7 @@ fn convert_model_list_to_groups(models : Vec<model::Model>, include_ungrouped_mo
     index_map.into_values().collect()
 }
 
+// TODO: This should probably not return the entire model group, but just the meta and counts
 pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptions) -> Result<PaginatedResponse<ModelGroup>, DbError> {
     let filtered_on_labels = options.label_ids.is_some();
     let filtered_on_text = options.text_search.is_some();

@@ -1,13 +1,13 @@
 <script lang="ts">
     import * as Select from "$lib/components/ui/select/index.js";
-    import type { LabelMin } from "$lib/model";
     import LabelBadge from "$lib/components/view/label-badge.svelte";
     import Tag from "@lucide/svelte/icons/tag";
     import type { ClassValue } from "svelte/elements";
     import { countWriter } from "$lib/utils";
+    import type { LabelMeta } from "$lib/api/shared/services/label_api";
 
     let { value = $bindable(), availableLabels = [], clazz = undefined, placeholder = "Select some labels", onlyShowLabelCount = false, onchange = () => {}} 
-    : { value: LabelMin[], availableLabels : LabelMin[], clazz? : ClassValue, placeholder? : string, onlyShowLabelCount?: boolean, onchange?: VoidFunction } = $props();
+    : { value: LabelMeta[], availableLabels : LabelMeta[], clazz? : ClassValue, placeholder? : string, onlyShowLabelCount?: boolean, onchange?: VoidFunction } = $props();
 
     console.log(availableLabels);
 </script>

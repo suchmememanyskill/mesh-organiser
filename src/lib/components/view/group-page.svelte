@@ -1,19 +1,33 @@
 <script lang="ts">
     import ModelGrid from "$lib/components/view/model-grid.svelte";
     import EditGroup from "$lib/components/edit/group.svelte"
-    import type { Group } from "$lib/api/shared/services/group_api";
+    import { getGroupById, IGroupApi, type Group, type GroupMeta } from "$lib/api/shared/services/group_api";
+    import { onMount } from "svelte";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import Spinner from "./spinner.svelte";
+    import { PredefinedModelStreamManager } from "$lib/api/shared/services/model_api";
 
-    const props: { group: Group|undefined|null, initialEditMode?: boolean } = $props();
-    const group = $derived(props.group);
+    const props: { group: GroupMeta, initialEditMode?: boolean } = $props();
+    let group = $state<Group | null>(null);
+    let loading = $state(true);
 
+    onMount(async () => {
+        const groupApi = getContainer().require<IGroupApi>(IGroupApi);
+        group = await getGroupById(groupApi, props.group.id);
+        loading = false;
+    });
 </script>
 
 {#if group}
     <div class="w-full h-full flex flex-col">
-        <EditGroup class="my-3 mx-4" group={group.group} />
+        <EditGroup class="my-3 mx-4" group={group} />
         <div class="overflow-hidden">
-            <ModelGrid initialEditMode={props.initialEditMode} models={group.models} default_show_multiselect_all={true} />
+            <ModelGrid initialEditMode={props.initialEditMode} modelStream={new PredefinedModelStreamManager(group.models)} default_show_multiselect_all={true} />
         </div>
+    </div>
+{:else if loading}
+    <div class="mx-auto my-auto">
+        <Spinner />
     </div>
 {:else}
     <div class="w-full h-full flex flex-col justify-center">

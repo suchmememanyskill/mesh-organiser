@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::model::{LabelMeta, Model, Resource, ResourceMeta};
+use crate::model::{LabelMeta, Model, ModelFlags, Resource, ResourceMeta};
 
 #[derive(Serialize, Clone)]
 pub struct ModelGroupMeta {
@@ -17,13 +17,14 @@ pub struct ModelGroup {
     pub models: Vec<Model>,
     pub labels: Vec<LabelMeta>,
     pub resource: Option<ResourceMeta>,
+    pub flags : ModelFlags,
 }
 
 impl ModelGroup
 {
     pub fn from_meta(meta : ModelGroupMeta) -> ModelGroup
     {
-        ModelGroup { meta, models: Vec::new(), labels: Vec::new(), resource: None }
+        ModelGroup { meta, models: Vec::new(), labels: Vec::new(), resource: None, flags : ModelFlags::empty() }
     }
 }
 

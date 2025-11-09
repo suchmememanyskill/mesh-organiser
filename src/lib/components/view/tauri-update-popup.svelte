@@ -6,10 +6,8 @@
         CardContent,
     } from "$lib/components/ui/card";
     import { platform } from '@tauri-apps/plugin-os';
-    import { newWindow } from "$lib/tauri";
     import { Button, AsyncButton, buttonVariants } from "$lib/components/ui/button/index.js";
     import { Separator } from "$lib/components/ui/separator/index.js";
-    import { c } from "$lib/data.svelte";
     import Link from "@lucide/svelte/icons/link";
 
     interface Function 
@@ -20,6 +18,7 @@
     import { type Update } from '@tauri-apps/plugin-updater';
     import { toast } from "svelte-sonner";
     import { relaunch } from "@tauri-apps/plugin-process";
+    import { configuration } from "$lib/configuration.svelte";
 
     let props : { update: Update, onDismiss? : Function } = $props();
     let currentPlatform = platform();
@@ -42,7 +41,7 @@
 
     function ignore(version : string)
     {
-        c.configuration.ignore_update = version;
+        configuration.ignore_update = version;
         props.onDismiss!();
     }
 </script>

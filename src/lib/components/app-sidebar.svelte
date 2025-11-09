@@ -23,7 +23,7 @@
     import { resetMode, setMode } from "mode-watcher";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
-    import ImportProgressIndicator from "$lib/components/view/import-progress-indicator.svelte";
+    import ImportProgressIndicator from "$lib/components/view/tauri-import-progress-indicator.svelte";
 
     import {
         createLabel,

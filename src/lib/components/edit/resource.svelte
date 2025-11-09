@@ -24,7 +24,7 @@
         (resource: ResourceMeta): void;
     }
 
-    const props: { resource: ResourceMeta; class?: ClassValue, ondelete? : Function } = $props();
+    const props: { resource: ResourceMeta; class?: ClassValue, onDelete? : Function } = $props();
     const trackedResource = $derived(props.resource);
     const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
 
@@ -36,7 +36,7 @@
     async function onDeleteResource()
     {
         await resourceApi.deleteResource(trackedResource);
-        props.ondelete?.(trackedResource);
+        props.onDelete?.(trackedResource);
     }
     
     function onUpdateResource()
