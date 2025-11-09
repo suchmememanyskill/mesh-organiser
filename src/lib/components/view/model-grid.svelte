@@ -10,7 +10,15 @@
     import { debounce } from "$lib/utils";
     import { onMount, untrack } from "svelte";
 
-    const props: { modelStream : IModelStreamManager, default_show_multiselect_all? : boolean, initialEditMode? : boolean } = $props();
+    interface Function {
+        (models : Model[]): void;
+    }
+
+    interface EmptyFunction {
+        (): void;
+    }
+
+    const props: { modelStream : IModelStreamManager, default_show_multiselect_all? : boolean, initialEditMode? : boolean, onDelete?: Function, onEmpty?: EmptyFunction} = $props();
     let loadedModels = $state<Model[]>([]);
     let selected = $state.raw<Model[]>([]);
     let busyLoadingNext = $state.raw<boolean>(false);
@@ -53,6 +61,18 @@
         const target = e.target as HTMLInputElement;
         props.modelStream.setSearchText(target.value.trim().length === 0 ? null : target.value.trim());
         debouncedResetModelSet();
+    }
+
+    function onDelete() 
+    {
+        props.onDelete?.(selected);
+        loadedModels = loadedModels.filter(m => !selected.some(s => s.id === m.id));
+        selected = [];
+
+        if (loadedModels.length === 0)
+        {
+            props.onEmpty?.();
+        }
     }
 
     $effect(() => {
@@ -108,13 +128,13 @@
     <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto hide-scrollbar">
         <!-- TODO: Implement ondelete for all of these-->
         {#if selected.length >= 2}
-            <MultiModelEdit models={selected} />
+            <MultiModelEdit models={selected} onDelete={onDelete} />
         {:else if selected.length === 1}
-            <ModelEdit initialEditMode={props.initialEditMode} model={selected[0]} />
+            <ModelEdit initialEditMode={props.initialEditMode} model={selected[0]} onDelete={onDelete} />
         {:else if loadedModels.length === 1}
-            <ModelEdit initialEditMode={props.initialEditMode} model={loadedModels[0]} />
+            <ModelEdit initialEditMode={props.initialEditMode} model={loadedModels[0]} onDelete={() => { selected = [loadedModels[0]]; onDelete(); }} />
         {:else if props.default_show_multiselect_all }
-            <MultiModelEdit models={loadedModels} />
+            <MultiModelEdit models={loadedModels} onDelete={() => { selected = [...loadedModels]; onDelete(); }} />
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
                 <span class="text-xl">No model selected</span>

@@ -7,7 +7,11 @@
     import Spinner from "./spinner.svelte";
     import { PredefinedModelStreamManager } from "$lib/api/shared/services/model_api";
 
-    const props: { group: GroupMeta, initialEditMode?: boolean } = $props();
+    interface Function {
+        (): void;
+    }
+
+    const props: { group: GroupMeta, initialEditMode?: boolean, onGroupDelete?: Function, onAllModelsDelete?: Function } = $props();
     let group = $state<Group | null>(null);
     let loading = $state(true);
 
@@ -20,9 +24,9 @@
 
 {#if group}
     <div class="w-full h-full flex flex-col">
-        <EditGroup class="my-3 mx-4" group={group} />
+        <EditGroup class="my-3 mx-4" group={group} onDelete={() => props.onGroupDelete?.()} />
         <div class="overflow-hidden">
-            <ModelGrid initialEditMode={props.initialEditMode} modelStream={new PredefinedModelStreamManager(group.models)} default_show_multiselect_all={true} />
+            <ModelGrid initialEditMode={props.initialEditMode} modelStream={new PredefinedModelStreamManager(group.models)} default_show_multiselect_all={true} onEmpty={() => props.onAllModelsDelete?.()} />
         </div>
     </div>
 {:else if loading}

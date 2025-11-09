@@ -20,7 +20,17 @@
     import GroupTiny from "./group-tiny.svelte";
     import { debounce } from "$lib/utils";
 
-    const props: {groupStream : IGroupStreamManager, default_show_multiselect_all? : boolean } = $props();
+    interface GroupWithModels {
+        meta: Group,
+        models: Model[],
+        fullGroup: boolean
+    }
+
+    interface Function {
+        (groups : GroupWithModels[]): void;
+    }
+
+    const props: {groupStream : IGroupStreamManager, default_show_multiselect_all? : boolean, onDelete?: Function } = $props();
     let loadedGroups = $state<Group[]>([]);
     let selected = $state.raw<Group[]>([]);
     const selectedSet = $derived(new Set(selected.map(x => x.meta.id)));
@@ -195,6 +205,42 @@
     let splitViewSelectedModels = $state.raw<Model[]>([]);
     let selectedModels = $derived(splitViewSelectedModels.length <= 0 ? selected.map(x => x.models).flat() : splitViewSelectedModels);
 
+    function onDelete() 
+    {
+        let set = new Set(selectedModels.map(x => x.id));
+        let affectedGroups : GroupWithModels[] = [];
+
+        for (const group of selected)
+        {
+            let modelsInGroup = group.models.filter(m => set.has(m.id));
+            if (modelsInGroup.length > 0)
+            {
+                affectedGroups.push({
+                    meta: group,
+                    models: modelsInGroup,
+                    fullGroup: modelsInGroup.length === group.models.length
+                });
+            }
+        }
+
+        for (const group of affectedGroups)
+        {
+            let groupIndex = loadedGroups.findIndex(g => g.meta.id === group.meta.meta.id);
+            if (group.fullGroup)
+            {
+                loadedGroups.splice(groupIndex, 1);
+            }
+            else
+            {
+                loadedGroups[groupIndex].models = loadedGroups[groupIndex].models.filter(m => !set.has(m.id));
+            }
+        }
+
+        splitViewSelectedModels = [];
+        selected = [];
+        props.onDelete?.(affectedGroups);
+    }
+
     $effect(() => {
         // Clear models list when selected changes
         let s = selected;
@@ -278,12 +324,11 @@
         {/if}
     </div> 
     <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-        <!-- TODO: Implement ondelete for all of these-->
         {#if selected.length >= 2}
             {#if selectedModels.length >= 2}
-                <EditMultiModel models={selectedModels} />
+                <EditMultiModel models={selectedModels} onDelete={onDelete} />
             {:else if selectedModels.length === 1}
-                <ModelEdit model={selectedModels[0]} />
+                <ModelEdit model={selectedModels[0]} onDelete={onDelete} />
             {/if}
         {:else if selected.length === 1 && selected[0].meta.id >= 0}
             <EditGroup group={selected[0]} settingsVertical={true} />
@@ -292,17 +337,17 @@
                     <a class="{buttonVariants({ variant: "default" })}" href="/group/{selected[0].meta.id}">View models</a>
                 {/if}
                 {#if selectedModels.length >= 2}
-                    <EditMultiModel models={selectedModels} />
+                    <EditMultiModel models={selectedModels} onDelete={onDelete} />
                 {:else if selectedModels.length === 1}
-                    <ModelEdit model={selectedModels[0]} />
+                    <ModelEdit model={selectedModels[0]} onDelete={onDelete} />
                 {/if}
             {:else}
-                <ModelEdit model={selected[0].models[0]} />
+                <ModelEdit model={selected[0].models[0]} onDelete={onDelete} />
             {/if}
         {:else if selected.length === 1}
-            <ModelEdit model={selected[0].models[0]} />
+            <ModelEdit model={selected[0].models[0]} onDelete={onDelete} />
         {:else if props.default_show_multiselect_all && loadedGroups.length > 0}
-            <EditMultiModel models={loadedGroups.map(x => x.models).flat()} />
+            <EditMultiModel models={loadedGroups.map(x => x.models).flat()} onDelete={() => { selected = [...loadedGroups]; onDelete(); } } />
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
                 <span class="text-xl">No group selected</span>

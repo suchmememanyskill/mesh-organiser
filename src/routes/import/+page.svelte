@@ -106,11 +106,11 @@
             </div>
             {#if importedGroups.length === 1 && importedGroups[0].meta.id >= 0}
                 <div class="overflow-hidden">
-                    <GroupPage initialEditMode={true} group={importedGroups[0].meta} />
+                    <GroupPage initialEditMode={true} group={importedGroups[0].meta} onGroupDelete={() => importedGroups[0].meta.id = -1} onAllModelsDelete={resetImportState} />
                 </div>
             {:else}
                 <div class="overflow-hidden flex-grow w-full">
-                    <ModelGrid modelStream={new PredefinedModelStreamManager(importedModels)} default_show_multiselect_all={true} initialEditMode={true} />
+                    <ModelGrid modelStream={new PredefinedModelStreamManager(importedModels)} default_show_multiselect_all={true} initialEditMode={true} onEmpty={resetImportState} />
                 </div>
             {/if}
         </div>
