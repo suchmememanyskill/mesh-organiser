@@ -1,11 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Model, type IModelApi, type ModelFlags, type ModelOrderBy } from "../shared/services/model_api";
+import { createModelInstance, type Model, type IModelApi, type ModelFlags, type ModelOrderBy } from "../shared/services/model_api";
 import { parseRawBlob, type RawBlob } from "./blob";
 import { parseRawGroupMeta, type RawGroupMeta } from "./group";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
-import { GroupMeta } from "../shared/services/group_api";
-import { LabelMeta } from "../shared/services/label_api";
-import { Blob } from "../shared/services/blob_api";
 
 function convertModelFlagsToRaw(flags : ModelFlags|null) : string[]|null
 {
@@ -45,7 +42,7 @@ export interface RawModel {
 }
 
 export function parseRawModel(raw: RawModel): Model {
-    return new Model(
+    return createModelInstance(
         raw.id,
         raw.name,
         parseRawBlob(raw.blob),

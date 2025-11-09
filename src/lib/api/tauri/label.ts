@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Label, LabelMeta, stringColorToNumber, type ILabelApi } from "../shared/services/label_api";
+import { createLabelInstance, createLabelMetaInstance, type Label, type LabelMeta, stringColorToNumber, type ILabelApi } from "../shared/services/label_api";
 import type { Model } from "../shared/services/model_api";
 
 export interface RawLabelMeta {
@@ -9,7 +9,7 @@ export interface RawLabelMeta {
 }
 
 export function parseRawLabelMeta(raw: RawLabelMeta): LabelMeta {
-    return new LabelMeta(
+    return createLabelMetaInstance(
         raw.id,
         raw.name,
         raw.color,
@@ -28,7 +28,7 @@ export interface RawLabel {
 }
 
 export function parseRawLabel(raw: RawLabel): Label {
-    return new Label(
+    return createLabelInstance(
         parseRawLabelMeta(raw.meta),
         raw.children.map(child => parseRawLabelMeta(child)),
         raw.effective_labels.map(effective => parseRawLabelMeta(effective)),
@@ -69,7 +69,7 @@ export class LabelApi implements ILabelApi {
     }
 
     async addLabelToModels(label: LabelMeta, models: Model[]): Promise<void> {
-        return await invoke("set_labe_on_models", { labelId: label.id, modelIds: models.map(model => model.id) });
+        return await invoke("set_label_on_models", { labelId: label.id, modelIds: models.map(model => model.id) });
     }
 
     async removeLabelFromModels(label: LabelMeta, models: Model[]): Promise<void> {

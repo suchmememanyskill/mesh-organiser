@@ -20,8 +20,8 @@
     import NotebookText from "@lucide/svelte/icons/notebook-text";
     import NotebookPen from "@lucide/svelte/icons/notebook-pen";
     import Edit from "@lucide/svelte/icons/edit";
-    import { Group, IGroupApi } from "$lib/api/shared/services/group_api";
-    import { IResourceApi, ResourceMeta } from "$lib/api/shared/services/resource_api";
+    import { type Group, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/services/resource_api";
     import { getContainer } from "$lib/api/dependency_injection";
     import { updateSidebarState } from "$lib/sidebar_data.svelte";
     import { IModelApi } from "$lib/api/shared/services/model_api";

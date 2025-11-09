@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Group, GroupMeta, type GroupOrderBy, type IGroupApi } from "../shared/services/group_api";
-import { Model } from "../shared/services/model_api";
+import { createGroupInstance, createGroupMetaInstance, type Group, type GroupMeta, type GroupOrderBy, type IGroupApi } from "../shared/services/group_api";
+import { type Model } from "../shared/services/model_api";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
 import { parseRawModel, type RawModel } from "./model";
 import { parseRawResourceMeta, type RawResourceMeta } from "./resource";
@@ -13,7 +13,7 @@ export interface RawGroupMeta {
 }
 
 export function parseRawGroupMeta(raw: RawGroupMeta): GroupMeta {
-    return new GroupMeta(
+    return createGroupMetaInstance(
         raw.id,
         raw.name,
         raw.created,
@@ -29,7 +29,7 @@ export interface RawGroup {
 }
 
 export function parseRawGroup(raw: RawGroup): Group {
-    return new Group(
+    return createGroupInstance(
         parseRawGroupMeta(raw.meta),
         raw.models.map(model => parseRawModel(model)),
         raw.labels.map(label => parseRawLabelMeta(label)),

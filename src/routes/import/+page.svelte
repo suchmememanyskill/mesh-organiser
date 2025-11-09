@@ -24,7 +24,7 @@
     import { countWriter } from "$lib/utils";
     import Flame from "@lucide/svelte/icons/flame";
     import {globalImportSettings, importState, resetImportState } from "$lib/import.svelte";
-    import { Group, GroupOrderBy, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { type Group, GroupOrderBy, IGroupApi } from "$lib/api/shared/services/group_api";
     import { ImportStatus, ITauriImportApi } from "$lib/api/shared/services/tauri_import_api";
     import { getContainer } from "$lib/api/dependency_injection";
     import { configuration } from "$lib/configuration.svelte";
@@ -101,10 +101,10 @@
             <div class="flex flex-row gap-5 justify-center mt-4">
                 <Button onclick={resetImportState}><Undo2 /> Import another model</Button>
                 <div class="my-auto">
-                    Imported {countWriter("group", importedGroups)}, {countWriter("model", importedGroups.map(g => g.models).flat())}
+                    Imported {countWriter("group", importedGroups.filter(g => g.meta.id >= 0))}, {countWriter("model", importedGroups.map(g => g.models).flat())}
                 </div>
             </div>
-            {#if importedGroups.length === 1}
+            {#if importedGroups.length === 1 && importedGroups[0].meta.id >= 0}
                 <div class="overflow-hidden">
                     <GroupPage initialEditMode={true} group={importedGroups[0].meta} />
                 </div>

@@ -22,7 +22,7 @@
 
     import { page } from "$app/state";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { ILabelApi, LabelMeta } from "$lib/api/shared/services/label_api";
+    import { ILabelApi, type LabelMeta } from "$lib/api/shared/services/label_api";
     import type { SlicerEntry } from "$lib/api/shared/services/slicer_api";
     import { ImportStatus } from "$lib/api/shared/services/tauri_import_api";
     import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";

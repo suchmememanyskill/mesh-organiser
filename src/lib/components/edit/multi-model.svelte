@@ -24,7 +24,7 @@
     import type { ClassValue } from "svelte/elements";
 
     import { getContainer } from "$lib/api/dependency_injection";
-    import { GroupMeta, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { type GroupMeta, IGroupApi } from "$lib/api/shared/services/group_api";
     import { ILabelApi, type LabelMeta } from "$lib/api/shared/services/label_api";
     import { ILocalApi } from "$lib/api/shared/services/local_api";
     import { IModelApi, type Model } from "$lib/api/shared/services/model_api";

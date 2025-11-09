@@ -1,5 +1,5 @@
 import { join } from "@tauri-apps/api/path";
-import { Blob, IBlobApi } from "../shared/services/blob_api"
+import { type Blob, createBlobInstance, IBlobApi } from "../shared/services/blob_api"
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { get } from "svelte/store";
 
@@ -12,7 +12,7 @@ export interface RawBlob {
 }
 
 export function parseRawBlob(raw: RawBlob) : Blob {
-    return new Blob(
+    return createBlobInstance(
         raw.id,
         raw.sha256,
         raw.filetype,

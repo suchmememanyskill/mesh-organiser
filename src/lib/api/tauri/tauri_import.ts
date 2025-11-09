@@ -244,7 +244,7 @@ export class TauriImportApi implements ITauriImportApi {
             filters = [
                 {
                     name: "3D Models",
-                    extensions: ["stl", "obj", "3mf", "gcode", "step"],
+                    extensions: ["stl", "obj", "3mf", "gcode", "step", "zip"],
                 },
             ];
         }

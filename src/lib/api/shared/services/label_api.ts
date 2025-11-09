@@ -1,15 +1,17 @@
 import type { Model } from "./model_api";
 
-export class LabelMeta {
+export interface LabelMeta {
     id: number;
     name: string;
     color: string;
+}
 
-    constructor(id: number, name: string, color: number) {
-        this.id = id;
-        this.name = name;
-        this.color = `#${color.toString(16).padStart(6, '0')}`;
-    }
+export function createLabelMetaInstance(id: number, name: string, color: number): LabelMeta {
+    return {
+        id,
+        name,
+        color: `#${color.toString(16).padStart(6, '0')}`
+    };
 }
 
 export function stringColorToNumber(color: string): number {
@@ -19,7 +21,7 @@ export function stringColorToNumber(color: string): number {
     return parseInt(color, 16);
 }
 
-export class Label {
+export interface Label {
     meta: LabelMeta;
     children: LabelMeta[];
     effectiveLabels: LabelMeta[];
@@ -28,17 +30,19 @@ export class Label {
     groupCount: number;
     selfModelCount: number;
     selfGroupCount: number;
+}
 
-    constructor(meta : LabelMeta, children: LabelMeta[], effectiveLabels: LabelMeta[], hasParent: boolean, modelCount: number, groupCount: number, selfModelCount: number, selfGroupCount: number) {
-        this.meta = meta;
-        this.children = children;
-        this.effectiveLabels = effectiveLabels;
-        this.hasParent = hasParent;
-        this.modelCount = modelCount;
-        this.groupCount = groupCount;
-        this.selfModelCount = selfModelCount;
-        this.selfGroupCount = selfGroupCount;
-    }
+export function createLabelInstance(meta: LabelMeta, children: LabelMeta[], effectiveLabels: LabelMeta[], hasParent: boolean, modelCount: number, groupCount: number, selfModelCount: number, selfGroupCount: number): Label {
+    return {
+        meta,
+        children,
+        effectiveLabels,
+        hasParent,
+        modelCount,
+        groupCount,
+        selfModelCount,
+        selfGroupCount
+    };
 }
 
 export const ILabelApi = Symbol('ILabelApi');

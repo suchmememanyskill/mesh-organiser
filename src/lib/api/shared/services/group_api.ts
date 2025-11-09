@@ -2,35 +2,38 @@ import type { LabelMeta } from "./label_api";
 import { stringArrayToModelFlags, type Model, type ModelFlags } from "./model_api";
 import type { ResourceMeta } from "./resource_api";
 
-export class GroupMeta {
+export interface GroupMeta {
     id: number;
     name: string;
     created: Date;
     //unique_global_id: string;
-
-    constructor(id: number, name: string, created: string/*, unique_global_id: string*/) {
-        this.id = id;
-        this.name = name;
-        this.created = new Date(created);
-        //this.unique_global_id = unique_global_id;
-    }
 }
 
-export class Group 
-{
+export function createGroupMetaInstance(id: number, name: string, created: string/*, unique_global_id: string*/): GroupMeta {
+    return {
+        id,
+        name,
+        created: new Date(created)
+        //unique_global_id
+    };
+}
+
+export interface Group {
     meta: GroupMeta;
     models: Model[];
     labels: LabelMeta[];
     resource: ResourceMeta|null;
     flags: ModelFlags;
+}
 
-    constructor(meta: GroupMeta, models: Model[], labels: LabelMeta[], resource: ResourceMeta|null, flags: string[]) {
-        this.meta = meta;
-        this.models = models;
-        this.labels = labels;
-        this.resource = resource;
-        this.flags = stringArrayToModelFlags(flags);
-    }
+export function createGroupInstance(meta: GroupMeta, models: Model[], labels: LabelMeta[], resource: ResourceMeta|null, flags: string[]): Group {
+    return {
+        meta,
+        models,
+        labels,
+        resource,
+        flags: stringArrayToModelFlags(flags)
+    };
 }
 
 export enum GroupOrderBy {

@@ -4,31 +4,34 @@ export interface ResourceFlags {
     completed: boolean;
 }
 
-export class ResourceMeta {
+export interface ResourceMeta {
     id: number;
     name: string;
     flags: ResourceFlags;
     created: Date;
     //unique_global_id: string;
+}
 
-    constructor(id: number, name: string, flags: string[], created: string, /*unique_global_id: string*/) {
-        this.flags = {
-            completed: false,
-        };
-        
-        flags.forEach(flag => {
-            switch (flag) {
-                case "Completed":
-                    this.flags.completed = true;
-                    break;
-            }
-        });
+export function createResourceMetaInstance(id: number, name: string, flags: string[], created: string/*, unique_global_id: string*/): ResourceMeta {
+    const resourceFlags: ResourceFlags = {
+        completed: false,
+    };
+    
+    flags.forEach(flag => {
+        switch (flag) {
+            case "Completed":
+                resourceFlags.completed = true;
+                break;
+        }
+    });
 
-        this.id = id;
-        this.name = name;
-        this.created = new Date(created);
-        //this.unique_global_id = unique_global_id;
-    }
+    return {
+        id,
+        name,
+        flags: resourceFlags,
+        created: new Date(created)
+        //unique_global_id
+    };
 }
 
 export const IResourceApi = Symbol('IResourceApi');

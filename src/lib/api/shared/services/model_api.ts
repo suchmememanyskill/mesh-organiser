@@ -29,7 +29,7 @@ export function stringArrayToModelFlags(flagList: string[]) : ModelFlags
     return flags;
 }
 
-export class Model {
+export interface Model {
     id: number;
     name: string;
     blob: Blob;
@@ -39,18 +39,20 @@ export class Model {
     group: GroupMeta|null;
     labels: LabelMeta[];
     flags: ModelFlags;
-    
-    constructor(id: number, name: string, blob: Blob, link: string|null, description: string|null, added: string, group: GroupMeta|null, labels: LabelMeta[], flags: string[]) {
-        this.id = id;
-        this.name = name;
-        this.blob = blob;
-        this.link = link;
-        this.description = description;
-        this.added = new Date(added);
-        this.group = group;
-        this.labels = labels;
-        this.flags = stringArrayToModelFlags(flags);
-    }
+}
+
+export function createModelInstance(id: number, name: string, blob: Blob, link: string|null, description: string|null, added: string, group: GroupMeta|null, labels: LabelMeta[], flags: string[]): Model {
+    return {
+        id,
+        name,
+        blob,
+        link,
+        description,
+        added: new Date(added),
+        group,
+        labels,
+        flags: stringArrayToModelFlags(flags)
+    };
 }
 
 export enum ModelOrderBy {
