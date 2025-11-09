@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { FileType, type Configuration, type Model, type ModelWithGroup } from "./model";
+import type { Configuration } from "./api/shared/services/settings_api";
+import type { Model } from "./api/shared/services/model_api";
+import { FileType } from "./api/shared/services/blob_api";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -30,20 +32,16 @@ export function toReadableSize(size: number) {
     return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-export function instanceOfModelWithGroup(object: any): object is ModelWithGroup {
-    return 'group' in object;
-}
-
 export function countWriter(type: string, groups: any[]): string {
     return `${groups.length} ${type}${groups.length === 1 ? "" : "s"}`;
 }
 
 export function loadModelAutomatically(configuration: Configuration, model: Model): boolean {
-    let modelSizeInMb = model.size / 1024 / 1024;
+    let modelSizeInMb = model.blob.size / 1024 / 1024;
 
     let maxSize = 0;
 
-    switch (model.filetype) {
+    switch (model.blob.filetype) {
         case FileType.STL:
             maxSize = configuration.max_size_model_stl_preview;
             break;
@@ -59,16 +57,16 @@ export function loadModelAutomatically(configuration: Configuration, model: Mode
 }
 
 export function isModelPreviewable(model: Model): boolean {
-    return model.filetype === FileType.STL 
-        || model.filetype === FileType.OBJ 
-        || model.filetype === FileType.THREEMF;
+    return model.blob.filetype === FileType.STL 
+        || model.blob.filetype === FileType.OBJ 
+        || model.blob.filetype === FileType.THREEMF;
 }
 
 export function isModelSlicable(model: Model): boolean {
-    return model.filetype === FileType.STL 
-        || model.filetype === FileType.OBJ 
-        || model.filetype === FileType.THREEMF
-        || model.filetype === FileType.STEP;
+    return model.blob.filetype === FileType.STL 
+        || model.blob.filetype === FileType.OBJ 
+        || model.blob.filetype === FileType.THREEMF
+        || model.blob.filetype === FileType.STEP;
 }
 
 export function fileTypeToDisplayName(fileType: FileType): string {

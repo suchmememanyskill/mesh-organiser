@@ -300,3 +300,19 @@ pub async fn get_model_count(db: &DbContext, user : &User, flags : Option<ModelF
 
     Ok(count as usize)
 }
+
+pub struct ModelSizeResult {
+    pub total_size: i64,
+    pub blob_sha256: Vec<String>,
+}
+
+pub async fn get_size_of_models(db: &DbContext, user : &User) -> Result<ModelSizeResult, DbError> {
+    let row = sqlx::query!(
+        "SELECT SUM(blob_size) as \"total_size: i64\", GROUP_CONCAT(blob_sha256) as \"blob_sha256: String\" FROM models JOIN blobs ON models.model_blob_id = blobs.blob_id WHERE model_user_id = ?",
+        user.id
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(ModelSizeResult { total_size: row.total_size.unwrap_or(0), blob_sha256: row.blob_sha256.map(|f| f.split(",").map(|f| f.to_string()).collect()).unwrap_or(Vec::new()) })
+}

@@ -565,6 +565,7 @@ pub fn run() {
             api::get_group_count,
             api::get_model_count,
             api::get_groups_for_resource,
+            api::get_model_disk_space_usage,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

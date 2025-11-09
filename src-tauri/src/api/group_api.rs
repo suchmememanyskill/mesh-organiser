@@ -7,6 +7,7 @@ use crate::{error::ApplicationError, service::app_state::AppState};
 
 #[tauri::command]
 pub async fn get_groups(
+    model_ids: Option<Vec<i64>>,
     group_ids : Option<Vec<i64>>,
     label_ids: Option<Vec<i64>>,
     order_by: Option<String>,
@@ -17,6 +18,7 @@ pub async fn get_groups(
     state: State<'_, AppState>
 ) -> Result<Vec<ModelGroup>, ApplicationError> {
     let groups = db::group_db::get_groups(&state.db, &state.get_current_user(), db::group_db::GroupFilterOptions {
+        model_ids,
         group_ids,
         label_ids,
         order_by: order_by.map(|s| GroupOrderBy::from_str(&s).unwrap_or(GroupOrderBy::NameAsc)),

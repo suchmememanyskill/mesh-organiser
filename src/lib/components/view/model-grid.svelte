@@ -1,19 +1,14 @@
 <script lang="ts">
-    import ModelTiny from "$lib/components/view/model-tiny.svelte";
-    import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
+    import type { IModelStreamManager, Model } from "$lib/api/shared/services/model_api";
+    import { convertOrderOptionModelsToEnum, type OrderOptionModels, SizeOptionModelsAsList } from "$lib/api/shared/services/settings_api";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
-    import { onDestroy, onMount } from "svelte";
-    import { debounce, instanceOfModelWithGroup } from "$lib/utils";
-    import RightClickModels from "$lib/components/view/right-click-models.svelte";
-    import LabelSelect from "$lib/components/view/label-select.svelte";
-    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
-    import type { IModelStreamManager, Model } from "$lib/api/shared/services/model_api";
     import { configuration } from "$lib/configuration.svelte";
-    import { convertOrderOptionModelsToEnum, type OrderOptionModels, SizeOptionModelsAsList } from "$lib/api/shared/services/settings_api";
+    import { debounce } from "$lib/utils";
+    import { onMount } from "svelte";
 
     const props: { modelStream : IModelStreamManager, default_show_multiselect_all? : boolean, initialEditMode? : boolean } = $props();
     let loadedModels = $state<Model[]>([]);

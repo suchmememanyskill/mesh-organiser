@@ -1,51 +1,46 @@
 <script lang="ts">
     import {
         Card,
-        CardHeader,
-        CardTitle,
         CardContent,
+        CardHeader
     } from "$lib/components/ui/card";
 
-    import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
 
-    import FolderOpen from "@lucide/svelte/icons/folder-open";
-    import Slice from "@lucide/svelte/icons/slice";
-    import ListCheck from "@lucide/svelte/icons/list-check";
     import { Textarea } from "$lib/components/ui/textarea/index.js";
+    import FolderOpen from "@lucide/svelte/icons/folder-open";
+    import ListCheck from "@lucide/svelte/icons/list-check";
+    import Slice from "@lucide/svelte/icons/slice";
 
-    import * as HoverCard from "$lib/components/ui/hover-card/index.js";
-    import { debounce, isModelSlicable, fileTypeToColor, fileTypeToDisplayName } from "$lib/utils";
-    import type { ClassValue } from "svelte/elements";
-    import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-    import Ellipsis from "@lucide/svelte/icons/ellipsis";
-    import * as Select from "$lib/components/ui/select/index.js";
-    import LabelBadge from "$lib/components/view/label-badge.svelte";
-    import Button, { buttonVariants } from "../ui/button/button.svelte";
-    import Edit from "@lucide/svelte/icons/edit";
+    import { goto } from "$app/navigation";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { IGroupApi } from "$lib/api/shared/services/group_api";
+    import { ILabelApi } from "$lib/api/shared/services/label_api";
+    import { ILocalApi } from "$lib/api/shared/services/local_api";
+    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
+    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import { AsyncButton } from "$lib/components/ui/button/index.js";
-    import { toReadableSize, instanceOfModelWithGroup, loadModelAutomatically, isModelPreviewable } from "$lib/utils";
+    import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+    import * as HoverCard from "$lib/components/ui/hover-card/index.js";
+    import { Toggle } from "$lib/components/ui/toggle/index.js";
+    import LabelBadge from "$lib/components/view/label-badge.svelte";
+    import LabelSelect from "$lib/components/view/label-select.svelte";
+    import LinkButton from "$lib/components/view/link-button.svelte";
     import ModelImg from "$lib/components/view/model-img.svelte";
-    import Ungroup from "@lucide/svelte/icons/ungroup";
+    import ThreeCanvas from "$lib/components/view/three-d-canvas.svelte";
+    import { configuration } from "$lib/configuration.svelte";
+    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { debounce, fileTypeToColor, fileTypeToDisplayName, isModelPreviewable, loadModelAutomatically, toReadableSize } from "$lib/utils";
+    import Box from "@lucide/svelte/icons/box";
+    import Edit from "@lucide/svelte/icons/edit";
+    import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import GroupIcon from "@lucide/svelte/icons/group";
     import Trash2 from "@lucide/svelte/icons/trash-2";
-    import Tag from "@lucide/svelte/icons/tag";
-    import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
-    import LinkButton from "$lib/components/view/link-button.svelte";
-    import ThreeCanvas from "$lib/components/view/three-d-canvas.svelte";
-    import { Toggle } from "$lib/components/ui/toggle/index.js";
-    import Box from "@lucide/svelte/icons/box";
-    import LabelSelect from "$lib/components/view/label-select.svelte";
-    import { goto } from "$app/navigation";
-    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
-    import { configuration } from "$lib/configuration.svelte";
-    import { IGroupApi } from "$lib/api/shared/services/group_api";
-    import { getContainer } from "$lib/api/dependency_injection";
-    import { ILabelApi, LabelMeta } from "$lib/api/shared/services/label_api";
-    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
-    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
-    import { ILocalApi } from "$lib/api/shared/services/local_api";
+    import Ungroup from "@lucide/svelte/icons/ungroup";
+    import type { ClassValue } from "svelte/elements";
+    import Button, { buttonVariants } from "../ui/button/button.svelte";
     
     interface Function {
         (): void;

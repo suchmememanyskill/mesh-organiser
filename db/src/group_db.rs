@@ -17,6 +17,7 @@ pub enum GroupOrderBy
 #[derive(Default)]
 pub struct GroupFilterOptions
 {
+    pub model_ids: Option<Vec<i64>>,
     pub group_ids: Option<Vec<i64>>,
     pub label_ids: Option<Vec<i64>>,
     pub order_by: Option<GroupOrderBy>,
@@ -33,8 +34,7 @@ fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : 
 
     for mut model in models 
     {
-        // TODO: Revert this to clone if model.group is needed in the UI
-        let group_meta = match model.group.take()
+        let group_meta = match model.group.clone()
         {
             Some(g) => g,
             None => {
@@ -75,8 +75,10 @@ fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : 
 pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptions) -> Result<PaginatedResponse<ModelGroup>, DbError> {
     let filtered_on_labels = options.label_ids.is_some();
     let filtered_on_text = options.text_search.is_some();
+    let filtered_on_models = options.model_ids.is_some();
 
     let models = model_db::get_models(db, user, ModelFilterOptions {
+        model_ids: options.model_ids,
         group_ids: options.group_ids,
         label_ids: options.label_ids,
         text_search: options.text_search,
@@ -88,7 +90,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
     let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models);
 
     // It's possible we don't have the entire group here. Re-fetching groups
-    if filtered_on_labels || filtered_on_text {
+    if filtered_on_labels || filtered_on_text || filtered_on_models {
         let group_ids : Vec<i64> = groups.iter().filter(|f| f.meta.id >= 0).map(|f| f.meta.id).collect();
         let fake_models : Vec<ModelGroup> = groups.into_iter().filter(|f| f.meta.id < 0).collect();
 

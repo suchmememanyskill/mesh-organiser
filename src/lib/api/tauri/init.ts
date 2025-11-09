@@ -23,6 +23,17 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { debounce } from "$lib/utils";
 import { DefaultSidebarStateApi, ISidebarStateApi } from "../shared/services/sidebar_state_api";
+import { HostApi } from "./host";
+import { IHostApi } from "../shared/services/host_api";
+import { check } from "@tauri-apps/plugin-updater";
+import { updateState } from "$lib/update_data.svelte";
+import { toast } from "svelte-sonner";
+import { DiskUsageInfoApi } from "./disk_usage_info";
+import { IDiskUsageInfoApi } from "../shared/services/disk_usage_info_api";
+import { SlicerApi } from "./slicer";
+import { LocalApi } from "./local";
+import { ISlicerApi } from "../shared/services/slicer_api";
+import { ILocalApi } from "../shared/services/local_api";
 
 interface InitialState
 {
@@ -38,19 +49,24 @@ async function getInitialState() : Promise<InitialState>
 
 export async function initTauriLocalApis() : Promise<void> {
     resetContainer();
-    let container = getContainer();
+    const container = getContainer();
+    const state = await getInitialState();
 
     const appDataDirPath = await appDataDir();
-    let blob = new BlobApi(appDataDirPath);
-    let group = new GroupApi();
-    let internalBrowser = new InternalBrowserApi();
-    let label = new LabelApi();
-    let model = new ModelApi();
-    let resourceFolder = new ResourceFolderApi();
-    let resource = new ResourceApi();
-    let settings = new SettingsApi();
-    let tauriImport = new TauriImportApi();
-    let sidebarApi = new DefaultSidebarStateApi();
+    const blob = new BlobApi(appDataDirPath);
+    const group = new GroupApi();
+    const internalBrowser = new InternalBrowserApi();
+    const label = new LabelApi();
+    const model = new ModelApi();
+    const resourceFolder = new ResourceFolderApi();
+    const resource = new ResourceApi();
+    const settings = new SettingsApi();
+    const tauriImport = new TauriImportApi();
+    const sidebarApi = new DefaultSidebarStateApi();
+    const hostApi = new HostApi();
+    const diskUsageInfoApi = new DiskUsageInfoApi();
+    const slicerApi = new SlicerApi();
+    const localApi = new LocalApi(appDataDirPath, state.max_parallelism ?? 2);
 
     // This should probably happen on the rust side
     await invoke("remove_dead_groups", {});
@@ -59,7 +75,7 @@ export async function initTauriLocalApis() : Promise<void> {
 
     await tauriImport.initImportListeners();
 
-    const state = await getInitialState();
+    
     console.log('initial state:', state);
     if (state.deep_link_url)
     {
@@ -84,7 +100,7 @@ export async function initTauriLocalApis() : Promise<void> {
     }, 100);
 
     addEventListener("resize", debounced_resize);
-
+    
     container.addSingleton(IBlobApi, blob);
     container.addSingleton(IGroupApi, group);
     container.addSingleton(IInternalBrowserApi, internalBrowser);
@@ -95,4 +111,23 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(ISettingsApi, settings);
     container.addSingleton(ITauriImportApi, tauriImport);
     container.addSingleton(ISidebarStateApi, sidebarApi);
+    container.addSingleton(IHostApi, hostApi);
+    container.addSingleton(IDiskUsageInfoApi, diskUsageInfoApi);
+    container.addSingleton(ISlicerApi, slicerApi);
+    container.addSingleton(ILocalApi, localApi);
+
+    try 
+    {
+        const update = await check();
+        console.log(update);
+
+        if (update && update.version && update.version !== configuration.ignore_update && configuration.ignore_update !== "always")
+        {
+            updateState.update = update;
+        }
+    }
+    catch
+    {
+        toast.error("Failed to check for updates");
+    }
 }

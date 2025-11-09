@@ -4,10 +4,6 @@ import { Model } from "../shared/services/model_api";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
 import { parseRawModel, type RawModel } from "./model";
 import { parseRawResourceMeta, type RawResourceMeta } from "./resource";
-import { Blob } from "../shared/services/blob_api";
-import { LabelMeta } from "../shared/services/label_api";
-import { ResourceMeta } from "../shared/services/resource_api";
-import { parse } from "svelte/compiler";
 
 export interface RawGroupMeta {
     id: number;
@@ -29,6 +25,7 @@ export interface RawGroup {
     models: RawModel[];
     labels: RawLabelMeta[];
     resource: RawResourceMeta|null;
+    flags: string[];
 }
 
 export function parseRawGroup(raw: RawGroup): Group {
@@ -37,13 +34,15 @@ export function parseRawGroup(raw: RawGroup): Group {
         raw.models.map(model => parseRawModel(model)),
         raw.labels.map(label => parseRawLabelMeta(label)),
         raw.resource ? parseRawResourceMeta(raw.resource) : null,
+        raw.flags
     );
 }
         
 
 export class GroupApi implements IGroupApi {
-    async getGroups(group_ids: number[] | null, label_ids: number[] | null, order_by: GroupOrderBy, text_search: string | null, page: number, page_size: number, include_ungrouped_models: boolean): Promise<Group[]> {
+    async getGroups(model_ids: number[]|null, group_ids: number[] | null, label_ids: number[] | null, order_by: GroupOrderBy, text_search: string | null, page: number, page_size: number, include_ungrouped_models: boolean): Promise<Group[]> {
         let groups = await invoke<RawGroup[]>("get_groups", {
+            modelIds: model_ids,
             groupIds: group_ids,
             labelIds: label_ids,
             orderBy: order_by,

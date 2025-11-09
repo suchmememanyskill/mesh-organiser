@@ -1,47 +1,42 @@
 <script lang="ts">
     import {
         Card,
+        CardContent,
         CardHeader,
         CardTitle,
-        CardContent,
     } from "$lib/components/ui/card";
 
-    import { Label } from "$lib/components/ui/label";
-    import * as Select from "$lib/components/ui/select/index.js";
-    import LabelBadge from "$lib/components/view/label-badge.svelte";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import { Label } from "$lib/components/ui/label";
     import LabelSelect from "$lib/components/view/label-select.svelte";
     import { countWriter } from "$lib/utils";
 
     import { goto } from "$app/navigation";
 
-    import type { ClassValue } from "svelte/elements";
-    import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import {
-        buttonVariants,
-        Button,
         AsyncButton,
+        Button,
+        buttonVariants,
     } from "$lib/components/ui/button/index.js";
-    import { instanceOfModelWithGroup } from "$lib/utils";
-    import { toast } from "svelte-sonner";
+    import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
+    import { toast } from "svelte-sonner";
+    import type { ClassValue } from "svelte/elements";
 
-    import Tag from "@lucide/svelte/icons/tag";
-    import DiamondMinus from "@lucide/svelte/icons/diamond-minus";
-    import FolderOpen from "@lucide/svelte/icons/folder-open";
-    import Slice from "@lucide/svelte/icons/slice";
-    import Group from "@lucide/svelte/icons/group";
-    import Ungroup from "@lucide/svelte/icons/ungroup";
-    import Trash2 from "@lucide/svelte/icons/trash-2";
-    import Component from "@lucide/svelte/icons/component";
-    import Boxes from "@lucide/svelte/icons/boxes";
-    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
-    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
-    import { ILabelApi, type LabelMeta } from "$lib/api/shared/services/label_api";
     import { getContainer } from "$lib/api/dependency_injection";
     import { GroupMeta, IGroupApi } from "$lib/api/shared/services/group_api";
-    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { ILabelApi, type LabelMeta } from "$lib/api/shared/services/label_api";
     import { ILocalApi } from "$lib/api/shared/services/local_api";
+    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
+    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
+    import Boxes from "@lucide/svelte/icons/boxes";
+    import Component from "@lucide/svelte/icons/component";
+    import FolderOpen from "@lucide/svelte/icons/folder-open";
+    import Group from "@lucide/svelte/icons/group";
+    import Slice from "@lucide/svelte/icons/slice";
+    import Trash2 from "@lucide/svelte/icons/trash-2";
+    import Ungroup from "@lucide/svelte/icons/ungroup";
 
     interface Function {
         (): void;

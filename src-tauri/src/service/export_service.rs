@@ -3,6 +3,7 @@ use crate::error::ApplicationError;
 use db::model::{Blob, Model};
 use chrono::Utc;
 use std::{fs::File, path::PathBuf};
+use std::collections::HashSet;
 
 use super::app_state::AppState;
 
@@ -99,4 +100,44 @@ fn get_path_from_model(
     } else {
         Ok(src_file_path)
     }
+}
+
+pub fn get_size_of_blobs(
+    blobs: &Vec<String>, // Sha256's
+    app_state: &AppState,
+) -> Result<u64, ApplicationError> {
+    let base_dir = PathBuf::from(app_state.get_model_dir());
+    let mut total_size: u64 = 0;
+    let hashset = blobs.iter().cloned().collect::<HashSet<String>>();
+
+    for path in base_dir.read_dir()? {
+        let path = match path {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+
+        let f = path.file_name();
+        let lossy = f.to_string_lossy();
+        let filename = match lossy.split('.').next() {
+            Some(name) => name,
+            None => continue,
+        };
+
+        if !hashset.contains(filename) {
+            continue;
+        }
+
+        let metadata = match path.metadata() {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+
+        if !metadata.is_file() {
+            continue;
+        }
+
+        total_size += metadata.len();
+    }
+
+    Ok(total_size)
 }

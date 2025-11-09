@@ -3,10 +3,11 @@ use std::str::FromStr;
 
 use db::model::{ModelFlags, User};
 use db::model_db::{self, ModelFilterOptions, ModelOrderBy};
+use serde::Serialize;
 use tauri::{AppHandle, State};
 use crate::error::ApplicationError;
 use crate::service::app_state::AppState;
-use crate::service::{self, import_service};
+use crate::service::{self, export_service, import_service};
 use crate::service::import_state::{ImportState, ImportStatus};
 
 #[tauri::command]
@@ -145,4 +146,21 @@ pub async fn get_model_count(flags : Option<ModelFlags>, state: State<'_, AppSta
     let count = db::model_db::get_model_count(&state.db, &state.get_current_user(), flags).await?;
 
     Ok(count)
+}
+
+#[derive(Debug, Serialize)]
+pub struct ModelDiskSpaceUsage {
+    pub size_uncompressed: u64,
+    pub size_compressed: u64,
+}
+
+#[tauri::command]
+pub async fn get_model_disk_space_usage(state: State<'_, AppState>) -> Result<ModelDiskSpaceUsage, ApplicationError> {
+    let data = model_db::get_size_of_models(&state.db, &state.get_current_user()).await?;
+    let local = export_service::get_size_of_blobs(&data.blob_sha256, &state)?;
+
+    Ok(ModelDiskSpaceUsage {
+        size_uncompressed: data.total_size as u64,
+        size_compressed: local,
+    })
 }

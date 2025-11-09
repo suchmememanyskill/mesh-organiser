@@ -6,6 +6,7 @@ import { IGroupApi } from "./group_api";
 import { ILabelApi, type Label } from "./label_api";
 import { IModelApi } from "./model_api";
 import { IResourceApi } from "./resource_api";
+import { ISlicerApi, type SlicerEntry } from "./slicer_api";
 
 export interface SidebarState {
     modelCount: number;
@@ -14,6 +15,7 @@ export interface SidebarState {
     printHistoryCount: number;
     projectCount: number;
     labels: Label[];
+    availableSlicers : SlicerEntry[];
 }
 
 export function defaultSidebarState() : SidebarState {
@@ -24,6 +26,7 @@ export function defaultSidebarState() : SidebarState {
         printHistoryCount: 0,
         projectCount: 0,
         labels: [],
+        availableSlicers : [],
     };
 }
 
@@ -40,6 +43,7 @@ export class DefaultSidebarStateApi implements ISidebarStateApi {
         let groupApi = container.require<IGroupApi>(IGroupApi);
         let resourceApi = container.require<IResourceApi>(IResourceApi);
         let labelApi = container.require<ILabelApi>(ILabelApi);
+        let slicerApi = container.optional<ISlicerApi>(ISlicerApi);
 
         let results = await Promise.all([
             modelApi.getModelCount(null),
@@ -47,7 +51,8 @@ export class DefaultSidebarStateApi implements ISidebarStateApi {
             modelApi.getModelCount({ printed: false, favorite: true }),
             groupApi.getGroupCount(configuration.show_ungrouped_models_in_groups),
             resourceApi.getResources(),
-            labelApi.getLabels(true)
+            labelApi.getLabels(true),
+            slicerApi ? slicerApi.availableSlicers() : Promise.resolve([] as SlicerEntry[]),
         ]);
 
         return {
@@ -56,7 +61,8 @@ export class DefaultSidebarStateApi implements ISidebarStateApi {
             favoriteCount: results[2],
             groupCount: results[3],
             projectCount: results[4].length,
-            labels: results[5]
+            labels: results[5],
+            availableSlicers: results[6],
         };
     }
 }

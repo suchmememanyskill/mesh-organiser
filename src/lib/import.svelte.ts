@@ -1,12 +1,10 @@
 import { Import } from "@lucide/svelte";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { listen } from '@tauri-apps/api/event';
-import { c, updateState } from "./data.svelte";
-import { ImportStatus, type ImportState } from "./model";
-import { downloadFile, importModel } from "./tauri";
 import { goto } from "$app/navigation";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "svelte-sonner";
+import { ImportStatus, type ImportState } from "./api/shared/services/tauri_import_api";
 
 interface GlobalImportSettings
 {

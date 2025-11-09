@@ -1,103 +1,95 @@
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
-    import {
-        updateImages,
-        setConfig,
-        getAvailableSlicers,
-        computeModelFolderSize,
-        getInitialState,
-    } from "$lib/tauri";
-    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-    import { c, updateState, data } from "$lib/data.svelte";
-    import { toReadableSize } from "$lib/utils";
     import { Input } from "$lib/components/ui/input/index.js";
-    import { configurationDefault, type SlicerEntry } from "$lib/model";
-    import { openPath } from '@tauri-apps/plugin-opener';
+    import { toReadableSize } from "$lib/utils";
+    import { onMount } from "svelte";
 
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/services/disk_usage_info_api";
+    import { ILocalApi } from "$lib/api/shared/services/local_api";
+    import { configurationDefault } from "$lib/api/shared/services/settings_api";
+    import { IThumbnailApi } from "$lib/api/shared/services/thumbnail_api";
+    import { Button } from "$lib/components/ui/button/index.js";
     import {
         Card,
+        CardContent,
         CardHeader,
         CardTitle,
-        CardContent,
     } from "$lib/components/ui/card";
-    import * as Select from "$lib/components/ui/select/index.js";
-    import { Checkbox, CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
-    import { Label } from "$lib/components/ui/label/index.js";
-    import { Button } from "$lib/components/ui/button/index.js";
     import CardFooter from "$lib/components/ui/card/card-footer.svelte";
-    import { appDataDir, join } from "@tauri-apps/api/path";
-    import { open } from "@tauri-apps/plugin-dialog";
-    import { setTheme, getAvailableThemes, getThemeName } from "$lib/theme";
+    import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import { Label } from "$lib/components/ui/label/index.js";
+    import * as Select from "$lib/components/ui/select/index.js";
+    import { configuration } from "$lib/configuration.svelte";
     import { importState, resetImportState } from "$lib/import.svelte";
+    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { getAvailableThemes, getThemeName, setTheme } from "$lib/theme";
 
-    let models_size = $derived(data.entries.map(e => e.size).reduce((partialSum, a) => partialSum + a, 0));
-    let model_dir_size = $state(0);
+    const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
+    const localApi = getContainer().optional<ILocalApi>(ILocalApi);
+    const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
+    let diskUsage = $state<DiskUsageInfo|null>(null);
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
     let app_data_dir = "";
 
     async function replaceAllThumbnails(overwrite : boolean) {
+        if (!thumbnailApi) {
+            return;
+        }
+
         thumbnail_regen_button_enabled = false;
-        importState.model_count = data.entries.length;
-        await updateImages(overwrite);
+        importState.model_count = sidebarState.modelCount;
+
+        let promise = overwrite
+            ? thumbnailApi.generateAllThumbnails()
+            : thumbnailApi.generateMissingThumbnails();
+
+        await promise;
+
         resetImportState();
         thumbnail_regen_button_enabled = true;
     }
 
     async function openDataDir()
     {
-        const new_path = await open({
-            multiple: false,
-            directory: true,
-        });
+        const new_path = await localApi?.openDataDirPicker();
 
         if (new_path)
         {
-            c.configuration.data_path = new_path;
+            configuration.data_path = new_path;
         }
     }
 
     async function openCustomSlicerPicker()
     {
-        const new_path = await open({
-            multiple: false,
-            directory: false,
-        });
+        const new_path = await localApi?.openCustomSlicerPicker();
 
         if (new_path)
         {
-            c.configuration.custom_slicer_path = new_path;
+            configuration.custom_slicer_path = new_path;
         }
     }
 
     async function onInternalStateChange()
     {
-        await updateState();
+        await updateSidebarState();
     }
 
     async function openCustomCss()
     {
-        const appDataDirPath = await appDataDir();
-        const filePath = await join(
-            appDataDirPath,
-            "custom.css"
-        );
-
-        await openPath(filePath);
+        await localApi?.openCustomCss();
     }
 
     onMount(async () => {
-        const state = await getInitialState();
+        max_parallelism = await localApi?.getMaxParallelism() ?? 128;
 
-        if (state.max_parallelism)
-        {
-            max_parallelism = state.max_parallelism;
+        if (localApi) {
+            app_data_dir = await localApi.getAppDataDir();
         }
-    });
 
-    onMount(async () => {
-        app_data_dir = await appDataDir();
-        model_dir_size = await computeModelFolderSize();
+        if (diskUsageInfoApi) {
+            diskUsage =  await diskUsageInfoApi.getDiskUsageInfo();
+        }
     });
     
     let splitConversions = {
@@ -132,10 +124,10 @@
                     <Label class="p-2 mx-auto">Progress: {(importState.finished_thumbnails_count/importState.model_count*100).toFixed(1)}%</Label>
                 {/if}
 
-                <CheckboxWithLabel bind:value={c.configuration.prefer_gcode_thumbnail} label="Prefer gcode thumbnail over gcode model" />
-                <CheckboxWithLabel bind:value={c.configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3mf files" />
-                {#if c.configuration.fallback_3mf_thumbnail}
-                    <CheckboxWithLabel class="ml-8" bind:value={c.configuration.prefer_3mf_thumbnail} label="Prefer 3mf thumbnail over 3mf model" />
+                <CheckboxWithLabel bind:value={configuration.prefer_gcode_thumbnail} label="Prefer gcode thumbnail over gcode model" />
+                <CheckboxWithLabel bind:value={configuration.fallback_3mf_thumbnail} label="Use fallback thumbnail for 3mf files" />
+                {#if configuration.fallback_3mf_thumbnail}
+                    <CheckboxWithLabel class="ml-8" bind:value={configuration.prefer_3mf_thumbnail} label="Prefer 3mf thumbnail over 3mf model" />
                 {/if}
 
                 <div class="flex flex-col space-y-1.5">
@@ -144,7 +136,7 @@
                         type="number"
                         min="1"
                         max={max_parallelism}
-                        bind:value={c.configuration.core_parallelism} />
+                        bind:value={configuration.core_parallelism} />
                 </div>
 
                 <div class="flex flex-col space-y-1.5">
@@ -155,11 +147,11 @@
                             placeholder="color"
                             type="color"
                             class="flex-grow"
-                            bind:value={c.configuration.thumbnail_color}
+                            bind:value={configuration.thumbnail_color}
                         />
                         <Button
                             onclick={() =>
-                                (c.configuration.thumbnail_color = "#EEEEEE")}
+                                (configuration.thumbnail_color = "#EEEEEE")}
                             >Default</Button
                         >
                     </div>
@@ -186,15 +178,15 @@
 
                     <CheckboxWithLabel label = "Do not automatically load STL models" class="ml-1"
                         bind:value={
-                            () => c.configuration.max_size_model_stl_preview <= 0,
-                            (val) => { c.configuration.max_size_model_stl_preview = val ? 0 : configurationDefault().max_size_model_stl_preview; }
+                            () => configuration.max_size_model_stl_preview <= 0,
+                            (val) => { configuration.max_size_model_stl_preview = val ? 0 : configurationDefault().max_size_model_stl_preview; }
                         } />
 
                     <Input
                         type="number"
                         min="0"
-                        disabled={c.configuration.max_size_model_stl_preview <= 0}
-                        bind:value={c.configuration.max_size_model_stl_preview} />
+                        disabled={configuration.max_size_model_stl_preview <= 0}
+                        bind:value={configuration.max_size_model_stl_preview} />
                 </div>
 
                 <div class="flex flex-col gap-3">
@@ -202,15 +194,15 @@
 
                     <CheckboxWithLabel label = "Do not automatically load OBJ models" class="ml-1"
                         bind:value={
-                            () => c.configuration.max_size_model_obj_preview <= 0,
-                            (val) => { c.configuration.max_size_model_obj_preview = val ? 0 : configurationDefault().max_size_model_obj_preview; }
+                            () => configuration.max_size_model_obj_preview <= 0,
+                            (val) => { configuration.max_size_model_obj_preview = val ? 0 : configurationDefault().max_size_model_obj_preview; }
                         } />
 
                     <Input
                         type="number"
                         min="0"
-                        disabled={c.configuration.max_size_model_obj_preview <= 0}
-                        bind:value={c.configuration.max_size_model_obj_preview} />
+                        disabled={configuration.max_size_model_obj_preview <= 0}
+                        bind:value={configuration.max_size_model_obj_preview} />
                 </div>
 
                 <div class="flex flex-col gap-3">
@@ -218,15 +210,15 @@
 
                     <CheckboxWithLabel label = "Do not automatically load 3MF models" class="ml-1"
                         bind:value={
-                            () => c.configuration.max_size_model_3mf_preview <= 0,
-                            (val) => { c.configuration.max_size_model_3mf_preview = val ? 0 : configurationDefault().max_size_model_3mf_preview; }
+                            () => configuration.max_size_model_3mf_preview <= 0,
+                            (val) => { configuration.max_size_model_3mf_preview = val ? 0 : configurationDefault().max_size_model_3mf_preview; }
                         } />
 
                     <Input
                         type="number"
                         min="0"
-                        disabled={c.configuration.max_size_model_3mf_preview <= 0}
-                        bind:value={c.configuration.max_size_model_3mf_preview} />
+                        disabled={configuration.max_size_model_3mf_preview <= 0}
+                        bind:value={configuration.max_size_model_3mf_preview} />
                 </div>
             </CardContent>
         </Card>
@@ -236,11 +228,11 @@
                 <CardTitle>Import/Export settings</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                <CheckboxWithLabel bind:value={c.configuration.default_enabled_recursive_import} label="Check 'Import folder recursively' by default" />
-                <CheckboxWithLabel bind:value={c.configuration.default_enabled_delete_after_import} label="Check 'Delete files after import' by default" />
-                <CheckboxWithLabel bind:value={c.configuration.export_metadata} label="Export metadata to .json when opening in folder" />
-                <CheckboxWithLabel bind:value={c.configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
-                <CheckboxWithLabel bind:value={c.configuration.allow_importing_gcode} label="Allow importing gcode files" />
+                <CheckboxWithLabel bind:value={configuration.default_enabled_recursive_import} label="Check 'Import folder recursively' by default" />
+                <CheckboxWithLabel bind:value={configuration.default_enabled_delete_after_import} label="Check 'Delete files after import' by default" />
+                <CheckboxWithLabel bind:value={configuration.export_metadata} label="Export metadata to .json when opening in folder" />
+                <CheckboxWithLabel bind:value={configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
+                <CheckboxWithLabel bind:value={configuration.allow_importing_gcode} label="Allow importing gcode files" />
 
                 <div class="flex flex-col space-y-1.5">
                     <Label for="path">Model directory*</Label>
@@ -250,12 +242,12 @@
                             placeholder="path"
                             type="text"
                             class="flex-grow"
-                            bind:value={c.configuration.data_path}
+                            bind:value={configuration.data_path}
                         />
                         <Button onclick={openDataDir}>Browse</Button>
                         <Button
                             onclick={() =>
-                                (c.configuration.data_path = app_data_dir)}
+                                (configuration.data_path = app_data_dir)}
                             >Default</Button
                         >
                     </div>
@@ -264,21 +256,23 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-3">
-                    <Label>Total size of stored models</Label>
-                    <div class="grid grid-cols-2 text-sm">
-                        <div class="text-left space-y-1">
-                            <div>Uncompressed</div>
-                            <div>Compressed (Stored)</div>
-                            <div>Savings</div>
-                        </div>
-                        <div class="text-right space-y-1">
-                            <div>{toReadableSize(models_size)}</div>
-                            <div>{toReadableSize(model_dir_size)}</div>
-                            <div>{Number((models_size - model_dir_size) / models_size * 100).toFixed(1)}%</div>
+                {#if diskUsage}
+                    <div class="flex flex-col gap-3">
+                        <Label>Total size of stored models</Label>
+                        <div class="grid grid-cols-2 text-sm">
+                            <div class="text-left space-y-1">
+                                <div>Uncompressed</div>
+                                <div>Compressed (Stored)</div>
+                                <div>Savings</div>
+                            </div>
+                            <div class="text-right space-y-1">
+                                <div>{toReadableSize(diskUsage.size_uncompressed)}</div>
+                                <div>{toReadableSize(diskUsage.size_compressed)}</div>
+                                <div>{Number((diskUsage.size_uncompressed - diskUsage.size_compressed) / diskUsage.size_uncompressed * 100).toFixed(1)}%</div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                {/if}
             </CardContent>
         </Card>
 
@@ -287,11 +281,11 @@
                 <CardTitle>Open links from browser</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                <CheckboxWithLabel bind:value={c.configuration.prusa_deep_link} label="Bind 'Open in PrusaSlicer' links" />
-                <CheckboxWithLabel bind:value={c.configuration.cura_deep_link} label="Bind 'Open in Cura' links" />
-                <CheckboxWithLabel bind:value={c.configuration.bambu_deep_link} label="Bind 'Open in Bambu Studio' links" />
-                <CheckboxWithLabel bind:value={c.configuration.orca_deep_link} label="Bind 'Open in OrcaSlicer' links" />
-                <CheckboxWithLabel bind:value={c.configuration.elegoo_deep_link} label="Bind 'Open in Elegoo Slicer' links" />
+                <CheckboxWithLabel bind:value={configuration.prusa_deep_link} label="Bind 'Open in PrusaSlicer' links" />
+                <CheckboxWithLabel bind:value={configuration.cura_deep_link} label="Bind 'Open in Cura' links" />
+                <CheckboxWithLabel bind:value={configuration.bambu_deep_link} label="Bind 'Open in Bambu Studio' links" />
+                <CheckboxWithLabel bind:value={configuration.orca_deep_link} label="Bind 'Open in OrcaSlicer' links" />
+                <CheckboxWithLabel bind:value={configuration.elegoo_deep_link} label="Bind 'Open in Elegoo Slicer' links" />
                 <div>
                     Note: Binding the same link as your current slicer may cause opening links of that type to become inconsistent.
                 </div>
@@ -311,7 +305,7 @@
                         placeholder="Path to your slicer"
                         type="text"
                         class="flex-grow"
-                        bind:value={c.configuration.custom_slicer_path}
+                        bind:value={configuration.custom_slicer_path}
                     />
                     <Button onclick={openCustomSlicerPicker}>Browse</Button>
                 </div>
@@ -326,10 +320,10 @@
                 <CardTitle>Behaviour</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                <CheckboxWithLabel bind:value={c.configuration.open_slicer_on_remote_model_import} label="Open slicer after importing from website" />
-                <CheckboxWithLabel bind:value={c.configuration.focus_after_link_import} label="Focus window after importing from website" />
-                <CheckboxWithLabel bind:value={c.configuration.open_links_in_external_browser} label="Open links in external browser" />
-                <CheckboxWithLabel bind:value={c.configuration.label_exported_model_as_printed} label="Label exported models as printed" />             
+                <CheckboxWithLabel bind:value={configuration.open_slicer_on_remote_model_import} label="Open slicer after importing from website" />
+                <CheckboxWithLabel bind:value={configuration.focus_after_link_import} label="Focus window after importing from website" />
+                <CheckboxWithLabel bind:value={configuration.open_links_in_external_browser} label="Open links in external browser" />
+                <CheckboxWithLabel bind:value={configuration.label_exported_model_as_printed} label="Label exported models as printed" />             
             </CardContent>
         </Card>
 
@@ -338,7 +332,7 @@
                 <CardTitle>Window Zoom</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                <Label>Current zoom level: {c.configuration.zoom_level}%</Label>
+                <Label>Current zoom level: {configuration.zoom_level}%</Label>
                 <Label>Change the zoom level using Control and +/-</Label>
             </CardContent>
         </Card>
@@ -349,19 +343,19 @@
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
                 <CheckboxWithLabel bind:value={
-                    () => c.configuration.show_ungrouped_models_in_groups,
-                    (val) => { c.configuration.show_ungrouped_models_in_groups = val; onInternalStateChange(); }
+                    () => configuration.show_ungrouped_models_in_groups,
+                    (val) => { configuration.show_ungrouped_models_in_groups = val; onInternalStateChange(); }
                 } label="Show ungrouped models in groups" />
-                <CheckboxWithLabel bind:value={c.configuration.show_grouped_count_on_labels} label="Show grouped model count on labels" />
-                <CheckboxWithLabel bind:value={c.configuration.show_date_on_list_view} label="Show date on list view" />
-                <CheckboxWithLabel bind:value={c.configuration.only_show_single_image_in_groups} label="Only show first image of group" />
-                <CheckboxWithLabel bind:value={c.configuration.show_multiselect_checkboxes} label="Show multiselect checkboxes" />
-                <CheckboxWithLabel bind:value={c.configuration.use_worker_for_model_parsing} label="Use worker thread for model loading" />
+                <CheckboxWithLabel bind:value={configuration.show_grouped_count_on_labels} label="Show grouped model count on labels" />
+                <CheckboxWithLabel bind:value={configuration.show_date_on_list_view} label="Show date on list view" />
+                <CheckboxWithLabel bind:value={configuration.only_show_single_image_in_groups} label="Only show first image of group" />
+                <CheckboxWithLabel bind:value={configuration.show_multiselect_checkboxes} label="Show multiselect checkboxes" />
+                <CheckboxWithLabel bind:value={configuration.use_worker_for_model_parsing} label="Use worker thread for model loading" />
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Split group view</Label>
-                    <Select.Root type="single" bind:value={c.configuration.group_split_view}>
-                        <Select.Trigger class="w-full">{splitConversions[c.configuration.group_split_view]}</Select.Trigger>
+                    <Select.Root type="single" bind:value={configuration.group_split_view}>
+                        <Select.Trigger class="w-full">{splitConversions[configuration.group_split_view]}</Select.Trigger>
                         <Select.Content>
                             <Select.Item value="no_split">{splitConversions["no_split"]}</Select.Item>
                             <Select.Item value="split-left-right">{splitConversions["split-left-right"]}</Select.Item>
@@ -372,15 +366,15 @@
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Theme</Label>
-                    <Select.Root type="single" bind:value={c.configuration.theme} onValueChange={(val) => setTheme(val)}>
-                        <Select.Trigger class="w-full">{getThemeName(c.configuration.theme)}</Select.Trigger>
+                    <Select.Root type="single" bind:value={configuration.theme} onValueChange={(val) => setTheme(val)}>
+                        <Select.Trigger class="w-full">{getThemeName(configuration.theme)}</Select.Trigger>
                         <Select.Content>
                             {#each getAvailableThemes() as theme}
                                 <Select.Item value={theme}>{getThemeName(theme)}</Select.Item>
                             {/each}
                         </Select.Content>
                     </Select.Root>   
-                    {#if c.configuration.theme === "custom"}
+                    {#if configuration.theme === "custom"}
                         <div class="grid grid-cols-2 gap-2">
                                 <Button onclick={() => setTheme("custom")}>Reload theme</Button>
                                 <Button onclick={openCustomCss}>Open custom.css</Button>

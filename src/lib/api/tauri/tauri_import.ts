@@ -6,6 +6,7 @@ import { toast } from "svelte-sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { updateSidebarState } from "$lib/sidebar_data.svelte";
 import { configuration } from "$lib/configuration.svelte";
+import { open } from "@tauri-apps/plugin-dialog";
 
 interface DeepLinkEmit
 {
@@ -226,5 +227,42 @@ export class TauriImportApi implements ITauriImportApi {
         
         navigateToImportPage();
         await this.startImportProcess(payload.paths, {});
+    }
+
+    async openFolderForImporting() : Promise<void> {
+        await this.openForImporting(true);
+    }
+
+    async openFilesForImporting() : Promise<void> {
+        await this.openForImporting(false);
+    }
+
+    async openForImporting(directory : boolean) : Promise<void> {
+        let filters = undefined;
+
+        if (!directory) {
+            filters = [
+                {
+                    name: "3D Models",
+                    extensions: ["stl", "obj", "3mf", "gcode", "step"],
+                },
+            ];
+        }
+
+        let result: any = await open({
+            multiple: true,
+            directory: directory,
+            filters: filters,
+        });
+
+        if (!result) {
+            return;
+        }
+
+        if (result instanceof String || typeof result === "string") {
+            result = [result];
+        }
+
+        await this.startImportProcess(result, {});
     }
 }

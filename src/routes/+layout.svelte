@@ -5,11 +5,9 @@
     import { ModeWatcher } from "mode-watcher";
     import { onMount } from "svelte";
     import { listen } from '@tauri-apps/api/event';
-    import { getInitialState, downloadFile, removeDeadGroups } from "$lib/tauri";
     import { Toaster } from "$lib/components/ui/sonner/index.js";
     import { toast } from "svelte-sonner";
     import { goto } from '$app/navigation';
-    import { updateState, initConfiguration, c, on_save_configuration } from '$lib/data.svelte';
     import { getCurrentWindow } from '@tauri-apps/api/window';
     import { check, type Update } from '@tauri-apps/plugin-updater';
     import { relaunch } from '@tauri-apps/plugin-process';
@@ -18,15 +16,16 @@
     import { getCurrentWebview } from "@tauri-apps/api/webview";
     import { debounce } from "$lib/utils";
     import { setTheme } from "$lib/theme";
-    import { handleDeepLink, initImportListeners } from "$lib/import.svelte";
-    import UpdatePopup from "$lib/components/view/update-popup.svelte";
+    import UpdatePopup from "$lib/components/view/tauri-update-popup.svelte";
     import DragSelectedModelsRoot from "$lib/components/view/drag-selected-models-root.svelte";
-    import { configuration, configurationLoaded, configurationMeta } from "$lib/configuration.svelte";
     import { initApi } from "$lib/api/api";
+    import { configuration, configurationMeta } from "$lib/configuration.svelte";
+    import { updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { updateState } from "$lib/update_data.svelte";
+    import Spinner from "$lib/components/view/spinner.svelte";
 
     let { children } = $props();
-    let loaded_config = false;
-    let availableUpdate = $state<Update|null>(null);
+    let initializationDone = $state(false);
 
     interface Error
     {
@@ -36,6 +35,7 @@
     }
 
     onMount(async () => {
+        initializationDone = false;
         window.onerror = function (message, source, lineno, colno, error) {
             toast.error(`Error: ${message}`);
         };
@@ -51,23 +51,8 @@
         configurationMeta.configurationLoaded = true;
         await setTheme(configuration.theme);
 
-        await updateState();
-        loaded_config = true;
-
-        try 
-        {
-            const update = await check();
-            console.log(update);
-
-            if (update && update.version && update.version !== c.configuration.ignore_update && c.configuration.ignore_update !== "always")
-            {
-                availableUpdate = update;
-            }
-        }
-        catch
-        {
-            toast.error("Failed to check for updates");
-        }
+        await updateSidebarState();
+        initializationDone = true;
     });
 
     const is_mobile = new IsMobile();
@@ -75,6 +60,7 @@
 
 <ModeWatcher />
 <Toaster />
+{#if initializationDone}
 <DragSelectedModelsRoot class="w-full h-full">
     <Sidebar.Provider class="w-full h-full">
         <AppSidebar />
@@ -86,9 +72,13 @@
                 {@render children?.()}
             </div>
         </main>
-        {#if availableUpdate}
-            <UpdatePopup update={availableUpdate} onDismiss={() => availableUpdate = null} />
+        {#if updateState.update}
+            <UpdatePopup update={updateState.update} onDismiss={() => updateState.update = null} />
         {/if}
     </Sidebar.Provider>
 </DragSelectedModelsRoot>
-
+{:else}
+    <div class="mx-auto my-auto">
+        <Spinner />
+    </div>
+{/if}
