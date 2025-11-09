@@ -32,6 +32,7 @@
     const props: { label: LabelClass; class?: ClassValue, onDelete?: Function } = $props();
     const tracked_label = $derived(props.label);
     const parentId = $derived(page.url.searchParams.get("parentId"));
+    let children = $derived(tracked_label.children);
     let lastId = $state(-1);
     let availableLabels = $derived(sidebarState.labels.map(l => l.meta).filter(l => l.id !== tracked_label.meta.id));
 
@@ -147,8 +148,8 @@
                 <Label>Sub-labels</Label>
                 <LabelSelect placeholder="Add sub-labels" availableLabels={availableLabels} bind:value={
                     // TODO: does this work?
-                    () => tracked_label.children,
-                    (val) => { tracked_label.children = val; onUpdateLabel(); }} />
+                    () => children,
+                    (val) => { tracked_label.children = val; children = val; onUpdateLabel(); console.log(tracked_label.children) }} />
             </div>
         </div>
     </CardContent>

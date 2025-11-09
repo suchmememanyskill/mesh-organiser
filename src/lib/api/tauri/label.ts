@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Label, LabelMeta, type ILabelApi } from "../shared/services/label_api";
+import { Label, LabelMeta, stringColorToNumber, type ILabelApi } from "../shared/services/label_api";
 import type { Model } from "../shared/services/model_api";
 
 export interface RawLabelMeta {
@@ -20,7 +20,7 @@ export interface RawLabel {
     meta: RawLabelMeta;
     children: RawLabelMeta[];
     effective_labels: RawLabelMeta[];
-    has_parents: boolean;
+    has_parent: boolean;
     model_count: number;
     group_count: number;
     self_model_count: number;
@@ -32,12 +32,17 @@ export function parseRawLabel(raw: RawLabel): Label {
         parseRawLabelMeta(raw.meta),
         raw.children.map(child => parseRawLabelMeta(child)),
         raw.effective_labels.map(effective => parseRawLabelMeta(effective)),
-        raw.has_parents,
+        raw.has_parent,
         raw.model_count,
         raw.group_count,
         raw.self_model_count,
         raw.self_group_count,
     );
+}
+
+interface RawLabelKeyword {
+    id: number;
+    name: string;
 }
 
 export class LabelApi implements ILabelApi {
@@ -47,12 +52,12 @@ export class LabelApi implements ILabelApi {
     };
     
     async addLabel(name: string, color: string): Promise<LabelMeta> {
-        let label = await invoke<RawLabelMeta>("add_label", { labelName: name, labelColor: color });
+        let label = await invoke<RawLabelMeta>("add_label", { labelName: name, labelColor: stringColorToNumber(color) });
         return parseRawLabelMeta(label);
     }
     
     async editLabel(label: LabelMeta): Promise<void> {
-        return await invoke("edit_label", { labelId: label.id, labelName: label.name, labelColor: label.color });
+        return await invoke("edit_label", { labelId: label.id, labelName: label.name, labelColor: stringColorToNumber(label.color) });
     }
 
     async deleteLabel(label: LabelMeta): Promise<void> {
@@ -76,14 +81,14 @@ export class LabelApi implements ILabelApi {
     }
 
     async getKeywordsForLabel(label: LabelMeta): Promise<string[]> {
-        return await invoke("get_keywords_for_label", { labelId: label.id });
+        return (await invoke<RawLabelKeyword[]>("get_keywords_for_label", { labelId: label.id })).map(kw => kw.name);
     }
 
     async setChildrenOnLabel(label: LabelMeta, children: LabelMeta[]): Promise<void> {
-        return await invoke("set_childs_on_label", { labelId: label.id, childLabelIds: children.map(child => child.id) });
+        return await invoke("set_childs_on_label", { parentLabelId: label.id, childLabelIds: children.map(child => child.id) });
     }
 
     async removeChildrenFromLabel(label: LabelMeta, children: LabelMeta[]): Promise<void> {
-        return await invoke("remove_childs_from_label", { labelId: label.id, childLabelIds: children.map(child => child.id) });
+        return await invoke("remove_childs_from_label", { parentLabelId: label.id, childLabelIds: children.map(child => child.id) });
     }
 }

@@ -54,12 +54,12 @@ export class Model {
 }
 
 export enum ModelOrderBy {
-    AddedAsc,
-    AddedDesc,
-    NameAsc,
-    NameDesc,
-    SizeAsc,
-    SizeDesc,
+    AddedAsc = "AddedAsc",
+    AddedDesc = "AddedDesc",
+    NameAsc = "NameAsc",
+    NameDesc = "NameDesc",
+    SizeAsc = "SizeAsc",
+    SizeDesc = "SizeDesc",
 }
 
 export const IModelApi = Symbol('IModelApi');
@@ -123,6 +123,8 @@ export class PredefinedModelStreamManager implements IModelStreamManager {
             return [];
         }
 
+        this.alreadyFetched = true;
+
         let filter = !this.textSearch ? this.models : this.models.filter(model => 
             model.name.toLowerCase().includes(this.textSearch!) ||
             (model.description?.toLowerCase().includes(this.textSearch!) ?? false)
@@ -176,10 +178,12 @@ export class ModelStreamManager implements IModelStreamManager {
 
     setSearchText(text: string | null): void {
         this.textSearch = text;
+        this.generateGenerator();
     }
 
     setOrderBy(order_by: ModelOrderBy): void {
         this.orderBy = order_by;
+        this.generateGenerator();
     }
 
     async fetch(): Promise<Model[]> {

@@ -12,6 +12,13 @@ export class LabelMeta {
     }
 }
 
+export function stringColorToNumber(color: string): number {
+    if (color.startsWith('#')) {
+        color = color.slice(1);
+    }
+    return parseInt(color, 16);
+}
+
 export class Label {
     meta: LabelMeta;
     children: LabelMeta[];

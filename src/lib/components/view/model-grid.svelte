@@ -8,7 +8,7 @@
     import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
     import { configuration } from "$lib/configuration.svelte";
     import { debounce } from "$lib/utils";
-    import { onMount } from "svelte";
+    import { onMount, untrack } from "svelte";
 
     const props: { modelStream : IModelStreamManager, default_show_multiselect_all? : boolean, initialEditMode? : boolean } = $props();
     let loadedModels = $state<Model[]>([]);
@@ -26,6 +26,7 @@
             loadedModels.push(...newModels);
         }
         busyLoadingNext = false;
+        console.log("Loaded models: " + loadedModels.length);
     }
 
     async function resetModelSet() {
@@ -54,8 +55,13 @@
         debouncedResetModelSet();
     }
 
-    onMount(async () => {
-        await resetModelSet();
+    $effect(() => {
+        let a = props.modelStream;
+        console.log("Model stream changed, resetting model set");
+
+        untrack(async () => {
+            await resetModelSet();
+        });
     });
 </script>
 

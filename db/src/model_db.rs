@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use itertools::join;
 use serde::de;
-use sqlx::{QueryBuilder, query};
+use sqlx::{Execute, QueryBuilder, query};
 use sqlx::Row;
 use strum::EnumString;
 use crate::audit_db;
@@ -25,8 +25,8 @@ impl ModelOrderBy {
             ModelOrderBy::AddedDesc => "model_added DESC",
             ModelOrderBy::NameAsc => "model_name ASC",
             ModelOrderBy::NameDesc => "model_name DESC",
-            ModelOrderBy::SizeAsc => "model_size ASC",
-            ModelOrderBy::SizeDesc => "model_size DESC",
+            ModelOrderBy::SizeAsc => "blob_size ASC",
+            ModelOrderBy::SizeDesc => "blob_size DESC",
         }
     }
 }
@@ -45,7 +45,6 @@ pub struct ModelFilterOptions {
 
 pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptions) -> Result<PaginatedResponse<Model>, DbError> {
     let offset = (options.page as i64 - 1) * options.page_size as i64;
-    let order_by = options.order_by.unwrap_or(ModelOrderBy::AddedDesc).to_sql();
 
     let mut query_builder = QueryBuilder::new(
         format!("SELECT models.model_id, model_name, model_url, model_desc, model_added, model_flags, model_unique_global_id,
@@ -56,13 +55,12 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
          LEFT JOIN labels ON models_labels.label_id = labels.label_id
          LEFT JOIN models_group ON models.model_group_id = models_group.group_id
-		 INNER JOIN blobs ON models.model_blob = blobs.blob_id
-         WHERE models.model_user_id = {}", user.id)
+		 INNER JOIN blobs ON models.model_blob_id = blobs.blob_id
+         WHERE models.model_user_id = {} ", user.id)
     );
 
     let mut seperated = query_builder.separated(" AND ");
-
-    seperated.push("WHERE models.model_user_id = 1");
+    seperated.push("");
     
     if let Some(model_ids) = options.model_ids
     {
@@ -87,17 +85,25 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
     if let Some(text_search) = options.text_search
     {
         seperated.push("(model_name LIKE '%");
-        seperated.push_bind(text_search.clone());
+        seperated.push_bind_unseparated(text_search.clone());
         seperated.push_unseparated("%' OR model_desc LIKE '%");
-        seperated.push_bind(text_search.clone());
+        seperated.push_bind_unseparated(text_search.clone());
         seperated.push_unseparated("%' OR group_name LIKE '%");
-        seperated.push_bind(text_search);
+        seperated.push_bind_unseparated(text_search);
         seperated.push_unseparated("%')");
     }
 
-    query_builder.push(format!(" GROUP BY models.model_id ORDER BY {} LIMIT {} OFFSET {}", order_by, options.page_size, offset));
+    query_builder.push(" GROUP BY models.model_id ");
+
+    if let Some(order_by) = options.order_by {
+        query_builder.push(format!("ORDER BY {} ", order_by.to_sql()));
+    }
+
+    query_builder.push(format!("LIMIT {} OFFSET {}", options.page_size, offset));
 
     let query = query_builder.build();
+
+    println!("Generated SQL Query: {}", query.sql());
 
     let rows = query.fetch_all(db).await?;
     let mut models = Vec::with_capacity(rows.len());

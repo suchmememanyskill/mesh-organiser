@@ -34,10 +34,10 @@ export class Group
 }
 
 export enum GroupOrderBy {
-    CreatedAsc,
-    CreatedDesc,
-    NameAsc,
-    NameDesc,
+    CreatedAsc = "CreatedAsc",
+    CreatedDesc = "CreatedDesc",
+    NameAsc = "NameAsc",
+    NameDesc = "NameDesc",
 }
 
 export const IGroupApi = Symbol('IGroupApi');
@@ -104,6 +104,8 @@ export class PredefinedGroupStreamManager implements IGroupStreamManager {
             return [];
         }
 
+        this.alreadyFetched = true;
+
         let filter = !this.textSearch ? this.groups : this.groups.filter(group => 
             group.meta.name.toLowerCase().includes(this.textSearch!) ||
             group.models.some(model => model.name.toLowerCase().includes(this.textSearch!) || (model.description?.toLowerCase().includes(this.textSearch!) ?? false))
@@ -151,10 +153,12 @@ export class GroupStreamManager implements IGroupStreamManager {
 
     setSearchText(text: string | null): void {
         this.textSearch = text;
+        this.generateGenerator();
     }
 
     setOrderBy(order_by: GroupOrderBy): void {
         this.orderBy = order_by;
+        this.generateGenerator();
     }
 
     async fetch(): Promise<Group[]> {

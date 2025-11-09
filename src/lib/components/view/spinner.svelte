@@ -2,7 +2,7 @@
     import { LoaderCircle } from "@lucide/svelte";
 </script>
 
-<div class="animate">
+<div class="animate w-fit h-fit">
     <LoaderCircle class="h-10 w-10" />
 </div>
 

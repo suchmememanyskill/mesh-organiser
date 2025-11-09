@@ -19,7 +19,7 @@
 
     async function update_image(blob: Blob)
     {
-        console.log("Loading image for model " + blob.sha256);
+        //console.log("Loading image for model " + blob.sha256);
         img_src = await blobApi.getBlobThumbnailUrl(blob);
         load_failed = false;
     }

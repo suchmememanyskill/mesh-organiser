@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, time::Instant};
 
 use db::{group_db::GroupOrderBy, model::{ModelGroup, ModelGroupMeta, User, random_hex_32, time_now}};
 use tauri::State;
@@ -17,6 +17,7 @@ pub async fn get_groups(
     include_ungrouped_models : Option<bool>,
     state: State<'_, AppState>
 ) -> Result<Vec<ModelGroup>, ApplicationError> {
+    let instant = Instant::now();
     let groups = db::group_db::get_groups(&state.db, &state.get_current_user(), db::group_db::GroupFilterOptions {
         model_ids,
         group_ids,
@@ -27,6 +28,8 @@ pub async fn get_groups(
         page_size,
         include_ungrouped_models: include_ungrouped_models.unwrap_or(false),
     }).await?;
+
+    println!("get_groups took {:?}", instant.elapsed());
 
     Ok(groups.items)
 }

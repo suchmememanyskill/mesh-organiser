@@ -55,7 +55,7 @@
     {
         if (scrollContainer) {
             const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-            if (scrollTop + clientHeight >= scrollHeight) {
+            if (Math.round(scrollTop + clientHeight + 10) >= scrollHeight) {
                 endOfListReached?.();
             }
         }

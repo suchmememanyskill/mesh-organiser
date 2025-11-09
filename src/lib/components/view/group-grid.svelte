@@ -14,7 +14,7 @@
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
     import { configuration } from "$lib/configuration.svelte";
     import { IsSplitGridSize } from "$lib/hooks/is-split-grid-size.svelte";
-    import { onDestroy, untrack } from "svelte";
+    import { onDestroy, onMount, untrack } from "svelte";
     import { type ClassValue } from "svelte/elements";
     import GroupTinyList from "./group-tiny-list.svelte";
     import GroupTiny from "./group-tiny.svelte";
@@ -65,7 +65,7 @@
             return;
 
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-        if (scrollTop + clientHeight >= scrollHeight) {
+        if (Math.round(scrollTop + clientHeight + 10) >= scrollHeight) {
             fetchNextGroupSet();
         }
     }
@@ -201,7 +201,14 @@
         splitViewSelectedModels = [];
     })
 
-    // TODO: Onmount load models?
+    $effect(() => {
+        let a = props.groupStream;
+        console.log("Group stream changed, resetting group set");
+
+        untrack(async () => {
+            await resetGroupSet();
+        });
+    });
 </script>
 
 <div class="flex flex-row h-full">

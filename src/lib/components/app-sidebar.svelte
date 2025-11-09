@@ -36,8 +36,6 @@
     import Slice from "@lucide/svelte/icons/slice";
     import { onMount } from "svelte";
 
-    let slicers = $state([] as SlicerEntry[]);
-
     async function addLabel(newLabelName: string, newLabelColor: string) {
         let labelApi = getContainer().require<ILabelApi>(ILabelApi);
         await labelApi.addLabel(newLabelName, newLabelColor);
@@ -188,7 +186,7 @@
                         class="w-[var(--bits-dropdown-menu-anchor-width)]"
                         align="start"
                     >
-                        {#each slicers as slicer (slicer.slicer)}
+                        {#each sidebarState.availableSlicers as slicer (slicer.slicer)}
                             <DropdownMenu.Item
                                 class="data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-foreground"
                                 disabled={!slicer.installed}

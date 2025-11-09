@@ -29,7 +29,7 @@ export class BlobApi implements IBlobApi {
     }
 
     async getBlobBytes(blob: Blob): Promise<Uint8Array> {
-        return await invoke("get_blob_bytes", { sha256: blob.sha256 });
+        return new Uint8Array(await invoke<ArrayBuffer>("get_blob_bytes", { sha256: blob.sha256 }));
     }
 
     async getBlobThumbnailUrl(blob: Blob): Promise<string> {

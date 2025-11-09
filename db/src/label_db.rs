@@ -50,9 +50,9 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
             parent_labels.label_name as parent_label_name,
             parent_labels.label_color as parent_label_color,
             parent_labels.label_unique_global_id as parent_label_unique_global_id,
-            (SELECT COUNT(*) FROM models_labels WHERE models_labels.label_id = parent_labels.label_id) as \"parent_label_model_count: i64\",
-            (SELECT COUNT(DISTINCT group_id) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id INNER JOIN models_group ON models.model_group_id = models_group.group_id WHERE models_labels.label_id = parent_labels.label_id) as \"parent_label_group_count: i64\",
-            (SELECT COUNT(*) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id WHERE models_labels.label_id = parent_labels.label_id AND models.model_group_id IS NULL) as \"parent_label_ungrouped_count: i64\",
+            (SELECT COUNT(*) FROM models_labels WHERE models_labels.label_id = parent_labels.label_id) as parent_label_model_count,
+            (SELECT COUNT(DISTINCT group_id) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id INNER JOIN models_group ON models.model_group_id = models_group.group_id WHERE models_labels.label_id = parent_labels.label_id) as parent_label_group_count,
+            (SELECT COUNT(*) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id WHERE models_labels.label_id = parent_labels.label_id AND models.model_group_id IS NULL) as parent_label_ungrouped_count,
             child_labels.label_id as child_label_id, 
             child_labels.label_name as child_label_name, 
             child_labels.label_color as child_label_color

@@ -68,7 +68,10 @@
             };
 
             let obj = { buffer, fileType };
+            console.log(obj);
+            console.log(buffer, buffer instanceof ArrayBuffer);
             worker.postMessage(obj, [buffer.buffer]);
+            console.log(obj);
         });
     }
 

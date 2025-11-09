@@ -19,10 +19,11 @@
     import UpdatePopup from "$lib/components/view/tauri-update-popup.svelte";
     import DragSelectedModelsRoot from "$lib/components/view/drag-selected-models-root.svelte";
     import { initApi } from "$lib/api/api";
-    import { configuration, configurationMeta } from "$lib/configuration.svelte";
+    import { configuration, configurationMeta, updateConfiguration } from "$lib/configuration.svelte";
     import { updateSidebarState } from "$lib/sidebar_data.svelte";
     import { updateState } from "$lib/update_data.svelte";
     import Spinner from "$lib/components/view/spinner.svelte";
+    import { type Configuration } from "$lib/api/shared/services/settings_api";
 
     let { children } = $props();
     let initializationDone = $state(false);
@@ -42,9 +43,18 @@
 
         addEventListener("unhandledrejection", (event) => {
             let reason : Error = event.reason;
-            toast.error(reason.error_message, {
-                description: reason.error_inner_message
-            });
+            if (reason.error_message && reason.error_inner_message)
+            {
+                toast.error(reason.error_message, {
+                    description: reason.error_inner_message
+                });
+            }
+            else {
+                toast.error("An unknown error occurred.", {
+                    description: (reason as any).message
+                });
+            }
+
         });
 
         await initApi();
@@ -56,6 +66,27 @@
     });
 
     const is_mobile = new IsMobile();
+
+    const onSaveConfiguration = debounce(
+        async (edited_configuration: Configuration) => {
+            console.log("Setting config", edited_configuration);
+            await updateConfiguration(edited_configuration);
+        },
+        2000,
+    );
+
+    $effect(() => {
+        if (!initializationDone)
+            return;
+
+        const modified_configuration = $state.snapshot(configuration);
+
+        if (!configurationMeta.configurationLoaded) {
+            return;
+        }
+        
+        onSaveConfiguration(modified_configuration);
+    });
 </script>
 
 <ModeWatcher />
@@ -78,7 +109,7 @@
     </Sidebar.Provider>
 </DragSelectedModelsRoot>
 {:else}
-    <div class="mx-auto my-auto">
+    <div class="w-full h-full flex justify-center items-center">
         <Spinner />
     </div>
 {/if}
