@@ -34,14 +34,14 @@ jobs:
         curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/3dbenchy.stl"
         curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/3dbenchy.stl.png"
 
-        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Calibration Cube.3mf"
-        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Calibration Cube.3mf.png"
+        curl -o "Calibration Cube.3mf" "https://meshorganiserdemo.suchmeme.nl/mock_data/Calibration%20Cube.3mf"
+        curl -o "Calibration Cube.3mf.png" "https://meshorganiserdemo.suchmeme.nl/mock_data/Calibration%20Cube.3mf.png"
 
-        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Embossed text.stl"
-        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Embossed text.stl.png"
+        curl -o "Embossed text.stl" "https://meshorganiserdemo.suchmeme.nl/mock_data/Embossed%20text.stl"
+        curl -o "Embossed text.stl.png" "https://meshorganiserdemo.suchmeme.nl/mock_data/Embossed%20text.stl.png"
 
-        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Temp Tower PLA.stl"
-        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Temp Tower PLA.stl.png"
+        curl -o "Temp Tower PLA.stl" "https://meshorganiserdemo.suchmeme.nl/mock_data/Temp%20Tower%20PLA.stl"
+        curl -o "Temp Tower PLA.stl.png" "https://meshorganiserdemo.suchmeme.nl/mock_data/Temp%20Tower%20PLA.stl.png"
 
         curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/beer_crate_AA.stl"
         curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/beer_crate_AA.stl.png"
