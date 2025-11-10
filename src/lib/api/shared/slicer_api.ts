@@ -17,15 +17,15 @@ export interface ISlicerApi {
 function slicerNameToDeepLink(slicerName: string): string | null {
     switch (slicerName) {
         case "PrusaSlicer":
-            return "prusaslicer://open/?file=";
+            return "prusaslicer://open?file=";
         case "Cura":
-            return "cura://open/?file=";
+            return "cura://open?file=";
         case "Bambu Studio":
-            return "bambustudio://open/?file=";
+            return "bambustudio://open?file=";
         case "OrcaSlicer":
-            return "orcaslicer://open/?file=";
+            return "orcaslicer://open?file=";
         case "Mesh Organiser":
-            return "meshorganiser://open/?file=";
+            return "meshorganiser://open?file=";
         default:
             return null;
     }
