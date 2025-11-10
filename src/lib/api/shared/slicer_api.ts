@@ -1,3 +1,4 @@
+import { configuration } from "$lib/configuration.svelte";
 import type { Model } from "./model_api";
 import { toast } from "svelte-sonner";
 
@@ -44,9 +45,7 @@ export class DefaultSlicerApi implements ISlicerApi {
 
         let model = models[0];
         let modelUrl : string = (model.blob as any)._modelUrl;
-
-        const link = document.createElement("a");
-        let deepLink = slicerNameToDeepLink("PrusaSlicer");
+        let deepLink = slicerNameToDeepLink(configuration.slicer ?? "OrcaSlicer");
 
         if (deepLink === null) {
             return;
@@ -54,6 +53,7 @@ export class DefaultSlicerApi implements ISlicerApi {
 
         deepLink += encodeURIComponent(modelUrl);
 
+        const link = document.createElement("a");
         link.href = deepLink;
         link.click();
         link.remove();
