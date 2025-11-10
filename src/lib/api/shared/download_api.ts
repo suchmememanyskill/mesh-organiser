@@ -41,7 +41,7 @@ export class DefaultDownloadApi implements IDownloadApi {
             const model = models[i];
             const data = allData[i];
             
-            files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype)] = (data as any).buffer;
+            files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype)] = data;
         }
 
         const zipped = zipSync(files);
