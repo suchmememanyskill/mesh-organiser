@@ -6,24 +6,21 @@
     import CircleHelp from "@lucide/svelte/icons/circle-help";
     import FolderInput from "@lucide/svelte/icons/folder-input";
     import History from "@lucide/svelte/icons/history";
-    import Moon from "@lucide/svelte/icons/moon";
+
     import NotebookText from "@lucide/svelte/icons/notebook-text";
     import Plus from "@lucide/svelte/icons/plus";
     import Settings from "@lucide/svelte/icons/settings";
     import Star from "@lucide/svelte/icons/star";
-    import Sun from "@lucide/svelte/icons/sun";
+    
     import Tag from "@lucide/svelte/icons/tag";
     import Tags from "@lucide/svelte/icons/tags";
 
-    import { buttonVariants } from "$lib/components/ui/button/index.js";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import ImportProgressIndicator from "$lib/components/view/tauri-import-progress-indicator.svelte";
-    import { resetMode, setMode } from "mode-watcher";
 
     import { page } from "$app/state";
     import { getContainer } from "$lib/api/dependency_injection";
     import { ILabelApi, type LabelMeta } from "$lib/api/shared/label_api";
-    import type { SlicerEntry } from "$lib/api/shared/slicer_api";
     import { ImportStatus } from "$lib/api/shared/tauri_import_api";
     import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
     import { configuration } from "$lib/configuration.svelte";
@@ -35,6 +32,7 @@
     import PanelLeft from "@lucide/svelte/icons/panel-left";
     import Slice from "@lucide/svelte/icons/slice";
     import { onMount } from "svelte";
+    import NavUser from "./view/nav-user.svelte";
 
     async function addLabel(newLabelName: string, newLabelColor: string) {
         let labelApi = getContainer().require<ILabelApi>(ILabelApi);
@@ -152,7 +150,7 @@
     });
 </script>
 
-<Sidebar.Root collapsible="icon">
+<Sidebar.Root collapsible="icon" class="z-30">
     <Sidebar.Header>
         <Sidebar.Menu>
             <Sidebar.MenuItem>
@@ -289,33 +287,7 @@
         {#if importState.status !== ImportStatus.Idle}
             <ImportProgressIndicator />
         {/if}
-        <DropdownMenu.Root>
-            <DropdownMenu.Trigger
-                class="{buttonVariants({
-                    variant: 'outline',
-                    size: 'icon',
-                })} w-full"
-            >
-                <Sun
-                    class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-                />
-                <Moon
-                    class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-                />
-                <span class="sr-only">Toggle theme</span>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
-                <DropdownMenu.Item onclick={() => setMode("light")}
-                    >Light</DropdownMenu.Item
-                >
-                <DropdownMenu.Item onclick={() => setMode("dark")}
-                    >Dark</DropdownMenu.Item
-                >
-                <DropdownMenu.Item onclick={() => resetMode()}
-                    >System</DropdownMenu.Item
-                >
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <NavUser />
     </Sidebar.Footer>
 </Sidebar.Root>
 

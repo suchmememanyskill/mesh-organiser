@@ -146,11 +146,11 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative space-y-0">
-            <div class="aspect-square h-full">
+            <div class="aspect-square h-full max-h-[512px]">
                 {#if load3dPreview}
                     <ThreeCanvas model={model} class="h-full" />
                 {:else}
-                    <ModelImg model={model} class="h-full m-auto" />
+                    <ModelImg model={model} class="h-full flex flex-row justify-center" />
                 {/if}
             </div>
 

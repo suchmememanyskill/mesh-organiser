@@ -7,8 +7,11 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
     import { configuration } from "$lib/configuration.svelte";
+    import { IsMobile } from "$lib/hooks/is-mobile.svelte";
     import { debounce } from "$lib/utils";
     import { onMount, untrack } from "svelte";
+    import Button, { buttonVariants } from "../ui/button/button.svelte";
+    import Undo2 from "@lucide/svelte/icons/undo-2";
 
     interface Function {
         (models : Model[]): void;
@@ -23,6 +26,10 @@
     let selected = $state.raw<Model[]>([]);
     let busyLoadingNext = $state.raw<boolean>(false);
 
+    const isMobile = new IsMobile();
+    const showLeftSide = $derived(!isMobile.current || (isMobile.current  && selected.length <= 0));
+    const showRightSide = $derived(!isMobile.current || (isMobile.current  && selected.length > 0));
+
     async function fetchNextModelSet() {
         if (busyLoadingNext)
             return;
@@ -32,17 +39,28 @@
         if (newModels.length > 0)
         {
             loadedModels.push(...newModels);
+            console.log(loadedModels);
         }
         busyLoadingNext = false;
         console.log("Loaded models: " + loadedModels.length);
     }
 
     async function resetModelSet() {
+        while (busyLoadingNext)
+        {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
         loadedModels = [];
         await fetchNextModelSet();
     }
 
-    let debouncedResetModelSet = debounce(resetModelSet, 500);
+    async function setNewSearchText(newText: string | null) {
+        props.modelStream.setSearchText(newText);
+        await resetModelSet();
+    }
+
+    let debouncedResetModelSet = debounce(setNewSearchText, 500);
 
     const readableOrders = {
         "date-asc": "Date (Asc)",
@@ -59,8 +77,7 @@
     function onSearchInput(e : Event)
     {
         const target = e.target as HTMLInputElement;
-        props.modelStream.setSearchText(target.value.trim().length === 0 ? null : target.value.trim());
-        debouncedResetModelSet();
+        debouncedResetModelSet(target.value.trim().length === 0 ? null : target.value.trim());
     }
 
     function onDelete() 
@@ -75,17 +92,13 @@
         }
     }
 
-    $effect(() => {
-        let a = props.modelStream;
-        console.log("Model stream changed, resetting model set");
-
-        untrack(async () => {
-            await resetModelSet();
-        });
+    onMount(async () => {
+        await resetModelSet();
     });
 </script>
 
 <div class="flex flex-row h-full">
+    {#if showLeftSide}
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
             <Input oninput={onSearchInput} class="border-primary" placeholder="Search..." />
@@ -125,7 +138,15 @@
 
         <ModelGridInner bind:value={selected} itemSize={configuration.size_option_models} availableModels={loadedModels} endOfListReached={fetchNextModelSet} />
     </div> 
-    <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto hide-scrollbar">
+    {/if}
+
+    {#if showRightSide}
+    <div class="{isMobile.current ? "w-full" : "w-[400px] min-w-[400px]"} relative mx-4 my-2 overflow-y-auto hide-scrollbar flex flex-col gap-4">
+        {#if isMobile.current}
+            <Button onclick={() => { selected = [] }}>
+                <Undo2 /> Close model preview
+            </Button>
+        {/if}
         <!-- TODO: Implement ondelete for all of these-->
         {#if selected.length >= 2}
             <MultiModelEdit models={selected} onDelete={onDelete} />
@@ -141,4 +162,5 @@
             </div>
         {/if}
     </div>
+    {/if}
 </div>

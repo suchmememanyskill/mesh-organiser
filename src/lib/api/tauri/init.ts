@@ -34,6 +34,8 @@ import { SlicerApi } from "./slicer";
 import { LocalApi } from "./local";
 import { ISlicerApi } from "../shared/slicer_api";
 import { ILocalApi } from "../shared/local_api";
+import { UserApi } from "./user";
+import { IUserApi } from "../shared/user_api";
 
 interface InitialState
 {
@@ -67,8 +69,10 @@ export async function initTauriLocalApis() : Promise<void> {
     const diskUsageInfoApi = new DiskUsageInfoApi();
     const slicerApi = new SlicerApi();
     const localApi = new LocalApi(appDataDirPath, state.max_parallelism ?? 2);
+    const userApi = new UserApi();
 
     // This should probably happen on the rust side
+    // TODO: Create routine to delete unused blobs
     await invoke("remove_dead_groups", {});
     let config = await settings.getConfiguration();
     Object.assign(configuration, config);
@@ -115,6 +119,7 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(IDiskUsageInfoApi, diskUsageInfoApi);
     container.addSingleton(ISlicerApi, slicerApi);
     container.addSingleton(ILocalApi, localApi);
+    container.addSingleton(IUserApi, userApi);
 
     try 
     {

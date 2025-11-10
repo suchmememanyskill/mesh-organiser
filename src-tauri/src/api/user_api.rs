@@ -1,8 +1,7 @@
-use db::{model::User, user_db};
+use db::{model::{User, hash_password}, user_db};
 use tauri::State;
 
 use crate::{error::ApplicationError, service::app_state::AppState};
-
 
 #[tauri::command]
 pub async fn get_current_user(
@@ -35,9 +34,11 @@ pub async fn get_users(
 #[tauri::command]
 pub async fn add_user(
     user_name: &str,
+    user_email: &str,
+    user_password: &str,
     state: State<'_, AppState>,
 ) -> Result<i64, ApplicationError> {
-    let id = user_db::add_user(&state.db, user_name, "", "").await?;
+    let id = user_db::add_user(&state.db, user_name, user_email, &hash_password(user_password)).await?;
 
     Ok(id)
 }
@@ -46,12 +47,13 @@ pub async fn add_user(
 pub async fn edit_user(
     user_id: i64,
     user_name: &str,
+    user_email: &str,
     user_last_sync: Option<String>,
     user_sync_token: Option<String>,
     user_sync_url: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
-    user_db::edit_user(&state.db, user_id, user_name, "".into(), "".into(), user_last_sync, user_sync_token, user_sync_url).await?;
+    user_db::edit_user(&state.db, user_id, user_name, user_email, user_last_sync, user_sync_token, user_sync_url).await?;
 
     Ok(())
 }
@@ -61,6 +63,10 @@ pub async fn delete_user(
     user_id: i64,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
+    if state.get_current_user().id == user_id {
+        return Err(ApplicationError::InternalError("Cannot delete the currently logged in user.".into()));
+    }
+
     user_db::delete_user(&state.db, user_id).await?;
 
     Ok(())

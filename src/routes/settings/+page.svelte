@@ -8,7 +8,8 @@
     import { ILocalApi } from "$lib/api/shared/local_api";
     import { configurationDefault } from "$lib/api/shared/settings_api";
     import { IThumbnailApi } from "$lib/api/shared/thumbnail_api";
-    import { Button } from "$lib/components/ui/button/index.js";
+    import { IUserApi } from "$lib/api/shared/user_api";
+    import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
     import {
         Card,
         CardContent,
@@ -17,16 +18,22 @@
     } from "$lib/components/ui/card";
     import CardFooter from "$lib/components/ui/card/card-footer.svelte";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
+    import UserEditCard from "$lib/components/view/user-edit-card.svelte";
     import { configuration } from "$lib/configuration.svelte";
     import { importState, resetImportState } from "$lib/import.svelte";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
     import { getAvailableThemes, getThemeName, setTheme } from "$lib/theme";
+    import Moon from "@lucide/svelte/icons/moon";
+    import Sun from "@lucide/svelte/icons/sun";
+    import { resetMode, setMode } from "mode-watcher";
 
     const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
+    const userApi = getContainer().optional<IUserApi>(IUserApi);
     let diskUsage = $state<DiskUsageInfo|null>(null);
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
@@ -366,23 +373,54 @@
 
                 <div class="flex flex-col space-y-1.5">
                     <Label>Theme</Label>
-                    <Select.Root type="single" bind:value={configuration.theme} onValueChange={(val) => setTheme(val)}>
-                        <Select.Trigger class="w-full">{getThemeName(configuration.theme)}</Select.Trigger>
-                        <Select.Content>
-                            {#each getAvailableThemes() as theme}
-                                <Select.Item value={theme}>{getThemeName(theme)}</Select.Item>
-                            {/each}
-                        </Select.Content>
-                    </Select.Root>   
+                    <div class="grid grid-cols-2 gap-2">
+                        <Select.Root type="single" bind:value={configuration.theme} onValueChange={(val) => setTheme(val)}>
+                            <Select.Trigger class="w-full">{getThemeName(configuration.theme)}</Select.Trigger>
+                            <Select.Content>
+                                {#each getAvailableThemes() as theme}
+                                    <Select.Item value={theme}>{getThemeName(theme)}</Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>   
+                        <DropdownMenu.Root>
+                            <DropdownMenu.Trigger
+                                class="{buttonVariants({
+                                    variant: 'outline',
+                                    size: 'icon',
+                                })} w-full"
+                            >
+                                <Sun
+                                    class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+                                />
+                                <Moon
+                                    class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+                                />
+                                <span class="sr-only">Toggle theme</span>
+                            </DropdownMenu.Trigger>
+                            <DropdownMenu.Content align="end">
+                                <DropdownMenu.Item onclick={() => setMode("light")}
+                                    >Light</DropdownMenu.Item
+                                >
+                                <DropdownMenu.Item onclick={() => setMode("dark")}
+                                    >Dark</DropdownMenu.Item
+                                >
+                                <DropdownMenu.Item onclick={() => resetMode()}
+                                    >System</DropdownMenu.Item
+                                >
+                            </DropdownMenu.Content>
+                        </DropdownMenu.Root>
+                    </div>
                     {#if configuration.theme === "custom"}
                         <div class="grid grid-cols-2 gap-2">
                                 <Button onclick={() => setTheme("custom")}>Reload theme</Button>
                                 <Button onclick={openCustomCss}>Open custom.css</Button>
                         </div>
                     {/if}
-                </div>   
+                </div>
             </CardContent>
         </Card>
+
+        <UserEditCard />
     </div>
 </div>
 

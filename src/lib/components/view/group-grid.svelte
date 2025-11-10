@@ -5,7 +5,6 @@
     import EditGroup from "$lib/components/edit/group.svelte";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import EditMultiModel from "$lib/components/edit/multi-model.svelte";
-    import { buttonVariants } from "$lib/components/ui/button";
     import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
@@ -19,6 +18,9 @@
     import GroupTinyList from "./group-tiny-list.svelte";
     import GroupTiny from "./group-tiny.svelte";
     import { debounce } from "$lib/utils";
+    import { IsMobile } from "$lib/hooks/is-mobile.svelte";
+    import Button, { buttonVariants } from "../ui/button/button.svelte";
+    import Undo2 from "@lucide/svelte/icons/undo-2";
 
     interface GroupWithModels {
         meta: Group,
@@ -34,6 +36,10 @@
     let loadedGroups = $state<Group[]>([]);
     let selected = $state.raw<Group[]>([]);
     const selectedSet = $derived(new Set(selected.map(x => x.meta.id)));
+
+    const isMobile = new IsMobile();
+    const showLeftSide = $derived(!isMobile.current || (isMobile.current  && selected.length <= 0));
+    const showRightSide = $derived(!isMobile.current || (isMobile.current  && selected.length > 0));
 
     let gridSizeMonitor = new IsSplitGridSize();
 
@@ -63,11 +69,21 @@
     }
 
     async function resetGroupSet() {
+        while (busyLoadingNext)
+        {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
         loadedGroups = [];
         await fetchNextGroupSet();
     }
 
-    let debouncedResetGroupSet = debounce(resetGroupSet, 500);
+    async function setNewSearchText(newText: string | null) {
+        props.groupStream.setSearchText(newText);
+        await resetGroupSet();
+    }
+
+    let debouncedSetNewSearchText = debounce(setNewSearchText, 500);
 
     function handleScroll()
     {
@@ -198,8 +214,7 @@
     function onSearchInput(e : Event)
     {
         const target = e.target as HTMLInputElement;
-        props.groupStream.setSearchText(target.value.trim().length === 0 ? null : target.value.trim());
-        debouncedResetGroupSet();
+        debouncedSetNewSearchText(target.value.trim().length === 0 ? null : target.value.trim());
     }
 
     let splitViewSelectedModels = $state.raw<Model[]>([]);
@@ -258,6 +273,7 @@
 </script>
 
 <div class="flex flex-row h-full">
+    {#if showLeftSide}
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
             <Input oninput={onSearchInput} class="border-primary" placeholder="Search..." />
@@ -323,7 +339,15 @@
             </span>
         {/if}
     </div> 
-    <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
+    {/if}
+
+    {#if showRightSide}
+    <div class="{isMobile.current ? "w-full" : "w-[400px] min-w-[400px]"} relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
+        {#if isMobile.current}
+            <Button onclick={() => { selected = [] }}>
+                <Undo2 /> Close model preview
+            </Button>
+        {/if}
         {#if selected.length >= 2}
             {#if selectedModels.length >= 2}
                 <EditMultiModel models={selectedModels} onDelete={onDelete} />
@@ -354,6 +378,7 @@
             </div>
         {/if}
     </div>
+    {/if}
 </div>
 
 {#snippet GroupGrid()}

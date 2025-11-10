@@ -2,6 +2,7 @@ import { getContainer } from "./api/dependency_injection";
 import { configurationDefault, ISettingsApi, type Configuration } from "./api/shared/settings_api";
 import { debounce } from "./utils";
 
+// TODO: Change this to use the same structure as useSidebar()
 export const configuration = $state(configurationDefault());
 export const configurationMeta = $state({
     configurationLoaded: false,
