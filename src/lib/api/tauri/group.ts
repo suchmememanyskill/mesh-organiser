@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createGroupInstance, createGroupMetaInstance, type Group, type GroupMeta, type GroupOrderBy, type IGroupApi } from "../shared/services/group_api";
-import { type Model } from "../shared/services/model_api";
+import { createGroupInstance, createGroupMetaInstance, type Group, type GroupMeta, type GroupOrderBy, type IGroupApi } from "../shared/group_api";
+import { type Model } from "../shared/model_api";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
 import { parseRawModel, type RawModel } from "./model";
 import { parseRawResourceMeta, type RawResourceMeta } from "./resource";

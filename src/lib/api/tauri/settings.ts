@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { SettingSection, type Configuration, type ISettingsApi } from "../shared/services/settings_api";
+import { SettingSection, type Configuration, type ISettingsApi } from "../shared/settings_api";
 
 export class SettingsApi implements ISettingsApi {
     async getConfiguration(): Promise<Configuration> {

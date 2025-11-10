@@ -4,7 +4,7 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { ThreeMFLoader } from "threejs-webworker-3mf-loader";    
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { fromByteArray, toByteArray } from "base64-js";
-import { FileType } from '$lib/api/shared/services/blob_api';
+import { FileType } from '$lib/api/shared/blob_api';
 
 
 function convertGeometry(group: Group): BufferGeometry {

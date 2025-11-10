@@ -1,7 +1,6 @@
-import { join } from "@tauri-apps/api/path";
-import { type Blob, createBlobInstance, IBlobApi } from "../shared/services/blob_api"
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { get } from "svelte/store";
+import { join } from "@tauri-apps/api/path";
+import { type Blob, createBlobInstance, IBlobApi } from "../shared/blob_api";
 
 export interface RawBlob {
     id: number;

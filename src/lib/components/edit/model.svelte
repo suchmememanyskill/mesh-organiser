@@ -15,11 +15,11 @@
 
     import { goto } from "$app/navigation";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IGroupApi } from "$lib/api/shared/services/group_api";
-    import { ILabelApi } from "$lib/api/shared/services/label_api";
-    import { ILocalApi } from "$lib/api/shared/services/local_api";
-    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
-    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { IGroupApi } from "$lib/api/shared/group_api";
+    import { ILabelApi } from "$lib/api/shared/label_api";
+    import { ILocalApi } from "$lib/api/shared/local_api";
+    import { IModelApi, type Model } from "$lib/api/shared/model_api";
+    import { ISlicerApi } from "$lib/api/shared/slicer_api";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import { AsyncButton } from "$lib/components/ui/button/index.js";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";

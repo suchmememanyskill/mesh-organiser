@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Model } from "../shared/services/model_api";
-import type { ISlicerApi, SlicerEntry } from "../shared/services/slicer_api";
+import type { Model } from "../shared/model_api";
+import type { ISlicerApi, SlicerEntry } from "../shared/slicer_api";
 
 export class SlicerApi implements ISlicerApi {
     async openInSlicer(models: Model[]): Promise<void> {

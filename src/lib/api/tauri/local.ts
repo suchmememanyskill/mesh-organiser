@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ILocalApi } from "../shared/services/local_api";
-import type { Model } from "../shared/services/model_api";
+import type { ILocalApi } from "../shared/local_api";
+import type { Model } from "../shared/model_api";
 import { open } from "@tauri-apps/plugin-dialog";
 import { join } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";

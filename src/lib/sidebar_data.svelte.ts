@@ -1,5 +1,5 @@
 import { getContainer } from "./api/dependency_injection";
-import { defaultSidebarState, ISidebarStateApi } from "./api/shared/services/sidebar_state_api";
+import { defaultSidebarState, ISidebarStateApi } from "./api/shared/sidebar_state_api";
 
 export const sidebarState = $state(defaultSidebarState());
 

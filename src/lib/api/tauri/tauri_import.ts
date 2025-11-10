@@ -1,6 +1,6 @@
 import { getFileFromUrl, globalImportSettings, importState, navigateToImportPage, resetImportState } from "$lib/import.svelte";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { ImportStatus, type ImportModelSettings, type ImportState, type ITauriImportApi } from "../shared/services/tauri_import_api";
+import { ImportStatus, type ImportModelSettings, type ImportState, type ITauriImportApi } from "../shared/tauri_import_api";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "svelte-sonner";
 import { invoke } from "@tauri-apps/api/core";

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import { createGroupMetaInstance } from '$lib/api/shared/services/group_api';
+    import { createGroupMetaInstance } from '$lib/api/shared/group_api';
     import GroupPage from '$lib/components/view/group-page.svelte';
     
     let group = $derived.by(() => {

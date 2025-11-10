@@ -1,8 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { Configuration } from "./api/shared/services/settings_api";
-import type { Model } from "./api/shared/services/model_api";
-import { FileType } from "./api/shared/services/blob_api";
+import type { Configuration } from "./api/shared/settings_api";
+import type { Model } from "./api/shared/model_api";
+import { FileType } from "./api/shared/blob_api";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { LabelMeta } from "$lib/api/shared/services/label_api";
+    import type { LabelMeta } from "$lib/api/shared/label_api";
     import { Badge } from "$lib/components/ui/badge/index.js";
 
     const props: { label : LabelMeta } = $props();

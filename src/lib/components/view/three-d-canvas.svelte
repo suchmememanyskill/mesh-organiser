@@ -8,8 +8,8 @@
     } from "three";
 
     import { getContainer } from "$lib/api/dependency_injection";
-    import { FileType, IBlobApi } from "$lib/api/shared/services/blob_api";
-    import type { Model } from "$lib/api/shared/services/model_api";
+    import { FileType, IBlobApi } from "$lib/api/shared/blob_api";
+    import type { Model } from "$lib/api/shared/model_api";
     import ThreeScene from "$lib/components/view/three-d-scene.svelte";
     import { configuration } from "$lib/configuration.svelte";
     import { loadModel } from "$lib/workers/parseModelWorker";

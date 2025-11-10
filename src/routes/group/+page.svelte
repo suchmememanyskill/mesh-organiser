@@ -2,7 +2,7 @@
     import GroupGrid from "$lib/components/view/group-grid.svelte";
     import { page } from '$app/state';
     import { getContainer } from "$lib/api/dependency_injection";
-    import { GroupStreamManager, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { GroupStreamManager, IGroupApi } from "$lib/api/shared/group_api";
     import { configuration } from "$lib/configuration.svelte";
 
     let groupApi = getContainer().require<IGroupApi>(IGroupApi);

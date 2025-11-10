@@ -24,12 +24,12 @@
     import { countWriter } from "$lib/utils";
     import Flame from "@lucide/svelte/icons/flame";
     import {globalImportSettings, importState, resetImportState } from "$lib/import.svelte";
-    import { type Group, GroupOrderBy, IGroupApi } from "$lib/api/shared/services/group_api";
-    import { ImportStatus, ITauriImportApi } from "$lib/api/shared/services/tauri_import_api";
+    import { type Group, GroupOrderBy, IGroupApi } from "$lib/api/shared/group_api";
+    import { ImportStatus, ITauriImportApi } from "$lib/api/shared/tauri_import_api";
     import { getContainer } from "$lib/api/dependency_injection";
     import { configuration } from "$lib/configuration.svelte";
-    import { IInternalBrowserApi } from "$lib/api/shared/services/internal_browser_api";
-    import { PredefinedModelStreamManager } from "$lib/api/shared/services/model_api";
+    import { IInternalBrowserApi } from "$lib/api/shared/internal_browser_api";
+    import { PredefinedModelStreamManager } from "$lib/api/shared/model_api";
 
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
     const tauriImportApi = getContainer().optional<ITauriImportApi>(ITauriImportApi);

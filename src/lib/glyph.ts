@@ -4,7 +4,7 @@ import type { Component } from "svelte";
 import PrinterCheck from "@lucide/svelte/icons/printer-check";
 import Star from "@lucide/svelte/icons/star";
 import type { ClassValue } from "svelte/elements";
-import type { ModelFlags } from "./api/shared/services/model_api";
+import type { ModelFlags } from "./api/shared/model_api";
 
 export type Glyph = Component<IconProps, {}, "">;
 

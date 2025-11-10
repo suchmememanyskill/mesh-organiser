@@ -4,10 +4,10 @@
     import { onMount } from "svelte";
 
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/services/disk_usage_info_api";
-    import { ILocalApi } from "$lib/api/shared/services/local_api";
-    import { configurationDefault } from "$lib/api/shared/services/settings_api";
-    import { IThumbnailApi } from "$lib/api/shared/services/thumbnail_api";
+    import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/disk_usage_info_api";
+    import { ILocalApi } from "$lib/api/shared/local_api";
+    import { configurationDefault } from "$lib/api/shared/settings_api";
+    import { IThumbnailApi } from "$lib/api/shared/thumbnail_api";
     import { Button } from "$lib/components/ui/button/index.js";
     import {
         Card,

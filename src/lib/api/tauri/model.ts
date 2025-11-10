@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createModelInstance, type Model, type IModelApi, type ModelFlags, type ModelOrderBy } from "../shared/services/model_api";
+import { createModelInstance, type Model, type IModelApi, type ModelFlags, type ModelOrderBy } from "../shared/model_api";
 import { parseRawBlob, type RawBlob } from "./blob";
 import { parseRawGroupMeta, type RawGroupMeta } from "./group";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";

@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createLabelInstance, createLabelMetaInstance, type Label, type LabelMeta, stringColorToNumber, type ILabelApi } from "../shared/services/label_api";
-import type { Model } from "../shared/services/model_api";
+import { createLabelInstance, createLabelMetaInstance, type Label, type LabelMeta, stringColorToNumber, type ILabelApi } from "../shared/label_api";
+import type { Model } from "../shared/model_api";
 
 export interface RawLabelMeta {
     id: number;

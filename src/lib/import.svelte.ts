@@ -4,7 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { goto } from "$app/navigation";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "svelte-sonner";
-import { ImportStatus, type ImportState } from "./api/shared/services/tauri_import_api";
+import { ImportStatus, type ImportState } from "./api/shared/tauri_import_api";
 
 interface GlobalImportSettings
 {

@@ -4,7 +4,7 @@
     import { Badge } from "$lib/components/ui/badge/index.js";
     import PrinterCheck from "@lucide/svelte/icons/printer-check";
     import { flagsToGlyphObjects } from "$lib/glyph";
-    import type { Group } from "$lib/api/shared/services/group_api";
+    import type { Group } from "$lib/api/shared/group_api";
     import { configuration } from "$lib/configuration.svelte";
 
     const props: { group: Group, class?: ClassValue } = $props();

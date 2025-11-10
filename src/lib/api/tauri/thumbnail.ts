@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { IThumbnailApi } from "../shared/services/thumbnail_api";
+import type { IThumbnailApi } from "../shared/thumbnail_api";
 
 export class ThumbnailApi implements IThumbnailApi {
     async generateAllThumbnails(): Promise<void> {

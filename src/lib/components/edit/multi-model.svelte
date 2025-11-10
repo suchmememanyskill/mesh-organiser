@@ -24,11 +24,11 @@
     import type { ClassValue } from "svelte/elements";
 
     import { getContainer } from "$lib/api/dependency_injection";
-    import { type GroupMeta, IGroupApi } from "$lib/api/shared/services/group_api";
-    import { ILabelApi, type LabelMeta } from "$lib/api/shared/services/label_api";
-    import { ILocalApi } from "$lib/api/shared/services/local_api";
-    import { IModelApi, type Model } from "$lib/api/shared/services/model_api";
-    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
+    import { type GroupMeta, IGroupApi } from "$lib/api/shared/group_api";
+    import { ILabelApi, type LabelMeta } from "$lib/api/shared/label_api";
+    import { ILocalApi } from "$lib/api/shared/local_api";
+    import { IModelApi, type Model } from "$lib/api/shared/model_api";
+    import { ISlicerApi } from "$lib/api/shared/slicer_api";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
     import Boxes from "@lucide/svelte/icons/boxes";
     import Component from "@lucide/svelte/icons/component";

@@ -23,7 +23,7 @@
     import { updateSidebarState } from "$lib/sidebar_data.svelte";
     import { updateState } from "$lib/update_data.svelte";
     import Spinner from "$lib/components/view/spinner.svelte";
-    import { type Configuration } from "$lib/api/shared/services/settings_api";
+    import { type Configuration } from "$lib/api/shared/settings_api";
 
     let { children } = $props();
     let initializationDone = $state(false);

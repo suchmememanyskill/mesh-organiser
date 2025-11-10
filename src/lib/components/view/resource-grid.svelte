@@ -12,12 +12,12 @@
     import { onMount } from "svelte";
     import FolderOpen from "@lucide/svelte/icons/folder-open";
     import Slice from "@lucide/svelte/icons/slice";
-    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/services/resource_api";
+    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/resource_api";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { type Group, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { type Group, IGroupApi } from "$lib/api/shared/group_api";
     import { updateSidebarState } from "$lib/sidebar_data.svelte";
-    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
-    import { ILocalApi } from "$lib/api/shared/services/local_api";
+    import { ISlicerApi } from "$lib/api/shared/slicer_api";
+    import { ILocalApi } from "$lib/api/shared/local_api";
     import { configuration } from "$lib/configuration.svelte";
 
     const props: { resources: ResourceMeta[] } = $props();

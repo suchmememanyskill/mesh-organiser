@@ -21,7 +21,7 @@
     import { goto } from "$app/navigation";
     import EditListPopover from "$lib/components/view/edit-list-popover.svelte";
     import { onMount } from "svelte";
-    import { ILabelApi, type Label as LabelClass, type LabelMeta } from "$lib/api/shared/services/label_api";
+    import { ILabelApi, type Label as LabelClass, type LabelMeta } from "$lib/api/shared/label_api";
     import { getContainer } from "$lib/api/dependency_injection";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
 

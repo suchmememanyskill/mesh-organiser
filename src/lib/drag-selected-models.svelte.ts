@@ -1,7 +1,7 @@
 import { toast } from "svelte-sonner";
 import { countWriter } from "$lib/utils";
-import type { Model } from "./api/shared/services/model_api";
-import { ILabelApi, type LabelMeta } from "./api/shared/services/label_api";
+import type { Model } from "./api/shared/model_api";
+import { ILabelApi, type LabelMeta } from "./api/shared/label_api";
 import { getContainer } from "./api/dependency_injection";
 import { sidebarState, updateSidebarState } from "./sidebar_data.svelte";
 

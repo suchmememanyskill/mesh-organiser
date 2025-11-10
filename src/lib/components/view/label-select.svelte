@@ -4,7 +4,7 @@
     import Tag from "@lucide/svelte/icons/tag";
     import type { ClassValue } from "svelte/elements";
     import { countWriter } from "$lib/utils";
-    import type { LabelMeta } from "$lib/api/shared/services/label_api";
+    import type { LabelMeta } from "$lib/api/shared/label_api";
 
     let { value = $bindable(), availableLabels = [], clazz = undefined, placeholder = "Select some labels", onlyShowLabelCount = false, onchange = () => {}} 
     : { value: LabelMeta[], availableLabels : LabelMeta[], clazz? : ClassValue, placeholder? : string, onlyShowLabelCount?: boolean, onchange?: VoidFunction } = $props();

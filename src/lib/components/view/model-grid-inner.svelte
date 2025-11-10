@@ -7,8 +7,8 @@
     import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
     import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
     import DragSelectedModels from "./drag-selected-models.svelte";
-    import type { Model } from "$lib/api/shared/services/model_api";
-    import type { SizeOptionModels } from "$lib/api/shared/services/settings_api";
+    import type { Model } from "$lib/api/shared/model_api";
+    import type { SizeOptionModels } from "$lib/api/shared/settings_api";
     import { configuration } from "$lib/configuration.svelte";
 
     interface Function {

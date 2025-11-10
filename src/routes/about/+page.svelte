@@ -3,7 +3,7 @@
     import Heart from "@lucide/svelte/icons/heart";
     import { onMount } from "svelte";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IHostApi } from "$lib/api/shared/services/host_api";
+    import { IHostApi } from "$lib/api/shared/host_api";
 
     let version = $state("");
 

@@ -3,9 +3,9 @@
     import GroupGrid from "$lib/components/view/group-grid.svelte";
     import { page } from '$app/state';
     import EditLabel from "$lib/components/edit/label.svelte"
-    import type { Label, LabelMeta } from "$lib/api/shared/services/label_api";
+    import type { Label, LabelMeta } from "$lib/api/shared/label_api";
     import { sidebarState } from "$lib/sidebar_data.svelte";
-    import { GroupStreamManager, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { GroupStreamManager, IGroupApi } from "$lib/api/shared/group_api";
     import { getContainer } from "$lib/api/dependency_injection";
 
     let groupApi = getContainer().require<IGroupApi>(IGroupApi);

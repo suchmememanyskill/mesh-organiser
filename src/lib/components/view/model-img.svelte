@@ -4,9 +4,9 @@
     import { convertFileSrc } from "@tauri-apps/api/core";
     import type { ClassValue } from "svelte/elements";
     import Boxes from "@lucide/svelte/icons/boxes";
-    import type { Model } from "$lib/api/shared/services/model_api";
+    import type { Model } from "$lib/api/shared/model_api";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { type Blob, IBlobApi } from "$lib/api/shared/services/blob_api";
+    import { type Blob, IBlobApi } from "$lib/api/shared/blob_api";
     import { configuration } from "$lib/configuration.svelte";
 
     let img_src = $state("");

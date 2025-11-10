@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { DiskUsageInfo, IDiskUsageInfoApi } from "../shared/services/disk_usage_info_api";
+import type { DiskUsageInfo, IDiskUsageInfoApi } from "../shared/disk_usage_info_api";
 
 export class DiskUsageInfoApi implements IDiskUsageInfoApi {
     async getDiskUsageInfo(): Promise<DiskUsageInfo> {

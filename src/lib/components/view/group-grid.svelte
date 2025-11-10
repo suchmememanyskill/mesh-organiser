@@ -1,7 +1,7 @@
 <script lang="ts">
-    import type { Group, IGroupStreamManager } from "$lib/api/shared/services/group_api";
-    import type { Model } from "$lib/api/shared/services/model_api";
-    import { convertOrderOptionGroupsToEnum, type OrderOptionGroups } from "$lib/api/shared/services/settings_api";
+    import type { Group, IGroupStreamManager } from "$lib/api/shared/group_api";
+    import type { Model } from "$lib/api/shared/model_api";
+    import { convertOrderOptionGroupsToEnum, type OrderOptionGroups } from "$lib/api/shared/settings_api";
     import EditGroup from "$lib/components/edit/group.svelte";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import EditMultiModel from "$lib/components/edit/multi-model.svelte";

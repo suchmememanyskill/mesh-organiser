@@ -1,11 +1,11 @@
 <script lang="ts">
     import ModelGrid from "$lib/components/view/model-grid.svelte";
     import EditGroup from "$lib/components/edit/group.svelte"
-    import { getGroupById, IGroupApi, type Group, type GroupMeta } from "$lib/api/shared/services/group_api";
+    import { getGroupById, IGroupApi, type Group, type GroupMeta } from "$lib/api/shared/group_api";
     import { onMount } from "svelte";
     import { getContainer } from "$lib/api/dependency_injection";
     import Spinner from "./spinner.svelte";
-    import { PredefinedModelStreamManager } from "$lib/api/shared/services/model_api";
+    import { PredefinedModelStreamManager } from "$lib/api/shared/model_api";
 
     interface Function {
         (): void;

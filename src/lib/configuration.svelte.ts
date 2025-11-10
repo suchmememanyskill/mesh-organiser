@@ -1,5 +1,5 @@
 import { getContainer } from "./api/dependency_injection";
-import { configurationDefault, ISettingsApi, type Configuration } from "./api/shared/services/settings_api";
+import { configurationDefault, ISettingsApi, type Configuration } from "./api/shared/settings_api";
 import { debounce } from "./utils";
 
 export const configuration = $state(configurationDefault());

@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { ClassValue } from "svelte/elements";
     import { state as dragState, startDragging, stopDragging } from "$lib/drag-selected-models.svelte";
-    import type { Model } from "$lib/api/shared/services/model_api";
+    import type { Model } from "$lib/api/shared/model_api";
 
     const props: { children : any, models: Model[], class? : ClassValue } = $props();
     let clicked = $state.raw(false);

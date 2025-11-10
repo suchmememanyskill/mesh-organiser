@@ -16,9 +16,9 @@
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Button from "$lib/components/ui/button/button.svelte";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
-    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/services/resource_api";
+    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/resource_api";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IResourceFolderApi } from "$lib/api/shared/services/resource_folder_api";
+    import { IResourceFolderApi } from "$lib/api/shared/resource_folder_api";
 
     interface Function {
         (resource: ResourceMeta): void;

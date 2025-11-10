@@ -5,10 +5,10 @@
     import GroupIcon from "@lucide/svelte/icons/group";
     import type { ClassValue } from "svelte/elements";
     import { goto } from '$app/navigation';
-    import type { Model } from "$lib/api/shared/services/model_api";
+    import type { Model } from "$lib/api/shared/model_api";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
-    import { ILocalApi } from "$lib/api/shared/services/local_api";
+    import { ISlicerApi } from "$lib/api/shared/slicer_api";
+    import { ILocalApi } from "$lib/api/shared/local_api";
 
     const props: { children : any, models: Model[], class? : ClassValue } = $props();
     const group = $derived.by(() => {

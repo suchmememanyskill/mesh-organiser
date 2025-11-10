@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createResourceMetaInstance, type ResourceMeta, type IResourceApi, type ResourceFlags } from "../shared/services/resource_api";
-import type { Group } from "../shared/services/group_api";
+import { createResourceMetaInstance, type ResourceMeta, type IResourceApi, type ResourceFlags } from "../shared/resource_api";
+import type { Group } from "../shared/group_api";
 import { parseRawGroup, type RawGroup } from "./group";
 
 export interface RawResourceMeta {

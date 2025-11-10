@@ -1,6 +1,6 @@
 <script lang="ts">
-    import type { IModelStreamManager, Model } from "$lib/api/shared/services/model_api";
-    import { convertOrderOptionModelsToEnum, type OrderOptionModels, SizeOptionModelsAsList } from "$lib/api/shared/services/settings_api";
+    import type { IModelStreamManager, Model } from "$lib/api/shared/model_api";
+    import { convertOrderOptionModelsToEnum, type OrderOptionModels, SizeOptionModelsAsList } from "$lib/api/shared/settings_api";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
     import { Input } from "$lib/components/ui/input";
