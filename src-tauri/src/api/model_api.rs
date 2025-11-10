@@ -138,6 +138,8 @@ pub async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(
         if image_path.exists() {
             std::fs::remove_file(image_path)?;
         }
+
+        blob_db::delete_blob(&state.db, model.blob.id).await?;
     }
 
     Ok(())

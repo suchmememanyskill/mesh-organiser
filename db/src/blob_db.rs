@@ -36,6 +36,14 @@ pub async fn add_blob(db: &DbContext, sha256: &str, filetype: &str, size: i64) -
     Ok(result.last_insert_rowid())
 }
 
+pub async fn delete_blob(db: &DbContext, blob_id: i64) -> Result<(), DbError> {
+    sqlx::query!("DELETE FROM blobs WHERE blob_id = ?", blob_id)
+        .execute(db)
+        .await?;
+
+    Ok(())
+}
+
 pub async fn delete_dead_blobs(db: &DbContext) -> Result<(), DbError> {
     sqlx::query!(
         "DELETE FROM blobs

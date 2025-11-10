@@ -13,6 +13,7 @@
     import { getContainer } from "$lib/api/dependency_injection";
     import { onMount } from "svelte";
     import { IHostApi, isCurrentPlatformDesktop } from "$lib/api/shared/host_api";
+    import { goto } from "$app/navigation";
 
     const sidebar = useSidebar();
     
@@ -30,6 +31,22 @@
 
     async function refreshUsers() {
         availableUsers = await userApi.getAllUsers();
+    }
+
+    async function switchUser(user: User) {
+        await userApi.switchUser(user);
+
+        if (location.href.includes("/group/"))
+        {
+            await goto("/group");
+        }
+
+        if (location.href.includes("/label/"))
+        {
+            await goto("/");
+        }
+        
+        location.reload();
     }
 
     function openDonationInDefaultBrowser(){
@@ -87,10 +104,7 @@
                     <DropdownMenu.Group>
                         <DropdownMenu.GroupHeading>Switch user</DropdownMenu.GroupHeading>
                         {#each filteredUsers as user (user.id)}
-                            <DropdownMenu.Item onclick={async () => {
-                                await userApi.switchUser(user);
-                                location.reload();
-                            }}>
+                            <DropdownMenu.Item onclick={() => switchUser(user)}>
                                 <CircleUser />
                                 {user.username}
                             </DropdownMenu.Item>

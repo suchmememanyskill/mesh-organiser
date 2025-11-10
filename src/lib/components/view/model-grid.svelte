@@ -59,7 +59,7 @@
         await resetModelSet();
     }
 
-    let debouncedResetModelSet = debounce(setNewSearchText, 500);
+    let debouncedSetNewSearchText = debounce(setNewSearchText, 200);
 
     const readableOrders = {
         "date-asc": "Date (Asc)",
@@ -76,7 +76,7 @@
     function onSearchInput(e : Event)
     {
         const target = e.target as HTMLInputElement;
-        debouncedResetModelSet(target.value.trim().length === 0 ? null : target.value.trim());
+        debouncedSetNewSearchText(target.value.trim().length === 0 ? null : target.value.trim());
     }
 
     function onDelete() 

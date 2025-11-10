@@ -83,7 +83,7 @@
         await resetGroupSet();
     }
 
-    let debouncedSetNewSearchText = debounce(setNewSearchText, 500);
+    let debouncedSetNewSearchText = debounce(setNewSearchText, 200);
 
     function handleScroll()
     {
