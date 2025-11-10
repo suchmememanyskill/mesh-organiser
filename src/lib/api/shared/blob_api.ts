@@ -15,6 +15,21 @@ export interface Blob {
     added: Date;
 }
 
+export function fileTypeToPlainFileExtension(fileType: FileType) : string {
+    switch (fileType) {
+        case FileType.STL:
+            return ".stl";
+        case FileType.OBJ:
+            return ".obj";
+        case FileType.THREEMF:
+            return ".3mf";
+        case FileType.STEP:
+            return ".step";
+        case FileType.GCODE:
+            return ".gcode";
+    }
+}
+
 export function createBlobInstance(id: number, sha256: string, filetype: string, size: number, added: string): Blob {
     return {
         id,

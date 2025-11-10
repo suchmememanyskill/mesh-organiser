@@ -17,6 +17,8 @@ export class UserApi implements IUserApi {
     async getCurrentUser(): Promise<User> {
         let user = await invoke<RawUser>("get_current_user", {});
 
+        user.permissions.push("Admin");
+
         return createUserInstance(
             user.id,
             user.username,

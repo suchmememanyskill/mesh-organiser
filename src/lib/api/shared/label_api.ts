@@ -1,4 +1,4 @@
-import type { Model } from "./services/model_api";
+import type { Model } from "./model_api";
 
 export interface LabelMeta {
     id: number;

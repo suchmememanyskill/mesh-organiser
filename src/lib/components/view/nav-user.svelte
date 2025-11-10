@@ -1,19 +1,15 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { IUserApi, IUserLogoutApi, type User } from "$lib/api/shared/user_api";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { useSidebar } from "$lib/components/ui/sidebar/index.js";
-    import BadgeCheckIcon from "@lucide/svelte/icons/badge-check";
-    import BellIcon from "@lucide/svelte/icons/bell";
     import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
-    import CreditCardIcon from "@lucide/svelte/icons/credit-card";
+    import CircleUser from "@lucide/svelte/icons/circle-user";
     import LogOutIcon from "@lucide/svelte/icons/log-out";
     import SparklesIcon from "@lucide/svelte/icons/sparkles";
-    import CircleUser from "@lucide/svelte/icons/circle-user";
-    import { IUserApi, IUserLogoutApi, type User } from "$lib/api/shared/user_api";
-    import { getContainer } from "$lib/api/dependency_injection";
     import { onMount } from "svelte";
-    import { IHostApi, isCurrentPlatformDesktop } from "$lib/api/shared/host_api";
-    import { goto } from "$app/navigation";
 
     const sidebar = useSidebar();
     
@@ -111,7 +107,7 @@
                         {/each}
                     </DropdownMenu.Group>
                 {:else}
-                    <DropdownMenu.Label class="font-normal">No other users available. See settings to create new users</DropdownMenu.Label>
+                    <DropdownMenu.Label class="font-normal">No other users available. { currentUser!.permissions.admin ? "See settings to create new users" : "" }</DropdownMenu.Label>
                 {/if}
                 {#if logoutApi}
                     <DropdownMenu.Separator />

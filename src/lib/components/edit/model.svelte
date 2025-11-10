@@ -41,6 +41,9 @@
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import type { ClassValue } from "svelte/elements";
     import Button, { buttonVariants } from "../ui/button/button.svelte";
+    import { IDownloadApi } from "$lib/api/shared/download_api";
+    import Download from "@lucide/svelte/icons/download";
+    import { toast } from "svelte-sonner";
     
     interface Function {
         (): void;
@@ -58,6 +61,9 @@
     const modelApi = getContainer().require<IModelApi>(IModelApi);
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
     const labelApi = getContainer().require<ILabelApi>(ILabelApi);
+    const localApi = getContainer().optional<ILocalApi>(ILocalApi);
+    const slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
+    const downloadApi = getContainer().optional<IDownloadApi>(IDownloadApi);
 
     const save_model_debounced = debounce(async (edited_model: Model) => {
         console.log("Saving model");
@@ -87,30 +93,52 @@
 
     async function onOpenInSlicer()
     {
+        if (!slicerApi) {
+            return;
+        }
+        
+
         if (configuration.label_exported_model_as_printed && !model.flags.printed) {
             model.flags.printed = true;
             await onUpdateModel();
         }
 
-        let slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
-
-        if (slicerApi){
-            await slicerApi.openInSlicer([model]);
-        }
+        await slicerApi.openInSlicer([model]);
     }
 
     async function onOpenInFolder()
     {
+        if (!localApi) {
+            return;
+        }
+
         if (configuration.label_exported_model_as_printed && !model.flags.printed) {
             model.flags.printed = true;
             await onUpdateModel();
         }
 
-        let localApi = getContainer().optional<ILocalApi>(ILocalApi);
+        await localApi.openInFolder([model]);
+    }
 
-        if (localApi){
-            await localApi.openInFolder([model]);
+    async function onDownloadModel()
+    {
+        if (!downloadApi) {
+            return;
         }
+
+        let promise = downloadApi.downloadModel(model);
+
+        toast.promise(
+            promise,
+            {
+                loading: `Downloading '${model.name}'...`,
+                success: (_) => {
+                    return `Downloaded '${model.name}'`;
+                },
+            }
+        );
+
+        await promise;
     }
 
     async function onUngroup()
@@ -233,7 +261,11 @@
         </CardHeader>
         <CardContent class="text-sm pt-4">
             <div class="grid grid-cols-2 gap-4 mb-4">
-                <AsyncButton class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</AsyncButton>
+                {#if localApi}
+                    <AsyncButton class="flex-grow" onclick={onOpenInFolder}><FolderOpen /> Open in folder</AsyncButton>
+                {:else if downloadApi}
+                    <AsyncButton class="flex-grow" onclick={onDownloadModel}><Download /> Download model</AsyncButton>
+                {/if}
                 <AsyncButton class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</AsyncButton>
             </div>
 

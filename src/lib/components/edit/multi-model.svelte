@@ -37,6 +37,8 @@
     import Slice from "@lucide/svelte/icons/slice";
     import Trash2 from "@lucide/svelte/icons/trash-2";
     import Ungroup from "@lucide/svelte/icons/ungroup";
+    import { IDownloadApi } from "$lib/api/shared/download_api";
+    import Download from "@lucide/svelte/icons/download";
 
     interface Function {
         (): void;
@@ -58,9 +60,12 @@
             .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i),
     );
 
-    let modelApi = getContainer().require<IModelApi>(IModelApi);
-    let groupApi = getContainer().require<IGroupApi>(IGroupApi);
-    let labelApi = getContainer().require<ILabelApi>(ILabelApi);
+    const modelApi = getContainer().require<IModelApi>(IModelApi);
+    const groupApi = getContainer().require<IGroupApi>(IGroupApi);
+    const labelApi = getContainer().require<ILabelApi>(ILabelApi);
+    const slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
+    const localApi = getContainer().optional<ILocalApi>(ILocalApi);
+    const downloadApi = getContainer().optional<IDownloadApi>(IDownloadApi);
 
     async function setLabelOnAllModels(label: LabelMeta) {
         const affected_models = models;
@@ -177,19 +182,49 @@
     }
 
     async function onOpenInSlicer() {
-        let slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
-
-        if (slicerApi){
-            await slicerApi.openInSlicer(models);
+        if (!slicerApi){
+            return; 
         }
+
+        await slicerApi.openInSlicer(models);
     }
 
     async function onOpenInFolder() {
-        let localApi = getContainer().optional<ILocalApi>(ILocalApi);
-
-        if (localApi){
-            await localApi.openInFolder(models);
+        if (!localApi){
+            return;
         }
+
+        await localApi.openInFolder(models);
+    }
+
+    async function onDownloadModels() {
+        if (!downloadApi) {
+            return;
+        }
+
+        let promise;
+
+        if (models.length <= 0) {
+            return;
+        } 
+        else if (models.length === 1) {
+            promise = downloadApi.downloadModel(models[0]);
+        } 
+        else {
+            promise = downloadApi.downloadModelsAsZip(models);
+        }
+
+        toast.promise(
+            promise,
+            {
+                loading: `Downloading ${countWriter("model", models)}...`,
+                success: (_) => {
+                    return `Downloaded ${countWriter("model", models)}`;
+                },
+            }
+        );
+
+        await promise;
     }
 
     async function onNewGroup() {
@@ -264,9 +299,15 @@
             <div class="flex flex-col gap-4">
                 <Label>Open</Label>
                 <div class="grid grid-cols-2 gap-4">
-                    <AsyncButton class="flex-grow" onclick={onOpenInFolder}
-                        ><FolderOpen /> Open in folder</AsyncButton
-                    >
+                    {#if localApi}
+                        <AsyncButton class="flex-grow" onclick={onOpenInFolder}
+                            ><FolderOpen /> Open in folder</AsyncButton
+                        >
+                    {:else if downloadApi}
+                        <AsyncButton class="flex-grow" onclick={onDownloadModels}
+                            ><Download /> Download {models.length > 1 ? "models" : "model"}</AsyncButton
+                        >
+                    {/if}
                     <AsyncButton class="flex-grow" onclick={onOpenInSlicer}
                         ><Slice /> Open in slicer</AsyncButton
                     >
