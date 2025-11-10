@@ -20,7 +20,7 @@ pub async fn generate_all_thumbnails(
 ) -> Result<(), ApplicationError> {
     let models = model_db::get_models(
         &app_state.db,
-        &User::default(),
+        &app_state.get_current_user(),
         ModelFilterOptions {
             page: 1,
             page_size: u32::MAX,

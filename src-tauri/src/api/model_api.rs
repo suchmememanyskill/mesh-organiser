@@ -56,6 +56,7 @@ pub async fn add_model(
         }
     }
 
+    println!("Import finished: {:?}", import_state);
     import_state.status = ImportStatus::Finished;
     Ok(import_state)
 }

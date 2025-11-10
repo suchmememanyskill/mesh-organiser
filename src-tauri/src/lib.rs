@@ -55,7 +55,8 @@ async fn set_configuration(
     state: State<'_, AppState>,
     app_handle: AppHandle,
 ) -> Result<(), ApplicationError> {
-    let deep_link_state_changed = state.write_configuration(&configuration);
+    let mut configuration = configuration;
+    let deep_link_state_changed = state.write_configuration(&mut configuration);
 
     if deep_link_state_changed {
         state.configure_deep_links(&app_handle);
@@ -100,7 +101,7 @@ async fn open_in_slicer(
     model_ids: Vec<i64>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
-    let models = model_db::get_models_via_ids(&state.db, &User::default(), model_ids).await?;
+    let models = model_db::get_models_via_ids(&state.db, &state.get_current_user(), model_ids).await?;
 
     if let Some(slicer) = &state.get_configuration().slicer {
         slicer.open(models, &state)?;
@@ -128,7 +129,7 @@ async fn open_in_folder(
     model_ids: Vec<i64>,
     state: State<'_, AppState>,
 ) -> Result<(), ApplicationError> {
-    let models = model_db::get_models_via_ids(&state.db, &User::default(), model_ids).await?;
+    let models = model_db::get_models_via_ids(&state.db, &state.get_current_user(), model_ids).await?;
 
     let (temp_dir, _) =
         service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { createUserInstance, type IUserApi, type User } from "../shared/user_api";
+import { configuration } from "$lib/configuration.svelte";
 
 interface RawUser {
     id: number;

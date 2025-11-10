@@ -36,14 +36,6 @@ pub async fn add_blob(db: &DbContext, sha256: &str, filetype: &str, size: i64) -
     Ok(result.last_insert_rowid())
 }
 
-pub async fn add_or_create_blob_using_sha256(db: &DbContext, sha256: &str, filetype: &str, size: i64) -> Result<i64, DbError> {
-    if let Some(blob) = get_blob_via_sha256(db, sha256).await? {
-        Ok(blob.id)
-    } else {
-        add_blob(db, sha256, filetype, size).await
-    }
-}
-
 pub async fn delete_dead_blobs(db: &DbContext) -> Result<(), DbError> {
     sqlx::query!(
         "DELETE FROM blobs

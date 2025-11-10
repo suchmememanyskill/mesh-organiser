@@ -4,13 +4,13 @@ use tauri::{AppHandle, Emitter};
 
 use crate::{error::ApplicationError, service::app_state::AppState};
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ImportedModelsSet {
     pub group_id: Option<i64>,
     pub group_name: Option<String>,
     pub model_ids: Vec<i64>,
 }
-#[derive(Serialize, Clone, Display)]
+#[derive(Serialize, Clone, Debug, Display)]
 pub enum ImportStatus {
     Idle,
     ProcessingModels,
@@ -21,7 +21,7 @@ pub enum ImportStatus {
     Failure,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ImportState {
     pub imported_models: Vec<ImportedModelsSet>,
     pub imported_models_count: usize, // TODO: should it be model or models?
@@ -135,14 +135,14 @@ impl ImportState {
 
             if let Some(group_name) = &last.group_name {
                 let group_id = tauri::async_runtime::block_on(async {
-                    db::group_db::add_empty_group(&state.db, &db::model::User::default(), group_name, true)
+                    db::group_db::add_empty_group(&state.db, &state.get_current_user(), group_name, true)
                         .await
                 })?;
 
                 tauri::async_runtime::block_on(async {
                     db::group_db::set_group_id_on_models(
                         &state.db,
-                        &db::model::User::default(),
+                        &state.get_current_user(),
                         Some(group_id),
                         last.model_ids.clone(),
                         true,

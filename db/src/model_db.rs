@@ -270,10 +270,11 @@ pub async fn get_unique_ids_from_model_ids(db: &DbContext, model_ids: Vec<i64>) 
     Ok(id_map)
 }
 
-pub async fn get_model_id_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<i64>, DbError> {
+pub async fn get_model_id_via_sha256(db: &DbContext, user : &User, sha256: &str) -> Result<Option<i64>, DbError> {
     let row = sqlx::query!(
-        "SELECT model_id FROM models INNER JOIN blobs ON models.model_blob_id = blobs.blob_id WHERE blob_sha256 = ?",
-        sha256
+        "SELECT model_id FROM models INNER JOIN blobs ON models.model_blob_id = blobs.blob_id WHERE blob_sha256 = ? AND model_user_id = ?",
+        sha256,
+        user.id
     )
     .fetch_optional(db)
     .await?;

@@ -33,6 +33,7 @@ impl AppState {
     }
 
     pub async fn set_current_user_by_id(&self, user_id: i64) -> Result<(), crate::error::ApplicationError> {
+        let path = self.get_settings_path();
         let user = db::user_db::get_user_by_id(&self.db, user_id).await?;
 
         if user.is_none() {
@@ -45,7 +46,16 @@ impl AppState {
         let mut configuration = self.configuration.lock().unwrap();
         configuration.last_user_id = user_id;
 
+        let json = serde_json::to_string(&configuration.clone()).unwrap();
+        std::fs::write(path, json).expect("Failed to write configuration");
+
         Ok(())
+    }
+
+    fn get_settings_path(&self) -> PathBuf {
+        let mut path_buff = PathBuf::from(self.app_data_path.clone());
+        path_buff.push("settings.json");
+        path_buff
     }
 
     // TODO: Change to pathbuf
@@ -84,9 +94,9 @@ impl AppState {
         path_buff
     }
 
-    pub fn write_configuration(&self, new_configuration: &Configuration) -> bool {
-        let path = PathBuf::from(self.app_data_path.clone());
-        let path = path.join("settings.json");
+    pub fn write_configuration(&self, new_configuration: &mut Configuration) -> bool {
+        let path = self.get_settings_path();
+        new_configuration.last_user_id = self.get_current_user().id;
 
         let json = serde_json::to_string(&new_configuration).unwrap();
 

@@ -30,6 +30,7 @@
     import { configuration } from "$lib/configuration.svelte";
     import { IInternalBrowserApi } from "$lib/api/shared/internal_browser_api";
     import { PredefinedModelStreamManager } from "$lib/api/shared/model_api";
+    import Spinner from "$lib/components/view/spinner.svelte";
 
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
     const tauriImportApi = getContainer().optional<ITauriImportApi>(ITauriImportApi);
@@ -108,9 +109,13 @@
                 <div class="overflow-hidden">
                     <GroupPage initialEditMode={true} group={importedGroups[0].meta} onGroupDelete={() => importedGroups[0].meta.id = -1} onAllModelsDelete={resetImportState} />
                 </div>
-            {:else}
+            {:else if importedModels.length > 0}
                 <div class="overflow-hidden flex-grow w-full">
                     <ModelGrid modelStream={new PredefinedModelStreamManager(importedModels)} default_show_multiselect_all={true} initialEditMode={true} onEmpty={resetImportState} />
+                </div>
+            {:else}
+                <div class="w-full h-full flex justify-center items-center">
+                    <Spinner />
                 </div>
             {/if}
         </div>

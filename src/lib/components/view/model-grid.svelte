@@ -42,7 +42,6 @@
             console.log(loadedModels);
         }
         busyLoadingNext = false;
-        console.log("Loaded models: " + loadedModels.length);
     }
 
     async function resetModelSet() {
@@ -92,8 +91,13 @@
         }
     }
 
-    onMount(async () => {
-        await resetModelSet();
+    $effect(() => {
+        let a = props.modelStream;
+        console.log("Model stream changed, resetting model set");
+
+        untrack(async () => {
+            await resetModelSet();
+        });
     });
 </script>
 

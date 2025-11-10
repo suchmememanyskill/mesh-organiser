@@ -4,6 +4,7 @@ use crate::service::import_state::{ImportState, ImportStatus, ImportedModelsSet}
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use crate::error::ApplicationError;
+use db::blob_db;
 use db::model::{Model, User};
 use db::model_db::ModelFilterOptions;
 use indexmap::IndexMap;
@@ -126,7 +127,7 @@ pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &A
         .collect::<Vec<i64>>();
     
     let models = tauri::async_runtime::block_on(async {
-        db::model_db::get_models_via_ids(db, &User::default(), model_ids).await
+        db::model_db::get_models_via_ids(db, &app_state.get_current_user(), model_ids).await
     });
 
     let models = match models {
@@ -135,7 +136,7 @@ pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &A
     };
 
     let all_keywords = tauri::async_runtime::block_on(async {
-        db::label_keyword_db::get_all_keywords(db, &db::model::User::default())
+        db::label_keyword_db::get_all_keywords(db, &app_state.get_current_user())
             .await
     });
 
@@ -192,7 +193,7 @@ pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &A
 
         if !label_ids.is_empty() {
             tauri::async_runtime::block_on(async {
-                let _ = db::label_db::add_labels_on_models(db, &db::model::User::default(), &label_ids, &[model.id], true).await;
+                let _ = db::label_db::add_labels_on_models(db, &app_state.get_current_user(), &label_ids, &[model.id], true).await;
             });
         }
     }
@@ -369,6 +370,7 @@ fn import_single_model<W>(
 where
     W: Read,
 {
+    let current_user = app_state.get_current_user();
     let mut file_contents: Vec<u8> = match file_size {
         0 => Vec::new(),
         val => Vec::with_capacity(val),
@@ -382,7 +384,7 @@ where
     let hash = String::from(&format!("{:x}", bytes)[0..32]);
 
     let existing_id = tauri::async_runtime::block_on(async {
-        db::model_db::get_model_id_via_sha256(&app_state.db, &hash)
+        db::model_db::get_model_id_via_sha256(&app_state.db, &current_user, &hash)
             .await
     })?;
     
@@ -390,33 +392,43 @@ where
         return Ok(id);
     }
 
-    let new_extension = convert_extension_to_zip(file_type);
-
-    let final_file_name =
-        PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, &new_extension));
-
-    let mut file_handle = File::create(&final_file_name)?;
-
-    if is_zippable_file_extension(file_type) {
-        let mut zip = zip::ZipWriter::new(file_handle);
-        let options =
-            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-        zip.start_file(format!("{}.{}", name, file_type.to_lowercase()), options)?;
-        zip.write_all(&file_contents)?;
-        zip.finish()?;
-    } else {
-        file_handle.write_all(&file_contents)?;
-    }
-
-    let blob_id = tauri::async_runtime::block_on(async {
-        db::blob_db::add_or_create_blob_using_sha256(&app_state.db, &hash, &new_extension, file_size as i64)
-            .await
+    let blob_id_optional = tauri::async_runtime::block_on(async {
+        blob_db::get_blob_via_sha256(&app_state.db, &hash).await
     })?;
+
+    let blob_id;
+
+    if let Some(blob) = blob_id_optional {
+        blob_id = blob.id;
+    } else {
+        let new_extension = convert_extension_to_zip(file_type);
+
+        let final_file_name =
+            PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, &new_extension));
+
+        let mut file_handle = File::create(&final_file_name)?;
+
+        if is_zippable_file_extension(file_type) {
+            let mut zip = zip::ZipWriter::new(file_handle);
+            let options =
+                SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+            zip.start_file(format!("{}.{}", name, file_type.to_lowercase()), options)?;
+            zip.write_all(&file_contents)?;
+            zip.finish()?;
+        } else {
+            file_handle.write_all(&file_contents)?;
+        }
+
+        blob_id = tauri::async_runtime::block_on(async {
+            db::blob_db::add_blob(&app_state.db, &hash, &new_extension, file_size as i64)
+                .await
+        })?;
+    }
 
     let id = tauri::async_runtime::block_on(async {
         db::model_db::add_model(
             &app_state.db,
-            &db::model::User::default(),
+            &current_user,
             name,
             blob_id,
             link.as_deref(),
