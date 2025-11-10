@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use db::blob_db;
 use db::model::{ModelFlags, User};
 use db::model_db::{self, ModelFilterOptions, ModelOrderBy};
 use serde::Serialize;
@@ -121,21 +122,21 @@ pub async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(
 
     let model = &model[0];
 
-    db::model_db::delete_model(&state.db, &state.get_current_user(), model_id, true)
+    model_db::delete_model(&state.db, &state.get_current_user(), model_id, true)
         .await?;
 
-    // TODO: Split this off into a managed layer between server and desktop app
-    // TODO: This should happen on a blob level, not on a model level
-    let model_path =
-        PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
-    let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
+    if blob_db::get_blob_model_usage_count(&state.db, model.blob.id).await? <= 0 {
+        let model_path =
+            PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
+        let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
 
-    if model_path.exists() {
-        std::fs::remove_file(model_path)?;
-    }
+        if model_path.exists() {
+            std::fs::remove_file(model_path)?;
+        }
 
-    if image_path.exists() {
-        std::fs::remove_file(image_path)?;
+        if image_path.exists() {
+            std::fs::remove_file(image_path)?;
+        }
     }
 
     Ok(())

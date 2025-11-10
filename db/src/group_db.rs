@@ -28,14 +28,13 @@ pub struct GroupFilterOptions
 }
 
 // TODO: This is insanely inefficient
-fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : bool, take_group : bool) -> Vec<ModelGroup>
+fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : bool) -> Vec<ModelGroup>
 {
     let mut index_map: IndexMap<i64, ModelGroup> = IndexMap::new();
 
     for mut model in models 
     {
-        let group_meta = if take_group { model.group.take() } else { model.group.clone() };
-        let group_meta = match group_meta
+        let group_meta = match model.group.take()
         {
             Some(g) => g,
             None => {
@@ -88,7 +87,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
         ..Default::default()
     }).await?;
 
-    let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models, !filtered_on_models);
+    let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models);
 
     // It's possible we don't have the entire group here. Re-fetching groups
     if filtered_on_labels || filtered_on_text || filtered_on_models {
@@ -104,7 +103,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
 
         // TODO: Make option to split off non-complete groups into their own groups
 
-        groups = convert_model_list_to_groups(models.items, false, !filtered_on_models);
+        groups = convert_model_list_to_groups(models.items, false);
         groups.extend(fake_models);
     }
 
@@ -314,7 +313,7 @@ pub async fn get_group_via_id(db: &DbContext, user : &User, group_id: i64) -> Re
         ..Default::default()
     }).await?;
 
-    let mut groups = convert_model_list_to_groups(models.items, false, true);
+    let mut groups = convert_model_list_to_groups(models.items, false);
 
     if groups.is_empty() {
         return Ok(None);

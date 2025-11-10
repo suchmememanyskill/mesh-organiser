@@ -121,11 +121,7 @@
     });
 </script>
 
-{#if deleted}
-    <div class="flex justify-center items-center h-64">
-        <span class="text-2xl">Group Deleted</span>
-    </div>
-{:else}
+{#if !deleted}
     <Card class={props.class}>
         <CardHeader class="relative">
             <div class="{props.settingsVertical ? "grid grid-cols-1 mr-10" : "flex flex-row"} gap-2">

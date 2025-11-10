@@ -84,13 +84,14 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
 
     if let Some(text_search) = options.text_search
     {
-        seperated.push("(model_name LIKE '%");
-        seperated.push_bind_unseparated(text_search.clone());
-        seperated.push_unseparated("%' OR model_desc LIKE '%");
-        seperated.push_bind_unseparated(text_search.clone());
-        seperated.push_unseparated("%' OR group_name LIKE '%");
-        seperated.push_bind_unseparated(text_search);
-        seperated.push_unseparated("%')");
+        let str = format!("%{}%", text_search);
+        seperated.push("(model_name LIKE ");
+        seperated.push_bind_unseparated(str.clone());
+        seperated.push_unseparated(" OR model_desc LIKE ");
+        seperated.push_bind_unseparated(str.clone());
+        seperated.push_unseparated(" OR group_name LIKE ");
+        seperated.push_bind_unseparated(str);
+        seperated.push_unseparated(")");
     }
 
     query_builder.push(" GROUP BY models.model_id ");

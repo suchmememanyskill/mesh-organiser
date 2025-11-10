@@ -14,7 +14,7 @@
     import Slice from "@lucide/svelte/icons/slice";
     import { IResourceApi, type ResourceMeta } from "$lib/api/shared/services/resource_api";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { Group, IGroupApi } from "$lib/api/shared/services/group_api";
+    import { type Group, IGroupApi } from "$lib/api/shared/services/group_api";
     import { updateSidebarState } from "$lib/sidebar_data.svelte";
     import { ISlicerApi } from "$lib/api/shared/services/slicer_api";
     import { ILocalApi } from "$lib/api/shared/services/local_api";

@@ -56,7 +56,7 @@ export class GroupApi implements IGroupApi {
     }
 
     async addGroup(name: string): Promise<GroupMeta> {
-        let group = await invoke<RawGroupMeta>("add_group", { group_name: name });
+        let group = await invoke<RawGroupMeta>("add_group", { groupName: name });
         return parseRawGroupMeta(group);
     }
 

@@ -21,7 +21,6 @@ pub async fn get_model_bytes(
     get_blob_bytes(model.blob.sha256.clone(), state).await
 }
 
-
 #[tauri::command]
 pub async fn get_blob_bytes(
     sha256: String,
