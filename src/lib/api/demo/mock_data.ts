@@ -54,93 +54,93 @@ interface MockModelData {
 const mockModelDataList: MockModelData[] = [
     {
         name: "3DBenchy",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/3dbenchy.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/3dbenchy.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/3dbenchy.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/3dbenchy.stl.png",
         size: "10.8 MB",
         sourceUrl: "https://www.printables.com/model/2236-3dbenchy-the-jolly-3d-printing-torture-test-by-cre"
     },
     {
         name: "Calibration Cube",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Calibration Cube.3mf",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Calibration Cube.3mf.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Calibration Cube.3mf",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Calibration Cube.3mf.png",
         size: "4.5 KB",
         sourceUrl: "https://www.printables.com/model/118657-calibration-cube"
     },
     {
         name: "Embossed Text",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Embossed text.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Embossed text.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Embossed text.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Embossed text.stl.png",
         size: "69.2 KB"
     },
     {
         name: "Temp Tower PLA",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Temp Tower PLA.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Temp Tower PLA.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Temp Tower PLA.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Temp Tower PLA.stl.png",
         size: "2.1 MB",
         sourceUrl: "https://www.printables.com/model/274675-temp-tower-explanations"
     },
     {
         name: "Beer Crate AA",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/beer_crate_AA.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/beer_crate_AA.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/beer_crate_AA.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/beer_crate_AA.stl.png",
         size: "237.8 KB",
         sourceUrl: "https://www.printables.com/model/149774-beer-crate-battery-holder-aa-aaa-boxes"
     },
     {
         name: "Boaty",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/boaty.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/boaty.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/boaty.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/boaty.stl.png",
         size: "583.4 KB",
         sourceUrl: "https://www.printables.com/model/1141963-3d-boaty"
     },
     {
         name: "Eiffel Tower",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/eiffel_final.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/eiffel_final.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/eiffel_final.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/eiffel_final.stl.png",
         size: "7.7 MB",
         sourceUrl: "https://www.printables.com/model/572-eiffel-tower"
     },
     {
         name: "Calibration Cube (GCode)",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/ECC_0.4_Korper1_PLA0.2_12m19s.gcode",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/ECC_0.4_Korper1_PLA0.2_12m19s.gcode.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/ECC_0.4_Korper1_PLA0.2_12m19s.gcode",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/ECC_0.4_Korper1_PLA0.2_12m19s.gcode.png",
         size: "369.0 KB",
         sourceUrl: "https://www.printables.com/model/118657-calibration-cube"
     },
     {
         name: "Cone",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Cone.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Cone.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Cone.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Cone.stl.png",
         size: "17.8 KB"
     },
     {
         name: "Cube",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Cube.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Cube.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Cube.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Cube.stl.png",
         size: "684.0 B"
     },
     {
         name: "Cylinder",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Cylinder.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Cylinder.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Cylinder.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Cylinder.stl.png",
         size: "35.2 KB"
     },
     {
         name: "Disc",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Disc.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Disc.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Disc.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Disc.stl.png",
         size: "35.2 KB"
     },
     {
         name: "Sphere",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Sphere.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Sphere.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Sphere.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Sphere.stl.png",
         size: "1.5 MB"
     },
     {
         name: "Torus",
-        modelUrl: "https://mesh.suchmeme.nl/mock_data/Torus.stl",
-        thumbnailUrl: "https://mesh.suchmeme.nl/mock_data/Torus.stl.png",
+        modelUrl: "https://meshdemo.suchmeme.nl/mock_data/Torus.stl",
+        thumbnailUrl: "https://meshdemo.suchmeme.nl/mock_data/Torus.stl.png",
         size: "1.4 MB"
     }
 ];

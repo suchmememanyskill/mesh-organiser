@@ -33,6 +33,8 @@
     import Slice from "@lucide/svelte/icons/slice";
     import { onMount } from "svelte";
     import NavUser from "./view/nav-user.svelte";
+    import { IHostApi, Platform } from "$lib/api/shared/host_api";
+    import DemoMode from "./view/demo-mode.svelte";
 
     async function addLabel(newLabelName: string, newLabelColor: string) {
         let labelApi = getContainer().require<ILabelApi>(ILabelApi);
@@ -143,10 +145,13 @@
     }
 
     const sidebar = Sidebar.useSidebar();
+    const hostApi = getContainer().optional<IHostApi>(IHostApi);
+    let isDemo = $state(false);
 
     onMount(async () => {
         let open = !configuration.collapse_sidebar;
         sidebar.setOpen(open);
+        isDemo = (await hostApi?.getPlatform()) === Platform.DemoWebApp;
     });
 </script>
 
@@ -284,6 +289,9 @@
         </Sidebar.Group>
     </Sidebar.Content>
     <Sidebar.Footer>
+        {#if isDemo && sidebar.open} 
+            <DemoMode />
+        {/if}
         {#if importState.status !== ImportStatus.Idle}
             <ImportProgressIndicator />
         {/if}
