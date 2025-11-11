@@ -71,7 +71,7 @@
         await modelApi.editModel(edited_model);
         await labelApi.setLabelsOnModel(edited_model.labels, edited_model);
         await updateSidebarState();
-    }, 1000);
+    }, 700);
 
     async function onUpdateModel()
     {
@@ -199,10 +199,16 @@
                         <DropdownMenu.Group>
                             <DropdownMenu.Label>Properties</DropdownMenu.Label>
                             <DropdownMenu.Separator />
-                            <DropdownMenu.CheckboxItem onchange={onUpdateModel} bind:checked={model.flags.printed}>
+                            <DropdownMenu.CheckboxItem bind:checked={
+                                () => model.flags.printed,
+                                (val) => { model.flags.printed = val; onUpdateModel();}
+                            }>
                                 Printed
                             </DropdownMenu.CheckboxItem>
-                            <DropdownMenu.CheckboxItem onchange={onUpdateModel} bind:checked={model.flags.favorite}>
+                            <DropdownMenu.CheckboxItem bind:checked={
+                                () => model.flags.favorite,
+                                (val) => { model.flags.favorite = val; onUpdateModel(); }
+                            }>
                                 Favorite
                             </DropdownMenu.CheckboxItem>
                         </DropdownMenu.Group>

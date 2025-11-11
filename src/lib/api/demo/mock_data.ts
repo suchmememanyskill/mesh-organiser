@@ -221,7 +221,7 @@ mockModels.forEach(model => {
 });
 
 // Add primitives to group
-const primitiveNames = ['sphere', 'cone', 'cube', 'cylinder', 'disc'];
+const primitiveNames = ['sphere', 'cone', 'cube', 'cylinder', 'disc', 'torus'];
 primitiveNames.forEach(name => {
     const model = modelsByName.get(name);
     if (model) {

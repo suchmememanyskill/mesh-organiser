@@ -26,7 +26,7 @@
     <div class="w-full h-full flex flex-col">
         <EditGroup class="my-3 mx-4" group={group} onDelete={() => props.onGroupDelete?.()} />
         <div class="overflow-hidden">
-            <ModelGrid initialEditMode={props.initialEditMode} modelStream={new PredefinedModelStreamManager(group.models)} default_show_multiselect_all={true} onEmpty={() => props.onAllModelsDelete?.()} />
+            <ModelGrid initialEditMode={props.initialEditMode} onRemoveGroupDelete={true} modelStream={new PredefinedModelStreamManager(group.models)} default_show_multiselect_all={true} onEmpty={() => props.onAllModelsDelete?.()} />
         </div>
     </div>
 {:else if loading}

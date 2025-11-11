@@ -44,7 +44,7 @@
         (): void;
     }
 
-    const props: { models: Model[]; class?: ClassValue, onDelete?: Function } = $props();
+    const props: { models: Model[]; class?: ClassValue, onDelete?: Function, onGroupDelete?: Function } = $props();
 
     const models = $derived(props.models);
     const printed = $derived(models.every((x) => x.flags.printed));
@@ -249,6 +249,7 @@
         removed = models.filter(x => !!x.group).length;
         await updateSidebarState();
         toast.success(`Ungrouped ${removed} model(s)`);
+        props.onGroupDelete?.();
     }
 
     async function onDelete() {
