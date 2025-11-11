@@ -282,7 +282,7 @@
 
     function onGroupDeleteViaModels(models : Model[])
     {
-        let groupMetas = models.map(m => m.group).filter((g) => g !== null) as GroupMeta[];
+        let groupMetas = models.map(m => m.group).filter((g) => g !== null && g.id >= 0) as GroupMeta[];
         let uniqueGroupMetas = groupMetas.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
         let affectedGroups = loadedGroups.filter(g => uniqueGroupMetas.some(ug => ug.id === g.meta.id));
         
