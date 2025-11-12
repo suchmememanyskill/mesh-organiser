@@ -27,8 +27,11 @@ export interface Group {
 }
 
 export function createGroupInstance(meta: GroupMeta, models: Model[], labels: LabelMeta[], resource: ResourceMeta|null, flags: string[]): Group {
-    models.forEach(model => model.group = meta);
-
+    if (meta.id >= 0)
+    {
+        models.forEach(model => model.group = meta);
+    }
+    
     return {
         meta,
         models,
