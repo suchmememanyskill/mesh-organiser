@@ -24,7 +24,7 @@ pub async fn add_model(
     let path_clone = String::from(path);
     let state_clone = state.real_clone();
     let handle_clone = app_handle.clone();
-    let mut import_state = ImportState::new(origin_url, recursive, delete_imported);
+    let mut import_state = ImportState::new_tauri(origin_url, recursive, delete_imported, &app_handle);
 
     import_state = tauri::async_runtime::spawn_blocking(move || {
         let _lock = state_clone.import_mutex.lock().unwrap();

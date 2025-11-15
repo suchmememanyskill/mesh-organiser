@@ -26,19 +26,19 @@ pub fn import_path(
     import_state: &mut ImportState,
 ) -> Result<(), ApplicationError> {
     import_state.status = ImportStatus::ProcessingModels;
-    import_state.emit_all(app_handle);
+    import_state.emit_all();
 
     let configuration = app_state.get_configuration();
     let model_count = get_model_count(path, &configuration, import_state.recursive)?;
-    import_state.update_total_model_count(model_count, app_handle);
+    import_state.update_total_model_count(model_count);
 
     match import_path_inner(path, app_state, app_handle, import_state) {
         Ok(()) => {
-            import_state.update_status(ImportStatus::FinishedModels, app_handle);
+            import_state.update_status(ImportStatus::FinishedModels);
             Ok(())
         }
         Err(application_error) => {
-            import_state.set_failure(application_error.to_string(), app_handle);
+            import_state.set_failure(application_error.to_string());
             Err(application_error)
         }
     }
@@ -100,7 +100,7 @@ pub fn import_path_inner(
                 import_state.origin_url.clone(),
                 app_state,
             )?;
-            import_state.add_model_id_to_current_set(id, app_handle);
+            import_state.add_model_id_to_current_set(id);
         }
 
         if import_state.delete_after_import {
@@ -241,7 +241,7 @@ fn import_models_from_dir(
 ) -> Result<(), ApplicationError> {
     let configuration = app_state.get_configuration();
 
-    import_state.add_new_import_set(Some(group_name), app_handle);
+    import_state.add_new_import_set(Some(group_name));
 
     let origin_url = import_state.origin_url.clone();
     let delete_after_import = import_state.delete_after_import;
@@ -284,7 +284,7 @@ fn import_models_from_dir(
                 .unwrap();
 
                 let import_state = &mut import_state_mutex.lock().unwrap();
-                import_state.add_model_id_to_current_set(id, app_handle);
+                import_state.add_model_id_to_current_set(id);
             }
 
             if delete_after_import {
@@ -311,7 +311,7 @@ fn import_models_from_zip(
     let configuration = app_state.get_configuration();
     let mut temp_str;
     let mut link;
-    import_state.add_new_import_set(Some(group_name), app_handle);
+    import_state.add_new_import_set(Some(group_name));
 
     {
         let zip_file = File::open(&path)?;
@@ -345,7 +345,7 @@ fn import_models_from_zip(
                 let id = import_single_model(
                     &mut file, extension, file_size, &file_name, link, app_state,
                 )?;
-                import_state.add_model_id_to_current_set(id, app_handle);
+                import_state.add_model_id_to_current_set(id);
             }
         }
     }

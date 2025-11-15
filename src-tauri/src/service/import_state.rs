@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use serde::Serialize;
 use strum::Display;
 use tauri::{AppHandle, Emitter};
@@ -10,7 +12,7 @@ pub struct ImportedModelsSet {
     pub group_name: Option<String>,
     pub model_ids: Vec<i64>,
 }
-#[derive(Serialize, Clone, Debug, Display)]
+#[derive(Serialize, Debug, Display)]
 pub enum ImportStatus {
     Idle,
     ProcessingModels,
@@ -21,7 +23,7 @@ pub enum ImportStatus {
     Failure,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Debug)]
 pub struct ImportState {
     pub imported_models: Vec<ImportedModelsSet>,
     pub imported_models_count: usize, // TODO: should it be model or models?
@@ -32,6 +34,15 @@ pub struct ImportState {
     pub failure_reason: Option<String>,
     pub recursive: bool,
     pub delete_after_import: bool,
+    
+    #[serde(skip)]
+    pub emitter: Box<dyn ImportStateEmitter + Send + Sync>,
+}
+
+impl Debug for dyn ImportStateEmitter + Send + Sync {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ImportStateEmitter")
+    }
 }
 
 const IMPORT_STATUS_EVENT: &'static str = "import-status";
@@ -41,6 +52,66 @@ const IMPORT_MODEL_COUNT_EVENT: &'static str = "import-model-count";
 const IMPORT_THUMBNAIL_COUNT_EVENT: &'static str = "import-thumbnail-count";
 const IMPORT_FAILURE_REASON_EVENT: &'static str = "import-failure-reason";
 const IMPORT_ALL_DATA_EVENT: &'static str = "import-all-data";
+
+pub trait ImportStateEmitter {
+    fn status_event(&self, status: &ImportState);
+    fn model_group_event(&self, status: &ImportState);
+    fn model_total_event(&self, status: &ImportState);
+    fn model_count_event(&self, status: &ImportState);
+    fn thumbnail_count_event(&self, status: &ImportState);
+    fn failure_reason_event(&self, status: &ImportState);
+    fn all_data_event(&self, state: &ImportState);
+}
+
+pub struct NoneImportStateEmitter;
+
+impl ImportStateEmitter for NoneImportStateEmitter {
+    fn status_event(&self, _status: &ImportState) {}
+    fn model_total_event(&self, _status: &ImportState) {}
+    fn failure_reason_event(&self, _status: &ImportState) {}
+    fn model_group_event(&self, _status: &ImportState) {}
+    fn thumbnail_count_event(&self, _status: &ImportState) {}
+    fn model_count_event(&self, _status: &ImportState) {}
+    fn all_data_event(&self, _state: &ImportState) {}
+}
+
+pub struct TauriImportStateEmitter {
+    handle: AppHandle,
+}
+
+impl ImportStateEmitter for TauriImportStateEmitter {
+    fn status_event(&self, status: &ImportState) {
+        let _ = self.handle.emit(IMPORT_STATUS_EVENT, status.status.to_string());
+    }
+    
+    fn model_total_event(&self, status: &ImportState) {
+        let _ = self.handle.emit(IMPORT_MODEL_TOTAL_EVENT, status.model_count);
+    }
+
+    fn failure_reason_event(&self, status: &ImportState) {
+        if let Some(reason) = &status.failure_reason {
+            let _ = self.handle.emit(IMPORT_FAILURE_REASON_EVENT, reason);
+        }
+    }
+
+    fn model_group_event(&self, status: &ImportState) {
+        if let Some(group_name) = status.get_last_group_name() {
+            let _ = self.handle.emit(IMPORT_MODEL_GROUP_EVENT, group_name);
+        }
+    }
+
+    fn thumbnail_count_event(&self, status: &ImportState) {
+        let _ = self.handle.emit(IMPORT_THUMBNAIL_COUNT_EVENT, status.finished_thumbnails_count);
+    }
+
+    fn model_count_event(&self, status: &ImportState) {
+        let _ = self.handle.emit(IMPORT_MODEL_COUNT_EVENT, status.imported_models_count);
+    }
+
+    fn all_data_event(&self, state: &ImportState) {
+        let _ = self.handle.emit(IMPORT_ALL_DATA_EVENT, state);
+    }
+}
 
 impl ImportState {
     pub fn new(origin_url: Option<String>, recursive: bool, delete_after_import: bool) -> Self {
@@ -54,34 +125,46 @@ impl ImportState {
             origin_url: origin_url,
             recursive,
             delete_after_import,
+            emitter: Box::new(NoneImportStateEmitter {}),
         }
     }
 
-    pub fn update_total_model_count(&mut self, count: usize, handle: &AppHandle) {
+    pub fn new_tauri(origin_url: Option<String>, recursive: bool, delete_after_import: bool, handle: &AppHandle) -> Self {
+        Self {
+            imported_models: Vec::new(),
+            imported_models_count: 0,
+            model_count: 0,
+            finished_thumbnails_count: 0,
+            status: ImportStatus::Idle,
+            failure_reason: None,
+            origin_url: origin_url,
+            recursive,
+            delete_after_import,
+            emitter: Box::new(TauriImportStateEmitter { handle: handle.clone() }),
+        }
+    }
+
+    pub fn update_total_model_count(&mut self, count: usize) {
         self.model_count = count;
-        let _ = handle.emit(IMPORT_MODEL_TOTAL_EVENT, self.model_count);
+        self.emitter.model_total_event(self);
     }
 
-    pub fn update_status(&mut self, status: ImportStatus, handle: &AppHandle) {
+    pub fn update_status(&mut self, status: ImportStatus) {
         self.status = status;
-        let _ = handle.emit(IMPORT_STATUS_EVENT, self.status.to_string());
+        self.emitter.status_event(self);
     }
 
-    pub fn set_failure(&mut self, failure_reason: String, handle: &AppHandle) {
-        self.update_status(ImportStatus::Failure, handle);
-        let _ = handle.emit(IMPORT_FAILURE_REASON_EVENT, &failure_reason);
+    pub fn set_failure(&mut self, failure_reason: String) {
+        self.update_status(ImportStatus::Failure);
         self.failure_reason = Some(failure_reason);
+        self.emitter.failure_reason_event(self);
     }
 
-    pub fn add_new_import_set(&mut self, group_name: Option<String>, handle: &AppHandle) {
+    pub fn add_new_import_set(&mut self, group_name: Option<String>) {
         if let Some(last) = self.imported_models.last() {
             if last.model_ids.is_empty() {
                 return;
             }
-        }
-
-        if let Some(group_name) = group_name.clone() {
-            let _ = handle.emit(IMPORT_MODEL_GROUP_EVENT, group_name);
         }
 
         self.imported_models.push(ImportedModelsSet {
@@ -89,16 +172,18 @@ impl ImportState {
             group_name: group_name,
             model_ids: Vec::new(),
         });
+
+        self.emitter.model_group_event(self);
     }
 
-    pub fn update_finished_thumbnails_count(&mut self, amount: usize, handle: &AppHandle) {
+    pub fn update_finished_thumbnails_count(&mut self, amount: usize) {
         self.finished_thumbnails_count += amount;
-        let _ = handle.emit(IMPORT_THUMBNAIL_COUNT_EVENT, self.finished_thumbnails_count);
+        self.emitter.thumbnail_count_event(self);
     }
 
-    pub fn add_model_id_to_current_set(&mut self, model_id: i64, handle: &AppHandle) {
+    pub fn add_model_id_to_current_set(&mut self, model_id: i64) {
         if self.imported_models.is_empty() {
-            self.add_new_import_set(None, handle);
+            self.add_new_import_set(None);
         }
 
         self.imported_models
@@ -111,7 +196,7 @@ impl ImportState {
             .iter()
             .map(|set| set.model_ids.len())
             .sum();
-        let _ = handle.emit(IMPORT_MODEL_COUNT_EVENT, self.imported_models_count);
+        self.emitter.model_count_event(self);
     }
 
     pub fn get_last_group_name(&self) -> Option<String> {
@@ -164,21 +249,13 @@ impl ImportState {
         }
     }
 
-    pub fn emit_all(&self, handle: &AppHandle) {
-        let _ = handle.emit(IMPORT_STATUS_EVENT, self.status.to_string());
-        let _ = handle.emit(IMPORT_MODEL_COUNT_EVENT, self.imported_models_count);
-        let _ = handle.emit(IMPORT_THUMBNAIL_COUNT_EVENT, self.finished_thumbnails_count);
-        let _ = handle.emit(IMPORT_MODEL_TOTAL_EVENT, self.model_count);
-
-        if let Some(last) = self.imported_models.last() {
-            if let Some(group_name) = &last.group_name {
-                let _ = handle.emit(IMPORT_MODEL_GROUP_EVENT, group_name);
-            }
-        }
-
-        if let Some(failure_reason) = &self.failure_reason {
-            let _ = handle.emit(IMPORT_FAILURE_REASON_EVENT, failure_reason);
-        }
+    pub fn emit_all(&self) {
+        self.emitter.status_event(self);
+        self.emitter.model_count_event(self);
+        self.emitter.thumbnail_count_event(self);
+        self.emitter.model_total_event(self);
+        self.emitter.model_group_event(self);
+        self.emitter.failure_reason_event(self);
     }
 
     // Pushes all data to the frontend

@@ -94,10 +94,10 @@ impl AppState {
         path_buff
     }
 
-    pub fn write_configuration(&self, new_configuration: &mut Configuration) -> bool {
+    pub fn write_configuration(&self, new_configuration: &Configuration) -> bool {
         let path = self.get_settings_path();
+        let mut new_configuration = new_configuration.clone();
         new_configuration.last_user_id = self.get_current_user().id;
-
         let json = serde_json::to_string(&new_configuration).unwrap();
 
         std::fs::write(path, json).expect("Failed to write configuration");
@@ -112,7 +112,7 @@ impl AppState {
                 && new_configuration.bambu_deep_link)
             || (configuration.orca_deep_link != new_configuration.orca_deep_link
                 && new_configuration.orca_deep_link);
-        *configuration = new_configuration.clone();
+        *configuration = new_configuration;
 
         deep_link_setting_changed
     }

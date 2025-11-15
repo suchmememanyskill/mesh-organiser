@@ -28,7 +28,7 @@ pub async fn generate_all_thumbnails(
         },
     ).await?.items;
 
-    let mut import_state = &mut ImportState::new(None, false, false);
+    let mut import_state = &mut ImportState::new_tauri(None, false, false, &app_handle);
 
     generate_thumbnails(&models, app_state, app_handle, overwrite, &mut import_state).await?;
 
@@ -42,7 +42,7 @@ pub async fn generate_thumbnails(
     overwrite: bool,
     import_state: &mut ImportState,
 ) -> Result<(), ApplicationError> {
-    import_state.update_status(ImportStatus::ProcessingThumbnails, app_handle);
+    import_state.update_status(ImportStatus::ProcessingThumbnails);
     let image_path = PathBuf::from(app_state.get_image_dir());
     let model_path = PathBuf::from(app_state.get_model_dir());
     let fallback_3mf_thumbnail = app_state.get_configuration().fallback_3mf_thumbnail;
@@ -167,7 +167,7 @@ pub async fn generate_thumbnails(
                 if let Err(e) = res {
                     if e == TryRecvError::Disconnected {
                         import_state
-                            .update_finished_thumbnails_count(run.thumbnail_count, app_handle);
+                            .update_finished_thumbnails_count(run.thumbnail_count);
                         running.remove(i);
                     } else {
                         i += 1;
@@ -179,7 +179,7 @@ pub async fn generate_thumbnails(
         }
     }
 
-    import_state.update_status(ImportStatus::FinishedThumbnails, app_handle);
+    import_state.update_status(ImportStatus::FinishedThumbnails);
 
     Ok(())
 }
