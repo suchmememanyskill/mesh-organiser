@@ -3,11 +3,10 @@ use std::path::PathBuf;
 
 use db::model::Model;
 
-use crate::{
-    error::ApplicationError, service::export_service::export_to_temp_folder,
-};
 pub use base::*;
 use std::process::Command;
+
+use crate::{export_service::export_to_temp_folder, service_error::ServiceError};
 
 use super::app_state::AppState;
 
@@ -20,9 +19,9 @@ mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
 
-pub fn open_with_paths(program: &str, paths: Vec<PathBuf>) -> Result<(), ApplicationError> {
+pub fn open_with_paths(program: &str, paths: Vec<PathBuf>) -> Result<(), ServiceError> {
     if paths.len() == 0 {
-        return Err(ApplicationError::InternalError(String::from(
+        return Err(ServiceError::InternalError(String::from(
             "No models to open",
         )));
     }
@@ -32,20 +31,20 @@ pub fn open_with_paths(program: &str, paths: Vec<PathBuf>) -> Result<(), Applica
     Ok(())
 }
 
-pub fn open_custom_slicer(
+pub async fn open_custom_slicer(
     models: Vec<Model>,
     app_state: &AppState,
-) -> Result<(), ApplicationError> {
+) -> Result<(), ServiceError> {
     let path = app_state.get_configuration().custom_slicer_path.clone();
     let pathbuf = PathBuf::from(path.clone());
 
     if path.is_empty() || !pathbuf.exists() {
-        return Err(ApplicationError::InternalError(String::from(
+        return Err(ServiceError::InternalError(String::from(
             "Custom slicer path not set or is invalid",
         )));
     }
 
-    let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
+    let (_, paths) = export_to_temp_folder(models, app_state, true, "open").await?;
 
     println!("Opening in slicer: {:?}", paths);
     open_with_paths(&path, paths)

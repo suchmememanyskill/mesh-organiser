@@ -1,9 +1,9 @@
 use super::{Slicer, open_custom_slicer};
 use db::model::Model;
-use crate::error::ApplicationError;
-use crate::service::app_state::AppState;
-use crate::service::export_service::export_to_temp_folder;
-use crate::service::slicer_service::open_with_paths;
+use crate::service_error::ServiceError;
+use crate::app_state::AppState;
+use crate::export_service::export_to_temp_folder;
+use crate::slicer_service::open_with_paths;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -18,20 +18,20 @@ impl Slicer {
         get_slicer_path(&self).is_some()
     }
 
-    pub fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ApplicationError> {
+    pub async fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ServiceError> {
         if let Slicer::Custom = self {
-            return open_custom_slicer(models, app_state);
+            return open_custom_slicer(models, app_state).await;
         }
 
         if !self.is_installed() {
-            return Err(ApplicationError::InternalError(String::from(
+            return Err(ServiceError::InternalError(String::from(
                 "Slicer not installed",
             )));
         }
 
         let slicer_pathbuf = get_slicer_path(&self).unwrap();
         let slicer_path = slicer_pathbuf.to_str().unwrap();
-        let (_, paths) = export_to_temp_folder(models, app_state, true, "open")?;
+        let (_, paths) = export_to_temp_folder(models, app_state, true, "open").await?;
 
         println!("Opening in slicer: {:?}", paths);
 

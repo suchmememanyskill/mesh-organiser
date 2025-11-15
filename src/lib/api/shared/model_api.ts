@@ -98,41 +98,42 @@ export interface IModelStreamManager {
     setSearchText(text: string|null) : void;
     setOrderBy(order_by: ModelOrderBy) : void;
     fetch() : Promise<Model[]>;
+    getAll() : Promise<Model[]>;
 }
 
 export class PredefinedModelStreamManager implements IModelStreamManager {
     private models: Model[];
     private textSearch: string|null = null;
     private orderBy: ModelOrderBy = ModelOrderBy.AddedDesc;
-    private alreadyFetched: boolean = false;
+    private pageSize: number;
+    private fetchIndex: number = 0;
 
-    constructor(models: Model[]) {
+    constructor(models: Model[], pageSize: number = 50) {
         this.models = models;
+        this.pageSize = pageSize;
     }
 
     setSearchText(text: string | null): void {
         this.textSearch = text?.toLowerCase() ?? null;
-        this.alreadyFetched = false;
+        this.fetchIndex = 0;
     }
 
     setOrderBy(order_by: ModelOrderBy): void {
         this.orderBy = order_by;
-        this.alreadyFetched = false;
+        this.fetchIndex = 0;
     }
 
     async fetch(): Promise<Model[]> {
-        if (this.alreadyFetched) {
+        if (this.fetchIndex >= this.models.length) {
             return [];
         }
-
-        this.alreadyFetched = true;
 
         let filter = !this.textSearch ? this.models : this.models.filter(model => 
             model.name.toLowerCase().includes(this.textSearch!) ||
             (model.description?.toLowerCase().includes(this.textSearch!) ?? false)
         );
 
-        return filter.sort((a, b) => {
+        let sort = filter.sort((a, b) => {
             switch (this.orderBy) {
                 case ModelOrderBy.AddedAsc:
                     return a.added.getTime() - b.added.getTime();
@@ -149,7 +150,16 @@ export class PredefinedModelStreamManager implements IModelStreamManager {
                 default:
                     return 0;
             }
-        })
+        });
+
+        let paged = sort.slice(this.fetchIndex, this.fetchIndex + this.pageSize);
+        this.fetchIndex += this.pageSize;
+
+        return paged;
+    }
+
+    async getAll(): Promise<Model[]> {
+        return this.models;
     }
 }
 
@@ -190,6 +200,10 @@ export class ModelStreamManager implements IModelStreamManager {
 
     async fetch(): Promise<Model[]> {
         return (await this.generator!.next()).value ?? [];
+    }
+
+    async getAll(): Promise<Model[]> {
+        return [];
     }
 }
 

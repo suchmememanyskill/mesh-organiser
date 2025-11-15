@@ -6,14 +6,13 @@ use std::{
 use db::user_db;
 use arboard::Clipboard;
 use base64::prelude::*;
-use configuration::Configuration;
+
 use db::{
     label_db, model::{ModelFlags, Resource, ResourceFlags, User}, model_db
 };
 use error::ApplicationError;
 use serde::Serialize;
 use service::{
-    app_state::{AppState, InitialState, read_configuration},
     download_file_service, import_service,
     slicer_service::Slicer,
 };
@@ -27,13 +26,19 @@ use tauri::{
     webview::{DownloadEvent, PageLoadEvent},
 };
 use urlencoding::decode;
+use service::import_state::ImportState;
+use service::Configuration;
+use crate::tauri_app_state::TauriAppState;
+use crate::tauri_app_state::InitialState;
+use service::StoredConfiguration;
+use service::stored_to_configuration;
+use service::AppState;
 
-mod configuration;
+mod tauri_app_state;
 mod error;
-mod service;
-mod util;
-mod web_server;
 mod api;
+mod tauri_import_state;
+mod tauri_thumbnail_service;
 
 #[derive(Serialize, Clone)]
 struct DeepLinkEmit {
@@ -44,15 +49,15 @@ struct DeepLinkEmit {
 
 #[tauri::command]
 async fn get_configuration(
-    state: State<'_, AppState>,
-) -> Result<configuration::Configuration, ApplicationError> {
+    state: State<'_, TauriAppState>,
+) -> Result<Configuration, ApplicationError> {
     Ok(state.get_configuration())
 }
 
 #[tauri::command]
 async fn set_configuration(
     configuration: Configuration,
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
     app_handle: AppHandle,
 ) -> Result<(), ApplicationError> {
     let mut configuration = configuration;
@@ -87,11 +92,12 @@ async fn get_slicers() -> Result<Vec<SlicerEntry>, ApplicationError> {
 
 #[tauri::command]
 async fn update_images(
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
     app_handle: AppHandle,
     overwrite: bool,
 ) -> Result<(), ApplicationError> {
-    service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, overwrite).await?;
+    let _lock = state.app_state.import_mutex.lock().await;
+    crate::tauri_thumbnail_service::generate_all_thumbnails(&state, &app_handle, overwrite).await?;
 
     Ok(())
 }
@@ -99,19 +105,19 @@ async fn update_images(
 #[tauri::command]
 async fn open_in_slicer(
     model_ids: Vec<i64>,
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    let models = model_db::get_models_via_ids(&state.db, &state.get_current_user(), model_ids).await?;
+    let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
 
     if let Some(slicer) = &state.get_configuration().slicer {
-        slicer.open(models, &state)?;
+        slicer.open(models, &state.app_state).await?;
     }
 
     Ok(())
 }
 
 #[tauri::command]
-async fn get_initial_state(state: State<'_, AppState>) -> Result<InitialState, ApplicationError> {
+async fn get_initial_state(state: State<'_, TauriAppState>) -> Result<InitialState, ApplicationError> {
     Ok(state.initial_state.clone())
 }
 
@@ -127,26 +133,25 @@ async fn download_file(
 #[tauri::command]
 async fn open_in_folder(
     model_ids: Vec<i64>,
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    let models = model_db::get_models_via_ids(&state.db, &state.get_current_user(), model_ids).await?;
+    let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
 
     let (temp_dir, _) =
-        service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
+        service::export_service::export_to_temp_folder(models, &state.app_state, false, "export").await?;
 
-    crate::util::open_folder_in_explorer(temp_dir.to_str().unwrap());
+    service::open_folder_in_explorer(&temp_dir);
 
     Ok(())
 }
 
 
 #[tauri::command]
-async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, ApplicationError> {
-    let size = util::get_folder_size(&state.get_model_dir());
+async fn compute_model_folder_size(state: State<'_, TauriAppState>) -> Result<u64, ApplicationError> {
+    let size = service::get_folder_size(&state.get_model_dir());
 
     Ok(size)
 }
-
 
 
 #[derive(Serialize, Clone)]
@@ -376,6 +381,25 @@ fn remove_temp_paths() -> Result<(), ApplicationError> {
     Ok(())
 }
 
+pub fn read_configuration(app_data_path: &str) -> Configuration {
+    let path = PathBuf::from(app_data_path);
+    let path = path.join("settings.json");
+
+    if !path.exists() {
+        return Configuration {
+            data_path: String::from(app_data_path),
+            ..Default::default()
+        };
+    }
+
+    let json = std::fs::read_to_string(path).expect("Failed to read configuration");
+
+    let stored_configuration: StoredConfiguration =
+        serde_json::from_str(&json).expect("Failed to parse configuration");
+    return stored_to_configuration(stored_configuration);
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     thread::spawn(move || {
@@ -492,12 +516,14 @@ pub fn run() {
 
                 let user = user_db::get_user_by_id(&db, config.last_user_id).await.ok().flatten().unwrap_or(User::default());
 
-                let state = AppState {
-                    db: Arc::new(db),
-                    configuration: Mutex::new(config),
+                let state = TauriAppState {
+                    app_state: AppState {
+                        db: Arc::new(db),
+                        configuration: Mutex::new(config),
+                        import_mutex: Arc::new(tokio::sync::Mutex::new(())),
+                        app_data_path: app_data_path,
+                    },
                     initial_state: initial_state,
-                    app_data_path: app_data_path,
-                    import_mutex: Arc::new(Mutex::new(())),
                     current_user: Arc::new(Mutex::new(user)),
                 };
 
@@ -575,8 +601,8 @@ pub fn run() {
         if let tauri::RunEvent::ExitRequested { .. } = e {
             // Close sqlite db
             tauri::async_runtime::block_on(async move {
-                let app_state = _app_handle.state::<AppState>();
-                app_state.db.close().await;
+                let app_state = _app_handle.state::<TauriAppState>();
+                app_state.app_state.db.close().await;
             });
         }
     });

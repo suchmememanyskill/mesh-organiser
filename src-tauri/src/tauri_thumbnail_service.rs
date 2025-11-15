@@ -1,25 +1,24 @@
 use std::path::PathBuf;
 
+use service::import_state::{ImportState, ImportStatus};
 use tauri::AppHandle;
 use tokio::sync::mpsc::error::TryRecvError;
 
 use crate::{
-    error::ApplicationError,
-    service::import_state::{ImportState, ImportStatus},
+    error::ApplicationError, tauri_app_state::TauriAppState, tauri_import_state::import_state_new_tauri,
 };
 
-use super::app_state::AppState;
 use db::{model::{Model, User}, model_db::{self, ModelFilterOptions}};
 
 use tauri_plugin_shell::{ShellExt, process::Command};
 
 pub async fn generate_all_thumbnails(
-    app_state: &AppState,
+    app_state: &TauriAppState,
     app_handle: &AppHandle,
     overwrite: bool,
 ) -> Result<(), ApplicationError> {
     let models = model_db::get_models(
-        &app_state.db,
+        &app_state.app_state.db,
         &app_state.get_current_user(),
         ModelFilterOptions {
             page: 1,
@@ -28,7 +27,7 @@ pub async fn generate_all_thumbnails(
         },
     ).await?.items;
 
-    let mut import_state = &mut ImportState::new_tauri(None, false, false, &app_handle);
+    let mut import_state = &mut import_state_new_tauri(None, false, false, app_state, app_handle);
 
     generate_thumbnails(&models, app_state, app_handle, overwrite, &mut import_state).await?;
 
@@ -37,7 +36,7 @@ pub async fn generate_all_thumbnails(
 
 pub async fn generate_thumbnails(
     models: &Vec<Model>,
-    app_state: &AppState,
+    app_state: &TauriAppState,
     app_handle: &AppHandle,
     overwrite: bool,
     import_state: &mut ImportState,

@@ -4,7 +4,7 @@ use std::thread;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
-use crate::service::slicer_service::Slicer;
+use crate::slicer_service::Slicer;
 
 #[derive(Clone, Deserialize)]
 pub struct StoredConfiguration {

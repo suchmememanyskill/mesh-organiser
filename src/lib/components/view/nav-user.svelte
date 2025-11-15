@@ -71,6 +71,10 @@
                             >
                             {#if !currentUser!.email.endsWith("noemail.com")}
                                 <span class="truncate text-xs">{currentUser!.email}</span>
+                            {:else if currentUser!.permissions.onlineAccount}
+                                <span class="truncate text-xs">Online Account</span>
+                            {:else}
+                                <span class="truncate text-xs">Local Account</span>
                             {/if}
                         </div>
                         <ChevronsUpDownIcon class="ml-auto size-4" />

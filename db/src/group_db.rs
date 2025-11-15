@@ -1,5 +1,5 @@
 use std::{cmp::Reverse, u32};
-use itertools::join;
+use itertools::{Itertools, join};
 use indexmap::IndexMap;
 use sqlx::Row;
 use crate::{DbError, PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelFlags, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
@@ -167,7 +167,7 @@ pub async fn set_group_id_on_models(
 ) -> Result<(), DbError> {
     // TODO: Remove clone
     let models = model_db::get_models_via_ids(db, user, model_ids.clone()).await?;
-    let old_group_ids: Vec<i64> = models.iter().filter_map(|m| m.group.as_ref().map(|g| g.id)).collect();
+    let old_group_ids: Vec<i64> = models.iter().filter_map(|m| m.group.as_ref().map(|g| g.id)).unique().collect();
     let mut group_ids = get_unqiue_ids_from_group_ids(db, &old_group_ids).await?;
     
     if group_ids.len() != old_group_ids.len() {

@@ -1,40 +1,44 @@
 use super::app_state::AppState;
 use crate::configuration::Configuration;
-use crate::service::import_state::{ImportState, ImportStatus, ImportedModelsSet};
+use crate::import_state::{ImportState, ImportStatus, ImportedModelsSet};
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
-use crate::error::ApplicationError;
-use db::blob_db;
+use async_zip::ZipEntryBuilder;
+use async_zip::tokio::read::seek::ZipFileReader;
+use async_zip::tokio::write::ZipFileWriter;
+use db::{blob_db, label_db, label_keyword_db, model_db};
 use db::model::{Model, User};
 use db::model_db::ModelFilterOptions;
+use futures::future::join_all;
 use indexmap::IndexMap;
 use itertools::Itertools;
-use rayon::prelude::*;
 use sha2::{Digest, Sha256};
-use std::fs::{self, File, read_dir};
+use tokio::fs::File;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::sync::Mutex;
+use tokio::task::spawn_blocking;
+use std::fs::{self, read_dir};
 use std::io::{Read, Write};
-use std::path::PathBuf;
-use std::sync::Mutex;
-use tauri::AppHandle;
-use zip;
-use zip::write::SimpleFileOptions;
+use std::path::{Path, PathBuf};
+use tokio_util::{io::ReaderStream, compat::FuturesAsyncReadCompatExt};
+use crate::service_error::ServiceError;
 
-pub fn import_path(
+pub async fn import_path(
     path: &str,
     app_state: &AppState,
-    app_handle: &AppHandle,
     import_state: &mut ImportState,
-) -> Result<(), ApplicationError> {
+) -> Result<(), ServiceError> {
     import_state.status = ImportStatus::ProcessingModels;
     import_state.emit_all();
 
     let configuration = app_state.get_configuration();
-    let model_count = get_model_count(path, &configuration, import_state.recursive)?;
+    let model_count = get_model_count(path, &configuration, import_state.recursive).await?;
     import_state.update_total_model_count(model_count);
 
-    match import_path_inner(path, app_state, app_handle, import_state) {
+    match import_path_inner(path, app_state, import_state).await {
         Ok(()) => {
             import_state.update_status(ImportStatus::FinishedModels);
+            import_state.create_groups_from_all_sets(app_state).await?;
             Ok(())
         }
         Err(application_error) => {
@@ -44,11 +48,11 @@ pub fn import_path(
     }
 }
 
-pub fn get_model_count(
+pub async fn get_model_count(
     path: &str,
     configuration: &Configuration,
     recursive: bool,
-) -> Result<usize, ApplicationError> {
+) -> Result<usize, ServiceError> {
     let path_buff = PathBuf::from(path);
 
     if path_buff.is_dir() {
@@ -58,40 +62,39 @@ pub fn get_model_count(
             get_model_count_from_dir(path, configuration)
         }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
-        get_model_count_from_zip(path, configuration)
+        get_model_count_from_zip(path, configuration).await
     } else if is_supported_extension(&path_buff, &configuration) {
         Ok(1)
     } else {
-        Err(ApplicationError::InternalError(String::from(
+        Err(ServiceError::InternalError(String::from(
             "Unsupported file type",
         )))
     }
 }
 
-pub fn import_path_inner(
+pub async fn import_path_inner(
     path: &str,
     app_state: &AppState,
-    app_handle: &AppHandle,
     import_state: &mut ImportState,
-) -> Result<(), ApplicationError> {
+) -> Result<(), ServiceError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let configuration = app_state.get_configuration();
 
     if path_buff.is_dir() {
         if import_state.recursive {
-            import_models_from_dir_recursive(&path_buff, app_state, app_handle, import_state)?;
+            import_models_from_dir_recursive(&path_buff, app_state, import_state).await?;
         } else {
-            import_models_from_dir(path, app_state, app_handle, import_state, name.clone())?;
+            import_models_from_dir(path, app_state, import_state, name.clone()).await?;
         }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
-        import_models_from_zip(path, app_state, app_handle, import_state, name.clone())?;
+        import_models_from_zip(path, app_state, import_state, name.clone()).await?;
     } else if is_supported_extension(&path_buff, &configuration) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
 
         {
-            let mut file = File::open(&path_buff)?;
+            let mut file = File::open(&path_buff).await?;
             let id = import_single_model(
                 &mut file,
                 extension,
@@ -99,7 +102,8 @@ pub fn import_path_inner(
                 &name,
                 import_state.origin_url.clone(),
                 app_state,
-            )?;
+                &import_state.user
+            ).await?;
             import_state.add_model_id_to_current_set(id);
         }
 
@@ -107,17 +111,17 @@ pub fn import_path_inner(
             let _ = fs::remove_file(&path_buff);
         }
     } else {
-        return Err(ApplicationError::InternalError(String::from(
+        return Err(ServiceError::InternalError(String::from(
             "Unsupported file type",
         )));
     }
 
-    add_labels_by_keywords(&import_state.imported_models, app_state);
+    add_labels_by_keywords(&import_state.imported_models, app_state, import_state).await;
 
     Ok(())
 }
 
-pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &AppState) {
+pub async fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &AppState, import_state : &ImportState) {
     let db = &app_state.db;
     let model_ids = new_models
         .iter()
@@ -126,19 +130,14 @@ pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &A
         .unique()
         .collect::<Vec<i64>>();
     
-    let models = tauri::async_runtime::block_on(async {
-        db::model_db::get_models_via_ids(db, &app_state.get_current_user(), model_ids).await
-    });
+    let models = model_db::get_models_via_ids(db, &import_state.user, model_ids).await;
 
     let models = match models {
         Ok(m) => m,
         Err(_) => return,
     };
 
-    let all_keywords = tauri::async_runtime::block_on(async {
-        db::label_keyword_db::get_all_keywords(db, &app_state.get_current_user())
-            .await
-    });
+    let all_keywords = label_keyword_db::get_all_keywords(db, &import_state.user).await;
 
     let all_keywords = match all_keywords {
         Ok(k) => k,
@@ -192,25 +191,22 @@ pub fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_state: &A
             .collect();
 
         if !label_ids.is_empty() {
-            tauri::async_runtime::block_on(async {
-                let _ = db::label_db::add_labels_on_models(db, &app_state.get_current_user(), &label_ids, &[model.id], true).await;
-            });
+            let _ = label_db::add_labels_on_models(db, &import_state.user, &label_ids, &[model.id], true).await;
         }
     }
 }
 
-fn import_models_from_dir_recursive(
+async fn import_models_from_dir_recursive(
     path: &PathBuf,
     app_state: &AppState,
-    app_handle: &AppHandle,
     import_state: &mut ImportState,
-) -> Result<(), ApplicationError> {
+) -> Result<(), ServiceError> {
     let entries: Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
     let configuration = app_state.get_configuration();
 
     for folder in entries.iter().filter(|f| f.path().is_dir()) {
         let _ =
-            import_models_from_dir_recursive(&folder.path(), app_state, app_handle, import_state);
+            import_models_from_dir_recursive(&folder.path(), app_state, import_state);
     }
 
     if entries
@@ -223,7 +219,6 @@ fn import_models_from_dir_recursive(
         let _ = import_models_from_dir(
             path.to_str().unwrap(),
             app_state,
-            app_handle,
             import_state,
             group_name,
         );
@@ -232,121 +227,115 @@ fn import_models_from_dir_recursive(
     Ok(())
 }
 
-fn import_models_from_dir(
+async fn import_models_from_dir_inner(
+    configuration: &Configuration,
+    app_state: &AppState,
+    path: PathBuf,
+    import_state_mutex: &Mutex<&mut ImportState>,
+    user: &User,
+    link: &Option<String>,
+    delete_after_import: bool,
+) -> Result<(), ServiceError> {
+    if !is_supported_extension(&path, configuration) {
+        return Err(ServiceError::InternalError("Unsupported filetype".into()));
+    }
+
+    let file_name = util::prettify_file_name(&path, false);
+    let extension = path.extension().unwrap().to_str().unwrap();
+    let file_size = path.metadata().unwrap().len() as usize;
+
+    let mut file = File::open(&path).await?;
+
+    let id = import_single_model(
+        &mut file, extension, file_size, &file_name, link.clone(), app_state, user,
+    ).await?;
+
+    {
+        let import_state = &mut import_state_mutex.lock().await;
+        import_state.add_model_id_to_current_set(id);
+    }
+
+    if delete_after_import {
+        let _ = fs::remove_file(&path);
+    }
+
+    Ok(())
+}
+
+async fn import_models_from_dir(
     path: &str,
     app_state: &AppState,
-    app_handle: &AppHandle,
     import_state: &mut ImportState,
     group_name: String,
-) -> Result<(), ApplicationError> {
+) -> Result<(), ServiceError> {
     let configuration = app_state.get_configuration();
 
     import_state.add_new_import_set(Some(group_name));
 
+    let user = &import_state.user.clone();
     let origin_url = import_state.origin_url.clone();
     let delete_after_import = import_state.delete_after_import;
     let import_state_mutex = Mutex::new(import_state);
-
+    
     let entries: Vec<PathBuf> = read_dir(path)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file())
         .collect();
 
-    let thread_pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(configuration.core_parallelism)
-        .build()
-        .unwrap();
+    let futures : Vec<_> = entries.into_iter().map(async |entry| import_models_from_dir_inner(&configuration, app_state, entry, &import_state_mutex, user, &origin_url, delete_after_import)).collect();
 
-    thread_pool.install(|| {
-        entries.par_iter().for_each(|entry| {
-            let link;
-
-            if entry.file_name().take().unwrap() == ".link" {
-                link = Some(read_file_as_text(&entry).unwrap());
-            } else {
-                link = origin_url.clone();
-            }
-
-            if !is_supported_extension(&entry, &configuration) {
-                return;
-            }
-
-            let file_name = util::prettify_file_name(&entry, false);
-            let extension = entry.extension().unwrap().to_str().unwrap();
-            let file_size = entry.metadata().unwrap().len() as usize;
-
-            {
-                let mut file = File::open(&entry).unwrap();
-
-                let id = import_single_model(
-                    &mut file, extension, file_size, &file_name, link, app_state,
-                )
-                .unwrap();
-
-                let import_state = &mut import_state_mutex.lock().unwrap();
-                import_state.add_model_id_to_current_set(id);
-            }
-
-            if delete_after_import {
-                let _ = fs::remove_file(&entry);
-            }
-        });
-    });
-
-    import_state_mutex
-        .lock()
-        .unwrap()
-        .create_group_from_current_set(app_state)?;
+    join_all(futures).await;
 
     Ok(())
 }
 
-fn import_models_from_zip(
+async fn import_models_from_zip(
     path: &str,
     app_state: &AppState,
-    app_handle: &AppHandle,
     import_state: &mut ImportState,
     group_name: String,
-) -> Result<(), ApplicationError> {
+) -> Result<(), ServiceError> {
     let configuration = app_state.get_configuration();
-    let mut temp_str;
-    let mut link;
     import_state.add_new_import_set(Some(group_name));
 
     {
-        let zip_file = File::open(&path)?;
-        let mut archive = zip::ZipArchive::new(zip_file)?;
+        let zip_file = File::open(path).await?;
+        let buffered_reader = BufReader::new(zip_file);
+        let mut archive = ZipFileReader::with_tokio(buffered_reader).await?;
 
-        for i in 0..archive.len() {
-            let mut file = archive.by_index(i)?;
-            let outpath = match file.enclosed_name() {
-                Some(path) => path,
-                None => continue,
-            };
+        let len = archive.file().entries().len();
 
-            if outpath.file_name().take().unwrap() == ".link" {
-                let mut file_contents: Vec<u8> = Vec::new();
-                file.read_to_end(&mut file_contents)?;
-                temp_str = String::from_utf8(file_contents).unwrap();
-                link = Some(temp_str);
-            } else {
-                link = import_state.origin_url.clone();
+        for index in 0..len {
+            let file = archive.reader_with_entry(index).await?;
+            let link = import_state.origin_url.clone();
+
+            if file.entry().dir()? {
+                return Err(ServiceError::InternalError("Zip entry is a folder".into()))
             }
 
-            if !is_supported_extension(&outpath, &configuration) {
+            let path = PathBuf::from(file.entry().filename().as_str()?);
+            /* -- Revist this at some point
+            if path.file_name().take().unwrap() == ".link" {
+                let mut file_contents: Vec<u8> = Vec::new();
+                file_compat.read_to_end(&mut file_contents).await?;
+                let temp_str = String::from_utf8(file_contents).unwrap();
+                link.replace(temp_str);
+            }*/
+
+            if !is_supported_extension(&path, &configuration) {
                 continue;
             }
 
-            if file.is_file() {
-                let file_name = util::prettify_file_name(&outpath, false);
-                let extension = outpath.extension().unwrap().to_str().unwrap();
-                let file_size = file.size() as usize;
+            let file_name = util::prettify_file_name(&path, false);
+            let extension = path.extension().unwrap().to_str().unwrap();
+            let file_size = file.entry().uncompressed_size() as usize;
+            let mut file_compat = file.compat();
 
-                let id = import_single_model(
-                    &mut file, extension, file_size, &file_name, link, app_state,
-                )?;
-                import_state.add_model_id_to_current_set(id);
-            }
+            let id = import_single_model(
+                    &mut file_compat, extension, file_size, &file_name, link, app_state, &import_state.user
+            ).await?;
+
+            import_state.add_model_id_to_current_set(id);
         }
     }
 
@@ -354,47 +343,41 @@ fn import_models_from_zip(
         let _ = fs::remove_file(path);
     }
 
-    import_state.create_group_from_current_set(app_state)?;
-
     Ok(())
 }
 
-fn import_single_model<W>(
+async fn import_single_model<W>(
     reader: &mut W,
     file_type: &str,
     file_size: usize,
     name: &str,
     link: Option<String>,
     app_state: &AppState,
-) -> Result<i64, ApplicationError>
+    user: &User,
+) -> Result<i64, ServiceError>
 where
-    W: Read,
+    W: AsyncRead + Unpin,
 {
-    let current_user = app_state.get_current_user();
     let mut file_contents: Vec<u8> = match file_size {
         0 => Vec::new(),
         val => Vec::with_capacity(val),
     };
 
-    let _ = reader.read_to_end(&mut file_contents)?;
+    reader.read_to_end(&mut file_contents).await?;
 
     let mut hasher = Sha256::new();
     hasher.update(&file_contents);
     let bytes = hasher.finalize();
     let hash = String::from(&format!("{:x}", bytes)[0..32]);
 
-    let existing_id = tauri::async_runtime::block_on(async {
-        db::model_db::get_model_id_via_sha256(&app_state.db, &current_user, &hash)
-            .await
-    })?;
+    let existing_id = model_db::get_model_id_via_sha256(&app_state.db, user, &hash)
+            .await?;
     
     if let Some(id) = existing_id {
         return Ok(id);
     }
 
-    let blob_id_optional = tauri::async_runtime::block_on(async {
-        blob_db::get_blob_via_sha256(&app_state.db, &hash).await
-    })?;
+    let blob_id_optional = blob_db::get_blob_via_sha256(&app_state.db, &hash).await?;
 
     let blob_id;
 
@@ -406,36 +389,31 @@ where
         let final_file_name =
             PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, &new_extension));
 
-        let mut file_handle = File::create(&final_file_name)?;
+        let mut file_handle = File::create(&final_file_name).await?;
 
         if is_zippable_file_extension(file_type) {
-            let mut zip = zip::ZipWriter::new(file_handle);
-            let options =
-                SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-            zip.start_file(format!("{}.{}", name, file_type.to_lowercase()), options)?;
-            zip.write_all(&file_contents)?;
-            zip.finish()?;
+            let mut writer = ZipFileWriter::with_tokio(&mut file_handle);
+            let builder = ZipEntryBuilder::new(format!("{}.{}", name, file_type.to_lowercase()).into(), async_zip::Compression::Deflate);
+
+            writer.write_entry_whole(builder, &file_contents).await?;
+            writer.close().await?;
         } else {
-            file_handle.write_all(&file_contents)?;
+            file_handle.write_all(&file_contents).await?;
         }
 
-        blob_id = tauri::async_runtime::block_on(async {
-            db::blob_db::add_blob(&app_state.db, &hash, &new_extension, file_size as i64)
-                .await
-        })?;
+        blob_id = blob_db::add_blob(&app_state.db, &hash, &new_extension, file_size as i64)
+                .await?;
     }
 
-    let id = tauri::async_runtime::block_on(async {
-        db::model_db::add_model(
+    let id = model_db::add_model(
             &app_state.db,
-            &current_user,
+            user,
             name,
             blob_id,
             link.as_deref(),
             true,
         )
-        .await
-    })?;
+        .await?;
 
     return Ok(id);
 }
@@ -457,7 +435,7 @@ fn is_supported_extension(path: &PathBuf, configuration: &Configuration) -> bool
 fn get_model_count_from_dir_recursive(
     path: &str,
     configuration: &Configuration,
-) -> Result<usize, ApplicationError> {
+) -> Result<usize, ServiceError> {
     let entries: Vec<std::fs::DirEntry> = read_dir(path)?.map(|x| x.unwrap()).collect();
     let mut count = 0;
 
@@ -474,7 +452,7 @@ fn get_model_count_from_dir_recursive(
 fn get_model_count_from_dir(
     path: &str,
     configuration: &Configuration,
-) -> Result<usize, ApplicationError> {
+) -> Result<usize, ServiceError> {
     let size = read_dir(path)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file() && is_supported_extension(&f, &configuration))
@@ -483,22 +461,20 @@ fn get_model_count_from_dir(
     Ok(size)
 }
 
-fn get_model_count_from_zip(
+async fn get_model_count_from_zip(
     path: &str,
     configuration: &Configuration,
-) -> Result<usize, ApplicationError> {
-    let zip_file = File::open(&path)?;
-    let mut archive = zip::ZipArchive::new(zip_file)?;
+) -> Result<usize, ServiceError> {
+    let file = File::open(path).await?;
+    let mut buffered_reader = BufReader::new(file);
+    let zip = ZipFileReader::with_tokio(&mut buffered_reader).await?;
     let mut count = 0;
 
-    for i in 0..archive.len() {
-        let file = archive.by_index(i)?;
-        let outpath = match file.enclosed_name() {
-            Some(path) => path,
-            None => continue,
-        };
+    for entry in zip.file().entries() {
+        let path = PathBuf::from(entry.filename().as_str()?);
 
-        if is_supported_extension(&outpath, &configuration) {
+        if is_supported_extension(&path, configuration)
+        {
             count += 1;
         }
     }

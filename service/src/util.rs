@@ -3,7 +3,7 @@ use std::ffi::OsStr;
 use std::process::Command;
 use std::{io::Read, path::PathBuf};
 
-use crate::error::ApplicationError;
+use crate::service_error::ServiceError;
 
 pub fn prettify_file_name(file: &PathBuf, is_dir: bool) -> String {
     let extension = file.extension();
@@ -52,7 +52,8 @@ pub fn cleanse_evil_from_name(name: &str) -> String {
     )
 }
 
-pub fn open_folder_in_explorer(path: &str) {
+pub fn open_folder_in_explorer(path: &PathBuf) {
+    let path = path.to_str().unwrap();
     #[cfg(target_os = "windows")]
     {
         let _ = Command::new("explorer").arg(path).output().unwrap();
@@ -69,8 +70,7 @@ pub fn open_folder_in_explorer(path: &str) {
     }
 }
 
-pub fn get_folder_size(path: &str) -> u64 {
-    let path = PathBuf::from(path);
+pub fn get_folder_size(path: &PathBuf) -> u64 {
     std::fs::read_dir(path)
         .unwrap()
         .map(|f| f.unwrap().metadata().unwrap().len())
@@ -117,7 +117,7 @@ pub fn convert_zip_to_extension(extension: &str) -> String {
     })
 }
 
-pub fn read_file_as_text(path: &PathBuf) -> Result<String, ApplicationError> {
+pub fn read_file_as_text(path: &PathBuf) -> Result<String, ServiceError> {
     let mut file = std::fs::File::open(path)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;

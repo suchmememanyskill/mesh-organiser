@@ -24,7 +24,7 @@
     <div class="w-full h-full flex flex-col">
         <EditLabel class="my-3 mx-4" label={label} onDelete={() => label = null} />
         <div class="overflow-hidden h-full">
-            <GroupGrid groupStream={new GroupStreamManager(groupApi, null, (thisLabelOnly ? [label.meta] : label.effectiveLabels).map(x => x.id), true)} default_show_multiselect_all={true} />
+            <GroupGrid groupStream={new GroupStreamManager(groupApi, null, (thisLabelOnly ? [label.meta] : label.effectiveLabels).map(x => x.id), true)} />
         </div>
     </div>
 {:else}

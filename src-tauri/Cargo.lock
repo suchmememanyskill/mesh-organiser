@@ -3012,6 +3012,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "service",
  "sha2",
  "strum",
  "tauri",
@@ -4886,6 +4887,29 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.108",
+]
+
+[[package]]
+name = "service"
+version = "0.1.0"
+dependencies = [
+ "async_zip",
+ "chrono",
+ "db",
+ "futures",
+ "indexmap 2.12.0",
+ "itertools",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "strum",
+ "thiserror 2.0.17",
+ "tokio",
+ "tokio-util",
+ "urlencoding",
+ "winreg",
 ]
 
 [[package]]

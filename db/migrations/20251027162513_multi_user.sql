@@ -32,7 +32,7 @@ CREATE TABLE audit (
 
 UPDATE models SET model_added = strftime('%Y-%m-%dT%H:%M:%SZ', model_added);
 
-INSERT INTO users (user_name, user_email, user_password_hash, user_created_at, user_permissions) VALUES ('local', 'local@noemail.com', 'hashed_password_here', strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now')), 5);
+INSERT INTO users (user_name, user_email, user_password_hash, user_created_at, user_permissions) VALUES ('local', 'local@noemail.com', 'hashed_password_here', strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now')), 3);
 
 ALTER TABLE models add model_unique_global_id TEXT NOT NULL DEFAULT '';
 UPDATE models SET model_unique_global_id = LOWER(HEX(RANDOMBLOB(16)));

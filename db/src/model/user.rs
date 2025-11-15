@@ -3,6 +3,7 @@ use bitflags::bitflags;
 use sha2::{Digest, Sha256};
 
 bitflags! {
+    #[derive(Debug)]
     pub struct UserPermissions: u32 {
         const Admin = 0b00000001;
         const Sync  = 0b00000010;
@@ -48,7 +49,7 @@ impl<'de> Deserialize<'de> for UserPermissions {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct User {
     pub id : i64,
     pub username : String,

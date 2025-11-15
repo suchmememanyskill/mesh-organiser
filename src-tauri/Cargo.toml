@@ -50,6 +50,7 @@ actix-web = "4"
 actix-cors = "0"
 async_zip = { version = "0.0.17", features = ["full"] }
 db = { path = "../db" }
+service = { path = "../service" }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0"

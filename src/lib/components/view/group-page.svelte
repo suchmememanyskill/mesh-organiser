@@ -30,7 +30,7 @@
         </div>
     </div>
 {:else if loading}
-    <div class="mx-auto my-auto">
+    <div class="w-full h-full flex justify-center items-center">
         <Spinner />
     </div>
 {:else}

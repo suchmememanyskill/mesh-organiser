@@ -1,10 +1,10 @@
 use std::fmt::Debug;
 
+use db::{group_db, model::User};
 use serde::Serialize;
 use strum::Display;
-use tauri::{AppHandle, Emitter};
 
-use crate::{error::ApplicationError, service::app_state::AppState};
+use crate::{app_state::AppState, service_error::ServiceError};
 
 #[derive(Serialize, Clone, Debug)]
 pub struct ImportedModelsSet {
@@ -34,6 +34,7 @@ pub struct ImportState {
     pub failure_reason: Option<String>,
     pub recursive: bool,
     pub delete_after_import: bool,
+    pub user: User,
     
     #[serde(skip)]
     pub emitter: Box<dyn ImportStateEmitter + Send + Sync>,
@@ -44,14 +45,6 @@ impl Debug for dyn ImportStateEmitter + Send + Sync {
         write!(f, "ImportStateEmitter")
     }
 }
-
-const IMPORT_STATUS_EVENT: &'static str = "import-status";
-const IMPORT_MODEL_GROUP_EVENT: &'static str = "import-model-group";
-const IMPORT_MODEL_TOTAL_EVENT: &'static str = "import-model-total";
-const IMPORT_MODEL_COUNT_EVENT: &'static str = "import-model-count";
-const IMPORT_THUMBNAIL_COUNT_EVENT: &'static str = "import-thumbnail-count";
-const IMPORT_FAILURE_REASON_EVENT: &'static str = "import-failure-reason";
-const IMPORT_ALL_DATA_EVENT: &'static str = "import-all-data";
 
 pub trait ImportStateEmitter {
     fn status_event(&self, status: &ImportState);
@@ -75,46 +68,8 @@ impl ImportStateEmitter for NoneImportStateEmitter {
     fn all_data_event(&self, _state: &ImportState) {}
 }
 
-pub struct TauriImportStateEmitter {
-    handle: AppHandle,
-}
-
-impl ImportStateEmitter for TauriImportStateEmitter {
-    fn status_event(&self, status: &ImportState) {
-        let _ = self.handle.emit(IMPORT_STATUS_EVENT, status.status.to_string());
-    }
-    
-    fn model_total_event(&self, status: &ImportState) {
-        let _ = self.handle.emit(IMPORT_MODEL_TOTAL_EVENT, status.model_count);
-    }
-
-    fn failure_reason_event(&self, status: &ImportState) {
-        if let Some(reason) = &status.failure_reason {
-            let _ = self.handle.emit(IMPORT_FAILURE_REASON_EVENT, reason);
-        }
-    }
-
-    fn model_group_event(&self, status: &ImportState) {
-        if let Some(group_name) = status.get_last_group_name() {
-            let _ = self.handle.emit(IMPORT_MODEL_GROUP_EVENT, group_name);
-        }
-    }
-
-    fn thumbnail_count_event(&self, status: &ImportState) {
-        let _ = self.handle.emit(IMPORT_THUMBNAIL_COUNT_EVENT, status.finished_thumbnails_count);
-    }
-
-    fn model_count_event(&self, status: &ImportState) {
-        let _ = self.handle.emit(IMPORT_MODEL_COUNT_EVENT, status.imported_models_count);
-    }
-
-    fn all_data_event(&self, state: &ImportState) {
-        let _ = self.handle.emit(IMPORT_ALL_DATA_EVENT, state);
-    }
-}
-
 impl ImportState {
-    pub fn new(origin_url: Option<String>, recursive: bool, delete_after_import: bool) -> Self {
+    pub fn new(origin_url: Option<String>, recursive: bool, delete_after_import : bool, user: User) -> Self {
         Self {
             imported_models: Vec::new(),
             imported_models_count: 0,
@@ -126,10 +81,11 @@ impl ImportState {
             recursive,
             delete_after_import,
             emitter: Box::new(NoneImportStateEmitter {}),
+            user: user,
         }
     }
 
-    pub fn new_tauri(origin_url: Option<String>, recursive: bool, delete_after_import: bool, handle: &AppHandle) -> Self {
+    pub fn new_with_emitter(origin_url: Option<String>, recursive: bool, delete_after_import: bool, user: User, emitter: Box<dyn ImportStateEmitter + Send + Sync>) -> Self {
         Self {
             imported_models: Vec::new(),
             imported_models_count: 0,
@@ -140,7 +96,8 @@ impl ImportState {
             origin_url: origin_url,
             recursive,
             delete_after_import,
-            emitter: Box::new(TauriImportStateEmitter { handle: handle.clone() }),
+            emitter: emitter,
+            user: user
         }
     }
 
@@ -207,46 +164,34 @@ impl ImportState {
         None
     }
 
-    pub fn create_group_from_current_set(
+    pub async fn create_groups_from_all_sets(
         &mut self,
         state: &AppState,
-    ) -> Result<i64, ApplicationError> {
-        if let Some(last) = self.imported_models.last_mut() {
-            if last.model_ids.is_empty() {
-                return Err(ApplicationError::InternalError(
-                    "No models to create group from".to_string(),
-                ));
+    ) -> Result<Vec<i64>, ServiceError> {
+        let mut ids = Vec::new();
+        let user = &self.user;
+        for set in self.imported_models.iter_mut() {
+            if set.group_id.is_some() || set.group_name.is_none() || set.model_ids.is_empty() {
+                continue;
             }
 
-            if let Some(group_name) = &last.group_name {
-                let group_id = tauri::async_runtime::block_on(async {
-                    db::group_db::add_empty_group(&state.db, &state.get_current_user(), group_name, true)
-                        .await
-                })?;
+            let group_name = set.group_name.as_ref().unwrap();
+            let group_id = group_db::add_empty_group(&state.db, user, group_name, true).await?;
 
-                tauri::async_runtime::block_on(async {
-                    db::group_db::set_group_id_on_models(
-                        &state.db,
-                        &state.get_current_user(),
-                        Some(group_id),
-                        last.model_ids.clone(),
-                        true,
-                    )
-                    .await
-                })?;
+            group_db::set_group_id_on_models(
+                    &state.db,
+                    user,
+                    Some(group_id),
+                    set.model_ids.clone(),
+                    true,
+                )
+                .await?;
 
-                last.group_id = Some(group_id);
-                return Ok(group_id);
-            }
-
-            return Err(ApplicationError::InternalError(
-                "Group has no name".to_string(),
-            ));
-        } else {
-            return Err(ApplicationError::InternalError(
-                "No models to create group from".to_string(),
-            ));
+            set.group_id = Some(group_id);
+            ids.push(group_id);
         }
+
+        Ok(ids)
     }
 
     pub fn emit_all(&self) {
@@ -259,7 +204,7 @@ impl ImportState {
     }
 
     // Pushes all data to the frontend
-    pub fn push_all_data_to_frontend(&self, handle: &AppHandle) {
-        let _ = handle.emit(IMPORT_ALL_DATA_EVENT, self);
+    pub fn push_all_data_to_frontend(&self) {
+        self.emitter.all_data_event(self);
     }
 }

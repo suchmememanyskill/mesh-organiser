@@ -5,11 +5,13 @@ use db::blob_db;
 use db::model::{ModelFlags, User};
 use db::model_db::{self, ModelFilterOptions, ModelOrderBy};
 use serde::Serialize;
+use service::{export_service, import_service};
+use service::import_state::ImportStatus;
 use tauri::{AppHandle, State};
 use crate::error::ApplicationError;
-use crate::service::app_state::AppState;
-use crate::service::{self, export_service, import_service};
-use crate::service::import_state::{ImportState, ImportStatus};
+use crate::{TauriAppState, tauri_thumbnail_service};
+use crate::ImportState;
+use crate::tauri_import_state::import_state_new_tauri;
 
 #[tauri::command]
 pub async fn add_model(
@@ -18,30 +20,26 @@ pub async fn add_model(
     delete_imported: bool,
     origin_url: Option<String>,
     open_in_slicer: bool,
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
     app_handle: AppHandle,
 ) -> Result<ImportState, ApplicationError> {
     let path_clone = String::from(path);
-    let state_clone = state.real_clone();
-    let handle_clone = app_handle.clone();
-    let mut import_state = ImportState::new_tauri(origin_url, recursive, delete_imported, &app_handle);
-
-    import_state = tauri::async_runtime::spawn_blocking(move || {
-        let _lock = state_clone.import_mutex.lock().unwrap();
-        import_service::import_path(&path_clone, &state_clone, &handle_clone, &mut import_state)?;
-
-        Result::<ImportState, ApplicationError>::Ok(import_state)
-    })
-    .await
-    .unwrap()?;
+    let state_clone = state.clone();
+    let mut import_state = import_state_new_tauri(origin_url, recursive, delete_imported, &state, &app_handle);
+    
+    {
+        let _lock = state_clone.app_state.import_mutex.lock().await;
+        import_service::import_path(&path_clone, &state_clone.app_state, &mut import_state).await?
+    }
 
     let model_ids: Vec<i64> = import_state
         .imported_models
         .iter()
         .flat_map(|f| f.model_ids.clone())
         .collect();
-    let models = model_db::get_models_via_ids(&state.db, &state.get_current_user(), model_ids).await?;
-    service::thumbnail_service::generate_thumbnails(
+
+    let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
+    tauri_thumbnail_service::generate_thumbnails(
         &models,
         &state,
         &app_handle,
@@ -52,7 +50,7 @@ pub async fn add_model(
 
     if open_in_slicer && models.len() > 0 {
         if let Some(slicer) = &state.get_configuration().slicer {
-            slicer.open(models, &state)?;
+            slicer.open(models, &state.app_state).await?;
         }
     }
 
@@ -71,9 +69,9 @@ pub async fn get_models(
     model_flags: Option<ModelFlags>,
     page: u32,
     page_size: u32,
-    state: State<'_, AppState>
+    state: State<'_, TauriAppState>
 ) -> Result<Vec<db::model::Model>, ApplicationError> {
-    let models = model_db::get_models(&state.db, &state.get_current_user(), ModelFilterOptions {
+    let models = model_db::get_models(&state.app_state.db, &state.get_current_user(), ModelFilterOptions {
         model_ids,
         group_ids,
         label_ids,
@@ -94,10 +92,10 @@ pub async fn edit_model(
     model_url: Option<&str>,
     model_description: Option<&str>,
     model_flags: Option<ModelFlags>,
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
     db::model_db::edit_model(
-        &state.db,
+        &state.app_state.db,
         &state.get_current_user(),
         model_id,
         model_name,
@@ -112,8 +110,8 @@ pub async fn edit_model(
 }
 
 #[tauri::command]
-pub async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    let model = model_db::get_models_via_ids(&state.db, &state.get_current_user(), vec![model_id]).await?;
+pub async fn delete_model(model_id: i64, state: State<'_, TauriAppState>) -> Result<(), ApplicationError> {
+    let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), vec![model_id]).await?;
 
     if model.len() != 1 {
         return Err(ApplicationError::InternalError(String::from(
@@ -123,10 +121,10 @@ pub async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(
 
     let model = &model[0];
 
-    model_db::delete_model(&state.db, &state.get_current_user(), model_id, true)
+    model_db::delete_model(&state.app_state.db, &state.get_current_user(), model_id, true)
         .await?;
 
-    if blob_db::get_blob_model_usage_count(&state.db, model.blob.id).await? <= 0 {
+    if blob_db::get_blob_model_usage_count(&state.app_state.db, model.blob.id).await? <= 0 {
         let model_path =
             PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
         let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
@@ -139,15 +137,15 @@ pub async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(
             std::fs::remove_file(image_path)?;
         }
 
-        blob_db::delete_blob(&state.db, model.blob.id).await?;
+        blob_db::delete_blob(&state.app_state.db, model.blob.id).await?;
     }
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn get_model_count(flags : Option<ModelFlags>, state: State<'_, AppState>) -> Result<usize, ApplicationError> {
-    let count = db::model_db::get_model_count(&state.db, &state.get_current_user(), flags).await?;
+pub async fn get_model_count(flags : Option<ModelFlags>, state: State<'_, TauriAppState>) -> Result<usize, ApplicationError> {
+    let count = db::model_db::get_model_count(&state.app_state.db, &state.get_current_user(), flags).await?;
 
     Ok(count)
 }
@@ -159,9 +157,9 @@ pub struct ModelDiskSpaceUsage {
 }
 
 #[tauri::command]
-pub async fn get_model_disk_space_usage(state: State<'_, AppState>) -> Result<ModelDiskSpaceUsage, ApplicationError> {
-    let data = model_db::get_size_of_models(&state.db, &state.get_current_user()).await?;
-    let local = export_service::get_size_of_blobs(&data.blob_sha256, &state)?;
+pub async fn get_model_disk_space_usage(state: State<'_, TauriAppState>) -> Result<ModelDiskSpaceUsage, ApplicationError> {
+    let data = model_db::get_size_of_models(&state.app_state.db, &state.get_current_user()).await?;
+    let local = export_service::get_size_of_blobs(&data.blob_sha256, &state.app_state)?;
 
     Ok(ModelDiskSpaceUsage {
         size_uncompressed: data.total_size as u64,

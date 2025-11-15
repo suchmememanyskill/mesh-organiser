@@ -6,7 +6,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use urlencoding::decode;
 
-use crate::error::ApplicationError;
+use crate::service_error::ServiceError;
 use crate::util::cleanse_evil_from_name;
 
 #[derive(Serialize)]
@@ -15,12 +15,12 @@ pub struct DownloadResult {
     pub source_uri: Option<String>,
 }
 
-pub async fn download_file(url: &str) -> Result<DownloadResult, ApplicationError> {
+pub async fn download_file(url: &str) -> Result<DownloadResult, ServiceError> {
     let response = reqwest::get(url).await?;
     let mut source_uri: Option<String> = None;
 
     if !response.status().is_success() {
-        return Err(ApplicationError::InternalError(format!(
+        return Err(ServiceError::InternalError(format!(
             "Failed to download file from url: {}. Status code {}.",
             url,
             response.status()

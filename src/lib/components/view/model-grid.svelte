@@ -23,6 +23,8 @@
 
     const props: { modelStream : IModelStreamManager, default_show_multiselect_all? : boolean, initialEditMode? : boolean, onRemoveGroupDelete?: boolean, onDelete?: Function, onEmpty?: EmptyFunction} = $props();
     let loadedModels = $state<Model[]>([]);
+    let allModels = $state<Model[]>([]);
+    let allModelsWithFallback = $derived(allModels.length > 0 ? allModels : loadedModels);
     let selected = $state.raw<Model[]>([]);
     let busyLoadingNext = $state.raw<boolean>(false);
 
@@ -112,6 +114,7 @@
 
         untrack(async () => {
             await resetModelSet();
+            allModels = await props.modelStream.getAll();
         });
     });
 </script>
@@ -174,7 +177,7 @@
         {:else if loadedModels.length === 1}
             <ModelEdit initialEditMode={props.initialEditMode} model={loadedModels[0]} onDelete={() => { selected = [loadedModels[0]]; onDeleteSelected(); }} />
         {:else if props.default_show_multiselect_all }
-            <MultiModelEdit models={loadedModels} onDelete={() => { selected = [...loadedModels]; onDeleteSelected(); }} onGroupDelete={() => onGroupDeleteSelected(loadedModels)} />
+            <MultiModelEdit models={allModelsWithFallback} onDelete={() => { selected = [...allModelsWithFallback]; onDeleteSelected(); }} onGroupDelete={() => onGroupDeleteSelected(allModelsWithFallback)} />
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
                 <span class="text-xl">No model selected</span>
