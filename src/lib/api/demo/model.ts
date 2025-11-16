@@ -69,6 +69,10 @@ export class DemoModelApi implements IModelApi {
                     return a.blob.size - b.blob.size;
                 case ModelOrderBy.SizeDesc:
                     return b.blob.size - a.blob.size;
+                case ModelOrderBy.ModifiedAsc:
+                    return a.lastModified.getTime() - b.lastModified.getTime();
+                case ModelOrderBy.ModifiedDesc:
+                    return b.lastModified.getTime() - a.lastModified.getTime();
                 default:
                     return 0;
             }

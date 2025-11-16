@@ -36,12 +36,13 @@ export interface Model {
     link: string|null;
     description: string|null;
     added: Date;
+    lastModified: Date;
     group: GroupMeta|null;
     labels: LabelMeta[];
     flags: ModelFlags;
 }
 
-export function createModelInstance(id: number, name: string, blob: Blob, link: string|null, description: string|null, added: string, group: GroupMeta|null, labels: LabelMeta[], flags: string[]): Model {
+export function createModelInstance(id: number, name: string, blob: Blob, link: string|null, description: string|null, added: string, last_modified: string, group: GroupMeta|null, labels: LabelMeta[], flags: string[]): Model {
     return {
         id,
         name,
@@ -49,6 +50,7 @@ export function createModelInstance(id: number, name: string, blob: Blob, link: 
         link,
         description,
         added: new Date(added),
+        lastModified: new Date(last_modified),
         group,
         labels,
         flags: stringArrayToModelFlags(flags)
@@ -62,6 +64,8 @@ export enum ModelOrderBy {
     NameDesc = "NameDesc",
     SizeAsc = "SizeAsc",
     SizeDesc = "SizeDesc",
+    ModifiedAsc = "ModifiedAsc",
+    ModifiedDesc = "ModifiedDesc",
 }
 
 export const IModelApi = Symbol('IModelApi');

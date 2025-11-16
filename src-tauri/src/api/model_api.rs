@@ -26,11 +26,8 @@ pub async fn add_model(
     let path_clone = String::from(path);
     let state_clone = state.clone();
     let mut import_state = import_state_new_tauri(origin_url, recursive, delete_imported, &state, &app_handle);
-    
-    {
-        let _lock = state_clone.app_state.import_mutex.lock().await;
-        import_service::import_path(&path_clone, &state_clone.app_state, &mut import_state).await?
-    }
+    let _lock = state_clone.app_state.import_mutex.lock().await;
+    import_service::import_path(&path_clone, &state_clone.app_state, &mut import_state).await?;
 
     let model_ids: Vec<i64> = import_state
         .imported_models
@@ -102,7 +99,7 @@ pub async fn edit_model(
         model_url,
         model_description,
         model_flags.unwrap_or(ModelFlags::empty()),
-        true,
+        None,
     )
     .await?;
 
@@ -121,7 +118,7 @@ pub async fn delete_model(model_id: i64, state: State<'_, TauriAppState>) -> Res
 
     let model = &model[0];
 
-    model_db::delete_model(&state.app_state.db, &state.get_current_user(), model_id, true)
+    model_db::delete_model(&state.app_state.db, &state.get_current_user(), model_id)
         .await?;
 
     if blob_db::get_blob_model_usage_count(&state.app_state.db, model.blob.id).await? <= 0 {

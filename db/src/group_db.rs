@@ -2,7 +2,7 @@ use std::{cmp::Reverse, u32};
 use itertools::{Itertools, join};
 use indexmap::IndexMap;
 use sqlx::Row;
-use crate::{DbError, PaginatedResponse, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Model, ModelFlags, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}};
+use crate::{DbError, PaginatedResponse, db_context::DbContext, model::{Model, ModelFlags, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}, util::time_now};
 use strum::EnumString;
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -12,6 +12,8 @@ pub enum GroupOrderBy
     CreatedDesc,
     NameAsc,
     NameDesc,
+    ModifiedAsc,
+    ModifiedDesc,
 }
 
 #[derive(Default)]
@@ -47,7 +49,8 @@ fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : 
                     name: model.name.clone(),
                     created: model.added.clone(),
                     resource_id: None,
-                    unique_global_id: String::from("")
+                    unique_global_id: String::from(""),
+                    last_modified: model.last_modified.clone(),
                 }
             }
         };
@@ -112,6 +115,8 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
         GroupOrderBy::CreatedDesc => groups.sort_by_cached_key(|f| Reverse(f.meta.created.clone())),
         GroupOrderBy::NameAsc => groups.sort_by_cached_key(|f| f.meta.name.clone()),
         GroupOrderBy::NameDesc => groups.sort_by_cached_key(|f| Reverse(f.meta.name.clone())),
+        GroupOrderBy::ModifiedAsc => groups.sort_by_cached_key(|f| f.meta.last_modified.clone()),
+        GroupOrderBy::ModifiedDesc => groups.sort_by_cached_key(|f| Reverse(f.meta.last_modified.clone())),
     }
 
     let offset = ((options.page as u32 - 1) * options.page_size as u32) as usize;
@@ -163,11 +168,13 @@ pub async fn set_group_id_on_models(
     user: &User,
     group_id: Option<i64>,
     model_ids: Vec<i64>,
-    update_audit: bool,
+    update_timestamp : Option<&str>
 ) -> Result<(), DbError> {
     // TODO: Remove clone
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let models = model_db::get_models_via_ids(db, user, model_ids.clone()).await?;
-    let old_group_ids: Vec<i64> = models.iter().filter_map(|m| m.group.as_ref().map(|g| g.id)).unique().collect();
+    let mut old_group_ids: Vec<i64> = models.iter().filter_map(|m| m.group.as_ref().map(|g| g.id)).unique().collect();
     let mut group_ids = get_unqiue_ids_from_group_ids(db, &old_group_ids).await?;
     
     if group_ids.len() != old_group_ids.len() {
@@ -177,6 +184,7 @@ pub async fn set_group_id_on_models(
     if let Some(gid) = group_id {
         let hex = get_unique_id_from_group_id(db, gid).await?;
         group_ids.insert(gid, hex);
+        old_group_ids.push(gid);
     }
 
     let ids_placeholder = join(model_ids.iter(), ",");
@@ -193,60 +201,46 @@ pub async fn set_group_id_on_models(
         .execute(db)
         .await?;
 
-    if update_audit {
-        for (_, hex) in group_ids {
-            audit_db::add_audit_entry(db, &AuditEntry::new(
-                user,
-                ActionType::Update,
-                EntityType::Group,
-                hex,
-            )).await?;
-        }
-    }
+    set_last_updated_on_groups(db, user, &old_group_ids, timestamp).await?;
 
     Ok(())
 }
 
-pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, update_audit : bool) -> Result<i64, DbError> {
-    let now = chrono::Utc::now().to_rfc3339();
+pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, update_timestamp : Option<&str>) -> Result<i64, DbError> {
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let result = sqlx::query!(
-        "INSERT INTO models_group (group_name, group_created, group_user_id) VALUES (?, ?, ?)",
+        "INSERT INTO models_group (group_name, group_created, group_user_id, group_last_modified) VALUES (?, ?, ?, ?)",
         group_name,
         now,
-        user.id
+        user.id,
+        timestamp
     )
     .execute(db)
     .await?;
 
     let group_id = result.last_insert_rowid();
-
-    if update_audit {
-        let hex = get_unique_id_from_group_id(db, group_id).await?;
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Create, EntityType::Group, hex)).await?;
-    }
-
     Ok(group_id)
 }
 
-pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_name: &str, update_audit : bool) -> Result<(), DbError> {
+pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_name: &str, update_timestamp : Option<&str>) -> Result<(), DbError> {
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
+
     sqlx::query!(
-        "UPDATE models_group SET group_name = ? WHERE group_id = ? AND group_user_id = ?",
+        "UPDATE models_group SET group_name = ? AND group_last_modified = ? WHERE group_id = ? AND group_user_id = ?",
         group_name,
+        timestamp,
         group_id,
         user.id
     )
     .execute(db)
     .await?;
 
-    if update_audit {
-        let hex = get_unique_id_from_group_id(db, group_id).await?;
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Group, hex)).await?;
-    }
-
     Ok(())
 }
 
-pub async fn delete_group(db: &DbContext, user : &User, group_id: i64, update_audit : bool) -> Result<(), DbError> {
+pub async fn delete_group(db: &DbContext, user : &User, group_id: i64) -> Result<(), DbError> {
     let hex = get_unique_id_from_group_id(db, group_id).await?;
 
     sqlx::query!(
@@ -256,10 +250,6 @@ pub async fn delete_group(db: &DbContext, user : &User, group_id: i64, update_au
     )
     .execute(db)
     .await?;
-
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Delete, EntityType::Group, hex)).await?;
-    }
 
     Ok(())
 }
@@ -273,7 +263,7 @@ pub async fn delete_dead_groups(db: &DbContext) -> Result<(), DbError> {
     .await?;
 
     for row in dead_group_ids {
-        delete_group(db, &User { id: row.group_user_id.unwrap(), ..Default::default()}, row.group_id.unwrap(), true).await?;
+        delete_group(db, &User { id: row.group_user_id.unwrap(), ..Default::default()}, row.group_id.unwrap()).await?;
     }
 
     Ok(())
@@ -320,4 +310,36 @@ pub async fn get_group_via_id(db: &DbContext, user : &User, group_id: i64) -> Re
     }
 
     Ok(Some(groups.remove(0)))
+}
+
+pub async fn set_last_updated_on_group(db: &DbContext, user: &User, group_id: i64, timestamp: &str) -> Result<(), DbError> {
+    sqlx::query!(
+        "UPDATE models_group SET group_last_modified = ? WHERE group_id = ? AND group_user_id = ?",
+        timestamp,
+        group_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn set_last_updated_on_groups(db: &DbContext, user: &User, group_ids: &[i64], timestamp: &str) -> Result<(), DbError> {
+    let ids_placeholder = join(group_ids.iter(), ",");
+
+    let formatted_query = format!(
+        "UPDATE models_group
+         SET group_last_modified = ?
+         WHERE group_id IN ({}) AND group_user_id = ?",
+        ids_placeholder
+    );
+
+    sqlx::query(&formatted_query)
+        .bind(timestamp)
+        .bind(user.id)
+        .execute(db)
+        .await?;
+
+    Ok(())
 }

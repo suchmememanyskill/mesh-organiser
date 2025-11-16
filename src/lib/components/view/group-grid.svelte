@@ -110,10 +110,12 @@
     const size = $derived(sizes[configuration.size_option_groups]);
 
     const readableOrders = {
-        "date-asc": "Date (Asc)",
-        "date-desc": "Date (Desc)",
+        "date-asc": "Added (Asc)",
+        "date-desc": "Added (Desc)",
         "name-asc": "Name (A->Z)",
         "name-desc": "Name (Z->A)",
+        "modified-asc": "Modified (Asc)",
+        "modified-desc": "Modified (Desc)",
     };
 
     const readableOrder = $derived(readableOrders[configuration.order_option_groups]);
@@ -266,7 +268,7 @@
             loadedGroups.splice(groupIndex, 1);
             deletedGroup.models.reverse().forEach(m => {
                 let newGroup : Group = {
-                    meta: createGroupMetaInstance(m.id * -1, m.name, m.added.toISOString()),
+                    meta: createGroupMetaInstance(m.id * -1, m.name, m.added.toISOString(), m.lastModified.toISOString()),
                     models: [m],
                     labels: m.labels,
                     flags: m.flags,

@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use itertools::{Itertools, join};
 use sqlx::Row;
-use crate::{DbError, audit_db, db_context::DbContext, model::{self, ActionType, AuditEntry, EntityType, Label, LabelMeta, User, random_hex_32}, model_db};
+use crate::{DbError, db_context::DbContext, model::{Label, LabelMeta, User}, model_db, random_hex_32, util::time_now};
 
 
 pub async fn get_labels_min(db: &DbContext) -> Result<Vec<LabelMeta>, DbError> {
@@ -174,10 +174,11 @@ pub async fn get_unique_ids_from_label_ids(db: &DbContext, user: &User, label_id
     Ok(id_map)
 }
 
-pub async fn add_labels_on_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_audit : bool) -> Result<(), DbError>
+pub async fn add_labels_on_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_timestamp : Option<&str>) -> Result<(), DbError>
 {
     for label_id in label_ids {
-        let hex = get_unique_id_from_label_id(db, user, *label_id).await?;
+        // Permission check
+        let _ = get_unique_id_from_label_id(db, user, *label_id).await?;
 
         for model_id in model_ids {
             sqlx::query!(
@@ -189,15 +190,13 @@ pub async fn add_labels_on_models(db: &DbContext, user: &User, label_ids: &[i64]
             .await?;
         }
 
-        if update_audit {
-            audit_db::add_audit_entry(&db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, hex)).await?;
-        }
+        set_last_updated_on_label(db, user, *label_id,  update_timestamp.unwrap_or(&time_now())).await?;
     }
 
     Ok(())
 }
 
-pub async fn remove_labels_from_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_audit : bool) -> Result<(), DbError>
+pub async fn remove_labels_from_models(db: &DbContext, user: &User, label_ids: &[i64], model_ids: &[i64], update_timestamp : Option<&str>) -> Result<(), DbError>
 {
     let label_global_ids = get_unique_ids_from_label_ids(db, user, label_ids).await?;
 
@@ -224,16 +223,12 @@ pub async fn remove_labels_from_models(db: &DbContext, user: &User, label_ids: &
         .execute(db)
         .await?;
 
-    if update_audit {
-        for label_global_id in label_global_ids.values() {
-            audit_db::add_audit_entry(&db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, label_global_id.clone())).await?;
-        }
-    }
+    set_last_updated_on_labels(db, user, label_ids, update_timestamp.unwrap_or(&time_now())).await?;
 
     Ok(())
 }
 
-pub async fn remove_all_labels_from_models(db: &DbContext, user: &User, model_ids: &[i64], update_audit : bool) -> Result<(), DbError>
+pub async fn remove_all_labels_from_models(db: &DbContext, user: &User, model_ids: &[i64], update_timestamp : Option<&str>) -> Result<(), DbError>
 {
     let models = model_db::get_models_via_ids(db, user, model_ids.iter().cloned().collect()).await?;
 
@@ -252,64 +247,54 @@ pub async fn remove_all_labels_from_models(db: &DbContext, user: &User, model_id
         .execute(db)
         .await?;
 
-    if update_audit {
-        let label_ids: Vec<String> = models.iter().flat_map(|m| m.labels.iter().map(|l| l.unique_global_id.clone())).unique().collect();
-        for label_id in label_ids {
-            audit_db::add_audit_entry(&db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, label_id)).await?;
-        }
-    }
+    let label_ids: Vec<i64> = models.iter().flat_map(|m| m.labels.iter().map(|l| l.id.clone())).unique().collect();
+    set_last_updated_on_labels(db, user, &label_ids, update_timestamp.unwrap_or(&time_now())).await?;
 
     Ok(())
 }
 
-pub async fn add_label(db: &DbContext, user: &User, name: &str, color: i64, update_audit : bool) -> Result<i64, DbError>
+pub async fn add_label(db: &DbContext, user: &User, name: &str, color: i64, update_timestamp : Option<&str>) -> Result<i64, DbError>
 {
     let unique_global_id = random_hex_32();
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
 
     let result = sqlx::query!(
-        "INSERT INTO labels (label_name, label_color, label_user_id, label_unique_global_id) VALUES (?, ?, ?, ?)",
+        "INSERT INTO labels (label_name, label_color, label_user_id, label_unique_global_id, label_last_modified) VALUES (?, ?, ?, ?, ?)",
         name,
         color,
         user.id,
-        unique_global_id
+        unique_global_id,
+        timestamp
     )
     .execute(db)
     .await?;
 
     let label_id = result.last_insert_rowid();
-
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Create, EntityType::Label, unique_global_id)).await?;
-    }
-
     Ok(label_id)
 }
 
-pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, color: i64, update_audit : bool) -> Result<(), DbError>
+pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, color: i64, update_timestamp : Option<&str>) -> Result<(), DbError>
 {
-    let unique_global_id = get_unique_id_from_label_id(db, user, label_id).await?;
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
 
     sqlx::query!(
-        "UPDATE labels SET label_name = ?, label_color = ? WHERE label_id = ? AND label_user_id = ?",
+        "UPDATE labels SET label_name = ?, label_color = ?, label_last_modified = ? WHERE label_id = ? AND label_user_id = ?",
         name,
         color,
+        timestamp,
         label_id,
         user.id
     )
     .execute(db)
     .await?;
 
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, unique_global_id)).await?;
-    }
-
     Ok(())
 }
 
-pub async fn delete_label(db: &DbContext, user: &User, label_id: i64, update_audit : bool) -> Result<(), DbError>
+pub async fn delete_label(db: &DbContext, user: &User, label_id: i64) -> Result<(), DbError>
 {
-    let unique_global_id = get_unique_id_from_label_id(db, user, label_id).await?;
-
     sqlx::query!(
         "DELETE FROM labels WHERE label_id = ? AND label_user_id = ?",
         label_id,
@@ -318,15 +303,13 @@ pub async fn delete_label(db: &DbContext, user: &User, label_id: i64, update_aud
     .execute(db)
     .await?;
 
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Delete, EntityType::Label, unique_global_id)).await?;
-    }
-
     Ok(())
 }
 
-pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_audit : bool) -> Result<(), DbError>
+pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_timestamp : Option<&str>) -> Result<(), DbError>
 {
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let parent_hex = get_unique_id_from_label_id(db, user, parent_label_id).await?;
     let access_check = get_unique_ids_from_label_ids(db, user, &child_label_ids).await?;
 
@@ -344,15 +327,15 @@ pub async fn add_childs_to_label(db: &DbContext, user: &User, parent_label_id: i
         .await?;
     }
 
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, parent_hex)).await?;
-    }
+    set_last_updated_on_label(db, user, parent_label_id, timestamp).await?;
 
     Ok(())
 }
 
-pub async fn remove_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_audit : bool) -> Result<(), DbError>
+pub async fn remove_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, child_label_ids: Vec<i64>, update_timestamp : Option<&str>) -> Result<(), DbError>
 {
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let parent_hex = get_unique_id_from_label_id(db, user, parent_label_id).await?;
     let access_check = get_unique_ids_from_label_ids(db, user, &child_label_ids).await?;
 
@@ -370,15 +353,14 @@ pub async fn remove_childs_from_label(db: &DbContext, user: &User, parent_label_
         .await?;
     }
 
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, parent_hex)).await?;
-    }
-
+    set_last_updated_on_label(db, user, parent_label_id, timestamp).await?;
     Ok(())
 }
 
-pub async fn remove_all_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, update_audit : bool) -> Result<(), DbError>
+pub async fn remove_all_childs_from_label(db: &DbContext, user: &User, parent_label_id: i64, update_timestamp : Option<&str>) -> Result<(), DbError>
 {
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let unique_global_id = get_unique_id_from_label_id(db, user, parent_label_id).await?;
 
     sqlx::query!(
@@ -388,9 +370,37 @@ pub async fn remove_all_childs_from_label(db: &DbContext, user: &User, parent_la
     .execute(db)
     .await?;
 
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, unique_global_id)).await?;
-    }
+    set_last_updated_on_label(db, user, parent_label_id, timestamp).await?;
+
+    Ok(())
+}
+
+pub async fn set_last_updated_on_label(db: &DbContext, user: &User, label_id: i64, timestamp: &str) -> Result<(), DbError> {
+    sqlx::query!(
+        "UPDATE labels SET label_last_modified = ? WHERE label_id = ? AND label_user_id = ?",
+        timestamp,
+        label_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn set_last_updated_on_labels(db: &DbContext, user: &User, label_ids: &[i64], timestamp: &str) -> Result<(), DbError> {
+    let ids_placeholder = join(label_ids.iter(), ",");
+
+    let query = format!(
+        "UPDATE labels SET label_last_modified = ? WHERE label_id IN ({}) AND label_user_id = ?",
+        ids_placeholder
+    );
+
+    sqlx::query(&query)
+        .bind(timestamp)
+        .bind(user.id)
+        .execute(db)
+        .await?;
 
     Ok(())
 }

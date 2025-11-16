@@ -21,11 +21,30 @@ pub async fn setup_db(sqlite_path : &PathBuf, sqlite_backup_dir : &PathBuf) -> D
         .await
         .unwrap();
 
-    sqlx::migrate!("./migrations").run(&db).await.unwrap();
+    let migration_count = get_db_migration_count(&db).await;
 
+    sqlx::migrate!("./migrations").run(&db).await.unwrap();
     backup_db(sqlite_path, sqlite_backup_dir);
 
+    let new_migration_count = get_db_migration_count(&db).await;
+
+    if new_migration_count > migration_count {
+        sqlx::query!("VACUUM")
+            .execute(&db)
+            .await
+            .expect("Failed to vacuum database after migrations");
+    }
+
     db
+}
+
+async fn get_db_migration_count(db: &DbContext) -> usize {
+    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) as count FROM _sqlx_migrations")
+        .fetch_one(db)
+        .await
+        .expect("Failed to fetch migration count");
+
+    row.0 as usize
 }
 
 fn backup_db(sqlite_path : &PathBuf, sqlite_backup_dir : &PathBuf) {

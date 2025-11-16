@@ -9,6 +9,7 @@ export interface RawGroupMeta {
     id: number;
     name: string;
     created: string;
+    last_modified: string;
     resource_id: number|null;
 }
 
@@ -17,6 +18,7 @@ export function parseRawGroupMeta(raw: RawGroupMeta): GroupMeta {
         raw.id,
         raw.name,
         raw.created,
+        raw.last_modified,
     );
 }
 

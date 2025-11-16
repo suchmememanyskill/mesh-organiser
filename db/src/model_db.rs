@@ -4,8 +4,8 @@ use serde::de;
 use sqlx::{Execute, QueryBuilder, query};
 use sqlx::Row;
 use strum::EnumString;
-use crate::audit_db;
-use crate::model::{ActionType, AuditEntry, Blob, EntityType, random_hex_32, time_now};
+use crate::model::Blob;
+use crate::util::{random_hex_32, time_now};
 use crate::{DbError, PaginatedResponse, db_context::DbContext, label_db, model::{Label, LabelMeta, Model, ModelFlags, ModelGroup, ModelGroupMeta, User, convert_label_meta_list_to_map}};
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -16,6 +16,8 @@ pub enum ModelOrderBy {
     NameDesc,
     SizeAsc,
     SizeDesc,
+    ModifiedAsc,
+    ModifiedDesc,
 }
 
 impl ModelOrderBy {
@@ -27,6 +29,8 @@ impl ModelOrderBy {
             ModelOrderBy::NameDesc => "model_name DESC",
             ModelOrderBy::SizeAsc => "blob_size ASC",
             ModelOrderBy::SizeDesc => "blob_size DESC",
+            ModelOrderBy::ModifiedAsc => "model_last_modified ASC",
+            ModelOrderBy::ModifiedDesc => "model_last_modified DESC",
         }
     }
 }
@@ -47,10 +51,10 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
     let offset = (options.page as i64 - 1) * options.page_size as i64;
 
     let mut query_builder = QueryBuilder::new(
-        format!("SELECT models.model_id, model_name, model_url, model_desc, model_added, model_flags, model_unique_global_id,
+        format!("SELECT models.model_id, model_name, model_url, model_desc, model_added, model_flags, model_unique_global_id, model_last_modified,
 				blob_id, blob_sha256, blob_filetype, blob_size,
                 GROUP_CONCAT(labels.label_id) AS label_ids,
-                models_group.group_id, group_name, group_created, group_resource_id, group_unique_global_id
+                models_group.group_id, group_name, group_created, group_resource_id, group_unique_global_id, group_last_modified
          FROM models 
          LEFT JOIN models_labels ON models.model_id = models_labels.model_id 
          LEFT JOIN labels ON models_labels.label_id = labels.label_id
@@ -116,6 +120,7 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
         models.push(Model {
             id: row.get("model_id"),
             name: row.get("model_name"),
+            last_modified: row.get("model_last_modified"),
             blob: Blob {
                 id: row.get("blob_id"),
                 sha256: row.get("blob_sha256"),
@@ -133,6 +138,7 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
                     created: row.get("group_created"),
                     resource_id: row.get("group_resource_id"),
                     unique_global_id: row.get("group_unique_global_id"),
+                    last_modified: row.get("group_last_modified"),
                 }),
                 None => None,
             },
@@ -167,55 +173,51 @@ pub async fn get_models_via_ids(db: &DbContext, user: &User, ids: Vec<i64>) -> R
     Ok(paginated_response.items)
 }
 
-pub async fn add_model(db: &DbContext, user: &User, name: &str, blob_id: i64, link: Option<&str>, update_audit : bool) -> Result<i64, DbError>
+pub async fn add_model(db: &DbContext, user: &User, name: &str, blob_id: i64, link: Option<&str>, update_timestamp : Option<&str>) -> Result<i64, DbError>
 {
     let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let hex = random_hex_32();
     
     let result = sqlx::query!(
-        "INSERT INTO models (model_name, model_blob_id, model_added, model_url, model_user_id, model_unique_global_id)
-         VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO models (model_name, model_blob_id, model_added, model_url, model_user_id, model_unique_global_id, model_last_modified)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
         name,
         blob_id,
         now,
         link,
         user.id,
         hex,
+        timestamp,
     )
     .execute(db)
     .await?;
 
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Create, EntityType::Model, hex)).await?;
-    }
-
     Ok(result.last_insert_rowid())
 }
 
-pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: Option<&str>, description: Option<&str>, flags: ModelFlags, update_audit : bool) -> Result<(), DbError>
+pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: Option<&str>, description: Option<&str>, flags: ModelFlags, update_timestamp : Option<&str>) -> Result<(), DbError>
 {
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let flags = flags.bits() as i64;
     sqlx::query!(
-        "UPDATE models SET model_name = ?, model_url = ?, model_desc = ?, model_flags = ? WHERE model_id = ? AND model_user_id = ?",
+        "UPDATE models SET model_name = ?, model_url = ?, model_desc = ?, model_flags = ?, model_last_modified = ? WHERE model_id = ? AND model_user_id = ?",
         name,
         link,
         description,
         flags,
+        timestamp,
         id,
         user.id
     )
     .execute(db)
     .await?;
 
-    if update_audit {
-        let hex = get_unique_id_from_model_id(db, id).await?;
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Model, hex)).await?;
-    }
-
     Ok(())
 }
 
-pub async fn delete_model(db: &DbContext, user: &User, id: i64, update_audit : bool) -> Result<(), DbError>
+pub async fn delete_model(db: &DbContext, user: &User, id: i64) -> Result<(), DbError>
 {
     let hex = get_unique_id_from_model_id(db, id).await?;
 
@@ -226,10 +228,6 @@ pub async fn delete_model(db: &DbContext, user: &User, id: i64, update_audit : b
     )
     .execute(db)
     .await?;
-
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Delete, EntityType::Model, hex)).await?;
-    }
 
     Ok(())
 }

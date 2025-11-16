@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::{DbError, db_context::DbContext, model::{User, UserPermissions, time_now}};
+use crate::{DbError, db_context::DbContext, model::{User, UserPermissions}, time_now};
 
 pub async fn get_users(db: &DbContext) -> Result<Vec<User>, DbError> {
     let rows = sqlx::query!(

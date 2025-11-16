@@ -6,14 +6,16 @@ export interface GroupMeta {
     id: number;
     name: string;
     created: Date;
+    lastModified: Date;
     //unique_global_id: string;
 }
 
-export function createGroupMetaInstance(id: number, name: string, created: string/*, unique_global_id: string*/): GroupMeta {
+export function createGroupMetaInstance(id: number, name: string, created: string, lastModified: string, /*, unique_global_id: string*/): GroupMeta {
     return {
         id,
         name,
-        created: new Date(created)
+        created: new Date(created),
+        lastModified: new Date(lastModified),
         //unique_global_id
     };
 }
@@ -46,6 +48,8 @@ export enum GroupOrderBy {
     CreatedDesc = "CreatedDesc",
     NameAsc = "NameAsc",
     NameDesc = "NameDesc",
+    ModifiedAsc = "ModifiedAsc",
+    ModifiedDesc = "ModifiedDesc",
 }
 
 export const IGroupApi = Symbol('IGroupApi');

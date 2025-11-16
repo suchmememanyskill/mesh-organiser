@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 
-use crate::{DbError, audit_db, db_context::DbContext, label_db, model::{ActionType, AuditEntry, EntityType, LabelKeyword, User}};
+use crate::{DbError, db_context::DbContext, label_db::{self, set_last_updated_on_label}, model::{LabelKeyword, User}, util::time_now};
 
 pub async fn get_keywords_for_label(db: &DbContext, user: &User, label_id: i64) -> Result<Vec<LabelKeyword>, DbError> {
     let rows = sqlx::query!(
@@ -43,7 +43,9 @@ pub async fn get_all_keywords(db: &DbContext, user: &User) -> Result<IndexMap<i6
     Ok(result)
 }
 
-pub async fn set_keywords_for_label(db: &DbContext, user: &User, label_id: i64, keywords: Vec<String>, update_audit : bool) -> Result<(), DbError> {
+pub async fn set_keywords_for_label(db: &DbContext, user: &User, label_id: i64, keywords: Vec<String>, update_timestamp : Option<&str>) -> Result<(), DbError> {
+    let now = time_now();
+    let timestamp = update_timestamp.unwrap_or(&now);
     let hex = label_db::get_unique_id_from_label_id(db, user, label_id).await?;
 
     sqlx::query!(
@@ -63,9 +65,7 @@ pub async fn set_keywords_for_label(db: &DbContext, user: &User, label_id: i64, 
         .await?;
     }
 
-    if update_audit {
-        audit_db::add_audit_entry(db, &AuditEntry::new(user, ActionType::Update, EntityType::Label, hex)).await?;
-    }
+    set_last_updated_on_label(db, user, label_id, timestamp).await?;
 
     Ok(())
 }

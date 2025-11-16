@@ -54,6 +54,7 @@ pub struct Model {
     pub link: Option<String>,
     pub description: Option<String>,
     pub added: String,
+    pub last_modified: String,
     pub group: Option<ModelGroupMeta>,
     pub labels: Vec<LabelMeta>,
     pub flags: ModelFlags,

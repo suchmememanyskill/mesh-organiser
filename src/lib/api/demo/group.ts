@@ -142,7 +142,8 @@ export class DemoGroupApi implements IGroupApi {
                     createGroupMetaInstance(
                         model.id * -1,
                         model.name,
-                        model.added.toISOString()
+                        model.added.toISOString(),
+                        model.lastModified.toISOString()
                     ),
                     [model],
                     labels,
@@ -180,6 +181,10 @@ export class DemoGroupApi implements IGroupApi {
                     return a.meta.name.localeCompare(b.meta.name);
                 case GroupOrderBy.NameDesc:
                     return b.meta.name.localeCompare(a.meta.name);
+                case GroupOrderBy.ModifiedAsc:
+                    return a.meta.lastModified.getTime() - b.meta.lastModified.getTime();
+                case GroupOrderBy.ModifiedDesc:
+                    return b.meta.lastModified.getTime() - a.meta.lastModified.getTime();
                 default:
                     return 0;
             }
@@ -201,6 +206,7 @@ export class DemoGroupApi implements IGroupApi {
         const newGroup = createGroupMetaInstance(
             maxId + 1,
             name,
+            new Date().toISOString(),
             new Date().toISOString()
         );
         

@@ -64,12 +64,14 @@
     let debouncedSetNewSearchText = debounce(setNewSearchText, 200);
 
     const readableOrders = {
-        "date-asc": "Date (Asc)",
-        "date-desc": "Date (Desc)",
+        "date-asc": "Added (Asc)",
+        "date-desc": "Added (Desc)",
         "name-asc": "Name (A->Z)",
         "name-desc": "Name (Z->A)",
         "size-asc": "Size (Asc)",
         "size-desc": "Size (Desc)",
+        "modified-asc": "Modified (Asc)",
+        "modified-desc": "Modified (Desc)",
     };
 
     const readableOrder = $derived(readableOrders[configuration.order_option_models]);

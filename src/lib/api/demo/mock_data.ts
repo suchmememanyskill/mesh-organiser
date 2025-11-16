@@ -186,6 +186,7 @@ mockModelDataList.forEach((data, index) => {
         data.sourceUrl ?? null,
         null,
         blob.added.toISOString(),
+        blob.added.toISOString(),
         null,
         [],
         flags,
@@ -200,6 +201,7 @@ export const mockGroups: Map<number, GroupMeta> = new Map();
 const primitivesGroup = createGroupMetaInstance(
     1,
     "primitives",
+    new Date('2024-01-15').toISOString(),
     new Date('2024-01-15').toISOString()
 );
 mockGroups.set(primitivesGroup.id, primitivesGroup);

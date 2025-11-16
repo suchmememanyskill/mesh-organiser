@@ -285,11 +285,13 @@
                 <div class="grid grid-cols-2 text-sm">
                     <div class="text-left space-y-1">
                         <div>Date added</div>
+                        <date>Date last modified</date>
                         <div>Size</div>
                         <div>Group</div>
                     </div>
                     <div class="text-right space-y-1">
                         <div>{model.added.toLocaleDateString()}</div>
+                        <div>{model.lastModified.toLocaleDateString()}</div>
                         <div>{toReadableSize(model.blob.size)}</div>
                         {#if group}
                             <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>

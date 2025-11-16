@@ -36,6 +36,7 @@ export interface RawModel {
     link: string|null;
     description: string|null;
     added: string;
+    last_modified: string;
     group: RawGroupMeta|null;
     labels: RawLabelMeta[];
     flags: string[];
@@ -49,6 +50,7 @@ export function parseRawModel(raw: RawModel): Model {
         raw.link,
         raw.description,
         raw.added,
+        raw.last_modified,
         raw.group ? parseRawGroupMeta(raw.group) : null,
         raw.labels.map(label => parseRawLabelMeta(label)),
         raw.flags

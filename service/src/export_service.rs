@@ -1,6 +1,8 @@
 use crate::util::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
 use crate::service_error::ServiceError;
+use async_zip::base;
 use async_zip::tokio::read::seek::ZipFileReader;
+use db::blob_db;
 use db::model::{Blob, Model};
 use chrono::Utc;
 use futures::future::join_all;
@@ -153,4 +155,32 @@ pub fn get_size_of_blobs(
     }
 
     Ok(total_size)
+}
+
+pub async fn delete_dead_blobs(
+    app_state: &AppState,
+) -> Result<(), ServiceError> {
+    let model_dir = PathBuf::from(app_state.get_model_dir());
+    let image_dir = PathBuf::from(app_state.get_image_dir());
+   
+    let blobs = blob_db::get_and_delete_dead_blobs(&app_state.db).await?;
+
+    for blob in blobs {
+        let model_path = model_dir.join(format!("{}.{}", blob.sha256, blob.filetype));
+        let image_path = image_dir.join(format!("{}.png", blob.sha256));
+
+        if model_path.exists() {
+            if let Err(e) = std::fs::remove_file(model_path) {
+                eprintln!("Failed to remove dead blob model file: {}", e);
+            }
+        }
+
+        if image_path.exists() {
+            if let Err(e) = std::fs::remove_file(image_path) {
+                eprintln!("Failed to remove dead blob image file: {}", e);
+            }
+        }
+    }
+    
+    Ok(())
 }

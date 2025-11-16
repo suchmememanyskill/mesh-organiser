@@ -3,8 +3,8 @@ import { ModelOrderBy } from "./model_api";
 
 export type SizeOptionModels = "Grid_Small" | "Grid_Medium" | "Grid_Large" | "List_Small" | "List_Medium" | "List_Large";
 export const SizeOptionModelsAsList = ["Grid_Small", "Grid_Medium", "Grid_Large", "List_Small", "List_Medium", "List_Large"] as SizeOptionModels[];
-export type OrderOptionModels = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "size-asc" | "size-desc";
-export type OrderOptionGroups = "date-asc" | "date-desc" | "name-asc" | "name-desc";
+export type OrderOptionModels = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "size-asc" | "size-desc" | "modified-asc" | "modified-desc";
+export type OrderOptionGroups = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "modified-asc" | "modified-desc";
 
 export interface Configuration {
     data_path: string;
@@ -63,6 +63,10 @@ export function convertOrderOptionModelsToEnum(orderOption : OrderOptionModels) 
             return ModelOrderBy.SizeAsc;
         case "size-desc":
             return ModelOrderBy.SizeDesc;
+        case "modified-asc":
+            return ModelOrderBy.ModifiedAsc;
+        case "modified-desc":
+            return ModelOrderBy.ModifiedDesc;
         default:
             return ModelOrderBy.AddedDesc;
     }
@@ -78,6 +82,10 @@ export function convertOrderOptionGroupsToEnum(orderOption : OrderOptionGroups) 
             return GroupOrderBy.NameAsc;
         case "name-desc":
             return GroupOrderBy.NameDesc;
+        case "modified-asc":
+            return GroupOrderBy.ModifiedAsc;
+        case "modified-desc":
+            return GroupOrderBy.ModifiedDesc;
         default:
             return GroupOrderBy.CreatedDesc;
     }

@@ -1,4 +1,4 @@
-use db::{label_db, model::{Label, LabelMeta, random_hex_32}};
+use db::{label_db, model::{Label, LabelMeta}, random_hex_32};
 use tauri::State;
 
 use crate::{error::ApplicationError, tauri_app_state::TauriAppState};
@@ -18,7 +18,7 @@ pub async fn add_label(
     label_color: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<LabelMeta, ApplicationError> {
-    let id = label_db::add_label(&state.app_state.db, &state.get_current_user(), label_name, label_color, true)
+    let id = label_db::add_label(&state.app_state.db, &state.get_current_user(), label_name, label_color, None)
         .await?;
 
     Ok(LabelMeta {
@@ -35,8 +35,8 @@ pub async fn set_labels_on_model(
     model_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    label_db::remove_all_labels_from_models(&state.app_state.db, &state.get_current_user(), &[model_id], true).await?;
-    label_db::add_labels_on_models(&state.app_state.db, &state.get_current_user(), &label_ids, &[model_id], true).await?;
+    label_db::remove_all_labels_from_models(&state.app_state.db, &state.get_current_user(), &[model_id], None).await?;
+    label_db::add_labels_on_models(&state.app_state.db, &state.get_current_user(), &label_ids, &[model_id], None).await?;
 
     Ok(())
 }
@@ -47,8 +47,8 @@ pub async fn set_label_on_models(
     model_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    label_db::remove_labels_from_models(&state.app_state.db, &state.get_current_user(), &[label_id], &model_ids, true).await?;
-    label_db::add_labels_on_models(&state.app_state.db, &state.get_current_user(), &[label_id], &model_ids, true).await?;
+    label_db::remove_labels_from_models(&state.app_state.db, &state.get_current_user(), &[label_id], &model_ids, None).await?;
+    label_db::add_labels_on_models(&state.app_state.db, &state.get_current_user(), &[label_id], &model_ids, None).await?;
 
     Ok(())
 }
@@ -59,7 +59,7 @@ pub async fn remove_label_from_models(
     model_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    label_db::remove_labels_from_models(&state.app_state.db, &state.get_current_user(), &[label_id], &model_ids, true)
+    label_db::remove_labels_from_models(&state.app_state.db, &state.get_current_user(), &[label_id], &model_ids, None)
         .await?;
 
     Ok(())
@@ -72,7 +72,7 @@ pub async fn edit_label(
     label_color: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    label_db::edit_label(&state.app_state.db, &state.get_current_user(), label_id, label_name, label_color, true)
+    label_db::edit_label(&state.app_state.db, &state.get_current_user(), label_id, label_name, label_color, None)
         .await?;
 
     Ok(())
@@ -80,7 +80,7 @@ pub async fn edit_label(
 
 #[tauri::command]
 pub async fn delete_label(label_id: i64, state: State<'_, TauriAppState>) -> Result<(), ApplicationError> {
-    label_db::delete_label(&state.app_state.db, &state.get_current_user(), label_id, true)
+    label_db::delete_label(&state.app_state.db, &state.get_current_user(), label_id)
         .await?;
 
     Ok(())
@@ -92,7 +92,7 @@ pub async fn add_childs_to_label(
     child_label_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    label_db::add_childs_to_label(&state.app_state.db, &state.get_current_user(), parent_label_id, child_label_ids, true)
+    label_db::add_childs_to_label(&state.app_state.db, &state.get_current_user(), parent_label_id, child_label_ids, None)
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
@@ -105,7 +105,7 @@ pub async fn remove_childs_from_label(
     child_label_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    label_db::remove_childs_from_label(&state.app_state.db, &state.get_current_user(), parent_label_id, child_label_ids, true)
+    label_db::remove_childs_from_label(&state.app_state.db, &state.get_current_user(), parent_label_id, child_label_ids, None)
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
@@ -118,12 +118,12 @@ pub async fn set_childs_on_label(
     child_label_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    label_db::remove_all_childs_from_label(&state.app_state.db, &state.get_current_user(), parent_label_id, true)
+    label_db::remove_all_childs_from_label(&state.app_state.db, &state.get_current_user(), parent_label_id, None)
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
     
     if !child_label_ids.is_empty() {
-        label_db::add_childs_to_label(&state.app_state.db, &state.get_current_user(), parent_label_id, child_label_ids, true)
+        label_db::add_childs_to_label(&state.app_state.db, &state.get_current_user(), parent_label_id, child_label_ids, None)
             .await
             .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
     }
@@ -137,7 +137,7 @@ pub async fn set_keywords_on_label(
     keywords: Vec<String>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    db::label_keyword_db::set_keywords_for_label(&state.app_state.db, &state.get_current_user(), label_id, keywords, true)
+    db::label_keyword_db::set_keywords_for_label(&state.app_state.db, &state.get_current_user(), label_id, keywords, None)
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 

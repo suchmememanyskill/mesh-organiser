@@ -191,7 +191,7 @@ pub async fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_sta
             .collect();
 
         if !label_ids.is_empty() {
-            let _ = label_db::add_labels_on_models(db, &import_state.user, &label_ids, &[model.id], true).await;
+            let _ = label_db::add_labels_on_models(db, &import_state.user, &label_ids, &[model.id] , None).await;
         }
     }
 }
@@ -411,7 +411,7 @@ where
             name,
             blob_id,
             link.as_deref(),
-            true,
+            None
         )
         .await?;
 

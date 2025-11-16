@@ -1,4 +1,4 @@
-use db::{model::{ModelGroup, Resource, ResourceFlags, ResourceMeta, random_hex_32, time_now}, resource_db};
+use db::{model::{ModelGroup, Resource, ResourceFlags, ResourceMeta}, random_hex_32, time_now, resource_db};
 use service::resource_service;
 use tauri::State;
 
@@ -17,7 +17,7 @@ pub async fn add_resource(
     resource_name: &str,
     state: State<'_, TauriAppState>,
 ) -> Result<ResourceMeta, ApplicationError> {
-    let id = resource_db::add_resource(&state.app_state.db, &state.get_current_user(), resource_name, true)
+    let id = resource_db::add_resource(&state.app_state.db, &state.get_current_user(), resource_name, None)
         .await?;
 
     Ok(ResourceMeta {
@@ -36,7 +36,7 @@ pub async fn edit_resource(
     resource_flags: ResourceFlags,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    resource_db::edit_resource(&state.app_state.db, &state.get_current_user(), resource_id, resource_name, resource_flags, true)
+    resource_db::edit_resource(&state.app_state.db, &state.get_current_user(), resource_id, resource_name, resource_flags, None)
         .await?;
 
     Ok(())
@@ -60,7 +60,7 @@ pub async fn remove_resource(
     let resource = resource.unwrap();
 
     resource_service::delete_resource_folder(&resource, &user, &state.app_state).await?;
-    resource_db::delete_resource(&state.app_state.db, &state.get_current_user(), resource.id, true)
+    resource_db::delete_resource(&state.app_state.db, &state.get_current_user(), resource.id)
         .await?;
 
     Ok(())
@@ -94,7 +94,7 @@ pub async fn set_resource_on_group(
     group_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    resource_db::set_resource_on_group(&state.app_state.db, &state.get_current_user(), resource_id, group_id, true)
+    resource_db::set_resource_on_group(&state.app_state.db, &state.get_current_user(), resource_id, group_id, None)
         .await?;
 
     Ok(())

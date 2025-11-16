@@ -176,14 +176,14 @@ impl ImportState {
             }
 
             let group_name = set.group_name.as_ref().unwrap();
-            let group_id = group_db::add_empty_group(&state.db, user, group_name, true).await?;
+            let group_id = group_db::add_empty_group(&state.db, user, group_name, None).await?;
 
             group_db::set_group_id_on_models(
                     &state.db,
                     user,
                     Some(group_id),
                     set.model_ids.clone(),
-                    true,
+                    None,
                 )
                 .await?;
 
