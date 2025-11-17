@@ -13,3 +13,5 @@ pub use configuration::*;
 pub use service_error::ServiceError;
 pub use app_state::AppState;
 pub use util::*;
+
+const ASYNC_MULT : usize = 8;

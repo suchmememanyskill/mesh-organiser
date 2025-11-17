@@ -4896,7 +4896,6 @@ dependencies = [
  "async_zip",
  "chrono",
  "db",
- "futures",
  "indexmap 2.12.0",
  "itertools",
  "regex",

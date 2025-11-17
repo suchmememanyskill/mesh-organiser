@@ -1,4 +1,5 @@
 use db::{model::{User, hash_password}, user_db};
+use service::export_service;
 use tauri::State;
 
 use crate::{error::ApplicationError, tauri_app_state::TauriAppState};
@@ -67,9 +68,9 @@ pub async fn delete_user(
         return Err(ApplicationError::InternalError("Cannot delete the currently logged in user.".into()));
     }
 
-    // TODO: Check for blobs that maybe orphaned after user deletion?
-
     user_db::delete_user(&state.app_state.db, user_id).await?;
+
+    export_service::delete_dead_blobs(&state.app_state).await?;
 
     Ok(())
 }

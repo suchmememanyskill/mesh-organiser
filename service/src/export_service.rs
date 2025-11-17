@@ -1,25 +1,28 @@
+use crate::ASYNC_MULT;
 use crate::util::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
 use crate::service_error::ServiceError;
-use async_zip::base;
 use async_zip::tokio::read::seek::ZipFileReader;
 use db::blob_db;
 use db::model::{Blob, Model};
 use chrono::Utc;
-use futures::future::join_all;
 use tokio::fs::File;
 use tokio::io::BufReader;
+use tokio::task::JoinSet;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
+use std::panic;
 use std::path::PathBuf;
 use std::collections::HashSet;
 
 use super::app_state::AppState;
 
+
 pub async fn export_to_temp_folder(
-    models: Vec<Model>,
+    mut models: Vec<Model>,
     app_state: &AppState,
     lazy: bool,
     action: &str,
 ) -> Result<(PathBuf, Vec<PathBuf>), ServiceError> {
+    let configuration = app_state.get_configuration();
     let temp_dir = std::env::temp_dir().join(format!(
         "meshorganiser_{}_action_{}",
         action,
@@ -27,19 +30,49 @@ pub async fn export_to_temp_folder(
     ));
     std::fs::create_dir(&temp_dir)?;
 
-    let mut futures = Vec::with_capacity(models.len());
+    let mut futures = JoinSet::new();
 
-    for model in &models {
-        futures.push(get_path_from_model(&temp_dir, model, &app_state, lazy));
-    }
-
-    let paths = join_all(futures).await.into_iter().filter(|r| r.is_ok()).map(|r| r.unwrap()).collect();
-
-    if app_state.get_configuration().export_metadata {
+    if configuration.export_metadata {
         let metadata_path = temp_dir.join("metadata.json");
         let metadata_file = std::fs::File::create(&metadata_path)?;
         serde_json::to_writer_pretty(metadata_file, &models)?;
     }
+
+    let mut paths = Vec::with_capacity(models.len());
+    let max = configuration.core_parallelism * ASYNC_MULT;
+    let mut active = 0;
+
+    while !models.is_empty() {
+        let model = match models.pop() {
+            Some(x) => x,
+            None => continue,
+        };
+        let temp_dir = temp_dir.clone();
+        let app_state = app_state.clone();
+        active += 1;
+
+        futures.spawn(async move { 
+            let model = model;
+            get_path_from_model(&temp_dir, &model, &app_state, lazy).await
+        });
+
+        if active >= max {
+            if let Some(res) = futures.join_next().await {
+                match res {
+                    Err(err) if err.is_panic() => panic::resume_unwind(err.into_panic()),
+                    Err(err) => panic!("{err}"),
+                    Ok(res) => {
+                        if let Ok(res) = res {
+                            paths.push(res);
+                        }
+                        active -= 1;
+                    },
+                }
+            }
+        }
+    }
+
+    paths.extend(futures.join_all().await.into_iter().filter(|r| r.is_ok()).map(|r| r.unwrap()));
 
     Ok((temp_dir, paths))
 }
@@ -181,6 +214,5 @@ pub async fn delete_dead_blobs(
             }
         }
     }
-    
     Ok(())
 }

@@ -39,11 +39,13 @@ pub async fn setup_db(sqlite_path : &PathBuf, sqlite_backup_dir : &PathBuf) -> D
 }
 
 async fn get_db_migration_count(db: &DbContext) -> usize {
-    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) as count FROM _sqlx_migrations")
+    let row: (i64,) = match sqlx::query_as("SELECT COUNT(*) as count FROM _sqlx_migrations")
         .fetch_one(db)
-        .await
-        .expect("Failed to fetch migration count");
-
+        .await {
+            Ok(r) => r,
+            Err(_) => return 0,
+        };
+        
     row.0 as usize
 }
 

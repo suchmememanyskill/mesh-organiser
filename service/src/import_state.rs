@@ -118,8 +118,9 @@ impl ImportState {
     }
 
     pub fn add_new_import_set(&mut self, group_name: Option<String>) {
-        if let Some(last) = self.imported_models.last() {
+        if let Some(last) = self.imported_models.last_mut() {
             if last.model_ids.is_empty() {
+                last.group_name = group_name;
                 return;
             }
         }

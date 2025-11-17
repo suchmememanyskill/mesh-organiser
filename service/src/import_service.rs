@@ -1,33 +1,36 @@
 use super::app_state::AppState;
+use crate::ASYNC_MULT;
 use crate::configuration::Configuration;
 use crate::import_state::{ImportState, ImportStatus, ImportedModelsSet};
 use crate::util::{self, read_file_as_text};
 use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use async_zip::ZipEntryBuilder;
+use async_zip::tokio::read;
 use async_zip::tokio::read::seek::ZipFileReader;
 use async_zip::tokio::write::ZipFileWriter;
 use db::{blob_db, label_db, label_keyword_db, model_db};
 use db::model::{Model, User};
 use db::model_db::ModelFilterOptions;
-use futures::future::join_all;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use sha2::{Digest, Sha256};
 use tokio::fs::File;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::Mutex;
-use tokio::task::spawn_blocking;
+use tokio::task::{JoinSet, spawn_blocking};
 use std::fs::{self, read_dir};
 use std::io::{Read, Write};
+use std::panic;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tokio_util::{io::ReaderStream, compat::FuturesAsyncReadCompatExt};
 use crate::service_error::ServiceError;
 
 pub async fn import_path(
     path: &str,
     app_state: &AppState,
-    import_state: &mut ImportState,
-) -> Result<(), ServiceError> {
+    mut import_state: ImportState,
+) -> Result<ImportState, ServiceError> {
     import_state.status = ImportStatus::ProcessingModels;
     import_state.emit_all();
 
@@ -35,13 +38,24 @@ pub async fn import_path(
     let model_count = get_model_count(path, &configuration, import_state.recursive).await?;
     import_state.update_total_model_count(model_count);
 
+    let import_state = Arc::new(Mutex::new(import_state));
+    let import_state_clone = Arc::clone(&import_state);
+
     match import_path_inner(path, app_state, import_state).await {
         Ok(()) => {
+            let mut import_state = import_state_clone.lock().await;
             import_state.update_status(ImportStatus::FinishedModels);
             import_state.create_groups_from_all_sets(app_state).await?;
-            Ok(())
+
+            let import_state = {
+                let fake = ImportState::new(None, false, false, User::default());
+                std::mem::replace(&mut *import_state, fake)
+            };
+
+            Ok(import_state)
         }
         Err(application_error) => {
+            let mut import_state = import_state_clone.lock().await;
             import_state.set_failure(application_error.to_string());
             Err(application_error)
         }
@@ -75,14 +89,20 @@ pub async fn get_model_count(
 pub async fn import_path_inner(
     path: &str,
     app_state: &AppState,
-    import_state: &mut ImportState,
+    import_state: Arc<Mutex<ImportState>>,
 ) -> Result<(), ServiceError> {
     let path_buff = PathBuf::from(path);
     let name = util::prettify_file_name(&path_buff, path_buff.is_dir());
     let configuration = app_state.get_configuration();
+    let later_import_state = Arc::clone(&import_state);
+
+    let recurisve = {
+        let import_state = import_state.lock().await;
+        import_state.recursive
+    };
 
     if path_buff.is_dir() {
-        if import_state.recursive {
+        if recurisve {
             import_models_from_dir_recursive(&path_buff, app_state, import_state).await?;
         } else {
             import_models_from_dir(path, app_state, import_state, name.clone()).await?;
@@ -92,8 +112,10 @@ pub async fn import_path_inner(
     } else if is_supported_extension(&path_buff, &configuration) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
+        let mut import_state = import_state.lock().await;
 
         {
+            
             let mut file = File::open(&path_buff).await?;
             let id = import_single_model(
                 &mut file,
@@ -116,7 +138,8 @@ pub async fn import_path_inner(
         )));
     }
 
-    add_labels_by_keywords(&import_state.imported_models, app_state, import_state).await;
+    let import_state = later_import_state.lock().await;
+    add_labels_by_keywords(&import_state.imported_models, app_state, &import_state).await;
 
     Ok(())
 }
@@ -199,12 +222,18 @@ pub async fn add_labels_by_keywords(new_models: &Vec<ImportedModelsSet>, app_sta
 async fn import_models_from_dir_recursive(
     path: &PathBuf,
     app_state: &AppState,
-    import_state: &mut ImportState,
+    import_state: Arc<Mutex<ImportState>>,
 ) -> Result<(), ServiceError> {
-    let entries: Vec<std::fs::DirEntry> = std::fs::read_dir(path)?.map(|x| x.unwrap()).collect();
+    let read_dir = match std::fs::read_dir(path) {
+        Ok(rd) => rd,
+        Err(_) => return Ok(()),
+    };
+
+    let entries: Vec<std::fs::DirEntry> = read_dir.map(|x| x.unwrap()).collect();
     let configuration = app_state.get_configuration();
 
     for folder in entries.iter().filter(|f| f.path().is_dir()) {
+        let import_state = Arc::clone(&import_state);
         let _ =
             import_models_from_dir_recursive(&folder.path(), app_state, import_state);
     }
@@ -231,7 +260,7 @@ async fn import_models_from_dir_inner(
     configuration: &Configuration,
     app_state: &AppState,
     path: PathBuf,
-    import_state_mutex: &Mutex<&mut ImportState>,
+    import_state_mutex: Arc<Mutex<ImportState>>,
     user: &User,
     link: &Option<String>,
     delete_after_import: bool,
@@ -265,26 +294,61 @@ async fn import_models_from_dir_inner(
 async fn import_models_from_dir(
     path: &str,
     app_state: &AppState,
-    import_state: &mut ImportState,
+    import_state: Arc<Mutex<ImportState>>,
     group_name: String,
 ) -> Result<(), ServiceError> {
     let configuration = app_state.get_configuration();
+    let user;
+    let origin_url;
+    let delete_after_import;
+    {
+        let mut import_state = import_state.lock().await;
 
-    import_state.add_new_import_set(Some(group_name));
-
-    let user = &import_state.user.clone();
-    let origin_url = import_state.origin_url.clone();
-    let delete_after_import = import_state.delete_after_import;
-    let import_state_mutex = Mutex::new(import_state);
+        import_state.add_new_import_set(Some(group_name));
+        user = import_state.user.clone();
+        origin_url = import_state.origin_url.clone();
+        delete_after_import = import_state.delete_after_import;
+    }
     
-    let entries: Vec<PathBuf> = read_dir(path)?
+    let mut entries: Vec<PathBuf> = read_dir(path)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.is_file())
         .collect();
 
-    let futures : Vec<_> = entries.into_iter().map(async |entry| import_models_from_dir_inner(&configuration, app_state, entry, &import_state_mutex, user, &origin_url, delete_after_import)).collect();
+    let mut futures = JoinSet::new();
 
-    join_all(futures).await;
+    let max = configuration.core_parallelism * ASYNC_MULT;
+    let mut active = 0;
+
+    while !entries.is_empty() {
+        let entry = match entries.pop() {
+            Some(x) => x,
+            None => continue,
+        };
+        let configuration = configuration.clone();
+        let app_state = app_state.clone();
+        let import_state_mutex = Arc::clone(&import_state);
+        let user = user.clone();
+        let origin_url = origin_url.clone();
+        let delete_after_import = delete_after_import;
+        active += 1;
+
+        futures.spawn(async move {
+            import_models_from_dir_inner(&configuration, &app_state, entry, import_state_mutex, &user, &origin_url, delete_after_import).await
+        });
+
+        if active >= max {
+            if let Some(res) = futures.join_next().await {
+                match res {
+                    Err(err) if err.is_panic() => panic::resume_unwind(err.into_panic()),
+                    Err(err) => panic!("{err}"),
+                    _ => active -= 1,
+                }
+            }
+        }
+    }
+
+    futures.join_all().await;
 
     Ok(())
 }
@@ -292,10 +356,11 @@ async fn import_models_from_dir(
 async fn import_models_from_zip(
     path: &str,
     app_state: &AppState,
-    import_state: &mut ImportState,
+    import_state: Arc<Mutex<ImportState>>,
     group_name: String,
 ) -> Result<(), ServiceError> {
     let configuration = app_state.get_configuration();
+    let mut import_state = import_state.lock().await;
     import_state.add_new_import_set(Some(group_name));
 
     {

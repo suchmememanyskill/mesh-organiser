@@ -15,9 +15,8 @@ regex = "1"
 indexmap = "2"
 itertools = "0"
 sha2 = "0"
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
 tokio-util = { version = "0", features = ["io"] }
-futures = { version = "0.3" }
 chrono = "0"
 urlencoding = "2"
 

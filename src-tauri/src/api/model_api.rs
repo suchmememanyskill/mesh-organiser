@@ -27,7 +27,7 @@ pub async fn add_model(
     let state_clone = state.clone();
     let mut import_state = import_state_new_tauri(origin_url, recursive, delete_imported, &state, &app_handle);
     let _lock = state_clone.app_state.import_mutex.lock().await;
-    import_service::import_path(&path_clone, &state_clone.app_state, &mut import_state).await?;
+    import_state = import_service::import_path(&path_clone, &state_clone.app_state, import_state).await?;
 
     let model_ids: Vec<i64> = import_state
         .imported_models
