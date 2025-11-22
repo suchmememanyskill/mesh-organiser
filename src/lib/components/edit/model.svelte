@@ -204,6 +204,32 @@
         
         goto("/group/" + newGroup.id);
     }
+
+    async function extractThreemfModels()
+    {
+        if (!threemfApi) {
+            return;
+        }
+
+        let promise = threemfApi.extractThreemfModels(model);
+
+        toast.promise(
+            promise,
+            {
+                loading: `Extracting 3MF models from '${model.name}'...`,
+                success: (newGroup) => {
+                    return `Imported '${newGroup.name}''`;
+                },
+            }
+        );
+
+        let newGroup = await promise;
+        await groupApi.addModelsToGroup(newGroup, [model]);
+        model.group = newGroup;
+        await updateSidebarState();
+
+        goto("/group/" + newGroup.id);
+    }
 </script>
 
 {#if deleted.deleted}
@@ -287,6 +313,11 @@
                             <DropdownMenu.Item onclick={() => editMode = false}>
                                 <Edit /> Disable edit mode
                             </DropdownMenu.Item>
+                            {#if model.blob.filetype == FileType.THREEMF && threemfApi}
+                                <DropdownMenu.Item onclick={extractThreemfModels}>
+                                    <ListCheck /> Extract 3MF models
+                                </DropdownMenu.Item>
+                            {/if}
                             <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
                                 <GroupIcon /> Create new group with model
                             </DropdownMenu.Item>

@@ -57,7 +57,7 @@ pub async fn get_user_by_id(db: &DbContext, user_id: i64) -> Result<Option<User>
 
 pub async fn add_user(db: &DbContext, username: &str, email: &str, password_hash: &str) -> Result<i64, DbError> {
     let now = time_now();
-    let id = rand::rng().random::<i64>();
+    let id = rand::rng().random::<u32>() as i64;
 
     let result = sqlx::query!(
         "INSERT INTO users (user_id, user_name, user_email, user_password_hash, user_created_at) VALUES (?, ?, ?, ?, ?)",

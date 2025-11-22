@@ -17,6 +17,8 @@ pub enum ServiceError {
     DatabaseError(#[from] db::DbError),
     #[error("TaskExecutionFailedError")]
     TaskExecutionFailedError(#[from] tokio::task::JoinError),
+    #[error("Threemf parsing error")]
+    ThreemfError(#[from] threemf::Error),
 }
 
 impl Serialize for ServiceError {
@@ -58,6 +60,11 @@ impl Serialize for ServiceError {
             }
             ServiceError::TaskExecutionFailedError(inner) => {
                 state.serialize_field("error_type", "TaskExecutionFailedError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            },
+            ServiceError::ThreemfError(inner) => {
+                state.serialize_field("error_type", "ThreemfError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }

@@ -1570,6 +1570,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "float-cmp"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b09cf3155332e944990140d967ff5eceb70df778b34f77d8075db46e4704e6d8"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "flume"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4123,6 +4132,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42a232e7487fc2ef313d96dde7948e7a3c05101870d8985e4fd8d26aedd27b89"
 dependencies = [
  "memchr",
+ "serde",
 ]
 
 [[package]]
@@ -4903,8 +4913,10 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "stl_io",
  "strum",
  "thiserror 2.0.17",
+ "threemf",
  "tokio",
  "tokio-util",
  "urlencoding",
@@ -5316,6 +5328,16 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "stl_io"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da63e75b86345156b191c021b3ce2a13b973941ecdb8c70d6f00cbbfe0076ed7"
+dependencies = [
+ "byteorder",
+ "float-cmp",
+]
 
 [[package]]
 name = "string_cache"
@@ -6024,6 +6046,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.108",
+]
+
+[[package]]
+name = "threemf"
+version = "0.7.0"
+source = "git+https://github.com/suchmememanyskill/3mf-rs?rev=d78e731b2fcf127692380332ad2708aec65dee68#d78e731b2fcf127692380332ad2708aec65dee68"
+dependencies = [
+ "quick-xml 0.38.3",
+ "serde",
+ "thiserror 2.0.17",
+ "zip 4.6.1",
 ]
 
 [[package]]
@@ -7729,8 +7762,10 @@ checksum = "caa8cd6af31c3b31c6631b8f483848b91589021b28fffe50adada48d4f4d2ed1"
 dependencies = [
  "arbitrary",
  "crc32fast",
+ "flate2",
  "indexmap 2.12.0",
  "memchr",
+ "zopfli",
 ]
 
 [[package]]

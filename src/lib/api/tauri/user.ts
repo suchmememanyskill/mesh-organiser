@@ -33,6 +33,7 @@ export class UserApi implements IUserApi {
 
     async getAvailableUsers(): Promise<User[]> {
         let users = await invoke<RawUser[]>("get_users", {});
+        console.log("get users", users);
 
         return users.map(user => createUserInstance(
             user.id,

@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use db::user_db;
+use db::{model::ModelGroupMeta, user_db};
 use arboard::Clipboard;
 use base64::prelude::*;
 
@@ -35,6 +35,7 @@ use crate::tauri_app_state::InitialState;
 use service::StoredConfiguration;
 use service::stored_to_configuration;
 use service::AppState;
+use db::{time_now, random_hex_32};
 
 mod tauri_app_state;
 mod error;
@@ -157,6 +158,42 @@ async fn get_theemf_metadata(
     let metadata = threemf_service::extract_metadata(&model[0], &state.app_state).await?;
 
     Ok(metadata)
+}
+
+#[tauri::command]
+async fn extract_threemf_models(
+    model_id: i64,
+    app_handle: AppHandle,
+    state: State<'_, TauriAppState>,
+) -> Result<ModelGroupMeta, ApplicationError> {
+    let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), vec![model_id]).await?;
+
+    let mut import_state = threemf_service::extract_models(&model[0], &state.get_current_user(), &state.app_state).await?;
+
+    let model_ids: Vec<i64> = import_state
+        .imported_models
+        .iter()
+        .flat_map(|f| f.model_ids.clone())
+        .collect();
+
+    let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
+    tauri_thumbnail_service::generate_thumbnails(
+        &models,
+        &state,
+        &app_handle,
+        false,
+        &mut import_state,
+    )
+    .await?;
+    
+    Ok(ModelGroupMeta { 
+        id: import_state.imported_models[0].group_id.unwrap(), 
+        name: import_state.imported_models[0].group_name.clone().unwrap(), 
+        created: time_now(), 
+        last_modified: time_now(), 
+        resource_id: None, 
+        unique_global_id: random_hex_32(), 
+    })
 }
 
 
@@ -608,6 +645,7 @@ pub fn run() {
             api::get_groups_for_resource,
             api::get_model_disk_space_usage,
             get_theemf_metadata,
+            extract_threemf_models,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

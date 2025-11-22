@@ -1,3 +1,4 @@
+import type { GroupMeta } from "./group_api";
 import type { Model } from "./model_api";
 
 export interface ThreemfMetadata {
@@ -11,4 +12,5 @@ export const IThreemfApi = Symbol('IThreemfApi');
 
 export interface IThreemfApi {
     getThreemfMetadata(modelId: Model) : Promise<ThreemfMetadata|null>;
+    extractThreemfModels(modelId: Model) : Promise<GroupMeta>;
 }

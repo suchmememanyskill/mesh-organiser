@@ -23,6 +23,7 @@
     onMount(async () => {
         currentUser = await userApi.getCurrentUser();
         availableUsers = await userApi.getAllUsers();
+        console.log(availableUsers);
     });
 
     async function refreshUsers() {

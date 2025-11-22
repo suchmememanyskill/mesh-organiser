@@ -31,6 +31,7 @@ pub async fn import_path(
     app_state: &AppState,
     mut import_state: ImportState,
 ) -> Result<ImportState, ServiceError> {
+    let _lock = app_state.import_mutex.lock().await;
     import_state.status = ImportStatus::ProcessingModels;
     import_state.emit_all();
 
