@@ -4,8 +4,10 @@
     import { Gizmo, OrbitControls } from '@threlte/extras'
     import { onDestroy } from 'svelte';
     import { configuration } from '$lib/configuration.svelte';
-    
-    const { scene, renderer } = useThrelte();
+    import { Color, Vector4 } from 'three';
+    import vertexShader from './custom.vert?raw';
+    import fragmentShader from './custom.frag?raw';
+    const { renderer } = useThrelte();
 
     const props: { geometry: BufferGeometry|null; } = $props();
 
@@ -13,6 +15,10 @@
     let position_x = $derived(radius * 1.5);
     let position_y = $derived(radius * 0.5);
     let position_z = $derived(radius * 1.5);
+
+    let shaderUniforms = $derived({
+        surfaceColor: { value: new Vector4(...new Color($state.snapshot(configuration.thumbnail_color)).toArray(), 1.0) }
+    });
 
     onDestroy(() => {
         props.geometry?.dispose();
@@ -41,7 +47,10 @@
 
     <T.Mesh>
         <T is={props.geometry} /> 
-        <!-- Use same shader as mesh-thumbnail -->
-        <T.MeshMatcapMaterial color={$state.snapshot(configuration.thumbnail_color)} />
+        <T.ShaderMaterial 
+            uniforms={shaderUniforms}
+            vertexShader={vertexShader}
+            fragmentShader={fragmentShader}
+        />
     </T.Mesh>
 {/if}
