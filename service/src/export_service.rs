@@ -15,7 +15,6 @@ use std::collections::HashSet;
 
 use super::app_state::AppState;
 
-
 pub async fn export_to_temp_folder(
     mut models: Vec<Model>,
     app_state: &AppState,
@@ -119,7 +118,7 @@ fn ensure_unique_file(base_path: &PathBuf, file_name: &str, extension: &str) -> 
     return new_file_name;
 }
 
-async fn get_path_from_model(
+pub async fn get_path_from_model(
     temp_dir: &PathBuf,
     model: &Model,
     app_state: &AppState,

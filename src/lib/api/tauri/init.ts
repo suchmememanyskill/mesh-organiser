@@ -36,6 +36,8 @@ import { ISlicerApi } from "../shared/slicer_api";
 import { ILocalApi } from "../shared/local_api";
 import { UserApi } from "./user";
 import { IUserApi } from "../shared/user_api";
+import { ThreemfApi } from "./threemf";
+import { IThreemfApi } from "../shared/threemf_api";
 
 interface InitialState
 {
@@ -70,6 +72,7 @@ export async function initTauriLocalApis() : Promise<void> {
     const slicerApi = new SlicerApi();
     const localApi = new LocalApi(appDataDirPath, state.max_parallelism ?? 2);
     const userApi = new UserApi();
+    const threemfApi = new ThreemfApi();
 
     // This should probably happen on the rust side
     // TODO: Create routine to delete unused blobs
@@ -120,6 +123,7 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(ISlicerApi, slicerApi);
     container.addSingleton(ILocalApi, localApi);
     container.addSingleton(IUserApi, userApi);
+    container.addSingleton(IThreemfApi, threemfApi);
 
     try 
     {

@@ -44,6 +44,9 @@
     import { IDownloadApi } from "$lib/api/shared/download_api";
     import Download from "@lucide/svelte/icons/download";
     import { toast } from "svelte-sonner";
+    import { untrack } from "svelte";
+    import { IThreemfApi } from "$lib/api/shared/threemf_api";
+    import { FileType } from "$lib/api/shared/blob_api";
     
     interface Function {
         (): void;
@@ -64,6 +67,42 @@
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
     const slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
     const downloadApi = getContainer().optional<IDownloadApi>(IDownloadApi);
+    const threemfApi = getContainer().optional<IThreemfApi>(IThreemfApi);
+
+    let nozzle_diameter = $state<number | null>(null);
+    let layer_height = $state<number | null>(null);
+    let material_type = $state<string | null>(null);
+    let supports_enabled = $state<boolean | null>(null);
+
+    $effect(() => {
+        let current_model = $state.snapshot(model);
+
+        untrack(async () => {
+            nozzle_diameter = null;
+            layer_height = null;
+            material_type = null;
+            supports_enabled = null;
+
+            if (!threemfApi) {
+                return;
+            }
+
+            if (model.blob.filetype != FileType.THREEMF) {
+                return;
+            }
+
+            let metadata = await threemfApi.getThreemfMetadata(current_model);
+
+            if (!metadata) {
+                return;
+            }
+
+            nozzle_diameter = metadata.nozzle_diameter;
+            layer_height = metadata.layer_height;
+            material_type = metadata.material_type;
+            supports_enabled = metadata.supports_enabled;
+        });
+    })
 
     const save_model_debounced = debounce(async (edited_model: Model) => {
         console.log("Saving model");
@@ -285,9 +324,21 @@
                 <div class="grid grid-cols-2 text-sm">
                     <div class="text-left space-y-1">
                         <div>Date added</div>
-                        <date>Date last modified</date>
+                        <div>Date last modified</div>
                         <div>Size</div>
                         <div>Group</div>
+                        {#if nozzle_diameter !== null}
+                            <div>Nozzle diameter</div>
+                        {/if}
+                        {#if layer_height !== null}
+                            <div>Layer height</div>
+                        {/if}
+                        {#if supports_enabled !== null}
+                            <div>Supports enabled</div>
+                        {/if}
+                        {#if material_type !== null}
+                            <div>Material type</div>
+                        {/if}
                     </div>
                     <div class="text-right space-y-1">
                         <div>{model.added.toLocaleDateString()}</div>
@@ -297,6 +348,18 @@
                             <a href="/group/{group.id}" class="text-primary hover:underline block whitespace-nowrap text-ellipsis overflow-x-hidden">{group.name}</a>
                         {:else}
                             <div>None</div>
+                        {/if}
+                        {#if nozzle_diameter !== null}
+                            <div>{nozzle_diameter} mm</div>
+                        {/if}
+                        {#if layer_height !== null}
+                            <div>{layer_height} mm</div>
+                        {/if}
+                        {#if supports_enabled !== null}
+                            <div>{supports_enabled ? "Yes" : "No"}</div>
+                        {/if}
+                        {#if material_type !== null}
+                            <div>{material_type}</div>
                         {/if}
                     </div>
                 </div>

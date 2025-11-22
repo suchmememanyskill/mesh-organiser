@@ -10,6 +10,8 @@ use base64::prelude::*;
 use db::{
     label_db, model::{ModelFlags, Resource, ResourceFlags, User}, model_db
 };
+use service::threemf_service;
+use service::ThreemfMetadata;
 use error::ApplicationError;
 use serde::Serialize;
 use service::{
@@ -143,6 +145,18 @@ async fn open_in_folder(
     service::open_folder_in_explorer(&temp_dir);
 
     Ok(())
+}
+
+#[tauri::command]
+async fn get_theemf_metadata(
+    model_id: i64,
+    state: State<'_, TauriAppState>,
+) -> Result<ThreemfMetadata, ApplicationError> {
+    let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), vec![model_id]).await?;
+
+    let metadata = threemf_service::extract_metadata(&model[0], &state.app_state).await?;
+
+    Ok(metadata)
 }
 
 
@@ -593,6 +607,7 @@ pub fn run() {
             api::get_model_count,
             api::get_groups_for_resource,
             api::get_model_disk_space_usage,
+            get_theemf_metadata,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
