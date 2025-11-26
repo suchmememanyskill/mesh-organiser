@@ -1,3 +1,4 @@
+use axum::response::IntoResponse;
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 use thiserror::Error;
 use tokio::task;
@@ -57,5 +58,11 @@ impl Serialize for ApplicationError {
             _ => {}
         }
         state.end()
+    }
+}
+
+impl IntoResponse for ApplicationError {
+    fn into_response(self) -> axum::response::Response {
+        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, self).into_response()
     }
 }
