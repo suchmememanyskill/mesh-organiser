@@ -1,6 +1,6 @@
 use std::{env, path::PathBuf, sync::{Arc, Mutex}};
 
-use axum::{Router, extract::Request, http::StatusCode, middleware::{self, Next}, response::Response};
+use axum::{Router, extract::{DefaultBodyLimit, Request}, http::StatusCode, middleware::{self, Next}, response::Response};
 use axum_login::{
     login_required,
     tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
@@ -16,7 +16,7 @@ use tower_sessions::{cookie::Key, session};
 use tower_sessions_sqlx_store::SqliteStore;
 
 use crate::{
-    controller::{auth, blob}, user::{AuthSession, Backend}, web_app_state::WebAppState
+    controller::{auth, blob, model}, user::{AuthSession, Backend}, web_app_state::WebAppState
 };
 
 pub struct App {
@@ -150,10 +150,12 @@ impl App {
         let app = Router::new()
             .merge(auth::router())
             .merge(blob::router())
+            .merge(model::router())
             .with_state(self.app_state)
             .layer(middleware::from_fn(update_session_middleware))
             .layer(MessagesManagerLayer)
             .layer(auth_layer)
+            .layer(DefaultBodyLimit::disable())
             .fallback_service(serve_dir);
 
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();

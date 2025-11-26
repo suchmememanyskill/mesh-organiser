@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = { version = "0", features = ["json"] }
-tokio = { version = "1", features = ["rt-multi-thread", "signal"] }
+axum = { version = "0", features = ["json", "multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "signal", "process"] }
 tokio-util = { version = "0", features = ["io"] }
 axum-login = "0"
 password-auth = "1"
