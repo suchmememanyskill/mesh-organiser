@@ -1,47 +1,46 @@
-use crate::{user::{AuthSession, Backend}, web_app_state::WebAppState};
+use crate::{
+    user::{AuthSession, Backend},
+    web_app_state::WebAppState,
+};
+use axum::extract::Path;
+use axum::extract::{Multipart, State};
+use axum::{Json, response::Response};
 use axum::{
-    extract::Query,
+    Router,
     http::StatusCode,
-    response::{Html, IntoResponse, Redirect},
-    routing::{get, post, put, delete},
-    Form, Router,
+    response::IntoResponse,
+    routing::{delete, get, post, put},
 };
 use axum_login::login_required;
-use crate::user::{Credentials, PasswordCredentials, TokenCredentials};
-use axum::extract::{Multipart, State};
+use db::model::ModelFlags;
 use db::model_db;
+use serde::Deserialize;
 use service::{cleanse_evil_from_name, import_service, import_state::ImportState};
+use std::path::PathBuf;
+use std::str::FromStr;
 use time::OffsetDateTime;
 use tokio::fs;
-use axum::{Json, response::Response};
-use db::model::ModelFlags;
-use serde::Deserialize;
-use std::str::FromStr;
-use axum::extract::Path;
-use std::path::PathBuf;
 
-use service::export_service;
+use crate::error::ApplicationError;
 use db::blob_db;
 use db::model_db::{ModelFilterOptions, ModelOrderBy};
-use crate::error::ApplicationError;
 use serde::Serialize;
-
+use service::export_service;
 
 use crate::web_thumbnail_service;
 
 pub fn router() -> Router<WebAppState> {
-    Router::new()
-        .nest(
-            "/api/v1",
-            Router::new()
-                .route("/models", post(post::add_model))
-                .route("/models", get(get::get_models))
-                .route("/models/count", get(get::get_model_count))
-                .route("/models/disk_usage", get(get::get_model_disk_space_usage))
-                .route("/models/{model_id}", put(put::edit_model))
-                .route("/models/{model_id}", delete(delete::delete_model))
-                .route_layer(login_required!(Backend))
-        )
+    Router::new().nest(
+        "/api/v1",
+        Router::new()
+            .route("/models", post(post::add_model))
+            .route("/models", get(get::get_models))
+            .route("/models/count", get(get::get_model_count))
+            .route("/models/disk_usage", get(get::get_model_disk_space_usage))
+            .route("/models/{model_id}", put(put::edit_model))
+            .route("/models/{model_id}", delete(delete::delete_model))
+            .route_layer(login_required!(Backend)),
+    )
 }
 
 mod get {
@@ -61,20 +60,27 @@ mod get {
 
     pub async fn get_models(
         auth_session: AuthSession,
-        State(app_state) : State<WebAppState>,
+        State(app_state): State<WebAppState>,
         Json(params): Json<GetModelParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let models = model_db::get_models(&app_state.app_state.db, &user, ModelFilterOptions {
-            model_ids: params.model_ids,
-            group_ids: params.group_ids,
-            label_ids: params.label_ids,
-            order_by: params.order_by.map(|s| ModelOrderBy::from_str(&s).unwrap_or(ModelOrderBy::AddedDesc)),
-            model_flags: params.model_flags,
-            text_search: params.text_search,
-            page : params.page,
-            page_size : params.page_size,
-        }).await?;
+        let models = model_db::get_models(
+            &app_state.app_state.db,
+            &user,
+            ModelFilterOptions {
+                model_ids: params.model_ids,
+                group_ids: params.group_ids,
+                label_ids: params.label_ids,
+                order_by: params
+                    .order_by
+                    .map(|s| ModelOrderBy::from_str(&s).unwrap_or(ModelOrderBy::AddedDesc)),
+                model_flags: params.model_flags,
+                text_search: params.text_search,
+                page: params.page,
+                page_size: params.page_size,
+            },
+        )
+        .await?;
 
         Ok(Json(models.items).into_response())
     }
@@ -91,7 +97,7 @@ mod get {
 
     pub async fn get_model_count(
         auth_session: AuthSession,
-        State(app_state) : State<WebAppState>,
+        State(app_state): State<WebAppState>,
         Json(params): Json<GetModelCountParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
@@ -108,7 +114,7 @@ mod get {
 
     pub async fn get_model_disk_space_usage(
         auth_session: AuthSession,
-        State(app_state) : State<WebAppState>,
+        State(app_state): State<WebAppState>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
         let data = model_db::get_size_of_models(&app_state.app_state.db, &user).await?;
@@ -117,7 +123,8 @@ mod get {
         Ok(Json(GetModelDiskSpaceUsageResponse {
             size_uncompressed: data.total_size as u64,
             size_compressed: local,
-        }).into_response())
+        })
+        .into_response())
     }
 }
 
@@ -135,7 +142,7 @@ mod put {
     pub async fn edit_model(
         auth_session: AuthSession,
         Path(model_id): Path<i64>,
-        State(app_state) : State<WebAppState>,
+        State(app_state): State<WebAppState>,
         Json(params): Json<PutModelParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
@@ -161,10 +168,11 @@ mod delete {
     pub async fn delete_model(
         auth_session: AuthSession,
         Path(model_id): Path<i64>,
-        State(app_state) : State<WebAppState>,
+        State(app_state): State<WebAppState>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let model = model_db::get_models_via_ids(&app_state.app_state.db, &user, vec![model_id]).await?;
+        let model =
+            model_db::get_models_via_ids(&app_state.app_state.db, &user, vec![model_id]).await?;
 
         if model.len() != 1 {
             return Err(ApplicationError::InternalError(String::from(
@@ -174,13 +182,13 @@ mod delete {
 
         let model = &model[0];
 
-        model_db::delete_model(&app_state.app_state.db, &user, model_id)
-            .await?;
+        model_db::delete_model(&app_state.app_state.db, &user, model_id).await?;
 
         if blob_db::get_blob_model_usage_count(&app_state.app_state.db, model.blob.id).await? <= 0 {
-            let model_path =
-                PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
-            let image_path = PathBuf::from(app_state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
+            let model_path = PathBuf::from(app_state.get_model_dir())
+                .join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
+            let image_path =
+                PathBuf::from(app_state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
 
             if model_path.exists() {
                 std::fs::remove_file(model_path)?;
@@ -191,7 +199,7 @@ mod delete {
             }
 
             blob_db::delete_blob(&app_state.app_state.db, model.blob.id).await?;
-        }       
+        }
 
         Ok(StatusCode::OK.into_response())
     }
@@ -202,13 +210,13 @@ mod post {
 
     pub async fn add_model(
         auth_session: AuthSession,
-        State(app_state) : State<WebAppState>,
-        mut multipart: Multipart
+        State(app_state): State<WebAppState>,
+        mut multipart: Multipart,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
         let mut paths = vec![];
         let config = app_state.get_configuration();
-        
+
         let temp_dir = std::env::temp_dir().join(format!(
             "meshorganiser_import_action_{}",
             OffsetDateTime::now_utc().unix_timestamp()
@@ -219,7 +227,7 @@ mod post {
         while let Some(field) = multipart.next_field().await.unwrap_or(None) {
             let file_name = match field.file_name() {
                 Some(name) => name.to_string(),
-                None => continue
+                None => continue,
             };
 
             let data = match field.bytes().await {
@@ -244,15 +252,21 @@ mod post {
         }
 
         let mut model_ids: Vec<i64> = vec![];
-        
+
         for path in paths {
             let mut import_state = ImportState::new(None, false, true, user.clone());
-            import_state = import_service::import_path(&path.to_string_lossy().to_string(), &app_state.app_state, import_state).await?;
+            import_state = import_service::import_path(
+                &path.to_string_lossy().to_string(),
+                &app_state.app_state,
+                import_state,
+            )
+            .await?;
 
             model_ids.extend(&import_state.imported_models[0].model_ids);
         }
 
-        let models = model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids.clone()).await?;
+        let models =
+            model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids.clone()).await?;
 
         web_thumbnail_service::generate_thumbnails(&models, &app_state, false).await?;
 

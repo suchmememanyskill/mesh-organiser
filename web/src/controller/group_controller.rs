@@ -1,35 +1,37 @@
+use crate::error::ApplicationError;
+use crate::user::Backend;
 use crate::{user::AuthSession, web_app_state::WebAppState};
+use axum::extract::Path;
 use axum::{
+    Json, Router,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
-    Json, Router,
 };
 use axum_login::login_required;
-use crate::user::Backend;
-use axum::extract::Path;
 use db::group_db::{GroupFilterOptions, GroupOrderBy};
-use db::model::{ModelGroup, ModelGroupMeta};
+use db::model::ModelGroupMeta;
 use db::{group_db, random_hex_32, time_now};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use crate::error::ApplicationError;
 
 pub fn router() -> Router<WebAppState> {
-    Router::new()
-        .nest(
-            "/api/v1",
-            Router::new()
-                .route("/groups", get(get::get_groups))
-                .route("/groups/count", get(get::get_group_count))
-                .route("/groups", post(post::add_group))
-                .route("/groups/{group_id}", put(put::edit_group))
-                .route("/groups/{group_id}", delete(delete::delete_group))
-                .route("/groups/{group_id}/models", post(post::add_models_to_group))
-                .route("/groups/{group_id}/models", delete(delete::remove_models_from_group))
-                .route_layer(login_required!(Backend))
-        )
+    Router::new().nest(
+        "/api/v1",
+        Router::new()
+            .route("/groups", get(get::get_groups))
+            .route("/groups/count", get(get::get_group_count))
+            .route("/groups", post(post::add_group))
+            .route("/groups/{group_id}", put(put::edit_group))
+            .route("/groups/{group_id}", delete(delete::delete_group))
+            .route("/groups/{group_id}/models", post(post::add_models_to_group))
+            .route(
+                "/groups/{group_id}/models",
+                delete(delete::remove_models_from_group),
+            )
+            .route_layer(login_required!(Backend)),
+    )
 }
 
 mod get {
@@ -53,16 +55,23 @@ mod get {
         Json(params): Json<GetGroupParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let groups = group_db::get_groups(&app_state.app_state.db, &user, GroupFilterOptions {
-            model_ids: params.model_ids,
-            group_ids: params.group_ids,
-            label_ids: params.label_ids,
-            order_by: params.order_by.map(|s| GroupOrderBy::from_str(&s).unwrap_or(GroupOrderBy::NameAsc)),
-            text_search: params.text_search,
-            page: params.page,
-            page_size: params.page_size,
-            include_ungrouped_models: params.include_ungrouped_models.unwrap_or(false),
-        }).await?;
+        let groups = group_db::get_groups(
+            &app_state.app_state.db,
+            &user,
+            GroupFilterOptions {
+                model_ids: params.model_ids,
+                group_ids: params.group_ids,
+                label_ids: params.label_ids,
+                order_by: params
+                    .order_by
+                    .map(|s| GroupOrderBy::from_str(&s).unwrap_or(GroupOrderBy::NameAsc)),
+                text_search: params.text_search,
+                page: params.page,
+                page_size: params.page_size,
+                include_ungrouped_models: params.include_ungrouped_models.unwrap_or(false),
+            },
+        )
+        .await?;
 
         Ok(Json(groups.items).into_response())
     }
@@ -87,7 +96,8 @@ mod get {
             &app_state.app_state.db,
             &user,
             params.include_ungrouped_models.unwrap_or(false),
-        ).await?;
+        )
+        .await?;
 
         Ok(Json(GetGroupCountResponse { count }).into_response())
     }
@@ -114,7 +124,8 @@ mod put {
             group_id,
             &params.group_name,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -152,7 +163,8 @@ mod delete {
             None,
             params.model_ids,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -172,12 +184,9 @@ mod post {
         Json(params): Json<PostGroupParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let id = group_db::add_empty_group(
-            &app_state.app_state.db,
-            &user,
-            &params.group_name,
-            None,
-        ).await?;
+        let id =
+            group_db::add_empty_group(&app_state.app_state.db, &user, &params.group_name, None)
+                .await?;
 
         let group_meta = ModelGroupMeta {
             id,
@@ -209,7 +218,8 @@ mod post {
             Some(group_id),
             params.model_ids,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }

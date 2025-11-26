@@ -1,7 +1,5 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}};
+use std::path::PathBuf;
 
-use db::model::User;
-use serde::Serialize;
 use service::{AppState, Configuration};
 pub struct WebAppState {
     pub app_state: AppState,

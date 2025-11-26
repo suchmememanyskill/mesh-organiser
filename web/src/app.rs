@@ -1,22 +1,38 @@
-use std::{env, path::PathBuf, sync::{Arc, Mutex}};
+use std::{
+    env,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
-use axum::{Router, extract::{DefaultBodyLimit, Request}, http::StatusCode, middleware::{self, Next}, response::Response};
+use axum::{
+    Router,
+    extract::{DefaultBodyLimit, Request},
+    middleware::{self, Next},
+    response::Response,
+};
 use axum_login::{
-    login_required,
-    tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
+    tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
 };
 use axum_messages::MessagesManagerLayer;
-use db::{db_context::{self, DbContext}, group_db, model::User, user_db};
+use db::{
+    db_context::{self, DbContext},
+    group_db, user_db,
+};
 use service::{AppState, StoredConfiguration, stored_to_configuration};
 use time::{Duration, OffsetDateTime};
 use tokio::{fs, signal, task::AbortHandle};
 use tower_http::services::ServeDir;
-use tower_sessions::{cookie::Key, session};
+use tower_sessions::cookie::Key;
 use tower_sessions_sqlx_store::SqliteStore;
 
 use crate::{
-    controller::{auth_controller, blob_controller, group_controller, label_controller, model_controller, resource_controller}, user::{AuthSession, Backend}, web_app_state::WebAppState
+    controller::{
+        auth_controller, blob_controller, group_controller, label_controller, model_controller,
+        resource_controller,
+    },
+    user::{AuthSession, Backend},
+    web_app_state::WebAppState,
 };
 
 pub struct App {
@@ -36,29 +52,38 @@ async fn update_session_middleware(
     if auth_session.user.is_some() {
         let expiry_date = auth_session.session.expiry_date();
         let now = OffsetDateTime::now_utc();
-        let difference =  expiry_date - now;
+        let difference = expiry_date - now;
 
         if difference < Duration::days(5) {
-            auth_session.session.set_expiry(Some(Expiry::OnInactivity(Duration::days(7))));
+            auth_session
+                .session
+                .set_expiry(Some(Expiry::OnInactivity(Duration::days(7))));
         }
     }
-    
+
     next.run(request).await
 }
 
 impl App {
     pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let port = env::var("SERVER_PORT").unwrap_or("3000".into()).parse::<u16>().expect("SERVER_PORT must be a valid u16");
+        let port = env::var("SERVER_PORT")
+            .unwrap_or("3000".into())
+            .parse::<u16>()
+            .expect("SERVER_PORT must be a valid u16");
 
-        let config_path = env::var("APP_CONFIG_PATH").expect(&expected_env_error_msg("APP_CONFIG_PATH"));
+        let config_path =
+            env::var("APP_CONFIG_PATH").expect(&expected_env_error_msg("APP_CONFIG_PATH"));
         let config_path = PathBuf::from(config_path);
 
         if !config_path.exists() {
             panic!("APP_CONFIG_PATH does not exist on disk");
         }
 
-        let json = fs::read_to_string(&config_path).await.expect("Failed to read configuration");
-        let configuration: StoredConfiguration = serde_json::from_str(&json).expect("Failed to parse configuration");
+        let json = fs::read_to_string(&config_path)
+            .await
+            .expect("Failed to read configuration");
+        let configuration: StoredConfiguration =
+            serde_json::from_str(&json).expect("Failed to parse configuration");
         let mut configuration = stored_to_configuration(configuration);
 
         if configuration.data_path.is_empty() {
@@ -80,7 +105,7 @@ impl App {
                 app_data_path: data_dir.to_str().unwrap().to_string(),
                 import_mutex: Arc::new(tokio::sync::Mutex::new(())),
             },
-            port: port
+            port: port,
         };
 
         let session_store = SqliteStore::new(db_clone);
@@ -91,7 +116,11 @@ impl App {
             Err(_) => {
                 let key = Key::generate();
                 let key_bytes = key.master();
-                key_bytes.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join("")
+                key_bytes
+                    .iter()
+                    .map(|b| format!("{:02X}", b))
+                    .collect::<Vec<String>>()
+                    .join("")
             }
         };
 
@@ -162,7 +191,9 @@ impl App {
             .layer(DefaultBodyLimit::disable())
             .fallback_service(serve_dir);
 
-        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
+        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+            .await
+            .unwrap();
 
         // Ensure we use a shutdown signal to abort the deletion task.
         axum::serve(listener, app.into_make_service())

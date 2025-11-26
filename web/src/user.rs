@@ -40,7 +40,7 @@ impl AuthUser {
             last_sync: None,
             sync_token: None,
             sync_url: None,
-            created_at: String::new()
+            created_at: String::new(),
         }
     }
 }
@@ -109,8 +109,8 @@ impl AuthnBackend for Backend {
     ) -> Result<Option<Self::User>, Self::Error> {
         match creds {
             Credentials::Password(password_credentials) => {
-                let user = user_db::get_user_by_email(&self.db, &password_credentials.email)
-                    .await?;
+                let user =
+                    user_db::get_user_by_email(&self.db, &password_credentials.email).await?;
 
                 let user = task::spawn_blocking(|| {
                     user.filter(|user| {
@@ -123,16 +123,16 @@ impl AuthnBackend for Backend {
                     Some(user) => Ok(Some(Self::convert_user(user))),
                     None => Ok(None),
                 }
-            },
+            }
             Credentials::Token(token_credentials) => {
-                let user = user_db::get_user_by_sync_token(&self.db, &token_credentials.token)
-                    .await?;
+                let user =
+                    user_db::get_user_by_sync_token(&self.db, &token_credentials.token).await?;
 
                 match user {
                     Some(user) => Ok(Some(Self::convert_user(user))),
                     None => Ok(None),
                 }
-            },
+            }
         }
     }
 

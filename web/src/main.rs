@@ -5,11 +5,11 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 
 use crate::{app::App, error::ApplicationError};
 
-mod user;
-mod error;
-mod controller;
-mod web_app_state;
 mod app;
+mod controller;
+mod error;
+mod user;
+mod web_app_state;
 mod web_thumbnail_service;
 
 fn remove_temp_paths() -> Result<(), ApplicationError> {

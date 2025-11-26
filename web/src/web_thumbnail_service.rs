@@ -8,7 +8,7 @@ use crate::{error::ApplicationError, web_app_state::WebAppState};
 pub async fn generate_thumbnails(
     models: &[Model],
     app_state: &WebAppState,
-    overwrite: bool
+    overwrite: bool,
 ) -> Result<(), ApplicationError> {
     let image_path = app_state.get_image_dir();
     let model_path = app_state.get_model_dir();
@@ -45,8 +45,7 @@ pub async fn generate_thumbnails(
     let mut active = 0;
     let total = paths.len() / 100 + 1;
 
-    for (i, chunk) in paths.chunks(100).enumerate()
-    {
+    for (i, chunk) in paths.chunks(100).enumerate() {
         let mut command = Command::new(&mesh_thumbnail_executable_path);
         command
             .arg("--rotatey")
@@ -93,7 +92,7 @@ pub async fn generate_thumbnails(
                     Err(err) => panic!("{err}"),
                     Ok(_) => {
                         active -= 1;
-                    },
+                    }
                 }
             }
         }

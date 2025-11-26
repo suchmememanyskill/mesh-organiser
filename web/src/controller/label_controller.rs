@@ -1,39 +1,50 @@
+use crate::error::ApplicationError;
+use crate::user::Backend;
 use crate::{user::AuthSession, web_app_state::WebAppState};
+use axum::extract::Path;
 use axum::{
+    Json, Router,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
-    Json, Router,
 };
 use axum_login::login_required;
-use crate::user::Backend;
-use axum::extract::Path;
-use db::{label_db, label_keyword_db};
-use db::model::{Label, LabelKeyword, LabelMeta};
+use db::model::LabelMeta;
 use db::random_hex_32;
-use serde::{Deserialize, Serialize};
-use crate::error::ApplicationError;
+use db::{label_db, label_keyword_db};
+use serde::Deserialize;
 
 pub fn router() -> Router<WebAppState> {
-    Router::new()
-        .nest(
-            "/api/v1",
-            Router::new()
-                .route("/labels", get(get::get_labels))
-                .route("/labels", post(post::add_label))
-                .route("/labels/{label_id}", put(put::edit_label))
-                .route("/labels/{label_id}", delete(delete::delete_label))
-                .route("/labels/{label_id}/models", post(post::set_label_on_models))
-                .route("/labels/{label_id}/models", delete(delete::remove_label_from_models))
-                .route("/labels/{label_id}/childs", post(post::add_childs_to_label))
-                .route("/labels/{label_id}/childs", put(put::set_childs_on_label))
-                .route("/labels/{label_id}/childs", delete(delete::remove_childs_from_label))
-                .route("/labels/{label_id}/keywords", get(get::get_keywords_for_label))
-                .route("/labels/{label_id}/keywords", put(put::set_keywords_on_label))
-                .route("/models/{model_id}/labels", put(put::set_labels_on_model))
-                .route_layer(login_required!(Backend))
-        )
+    Router::new().nest(
+        "/api/v1",
+        Router::new()
+            .route("/labels", get(get::get_labels))
+            .route("/labels", post(post::add_label))
+            .route("/labels/{label_id}", put(put::edit_label))
+            .route("/labels/{label_id}", delete(delete::delete_label))
+            .route("/labels/{label_id}/models", post(post::set_label_on_models))
+            .route(
+                "/labels/{label_id}/models",
+                delete(delete::remove_label_from_models),
+            )
+            .route("/labels/{label_id}/childs", post(post::add_childs_to_label))
+            .route("/labels/{label_id}/childs", put(put::set_childs_on_label))
+            .route(
+                "/labels/{label_id}/childs",
+                delete(delete::remove_childs_from_label),
+            )
+            .route(
+                "/labels/{label_id}/keywords",
+                get(get::get_keywords_for_label),
+            )
+            .route(
+                "/labels/{label_id}/keywords",
+                put(put::set_keywords_on_label),
+            )
+            .route("/models/{model_id}/labels", put(put::set_labels_on_model))
+            .route_layer(login_required!(Backend)),
+    )
 }
 
 mod get {
@@ -54,7 +65,8 @@ mod get {
             &app_state.app_state.db,
             &user,
             params.include_ungrouped_models.unwrap_or(false),
-        ).await?;
+        )
+        .await?;
 
         Ok(Json(labels).into_response())
     }
@@ -65,12 +77,10 @@ mod get {
         State(app_state): State<WebAppState>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let keywords = label_keyword_db::get_keywords_for_label(
-            &app_state.app_state.db,
-            &user,
-            label_id,
-        ).await
-        .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
+        let keywords =
+            label_keyword_db::get_keywords_for_label(&app_state.app_state.db, &user, label_id)
+                .await
+                .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
         Ok(Json(keywords).into_response())
     }
@@ -97,7 +107,8 @@ mod post {
             &params.label_name,
             params.label_color,
             None,
-        ).await?;
+        )
+        .await?;
 
         let label_meta = LabelMeta {
             id,
@@ -127,14 +138,16 @@ mod post {
             &[label_id],
             &params.model_ids,
             None,
-        ).await?;
+        )
+        .await?;
         label_db::add_labels_on_models(
             &app_state.app_state.db,
             &user,
             &[label_id],
             &params.model_ids,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -157,7 +170,8 @@ mod post {
             parent_label_id,
             params.child_label_ids,
             None,
-        ).await
+        )
+        .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
         Ok(StatusCode::OK.into_response())
@@ -187,7 +201,8 @@ mod put {
             &params.label_name,
             params.label_color,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -204,19 +219,16 @@ mod put {
         Json(params): Json<SetLabelsOnModelParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        label_db::remove_all_labels_from_models(
-            &app_state.app_state.db,
-            &user,
-            &[model_id],
-            None,
-        ).await?;
+        label_db::remove_all_labels_from_models(&app_state.app_state.db, &user, &[model_id], None)
+            .await?;
         label_db::add_labels_on_models(
             &app_state.app_state.db,
             &user,
             &params.label_ids,
             &[model_id],
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -238,7 +250,8 @@ mod put {
             &user,
             parent_label_id,
             None,
-        ).await
+        )
+        .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
         if !params.child_label_ids.is_empty() {
@@ -248,7 +261,8 @@ mod put {
                 parent_label_id,
                 params.child_label_ids,
                 None,
-            ).await
+            )
+            .await
             .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
         }
 
@@ -273,7 +287,8 @@ mod put {
             label_id,
             params.keywords,
             None,
-        ).await
+        )
+        .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
         Ok(StatusCode::OK.into_response())
@@ -312,7 +327,8 @@ mod delete {
             &[label_id],
             &params.model_ids,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -335,7 +351,8 @@ mod delete {
             parent_label_id,
             params.child_label_ids,
             None,
-        ).await
+        )
+        .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
         Ok(StatusCode::OK.into_response())

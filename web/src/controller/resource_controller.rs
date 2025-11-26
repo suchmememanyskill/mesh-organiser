@@ -1,33 +1,38 @@
+use crate::error::ApplicationError;
+use crate::user::Backend;
 use crate::{user::AuthSession, web_app_state::WebAppState};
+use axum::extract::Path;
 use axum::{
+    Json, Router,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
-    Json, Router,
 };
 use axum_login::login_required;
-use crate::user::Backend;
-use axum::extract::Path;
+use db::model::{ResourceFlags, ResourceMeta};
 use db::{random_hex_32, resource_db, time_now};
-use db::model::{ModelGroup, ResourceFlags, ResourceMeta};
+use serde::Deserialize;
 use service::resource_service;
-use serde::{Deserialize, Serialize};
-use crate::error::ApplicationError;
 
 pub fn router() -> Router<WebAppState> {
-    Router::new()
-        .nest(
-            "/api/v1",
-            Router::new()
-                .route("/resources", get(get::get_resources))
-                .route("/resources", post(post::add_resource))
-                .route("/resources/{resource_id}", put(put::edit_resource))
-                .route("/resources/{resource_id}", delete(delete::delete_resource))
-                .route("/resources/{resource_id}/groups", get(get::get_groups_for_resource))
-                .route("/groups/{group_id}/resource", put(put::set_resource_on_group))
-                .route_layer(login_required!(Backend))
-        )
+    Router::new().nest(
+        "/api/v1",
+        Router::new()
+            .route("/resources", get(get::get_resources))
+            .route("/resources", post(post::add_resource))
+            .route("/resources/{resource_id}", put(put::edit_resource))
+            .route("/resources/{resource_id}", delete(delete::delete_resource))
+            .route(
+                "/resources/{resource_id}/groups",
+                get(get::get_groups_for_resource),
+            )
+            .route(
+                "/groups/{group_id}/resource",
+                put(put::set_resource_on_group),
+            )
+            .route_layer(login_required!(Backend)),
+    )
 }
 
 mod get {
@@ -49,11 +54,9 @@ mod get {
         State(app_state): State<WebAppState>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let groups = resource_db::get_groups_for_resource(
-            &app_state.app_state.db,
-            &user,
-            resource_id,
-        ).await?;
+        let groups =
+            resource_db::get_groups_for_resource(&app_state.app_state.db, &user, resource_id)
+                .await?;
 
         Ok(Json(groups).into_response())
     }
@@ -73,12 +76,9 @@ mod post {
         Json(params): Json<PostResourceParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let id = resource_db::add_resource(
-            &app_state.app_state.db,
-            &user,
-            &params.resource_name,
-            None,
-        ).await?;
+        let id =
+            resource_db::add_resource(&app_state.app_state.db, &user, &params.resource_name, None)
+                .await?;
 
         let resource_meta = ResourceMeta {
             id,
@@ -115,7 +115,8 @@ mod put {
             &params.resource_name,
             params.resource_flags,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -138,7 +139,8 @@ mod put {
             params.resource_id,
             group_id,
             None,
-        ).await?;
+        )
+        .await?;
 
         Ok(StatusCode::OK.into_response())
     }
@@ -153,11 +155,9 @@ mod delete {
         State(app_state): State<WebAppState>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let resource = resource_db::get_resource_meta_by_id(
-            &app_state.app_state.db,
-            &user,
-            resource_id,
-        ).await?;
+        let resource =
+            resource_db::get_resource_meta_by_id(&app_state.app_state.db, &user, resource_id)
+                .await?;
 
         if resource.is_none() {
             return Err(ApplicationError::InternalError(String::from(
