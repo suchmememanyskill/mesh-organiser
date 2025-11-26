@@ -484,7 +484,7 @@ where
     return Ok(id);
 }
 
-fn is_supported_extension(path: &PathBuf, configuration: &Configuration) -> bool {
+pub fn is_supported_extension(path: &PathBuf, configuration: &Configuration) -> bool {
     match path.extension() {
         Some(ext) => {
             let lowercase = ext.to_str().unwrap().to_lowercase();
