@@ -29,3 +29,12 @@ impl WebAppState {
         PathBuf::from(&self.app_state.app_data_path).join("signing.key")
     }
 }
+
+impl Clone for WebAppState {
+    fn clone(&self) -> Self {
+        WebAppState {
+            app_state: self.app_state.clone(),
+            port: self.port,
+        }
+    }
+}

@@ -16,7 +16,7 @@ use tower_sessions::{cookie::Key, session};
 use tower_sessions_sqlx_store::SqliteStore;
 
 use crate::{
-    controller::auth, user::{AuthSession, Backend}, web_app_state::WebAppState
+    controller::{auth, blob}, user::{AuthSession, Backend}, web_app_state::WebAppState
 };
 
 pub struct App {
@@ -144,19 +144,23 @@ impl App {
         let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
         let serve_dir = ServeDir::new("www");
+        let db = self.app_state.app_state.db.clone();
+        let port = self.app_state.port;
 
         let app = Router::new()
             .merge(auth::router())
-                        .layer(middleware::from_fn(update_session_middleware))
+            .merge(blob::router())
+            .with_state(self.app_state)
+            .layer(middleware::from_fn(update_session_middleware))
             .layer(MessagesManagerLayer)
             .layer(auth_layer)
             .fallback_service(serve_dir);
 
-        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.app_state.port)).await.unwrap();
+        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
 
         // Ensure we use a shutdown signal to abort the deletion task.
         axum::serve(listener, app.into_make_service())
-            .with_graceful_shutdown(shutdown_signal(deletion_task.abort_handle(), self.app_state.app_state.db.clone()))
+            .with_graceful_shutdown(shutdown_signal(deletion_task.abort_handle(), db))
             .await?;
 
         deletion_task.await??;

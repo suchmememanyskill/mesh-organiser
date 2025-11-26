@@ -29,6 +29,22 @@ impl std::fmt::Debug for AuthUser {
     }
 }
 
+impl AuthUser {
+    pub fn to_user(&self) -> User {
+        User {
+            id: self.id,
+            username: self.username.clone(),
+            email: self.email.clone(),
+            permissions: db::model::UserPermissions::from_bits_truncate(self.permissions as u32),
+            password_hash: String::new(),
+            last_sync: None,
+            sync_token: None,
+            sync_url: None,
+            created_at: String::new()
+        }
+    }
+}
+
 impl AxumAuthUser for AuthUser {
     type Id = i64;
 

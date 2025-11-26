@@ -1,4 +1,4 @@
-use crate::user::AuthSession;
+use crate::{user::AuthSession, web_app_state::WebAppState};
 use axum::{
     extract::Query,
     http::StatusCode,
@@ -8,7 +8,7 @@ use axum::{
 };
 use crate::user::{Credentials, PasswordCredentials, TokenCredentials};
 
-pub fn router() -> Router<()> {
+pub fn router() -> Router<WebAppState> {
     Router::new()
         .nest(
             "/api/v1",
