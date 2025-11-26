@@ -1,5 +1,6 @@
 use std::{env, path::PathBuf, sync::{Arc, Mutex}};
 
+use axum::{Router, extract::Request, http::StatusCode, middleware::{self, Next}, response::Response};
 use axum_login::{
     login_required,
     tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
@@ -8,13 +9,14 @@ use axum_login::{
 use axum_messages::MessagesManagerLayer;
 use db::{db_context::{self, DbContext}, model::User, user_db};
 use service::{AppState, StoredConfiguration, stored_to_configuration};
-use time::Duration;
+use time::{Duration, OffsetDateTime};
 use tokio::{fs, signal, task::AbortHandle};
+use tower_http::services::ServeDir;
 use tower_sessions::{cookie::Key, session};
 use tower_sessions_sqlx_store::SqliteStore;
 
 use crate::{
-    controller::auth, user::Backend, web_app_state::WebAppState
+    controller::auth, user::{AuthSession, Backend}, web_app_state::WebAppState
 };
 
 pub struct App {
@@ -24,6 +26,24 @@ pub struct App {
 
 fn expected_env_error_msg(var_name: &str) -> String {
     format!("Expected environment variable {} to be set", var_name)
+}
+
+async fn update_session_middleware(
+    auth_session: AuthSession,
+    request: Request,
+    next: Next,
+) -> Response {
+    if auth_session.user.is_some() {
+        let expiry_date = auth_session.session.expiry_date();
+        let now = OffsetDateTime::now_utc();
+        let difference =  expiry_date - now;
+
+        if difference < Duration::days(5) {
+            auth_session.session.set_expiry(Some(Expiry::OnInactivity(Duration::days(7))));
+        }
+    }
+    
+    next.run(request).await
 }
 
 impl App {
@@ -113,7 +133,7 @@ impl App {
 
         let session_layer = SessionManagerLayer::new(session_store)
             .with_secure(false)
-            .with_expiry(Expiry::OnInactivity(Duration::days(1)))
+            .with_expiry(Expiry::OnInactivity(Duration::days(7)))
             .with_signed(key);
 
         // Auth service.
@@ -123,9 +143,14 @@ impl App {
         let backend = Backend::new(self.app_state.app_state.db.clone());
         let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
-        let app = auth::router()
+        let serve_dir = ServeDir::new("www");
+
+        let app = Router::new()
+            .merge(auth::router())
+                        .layer(middleware::from_fn(update_session_middleware))
             .layer(MessagesManagerLayer)
-            .layer(auth_layer);
+            .layer(auth_layer)
+            .fallback_service(serve_dir);
 
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.app_state.port)).await.unwrap();
 
