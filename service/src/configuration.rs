@@ -8,16 +8,16 @@ use crate::slicer_service::Slicer;
 
 #[derive(Clone, Deserialize)]
 pub struct StoredConfiguration {
-    pub data_path: String,
-    pub prusa_deep_link: bool,
-    pub cura_deep_link: bool,
-    pub bambu_deep_link: bool,
-    pub orca_deep_link: bool,
-    pub open_slicer_on_remote_model_import: bool,
-    pub show_ungrouped_models_in_groups: bool,
+    pub data_path: Option<String>,
+    pub prusa_deep_link: Option<bool>,
+    pub cura_deep_link: Option<bool>,
+    pub bambu_deep_link: Option<bool>,
+    pub orca_deep_link: Option<bool>,
+    pub open_slicer_on_remote_model_import: Option<bool>,
+    pub show_ungrouped_models_in_groups: Option<bool>,
     pub slicer: Option<Slicer>,
-    pub focus_after_link_import: bool,
-    pub thumbnail_color: String,
+    pub focus_after_link_import: Option<bool>,
+    pub thumbnail_color: Option<String>,
     pub allow_importing_step: Option<bool>,
     pub size_option_models: Option<String>,
     pub size_option_groups: Option<String>,
@@ -100,16 +100,34 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
     let default = Configuration::default();
 
     Configuration {
-        data_path: configuration.data_path,
-        prusa_deep_link: configuration.prusa_deep_link,
-        cura_deep_link: configuration.cura_deep_link,
-        bambu_deep_link: configuration.bambu_deep_link,
-        orca_deep_link: configuration.orca_deep_link,
-        open_slicer_on_remote_model_import: configuration.open_slicer_on_remote_model_import,
-        show_ungrouped_models_in_groups: configuration.show_ungrouped_models_in_groups,
+        data_path: configuration
+            .data_path
+            .unwrap_or(default.data_path),
+        prusa_deep_link: configuration
+            .prusa_deep_link
+            .unwrap_or(default.prusa_deep_link),
+        cura_deep_link: configuration
+            .cura_deep_link
+            .unwrap_or(default.cura_deep_link),
+        bambu_deep_link: configuration
+            .bambu_deep_link
+            .unwrap_or(default.bambu_deep_link),
+        orca_deep_link: configuration
+            .orca_deep_link
+            .unwrap_or(default.orca_deep_link),
+        open_slicer_on_remote_model_import: configuration
+            .open_slicer_on_remote_model_import
+            .unwrap_or(default.open_slicer_on_remote_model_import),
+        show_ungrouped_models_in_groups: configuration
+            .show_ungrouped_models_in_groups
+            .unwrap_or(default.show_ungrouped_models_in_groups),
         slicer: configuration.slicer,
-        focus_after_link_import: configuration.focus_after_link_import,
-        thumbnail_color: configuration.thumbnail_color,
+        focus_after_link_import: configuration
+            .focus_after_link_import
+            .unwrap_or(default.focus_after_link_import),
+        thumbnail_color: configuration
+            .thumbnail_color
+            .unwrap_or(default.thumbnail_color),
         allow_importing_step: configuration
             .allow_importing_step
             .unwrap_or(default.allow_importing_step),

@@ -107,7 +107,9 @@ pub async fn extract_metadata(model : &Model, app_state: &AppState) -> Result<Th
     }
 
     let temp_dir = std::env::temp_dir().join("meshorganiser_metadata_action");
-    std::fs::create_dir(&temp_dir)?;
+    if !temp_dir.exists() {
+        std::fs::create_dir(&temp_dir)?;
+    }
 
     let theemf_path = export_service::get_path_from_model(&temp_dir, &model, app_state, true).await?;
     

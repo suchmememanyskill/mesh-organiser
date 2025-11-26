@@ -1,3 +1,4 @@
+use password_auth::generate_hash;
 use serde::{Deserialize, Serialize};
 use bitflags::bitflags;
 use sha2::{Digest, Sha256};
@@ -59,6 +60,8 @@ pub struct User {
     pub sync_token : Option<String>,
     pub last_sync : Option<String>,
     pub permissions : UserPermissions,
+    #[serde(skip_serializing)]
+    pub password_hash : String,
 }
 
 impl Clone for User {
@@ -71,6 +74,7 @@ impl Clone for User {
             sync_url: self.sync_url.clone(),
             sync_token: self.sync_token.clone(),
             last_sync: self.last_sync.clone(),
+            password_hash: self.password_hash.clone(),
             permissions: unsafe { UserPermissions::from_bits(self.permissions.bits()).unwrap_unchecked() },
         }
     }
@@ -86,15 +90,12 @@ impl Default for User {
             sync_url: None,
             sync_token: None,
             last_sync: None,
+            password_hash: "".into(),
             permissions: UserPermissions::empty(),
         }
     }
 }
 
 pub fn hash_password(password: &str) -> String {
-    let mut bytes = Vec::new();
-
-    bytes.extend(password.as_bytes());
-    bytes.extend("mesh-organiser".as_bytes());
-    return hex::encode(Sha256::digest(bytes));
+    generate_hash(password)
 }

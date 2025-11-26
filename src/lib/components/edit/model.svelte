@@ -47,6 +47,7 @@
     import { untrack } from "svelte";
     import { IThreemfApi } from "$lib/api/shared/threemf_api";
     import { FileType } from "$lib/api/shared/blob_api";
+    import PackageOpen from "@lucide/svelte/icons/package-open";
     
     interface Function {
         (): void;
@@ -315,7 +316,7 @@
                             </DropdownMenu.Item>
                             {#if model.blob.filetype == FileType.THREEMF && threemfApi}
                                 <DropdownMenu.Item onclick={extractThreemfModels}>
-                                    <ListCheck /> Extract 3MF models
+                                    <PackageOpen /> Extract models from 3MF
                                 </DropdownMenu.Item>
                             {/if}
                             <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
