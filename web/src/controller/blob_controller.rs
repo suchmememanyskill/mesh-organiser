@@ -18,6 +18,7 @@ pub fn router() -> Router<WebAppState> {
                 .route("/models/{model_id}/bytes", get(get::get_model_bytes))
                 .route("/blobs/{sha256}/bytes", get(get::get_blob_bytes))
                 .route_layer(login_required!(Backend))
+                .route("/blobs/{sha256}/thumb", get(get::get_blob_thumb))
         )
 }
 mod get {

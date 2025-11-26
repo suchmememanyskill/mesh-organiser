@@ -7,7 +7,7 @@ use axum_login::{
     AuthManagerLayerBuilder,
 };
 use axum_messages::MessagesManagerLayer;
-use db::{db_context::{self, DbContext}, model::User, user_db};
+use db::{db_context::{self, DbContext}, group_db, model::User, user_db};
 use service::{AppState, StoredConfiguration, stored_to_configuration};
 use time::{Duration, OffsetDateTime};
 use tokio::{fs, signal, task::AbortHandle};
@@ -16,7 +16,7 @@ use tower_sessions::{cookie::Key, session};
 use tower_sessions_sqlx_store::SqliteStore;
 
 use crate::{
-    controller::{auth, blob, model}, user::{AuthSession, Backend}, web_app_state::WebAppState
+    controller::{auth_controller, blob_controller, group_controller, label_controller, model_controller, resource_controller}, user::{AuthSession, Backend}, web_app_state::WebAppState
 };
 
 pub struct App {
@@ -96,6 +96,7 @@ impl App {
         };
 
         user_db::edit_user_password(&web_app_state.app_state.db, 1, &local_pass).await?;
+        group_db::delete_dead_groups(&web_app_state.app_state.db).await?;
 
         Ok(Self {
             app_state: web_app_state,
@@ -148,9 +149,12 @@ impl App {
         let port = self.app_state.port;
 
         let app = Router::new()
-            .merge(auth::router())
-            .merge(blob::router())
-            .merge(model::router())
+            .merge(auth_controller::router())
+            .merge(blob_controller::router())
+            .merge(model_controller::router())
+            .merge(group_controller::router())
+            .merge(label_controller::router())
+            .merge(resource_controller::router())
             .with_state(self.app_state)
             .layer(middleware::from_fn(update_session_middleware))
             .layer(MessagesManagerLayer)
