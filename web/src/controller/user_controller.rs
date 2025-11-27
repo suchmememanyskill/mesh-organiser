@@ -84,7 +84,7 @@ mod post {
             &app_state.app_state.db,
             &params.user_name,
             &params.user_email,
-            &hash_password(&params.user_password),
+            &params.user_password,
         ).await?;
 
         user_db::scramble_validity_token(&app_state.app_state.db, id).await?;

@@ -136,7 +136,14 @@
                             <Label for="username">Username</Label>
                             <Input id="username" class="col-span-2 h-8" bind:value={newUser.username} />
                         </div>
-                        <!-- Add other things for web specific edits later! -->
+                        <div class="grid grid-cols-3 items-center gap-4">
+                            <Label for="email">Email</Label>
+                            <Input id="email" class="col-span-2 h-8" type="email" bind:value={newUser.email} />
+                        </div>
+                        <div class="grid grid-cols-3 items-center gap-4">
+                            <Label for="password">Password</Label>
+                            <Input id="password" class="col-span-2 h-8" type="password" bind:value={password} />
+                        </div>
                     </div>
                     <Button class="mt-4" onclick={addUser}>Create user</Button>
                 </div>

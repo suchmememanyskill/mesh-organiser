@@ -1,7 +1,7 @@
 import { contain } from "three/src/extras/TextureUtils.js";
 import { getContainer, resetContainer } from "../dependency_injection";
 import { IServerRequestApi } from "../shared/server_request_api";
-import { IUserApi, IUserLoginApi, IUserLogoutApi } from "../shared/user_api";
+import { IAdminUserApi, IUserApi, IUserLoginApi, IUserLogoutApi } from "../shared/user_api";
 import { WebUserLoginApi } from "./login";
 import { ServerRequestApi } from "./request";
 import { WebUserApi } from "./user";
@@ -31,6 +31,7 @@ import { WebBrowserApi } from "./internal_browser_api";
 import { IInternalBrowserApi } from "../shared/internal_browser_api";
 import { WebThreemfApi } from "./threemf";
 import { IThreemfApi } from "../shared/threemf_api";
+import { WebUserAdminApi } from "./user_admin";
 
 export async function initWebApi() : Promise<void> {
     resetContainer();
@@ -73,6 +74,7 @@ export async function initWebApi() : Promise<void> {
     const downloadApi = new DefaultDownloadApi(blob);
     const internalBrowserApi = new WebBrowserApi();
     const threemf = new WebThreemfApi(request);
+    const userAdmin = new WebUserAdminApi(request);
 
     const config = await settings.getConfiguration();
     Object.assign(configuration, config);
@@ -92,4 +94,8 @@ export async function initWebApi() : Promise<void> {
     container.addSingleton(IDownloadApi, downloadApi);
     container.addSingleton(IInternalBrowserApi, internalBrowserApi);
     container.addSingleton(IThreemfApi, threemf);
+
+    if (currentUser.permissions.admin) {
+        container.addSingleton(IAdminUserApi, userAdmin);
+    }
 }

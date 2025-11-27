@@ -13,6 +13,7 @@
     import SparklesIcon from "@lucide/svelte/icons/sparkles";
     import { onMount } from "svelte";
     import Progress from "../ui/progress/progress.svelte";
+    import { IHostApi, isCurrentPlatformDesktop } from "$lib/api/shared/host_api";
 
     const sidebar = useSidebar();
     
@@ -20,11 +21,13 @@
     const logoutApi = getContainer().optional<IUserLogoutApi>(IUserLogoutApi);
     const switchUserApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
+    const hostApi = getContainer().optional<IHostApi>(IHostApi);
         
     let currentUser = $state<User|null>(null);
     let availableUsers = $state<User[]>([]);
     let filteredUsers = $derived(availableUsers.filter(x => x.id !== currentUser?.id));
     let diskUsage = $state<DiskUsageInfo|null>(null);
+    let isDesktop = $state<boolean>(false);
 
     onMount(async () => {
         currentUser = await userApi.getCurrentUser();
@@ -37,6 +40,10 @@
 
         if (diskUsageInfoApi) {
             diskUsage = await diskUsageInfoApi.getDiskUsageInfo();
+        }
+
+        if (hostApi) {
+            isDesktop = await isCurrentPlatformDesktop(hostApi);
         }
     });
 
@@ -95,7 +102,7 @@
                         >
                             <span class="truncate font-medium">{currentUser!.username}</span
                             >
-                            {#if !currentUser!.email.endsWith("noemail.com")}
+                            {#if !isDesktop || !currentUser!.email.endsWith("noemail.com")}
                                 <span class="truncate text-xs">{currentUser!.email}</span>
                             {:else if currentUser!.permissions.onlineAccount}
                                 <span class="truncate text-xs">Online Account</span>
