@@ -1,8 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createUserInstance, type IUserApi, type User } from "../shared/user_api";
+import { createUserInstance, IAdminUserApi, ISwitchUserApi, type IUserApi, type User } from "../shared/user_api";
 import { configuration } from "$lib/configuration.svelte";
 
-interface RawUser {
+export interface TauriRawUser {
     id: number;
     username: string;
     email: string;
@@ -13,38 +13,37 @@ interface RawUser {
     last_sync: string|null;
 }
 
-export class UserApi implements IUserApi {
+export function parseTauriRawUser(raw: TauriRawUser): User {
+    return createUserInstance(
+        raw.id,
+        raw.username,
+        raw.email,
+        raw.created_at,
+        raw.permissions,
+        raw.sync_url,
+        raw.sync_token,
+        raw.last_sync,
+    );
+}
+
+export class UserApi implements IUserApi, IAdminUserApi, ISwitchUserApi {
+    async isAuthenticated(): Promise<boolean> {
+        return true;
+    }
+
     async getCurrentUser(): Promise<User> {
-        let user = await invoke<RawUser>("get_current_user", {});
+        let user = await invoke<TauriRawUser>("get_current_user", {});
 
         user.permissions.push("Admin");
 
-        return createUserInstance(
-            user.id,
-            user.username,
-            user.email,
-            user.created_at,
-            user.permissions,
-            user.sync_url,
-            user.sync_token,
-            user.last_sync,
-        );
+        return parseTauriRawUser(user);
     }
 
     async getAvailableUsers(): Promise<User[]> {
-        let users = await invoke<RawUser[]>("get_users", {});
+        let users = await invoke<TauriRawUser[]>("get_users", {});
         console.log("get users", users);
 
-        return users.map(user => createUserInstance(
-            user.id,
-            user.username,
-            user.email,
-            user.created_at,
-            user.permissions,
-            user.sync_url,
-            user.sync_token,
-            user.last_sync,
-        ));
+        return users.map(user => parseTauriRawUser(user));
     }
 
     async getAllUsers(): Promise<User[]> {

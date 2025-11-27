@@ -35,7 +35,7 @@ import { LocalApi } from "./local";
 import { ISlicerApi } from "../shared/slicer_api";
 import { ILocalApi } from "../shared/local_api";
 import { UserApi } from "./user";
-import { IUserApi } from "../shared/user_api";
+import { IAdminUserApi, ISwitchUserApi, IUserApi } from "../shared/user_api";
 import { ThreemfApi } from "./threemf";
 import { IThreemfApi } from "../shared/threemf_api";
 
@@ -124,6 +124,8 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(ILocalApi, localApi);
     container.addSingleton(IUserApi, userApi);
     container.addSingleton(IThreemfApi, threemfApi);
+    container.addSingleton(ISwitchUserApi, userApi);
+    container.addSingleton(IAdminUserApi, userApi);
 
     try 
     {

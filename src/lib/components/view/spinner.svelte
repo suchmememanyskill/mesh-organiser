@@ -1,5 +1,5 @@
 <script>
-    import { LoaderCircle } from "@lucide/svelte";
+    import LoaderCircle from "@lucide/svelte/icons/loader-circle"
 </script>
 
 <div class="animate w-fit h-fit">

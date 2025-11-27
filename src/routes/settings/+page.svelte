@@ -8,7 +8,7 @@
     import { ILocalApi } from "$lib/api/shared/local_api";
     import { configurationDefault } from "$lib/api/shared/settings_api";
     import { IThumbnailApi } from "$lib/api/shared/thumbnail_api";
-    import { IUserApi } from "$lib/api/shared/user_api";
+    import { IAdminUserApi, IUserApi } from "$lib/api/shared/user_api";
     import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
     import {
         Card,
@@ -33,7 +33,7 @@
     const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
-    const userApi = getContainer().optional<IUserApi>(IUserApi);
+    const userAdminApi = getContainer().optional<IAdminUserApi>(IAdminUserApi);
     let diskUsage = $state<DiskUsageInfo|null>(null);
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
@@ -420,7 +420,9 @@
             </CardContent>
         </Card>
 
-        <UserEditCard />
+        {#if userAdminApi}
+            <UserEditCard />
+        {/if}
     </div>
 </div>
 

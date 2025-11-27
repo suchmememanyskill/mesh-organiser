@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IUserApi, IUserLogoutApi, type User } from "$lib/api/shared/user_api";
+    import { ISwitchUserApi, IUserApi, IUserLogoutApi, type User } from "$lib/api/shared/user_api";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { useSidebar } from "$lib/components/ui/sidebar/index.js";
@@ -15,6 +15,7 @@
     
     const userApi = getContainer().require<IUserApi>(IUserApi);
     const logoutApi = getContainer().optional<IUserLogoutApi>(IUserLogoutApi);
+    const switchUserApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
         
     let currentUser = $state<User|null>(null);
     let availableUsers = $state<User[]>([]);
@@ -22,16 +23,26 @@
 
     onMount(async () => {
         currentUser = await userApi.getCurrentUser();
-        availableUsers = await userApi.getAllUsers();
+        console.log(switchUserApi);
+        if (switchUserApi) {
+            availableUsers = await switchUserApi.getAvailableUsers();
+        }
+        
         console.log(availableUsers);
     });
 
     async function refreshUsers() {
-        availableUsers = await userApi.getAllUsers();
+        if (switchUserApi) {
+            availableUsers = await switchUserApi.getAvailableUsers();
+        }
     }
 
     async function switchUser(user: User) {
-        await userApi.switchUser(user);
+        if (!switchUserApi) {
+            return;
+        }
+
+        await switchUserApi.switchUser(user);
 
         if (location.href.includes("/group/"))
         {
@@ -100,8 +111,8 @@
                         Donate to Mesh Organiser
                     </DropdownMenu.Item>
                 </DropdownMenu.Group>
-                <DropdownMenu.Separator />
                 {#if filteredUsers.length > 0}
+                    <DropdownMenu.Separator />
                     <DropdownMenu.Group>
                         <DropdownMenu.GroupHeading>Switch user</DropdownMenu.GroupHeading>
                         {#each filteredUsers as user (user.id)}
@@ -111,7 +122,8 @@
                             </DropdownMenu.Item>
                         {/each}
                     </DropdownMenu.Group>
-                {:else}
+                {:else if !!switchUserApi}
+                    <DropdownMenu.Separator />
                     <DropdownMenu.Label class="font-normal">No other users available. { currentUser!.permissions.admin ? "See settings to create new users" : "" }</DropdownMenu.Label>
                 {/if}
                 {#if logoutApi}

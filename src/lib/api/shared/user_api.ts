@@ -49,15 +49,25 @@ export function createUserInstance(id: number, username: string, email: string, 
 }
 
 export const IUserApi = Symbol('IUserApi');
+export const ISwitchUserApi = Symbol('ISwitchUserApi');
+export const IAdminUserApi = Symbol('IAdminUserApi');
 
-export interface IUserApi {
-    getCurrentUser() : Promise<User>;
+export interface ISwitchUserApi {
     getAvailableUsers() : Promise<User[]>;
+    switchUser(user : User) : Promise<void>;
+}
+
+export interface IAdminUserApi {
     getAllUsers() : Promise<User[]>;
     addUser(username : string, email : string, password : string) : Promise<User>;
     deleteUser(user : User) : Promise<void>;
-    switchUser(user : User) : Promise<void>;
     editUser(user : User, password_hash : string|null) : Promise<void>;
+}
+
+export interface IUserApi {
+    getCurrentUser() : Promise<User>;
+    isAuthenticated() : Promise<boolean>;
+    // TODO: Allow own editing
 }
 
 export const IUserLogoutApi = Symbol('IUserLogoutApi');

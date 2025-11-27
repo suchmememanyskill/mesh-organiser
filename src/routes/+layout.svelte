@@ -24,9 +24,13 @@
     import { updateState } from "$lib/update_data.svelte";
     import Spinner from "$lib/components/view/spinner.svelte";
     import { type Configuration } from "$lib/api/shared/settings_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { ISidebarStateApi } from "$lib/api/shared/sidebar_state_api";
+    import { IUserApi } from "$lib/api/shared/user_api";
 
     let { children } = $props();
     let initializationDone = $state(false);
+    let hasSidebar = $state(true);
 
     interface Error
     {
@@ -61,7 +65,21 @@
         configurationMeta.configurationLoaded = true;
         await setTheme(configuration.theme);
 
-        await updateSidebarState();
+        let userApi = getContainer().optional<IUserApi>(IUserApi);
+
+        if (userApi) {
+            if (!await userApi.isAuthenticated()) {
+                await goto("/login");
+            }
+        }
+
+        if (getContainer().optional<ISidebarStateApi>(ISidebarStateApi) == null) {
+            hasSidebar = false;
+        }
+        else {
+            await updateSidebarState();
+        }
+
         initializationDone = true;
     });
 
@@ -94,7 +112,9 @@
 {#if initializationDone}
 <DragSelectedModelsRoot class="w-full h-full">
     <Sidebar.Provider class="w-full h-full">
-        <AppSidebar />
+        {#if hasSidebar}
+            <AppSidebar />
+        {/if}
         <main class="h-full flex-1 flex flex-row" style="min-width: 0;">
             {#if is_mobile.current}
                 <Sidebar.Trigger class="aspect-square absolute z-10 h-10 w-10 bg-background" />

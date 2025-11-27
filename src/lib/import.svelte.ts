@@ -1,4 +1,3 @@
-import { Import } from "@lucide/svelte";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { listen } from '@tauri-apps/api/event';
 import { goto } from "$app/navigation";

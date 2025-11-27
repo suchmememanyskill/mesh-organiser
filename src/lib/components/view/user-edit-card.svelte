@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IUserApi, type User } from "$lib/api/shared/user_api";
+    import { IAdminUserApi, IUserApi, type User } from "$lib/api/shared/user_api";
     import {
         Card,
         CardContent,
@@ -19,7 +19,7 @@
     import { IHostApi, isCurrentPlatformDesktop, Platform } from "$lib/api/shared/host_api";
     import { toast } from "svelte-sonner";
 
-    const userApi = getContainer().require<IUserApi>(IUserApi);
+    const userAdminApi = getContainer().require<IAdminUserApi>(IAdminUserApi);
     const hostApi = getContainer().require<IHostApi>(IHostApi);
     let users = $state<User[]>([]);
     let password = $state<string>("");
@@ -43,12 +43,12 @@
     }
 
     async function deleteUser(user : User) : Promise<void> {
-        await userApi.deleteUser(user);
+        await userAdminApi.deleteUser(user);
         users = users.filter(u => u.id !== user.id);
     }
 
     async function editUser(user : User) : Promise<void> {
-        await userApi.editUser(user, password.length > 0 ? password : null);
+        await userAdminApi.editUser(user, password.length > 0 ? password : null);
     }
 
     async function addUser() : Promise<void> {
@@ -72,14 +72,14 @@
             return;
         }
 
-        let createdUser = await userApi.addUser(newUser.username, newUser.email, password);
+        let createdUser = await userAdminApi.addUser(newUser.username, newUser.email, password);
         users = [...users, createdUser];
         newUser = createFakeUser();
         password = "";
     }
 
     onMount(async () => {
-        users = await userApi.getAllUsers();
+        users = await userAdminApi.getAllUsers();
     });
 </script>
 

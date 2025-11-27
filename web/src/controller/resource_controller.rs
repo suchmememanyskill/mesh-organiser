@@ -118,7 +118,7 @@ mod put {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -142,7 +142,7 @@ mod put {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 
@@ -170,6 +170,6 @@ mod delete {
         resource_service::delete_resource_folder(&resource, &user, &app_state.app_state).await?;
         resource_db::delete_resource(&app_state.app_state.db, &user, resource.id).await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }

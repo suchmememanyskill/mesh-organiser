@@ -149,7 +149,7 @@ mod post {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -174,7 +174,7 @@ mod post {
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 
@@ -204,7 +204,7 @@ mod put {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -230,7 +230,7 @@ mod put {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -266,7 +266,7 @@ mod put {
             .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
         }
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -291,7 +291,7 @@ mod put {
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 
@@ -306,7 +306,7 @@ mod delete {
         let user = auth_session.user.unwrap().to_user();
         label_db::delete_label(&app_state.app_state.db, &user, label_id).await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -330,7 +330,7 @@ mod delete {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -355,6 +355,6 @@ mod delete {
         .await
         .map_err(|e| ApplicationError::InternalError(e.to_string()))?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }

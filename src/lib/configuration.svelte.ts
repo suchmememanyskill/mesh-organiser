@@ -9,5 +9,12 @@ export const configurationMeta = $state({
 });
 
 export async function updateConfiguration(config : Configuration) : Promise<void> {
-    await getContainer().require<ISettingsApi>(ISettingsApi).saveConfiguration(config);
+    let settingsApi = getContainer().optional<ISettingsApi>(ISettingsApi);
+    
+    if (!settingsApi) {
+        console.warn("No settings API available to save configuration");
+        return;
+    }
+
+    await settingsApi.saveConfiguration(config);
 }

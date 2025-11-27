@@ -158,7 +158,7 @@ mod put {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 
@@ -201,7 +201,7 @@ mod delete {
             blob_db::delete_blob(&app_state.app_state.db, model.blob.id).await?;
         }
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 

@@ -22,7 +22,7 @@ use db::{
 use service::{AppState, StoredConfiguration, stored_to_configuration};
 use time::{Duration, OffsetDateTime};
 use tokio::{fs, signal, task::AbortHandle};
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_sessions::cookie::Key;
 use tower_sessions_sqlx_store::SqliteStore;
 
@@ -173,7 +173,7 @@ impl App {
         let backend = Backend::new(self.app_state.app_state.db.clone());
         let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
-        let serve_dir = ServeDir::new("www");
+        let serve_dir = ServeDir::new("www").not_found_service(ServeFile::new("www/index.html"));
         let db = self.app_state.app_state.db.clone();
         let port = self.app_state.port;
 

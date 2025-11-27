@@ -127,7 +127,7 @@ mod put {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 
@@ -142,7 +142,7 @@ mod delete {
         let user = auth_session.user.unwrap().to_user();
         group_db::delete_group(&app_state.app_state.db, &user, group_id).await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -166,7 +166,7 @@ mod delete {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 
@@ -221,6 +221,6 @@ mod post {
         )
         .await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
