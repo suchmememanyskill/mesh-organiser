@@ -23,25 +23,30 @@ pub fn router() -> Router<WebAppState> {
             .route("/groups", get(get::get_groups))
             .route("/groups/count", get(get::get_group_count))
             .route("/groups", post(post::add_group))
+            .route(
+                "/groups/detach_models",
+                delete(delete::remove_models_from_group),
+            )
             .route("/groups/{group_id}", put(put::edit_group))
             .route("/groups/{group_id}", delete(delete::delete_group))
             .route("/groups/{group_id}/models", post(post::add_models_to_group))
-            .route(
-                "/groups/{group_id}/models",
-                delete(delete::remove_models_from_group),
-            )
             .route_layer(login_required!(Backend)),
     )
 }
 
 mod get {
+    use axum_extra::extract::Query;
+
     use super::*;
 
     #[derive(Deserialize)]
     pub struct GetGroupParams {
-        pub model_ids: Option<Vec<i64>>,
-        pub group_ids: Option<Vec<i64>>,
-        pub label_ids: Option<Vec<i64>>,
+        #[serde(default)]
+        pub model_ids: Vec<i64>,
+        #[serde(default)]
+        pub group_ids: Vec<i64>,
+        #[serde(default)]
+        pub label_ids: Vec<i64>,
         pub order_by: Option<String>,
         pub text_search: Option<String>,
         pub page: u32,
@@ -52,16 +57,16 @@ mod get {
     pub async fn get_groups(
         auth_session: AuthSession,
         State(app_state): State<WebAppState>,
-        Json(params): Json<GetGroupParams>,
+        Query(params): Query<GetGroupParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
         let groups = group_db::get_groups(
             &app_state.app_state.db,
             &user,
             GroupFilterOptions {
-                model_ids: params.model_ids,
-                group_ids: params.group_ids,
-                label_ids: params.label_ids,
+                model_ids: if params.model_ids.is_empty() { None } else { Some(params.model_ids) },
+                group_ids: if params.group_ids.is_empty() { None } else { Some(params.group_ids) },
+                label_ids: if params.label_ids.is_empty() { None } else { Some(params.label_ids) },
                 order_by: params
                     .order_by
                     .map(|s| GroupOrderBy::from_str(&s).unwrap_or(GroupOrderBy::NameAsc)),
@@ -89,7 +94,7 @@ mod get {
     pub async fn get_group_count(
         auth_session: AuthSession,
         State(app_state): State<WebAppState>,
-        Json(params): Json<GetGroupCountParams>,
+        Query(params): Query<GetGroupCountParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
         let count = group_db::get_group_count(
@@ -152,7 +157,6 @@ mod delete {
 
     pub async fn remove_models_from_group(
         auth_session: AuthSession,
-        Path(group_id): Path<i64>,
         State(app_state): State<WebAppState>,
         Json(params): Json<RemoveModelsFromGroupParams>,
     ) -> Result<Response, ApplicationError> {

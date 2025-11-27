@@ -21,6 +21,8 @@ import { configuration } from "$lib/configuration.svelte";
 import { DemoUserApi } from "./user";
 import { IUserApi } from "../shared/user_api";
 import { DefaultDownloadApi, IDownloadApi } from "../shared/download_api";
+import { WebBrowserApi } from "../web/internal_browser_api";
+import { IInternalBrowserApi } from "../shared/internal_browser_api";
 
 export async function initDemoApis(): Promise<void> {
     resetContainer();
@@ -38,6 +40,7 @@ export async function initDemoApis(): Promise<void> {
     const sidebarApi = new DefaultSidebarStateApi();
     const user = new DemoUserApi();
     const downloadApi = new DefaultDownloadApi(blob);
+    const internalBrowserApi = new WebBrowserApi();
 
     // Load configuration
     const config = await settings.getConfiguration();
@@ -56,4 +59,5 @@ export async function initDemoApis(): Promise<void> {
     container.addSingleton(ISidebarStateApi, sidebarApi);
     container.addSingleton(IUserApi, user);
     container.addSingleton(IDownloadApi, downloadApi);
+    container.addSingleton(IInternalBrowserApi, internalBrowserApi);
 }

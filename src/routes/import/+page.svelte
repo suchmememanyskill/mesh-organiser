@@ -31,9 +31,11 @@
     import { IInternalBrowserApi } from "$lib/api/shared/internal_browser_api";
     import { PredefinedModelStreamManager } from "$lib/api/shared/model_api";
     import Spinner from "$lib/components/view/spinner.svelte";
+    import { IWebImportApi } from "$lib/api/shared/web_import_api";
 
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
     const tauriImportApi = getContainer().optional<ITauriImportApi>(ITauriImportApi);
+    const webImportApi = getContainer().optional<IWebImportApi>(IWebImportApi);
     const internalBrowserApi = getContainer().optional<IInternalBrowserApi>(IInternalBrowserApi);
 
     let importedGroups = $state<Group[]>([]);
@@ -67,6 +69,10 @@
         dialog_open = true;
         await tauriImportApi?.openFilesForImporting();
         dialog_open = false;
+    }
+
+    async function handleWebImport() {
+        await webImportApi?.openFilesForImporting();
     }
 
     async function handleTauriOpenFolder() {
@@ -121,48 +127,66 @@
         </div>
     {:else if importState.status == ImportStatus.Idle}
         <div class="flex flex-col gap-5 max-w-xxl h-fit my-auto">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Import</CardTitle>
-                    <CardDescription>Import 3d models via files</CardDescription>
-                </CardHeader>
-                <CardContent class="flex gap-4 flex-col">
-                    <div class="grid grid-cols-2 gap-4">
-                        <Button class="grow" onclick={handleTauriOpenFile} disabled={dialog_open}
-                            ><File /> Import File</Button
+            {#if tauriImportApi}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Import</CardTitle>
+                        <CardDescription>Import 3d models via files</CardDescription>
+                    </CardHeader>
+                    <CardContent class="flex gap-4 flex-col">
+                        <div class="grid grid-cols-2 gap-4">
+                            <Button class="grow" onclick={handleTauriOpenFile} disabled={dialog_open}
+                                ><File /> Import File</Button
+                            >
+                            <Button class="grow" onclick={handleTauriOpenFolder} disabled={dialog_open}
+                                ><Folder /> Import Folder
+                            </Button>
+                        </div>
+
+                        <div
+                            class="flex h-[150px] w-full items-center justify-center rounded-md border border-dashed text-sm"
                         >
-                        <Button class="grow" onclick={handleTauriOpenFolder} disabled={dialog_open}
-                            ><Folder /> Import Folder
-                        </Button>
-                    </div>
+                            <p>Drag and drop files here</p>
+                        </div>
 
-                    <div
-                        class="flex h-[150px] w-full items-center justify-center rounded-md border border-dashed text-sm"
-                    >
-                        <p>Drag and drop files here</p>
-                    </div>
+                        <CheckboxWithLabel label="Import folder recursively" bind:value={globalImportSettings.recursive} />
+                        <CheckboxWithLabel label="Delete files after import" bind:value={globalImportSettings.delete_after_import} />
+                    </CardContent>
+                </Card>
+            {/if}
 
-                    <CheckboxWithLabel label="Import folder recursively" bind:value={globalImportSettings.recursive} />
-                    <CheckboxWithLabel label="Delete files after import" bind:value={globalImportSettings.delete_after_import} />
-                </CardContent>
-            </Card>
+            {#if webImportApi}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Import</CardTitle>
+                        <CardDescription>Import 3d models via upload</CardDescription>
+                    </CardHeader>
+                    <CardContent class="flex gap-4 flex-col">
+                        <Button class="grow" onclick={handleWebImport} disabled={dialog_open}
+                            ><File /> Import Files</Button
+                        >
+                    </CardContent>
+                </Card>
+            {/if}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Open model website</CardTitle>
-                    <CardDescription>Browse external repositories in a new window.<br />Downloads are redirected to this application.</CardDescription>
-                </CardHeader>
-                <CardContent class="grid grid-cols-2 gap-4">
-                    {#each model_sites as site}
-                        <AsyncButton onclick={() => internalBrowserApi?.openInternalBrowser(site.url) ?? Promise.resolve()}>
-                            {#if site.icon}
-                                <site.icon />
-                            {/if}
-                            {site.name}
-                        </AsyncButton>
-                    {/each}
-                </CardContent>
-            </Card>
+            {#if internalBrowserApi}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Open model website</CardTitle>
+                        <CardDescription>Browse external repositories in a new window.<br />Downloads are redirected to this application.</CardDescription>
+                    </CardHeader>
+                    <CardContent class="grid grid-cols-2 gap-4">
+                        {#each model_sites as site}
+                            <AsyncButton onclick={() => internalBrowserApi?.openInternalBrowser(site.url) ?? Promise.resolve()}>
+                                {#if site.icon}
+                                    <site.icon />
+                                {/if}
+                                {site.name}
+                            </AsyncButton>
+                        {/each}
+                    </CardContent>
+                </Card>
+            {/if}
         </div>
     {:else if importState.status == ImportStatus.Failure}
         <div class="flex flex-col items-center gap-4 my-auto">

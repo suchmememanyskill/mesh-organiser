@@ -25,6 +25,13 @@ pub async fn generate_thumbnails(
         }
     };
 
+    if !mesh_thumbnail_executable_path.exists() {
+        return Err(ApplicationError::InternalError(format!(
+            "Mesh thumbnail executable not found at path: {:?}",
+            mesh_thumbnail_executable_path
+        )));
+    }
+
     let color = app_state
         .get_configuration()
         .thumbnail_color
@@ -74,7 +81,9 @@ pub async fn generate_thumbnails(
         }
 
         command.args(chunk);
-
+        
+        println!("About to spawn: {:?}", mesh_thumbnail_executable_path);
+        println!("{:?}", command);
         let spawned_command = command.spawn()?;
         active += 1;
 

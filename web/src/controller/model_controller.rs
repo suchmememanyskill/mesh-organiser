@@ -44,16 +44,22 @@ pub fn router() -> Router<WebAppState> {
 }
 
 mod get {
+    use axum_extra::extract::Query;
+
     use super::*;
 
     #[derive(Deserialize)]
     pub struct GetModelParams {
-        pub model_ids: Option<Vec<i64>>,
-        pub group_ids: Option<Vec<i64>>,
-        pub label_ids: Option<Vec<i64>>,
+        #[serde(default)]
+        pub model_ids: Vec<i64>,
+        #[serde(default)]
+        pub group_ids: Vec<i64>,
+        #[serde(default)]
+        pub label_ids: Vec<i64>,
         pub order_by: Option<String>,
         pub text_search: Option<String>,
-        pub model_flags: Option<ModelFlags>,
+        #[serde(default)]
+        pub model_flags: ModelFlags,
         pub page: u32,
         pub page_size: u32,
     }
@@ -61,20 +67,22 @@ mod get {
     pub async fn get_models(
         auth_session: AuthSession,
         State(app_state): State<WebAppState>,
-        Json(params): Json<GetModelParams>,
+        Query(params): Query<GetModelParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
+        let flags = params.model_flags;
+        println!("Flags: {:?}", flags);
         let models = model_db::get_models(
             &app_state.app_state.db,
             &user,
             ModelFilterOptions {
-                model_ids: params.model_ids,
-                group_ids: params.group_ids,
-                label_ids: params.label_ids,
+                model_ids: if params.model_ids.is_empty() { None } else { Some(params.model_ids) },
+                group_ids: if params.group_ids.is_empty() { None } else { Some(params.group_ids) },
+                label_ids: if params.label_ids.is_empty() { None } else { Some(params.label_ids) },
                 order_by: params
                     .order_by
                     .map(|s| ModelOrderBy::from_str(&s).unwrap_or(ModelOrderBy::AddedDesc)),
-                model_flags: params.model_flags,
+                model_flags: if flags.is_empty() { None } else { Some(flags) },
                 text_search: params.text_search,
                 page: params.page,
                 page_size: params.page_size,
@@ -87,7 +95,8 @@ mod get {
 
     #[derive(Deserialize)]
     pub struct GetModelCountParams {
-        pub flags: Option<ModelFlags>,
+        #[serde(default)]
+        pub model_flags: ModelFlags,
     }
 
     #[derive(Serialize)]
@@ -98,10 +107,10 @@ mod get {
     pub async fn get_model_count(
         auth_session: AuthSession,
         State(app_state): State<WebAppState>,
-        Json(params): Json<GetModelCountParams>,
+        Query(params): Query<GetModelCountParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let count = model_db::get_model_count(&app_state.app_state.db, &user, params.flags).await?;
+        let count = model_db::get_model_count(&app_state.app_state.db, &user, if params.model_flags.is_empty() { None } else { Some(params.model_flags)}).await?;
 
         Ok(Json(GetModelCountResponse { count }).into_response())
     }

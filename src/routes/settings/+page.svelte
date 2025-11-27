@@ -95,7 +95,7 @@
         }
 
         if (diskUsageInfoApi) {
-            diskUsage =  await diskUsageInfoApi.getDiskUsageInfo();
+            diskUsage = await diskUsageInfoApi.getDiskUsageInfo();
         }
     });
     

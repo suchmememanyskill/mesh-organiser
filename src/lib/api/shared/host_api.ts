@@ -1,6 +1,7 @@
 export enum Platform {
     TauriOfflineDesktop,
-    DemoWebApp
+    DemoWebApp,
+    WebApp,
 }
 
 export const IHostApi = Symbol("IHostApi");

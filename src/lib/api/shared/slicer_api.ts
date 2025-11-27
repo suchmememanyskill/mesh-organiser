@@ -63,7 +63,6 @@ export class DefaultSlicerApi implements ISlicerApi {
         return [
             { slicer: "PrusaSlicer", installed: true },
             { slicer: "Cura", installed: true },
-            { slicer: "Bambu Studio", installed: true },
             { slicer: "OrcaSlicer", installed: true },
             { slicer: "Mesh Organiser", installed: true },
         ];

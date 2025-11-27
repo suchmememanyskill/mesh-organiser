@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0", features = ["json", "multipart"] }
+axum-extra = { version = "0", features = ["query"] }
 tokio = { version = "1", features = ["rt-multi-thread", "signal", "process"] }
 tokio-util = { version = "0", features = ["io"] }
 axum-login = "0"
@@ -18,10 +19,16 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 axum-messages = "0"
 time = "0.3"
 tower = "0"
-tower-http = { version = "0", features = ["fs"] }
+tower-http = { version = "0", features = ["fs", "compression-gzip"] }
 tower-sessions = { version = "0", default-features = false, features = ["signed"] }
 tower-sessions-sqlx-store = { version = "0", features = ["sqlite"] }
 async_zip = { version = "0.0.17", features = ["full"] }
 
 [patch.crates-io]
 sqlx = { git = "https://github.com/suchmememanyskill/sqlx", features = ["sqlite", "runtime-tokio", "chrono"] }
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
+codegen-units = 1

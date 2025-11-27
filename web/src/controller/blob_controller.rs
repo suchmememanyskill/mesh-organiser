@@ -22,6 +22,7 @@ mod get {
         extract::{Path, State},
     };
 
+    use db::model_db;
     use service::is_zipped_file_extension;
     use tokio::{fs::File, io::BufReader};
     use tokio_util::{compat::FuturesAsyncReadCompatExt, io::ReaderStream};
@@ -61,7 +62,13 @@ mod get {
         Path(sha256): Path<String>,
         State(app_state): State<WebAppState>,
     ) -> impl IntoResponse {
-        let _user = auth_session.user.unwrap().to_user();
+        let user = auth_session.user.unwrap().to_user();
+
+        // Verify that the user has access to a model with this blob
+        match model_db::get_model_id_via_sha256(&app_state.app_state.db, &user, &sha256).await {
+            Ok(Some(m)) => m,
+            _ => return StatusCode::NOT_FOUND.into_response(),
+        };
 
         let blob = match db::blob_db::get_blob_via_sha256(&app_state.app_state.db, &sha256).await {
             Ok(Some(b)) => b,

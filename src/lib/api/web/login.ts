@@ -1,7 +1,7 @@
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
-import type { IUserLoginApi } from "../shared/user_api";
+import type { IUserLoginApi, IUserLogoutApi } from "../shared/user_api";
 
-export class WebUserLoginApi implements IUserLoginApi {
+export class WebUserLoginApi implements IUserLoginApi, IUserLogoutApi {
     private requestApi : IServerRequestApi;
 
     constructor(requestApi : IServerRequestApi) {
@@ -13,5 +13,9 @@ export class WebUserLoginApi implements IUserLoginApi {
             email: email,
             password: password
         });
+    }
+
+    async logoutCurrentUser(): Promise<void> {
+        await this.requestApi.request<void>("/logout", HttpMethod.POST);
     }
 }

@@ -5,6 +5,7 @@ use bitflags::bitflags;
 use crate::model::{Blob, LabelMeta, ModelGroupMeta};
 
 bitflags! {
+    #[derive(Debug, Default)]
     pub struct ModelFlags: u32 {
         const Printed  = 0b00000001;
         const Favorite = 0b00000010;

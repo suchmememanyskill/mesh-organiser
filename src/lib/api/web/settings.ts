@@ -1,0 +1,36 @@
+import { configurationDefault, SettingSection, type Configuration, type ISettingsApi } from "../shared/settings_api";
+
+export class WebSettingsApi implements ISettingsApi {
+    async getConfiguration(): Promise<Configuration> {
+        let config = localStorage.getItem("configuration");
+        let defaultConfiguration = configurationDefault();
+
+        if (config === null) {
+            return defaultConfiguration;
+        }
+
+        let parsedConfig = JSON.parse(config);
+
+        for (let key of Object.keys(defaultConfiguration)) {
+            if (!(key in parsedConfig)) {
+                (parsedConfig as any)[key] = (defaultConfiguration as any)[key];
+            }
+        }
+
+        return parsedConfig;
+    }
+
+    async saveConfiguration(config: Configuration): Promise<void> {
+        localStorage.setItem("configuration", JSON.stringify(config));
+    }
+
+    availableSections(): SettingSection[] {
+        return [
+            SettingSection.ThumbnailGeneration,
+            SettingSection.ModelPreview,
+            SettingSection.Behaviour,
+            SettingSection.UserInterface,
+            SettingSection.UsersLocal,
+        ]
+    }
+}

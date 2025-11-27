@@ -48,6 +48,8 @@ pub fn router() -> Router<WebAppState> {
 }
 
 mod get {
+    use axum_extra::extract::Query;
+
     use super::*;
 
     #[derive(Deserialize)]
@@ -58,7 +60,7 @@ mod get {
     pub async fn get_labels(
         auth_session: AuthSession,
         State(app_state): State<WebAppState>,
-        Json(params): Json<GetLabelsParams>,
+        Query(params): Query<GetLabelsParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
         let labels = label_db::get_labels(

@@ -4,7 +4,7 @@ import { parseRawBlob, type RawBlob } from "./blob";
 import { parseRawGroupMeta, type RawGroupMeta } from "./group";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
 
-function convertModelFlagsToRaw(flags : ModelFlags|null) : string[]|null
+export function convertModelFlagsToRaw(flags : ModelFlags|null) : string[]|null
 {
     if (flags === null) {
         return null;

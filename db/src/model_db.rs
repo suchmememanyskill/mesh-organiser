@@ -108,6 +108,7 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
 
     let query = query_builder.build();
 
+    #[cfg(debug_assertions)]
     println!("Generated SQL Query: {}", query.sql());
 
     let rows = query.fetch_all(db).await?;

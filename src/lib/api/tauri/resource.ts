@@ -19,7 +19,7 @@ export function parseRawResourceMeta(raw: RawResourceMeta) : ResourceMeta {
     );
 }
 
-function convertResourceFlagsToRaw(flags : ResourceFlags) : string[]
+export function convertResourceFlagsToRaw(flags : ResourceFlags) : string[]
 {
     let raw_flags : string[] = [];
 

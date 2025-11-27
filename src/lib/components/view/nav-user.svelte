@@ -1,25 +1,30 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { getContainer } from "$lib/api/dependency_injection";
+    import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/disk_usage_info_api";
     import { ISwitchUserApi, IUserApi, IUserLogoutApi, type User } from "$lib/api/shared/user_api";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { useSidebar } from "$lib/components/ui/sidebar/index.js";
+    import { toReadableSize } from "$lib/utils";
     import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
     import CircleUser from "@lucide/svelte/icons/circle-user";
     import LogOutIcon from "@lucide/svelte/icons/log-out";
     import SparklesIcon from "@lucide/svelte/icons/sparkles";
     import { onMount } from "svelte";
+    import Progress from "../ui/progress/progress.svelte";
 
     const sidebar = useSidebar();
     
     const userApi = getContainer().require<IUserApi>(IUserApi);
     const logoutApi = getContainer().optional<IUserLogoutApi>(IUserLogoutApi);
     const switchUserApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
+    const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
         
     let currentUser = $state<User|null>(null);
     let availableUsers = $state<User[]>([]);
     let filteredUsers = $derived(availableUsers.filter(x => x.id !== currentUser?.id));
+    let diskUsage = $state<DiskUsageInfo|null>(null);
 
     onMount(async () => {
         currentUser = await userApi.getCurrentUser();
@@ -29,6 +34,10 @@
         }
         
         console.log(availableUsers);
+
+        if (diskUsageInfoApi) {
+            diskUsage = await diskUsageInfoApi.getDiskUsageInfo();
+        }
     });
 
     async function refreshUsers() {
@@ -59,6 +68,11 @@
 
     function openDonationInDefaultBrowser(){
         document.getElementById("donate-link")?.click();
+    }
+
+    async function logout() {
+        await logoutApi?.logoutCurrentUser();
+        location.reload();
     }
 </script>
 
@@ -128,10 +142,18 @@
                 {/if}
                 {#if logoutApi}
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item onclick={() => logoutApi?.logoutCurrentUser()}>
+                    <DropdownMenu.Item onclick={logout}>
                         <LogOutIcon />
                         Log out
                     </DropdownMenu.Item>
+                {/if}
+                {#if diskUsage}
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Group>
+                        <DropdownMenu.GroupHeading>Disk Usage</DropdownMenu.GroupHeading>
+                        <DropdownMenu.Label class="font-normal">Uncompressed: {toReadableSize(diskUsage.size_uncompressed)}</DropdownMenu.Label>
+                        <DropdownMenu.Label class="font-normal">Compressed: {toReadableSize(diskUsage.size_compressed)} ({Number((diskUsage.size_uncompressed - diskUsage.size_compressed) / diskUsage.size_uncompressed * 100).toFixed(1)}%)</DropdownMenu.Label>
+                    </DropdownMenu.Group>
                 {/if}
             </DropdownMenu.Content>
         </DropdownMenu.Root>

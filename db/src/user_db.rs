@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::{DbError, db_context::DbContext, model::{User, UserPermissions, hash_password}, time_now};
+use crate::{DbError, db_context::DbContext, model::{User, UserPermissions, hash_password}, random_hex_32, time_now};
 
 struct UserDbQuery {
     user_id: i64,
@@ -90,6 +90,19 @@ pub async fn add_user(db: &DbContext, username: &str, email: &str, password: &st
     Ok(user_id)
 }
 
+pub async fn edit_user_min(db: &DbContext, user_id: i64, username: &str, email: &str) -> Result<(), DbError> {
+    sqlx::query!(
+        "UPDATE users SET user_name = ?, user_email = ? WHERE user_id = ?",
+        username,
+        email,
+        user_id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn edit_user(db: &DbContext, user_id: i64, username: &str, email: &str, user_last_sync: Option<String>, user_sync_token: Option<String>, user_sync_url: Option<String>) -> Result<(), DbError> {
     sqlx::query!(
         "UPDATE users SET user_name = ?, user_email = ?, user_last_sync = ?, user_sync_token = ?, user_sync_url = ? WHERE user_id = ?",
@@ -98,6 +111,20 @@ pub async fn edit_user(db: &DbContext, user_id: i64, username: &str, email: &str
         user_last_sync,
         user_sync_token,
         user_sync_url,
+        user_id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn scramble_validity_token(db: &DbContext, user_id: i64) -> Result<(), DbError> {
+    let random = random_hex_32();
+
+    sqlx::query!(
+        "UPDATE users SET user_sync_url = ? WHERE user_id = ?",
+        random,
         user_id
     )
     .execute(db)

@@ -1,3 +1,6 @@
+#![warn(clippy::large_futures)]
+#![warn(clippy::large_stack_frames)]
+
 use std::time::Duration;
 
 use tokio::time;
@@ -51,8 +54,7 @@ async fn loop_remove_temp_paths() {
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
         .with(EnvFilter::new(std::env::var("RUST_LOG").unwrap_or_else(
             |_| "axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug".into(),
@@ -63,4 +65,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(loop_remove_temp_paths());
 
     App::new().await?.serve().await
+}
+
+fn main() {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        //.thread_stack_size(1 * 1024 * 1024 * 1024)
+        .build()
+        .unwrap()
+        .block_on(async {
+            async_main().await.unwrap()
+        })
 }

@@ -22,14 +22,13 @@ use db::{
 use service::{AppState, StoredConfiguration, stored_to_configuration};
 use time::{Duration, OffsetDateTime};
 use tokio::{fs, signal, task::AbortHandle};
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::{compression::CompressionLayer, services::{ServeDir, ServeFile}};
 use tower_sessions::cookie::Key;
 use tower_sessions_sqlx_store::SqliteStore;
 
 use crate::{
     controller::{
-        auth_controller, blob_controller, group_controller, label_controller, model_controller,
-        resource_controller,
+        auth_controller, blob_controller, group_controller, label_controller, model_controller, resource_controller, threemf_controller, user_controller
     },
     user::{AuthSession, Backend},
     web_app_state::WebAppState,
@@ -125,6 +124,8 @@ impl App {
         };
 
         user_db::edit_user_password(&web_app_state.app_state.db, 1, &local_pass).await?;
+        #[cfg(not(debug_assertions))]
+        user_db::scramble_validity_token(&web_app_state.app_state.db, 1).await?;
         group_db::delete_dead_groups(&web_app_state.app_state.db).await?;
 
         Ok(Self {
@@ -184,11 +185,14 @@ impl App {
             .merge(group_controller::router())
             .merge(label_controller::router())
             .merge(resource_controller::router())
+            .merge(user_controller::router())
+            .merge(threemf_controller::router())
             .with_state(self.app_state)
             .layer(middleware::from_fn(update_session_middleware))
             .layer(MessagesManagerLayer)
             .layer(auth_layer)
             .layer(DefaultBodyLimit::disable())
+            //.layer(CompressionLayer::new())
             .fallback_service(serve_dir);
 
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
