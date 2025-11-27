@@ -215,6 +215,7 @@ mod delete {
 }
 
 mod post {
+    use db::random_hex_32;
     use tokio::io::AsyncWriteExt;
 
     use super::*;
@@ -229,8 +230,9 @@ mod post {
         let config = app_state.get_configuration();
 
         let temp_dir = std::env::temp_dir().join(format!(
-            "meshorganiser_import_action_{}",
-            OffsetDateTime::now_utc().unix_timestamp()
+            "meshorganiser_import_action_{}_{}",
+            OffsetDateTime::now_utc().unix_timestamp(),
+            random_hex_32()
         ));
 
         std::fs::create_dir(&temp_dir)?;
@@ -257,6 +259,8 @@ mod post {
 
             paths.push(file_path);
         }
+
+        drop(multipart);
 
         if paths.is_empty() {
             return Ok((StatusCode::BAD_REQUEST, "No files uploaded").into_response());

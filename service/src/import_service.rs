@@ -235,8 +235,7 @@ async fn import_models_from_dir_recursive(
 
     for folder in entries.iter().filter(|f| f.path().is_dir()) {
         let import_state = Arc::clone(&import_state);
-        let _ =
-            import_models_from_dir_recursive(&folder.path(), app_state, import_state);
+        Box::pin(import_models_from_dir_recursive(&folder.path(), app_state, import_state)).await?;
     }
 
     if entries
@@ -251,7 +250,7 @@ async fn import_models_from_dir_recursive(
             app_state,
             import_state,
             group_name,
-        );
+        ).await;
     }
 
     Ok(())
@@ -349,7 +348,14 @@ async fn import_models_from_dir(
         }
     }
 
-    futures.join_all().await;
+    // Drain remaining futures iteratively instead of recursively with join_all()
+    while let Some(res) = futures.join_next().await {
+        match res {
+            Err(err) if err.is_panic() => panic::resume_unwind(err.into_panic()),
+            Err(err) => panic!("{err}"),
+            _ => {}
+        }
+    }
 
     Ok(())
 }
