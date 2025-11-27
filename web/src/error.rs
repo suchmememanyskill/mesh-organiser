@@ -1,4 +1,4 @@
-use axum::response::IntoResponse;
+use axum::{extract::multipart::MultipartError, response::IntoResponse};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 use thiserror::Error;
 use tokio::task;
@@ -17,6 +17,8 @@ pub enum ApplicationError {
     ServiceError(#[from] service::ServiceError),
     #[error(transparent)]
     TaskJoinError(#[from] task::JoinError),
+    #[error("Upload error")]
+    MultipartError(#[from] MultipartError),
 }
 
 impl Serialize for ApplicationError {
@@ -52,6 +54,11 @@ impl Serialize for ApplicationError {
             }
             ApplicationError::TaskJoinError(inner) => {
                 state.serialize_field("error_type", "TaskJoinError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            }
+            ApplicationError::MultipartError(inner) => {
+                state.serialize_field("error_type", "MultipartError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }

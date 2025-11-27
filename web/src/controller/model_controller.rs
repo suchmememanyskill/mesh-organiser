@@ -71,7 +71,7 @@ mod get {
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
         let flags = params.model_flags;
-        println!("Flags: {:?}", flags);
+
         let models = model_db::get_models(
             &app_state.app_state.db,
             &user,
@@ -215,6 +215,8 @@ mod delete {
 }
 
 mod post {
+    use tokio::io::AsyncWriteExt;
+
     use super::*;
 
     pub async fn add_model(
@@ -233,27 +235,27 @@ mod post {
 
         std::fs::create_dir(&temp_dir)?;
 
-        while let Some(field) = multipart.next_field().await.unwrap_or(None) {
+        while let Some(mut field) = multipart.next_field().await? {
             let file_name = match field.file_name() {
                 Some(name) => name.to_string(),
                 None => continue,
             };
 
-            let data = match field.bytes().await {
-                Ok(d) => d,
-                Err(_) => continue,
-            };
-
             let file_path = temp_dir.join(cleanse_evil_from_name(&file_name));
 
-            if !import_service::is_supported_extension(&file_path, &config) {
+            if !(import_service::is_supported_extension(&file_path, &config) 
+                || file_path.extension().unwrap().to_str().unwrap().to_lowercase() == "zip") {
                 continue;
             }
 
-            match fs::write(&file_path, &data).await {
-                Ok(_) => paths.push(file_path),
-                Err(_) => continue,
-            };
+            let mut file = fs::File::create(&file_path).await?;
+
+            while let Some(chunk) = field.chunk().await? {
+                println!("Writing chunk of size {} for file {}", chunk.len(), file_name);
+                file.write(&chunk).await?;
+            }
+
+            paths.push(file_path);
         }
 
         if paths.is_empty() {

@@ -70,10 +70,10 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
 fn main() {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        //.thread_stack_size(1 * 1024 * 1024 * 1024)
+        .thread_stack_size(32 * 1024 * 1024)
         .build()
         .unwrap()
         .block_on(async {
-            async_main().await.unwrap()
+            let _ = async_main().await;
         })
 }
