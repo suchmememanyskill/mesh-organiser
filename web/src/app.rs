@@ -192,7 +192,7 @@ impl App {
             .layer(MessagesManagerLayer)
             .layer(auth_layer)
             .layer(DefaultBodyLimit::disable())
-            //.layer(CompressionLayer::new())
+            .layer(CompressionLayer::new())
             .fallback_service(serve_dir);
 
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))

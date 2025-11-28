@@ -1,4 +1,4 @@
-use axum::{extract::multipart::MultipartError, response::IntoResponse};
+use axum::{Json, extract::multipart::MultipartError, response::IntoResponse};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 use thiserror::Error;
 use tokio::task;
@@ -70,6 +70,6 @@ impl Serialize for ApplicationError {
 
 impl IntoResponse for ApplicationError {
     fn into_response(self) -> axum::response::Response {
-        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, self).into_response()
+        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(self)).into_response()
     }
 }
