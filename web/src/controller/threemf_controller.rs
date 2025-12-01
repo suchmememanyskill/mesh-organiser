@@ -27,7 +27,6 @@ use db::model_db::{ModelFilterOptions, ModelOrderBy};
 use serde::Serialize;
 use service::export_service;
 use service::threemf_service;
-use crate::web_thumbnail_service;
 
 pub fn router() -> Router<WebAppState> {
     Router::new().nest(
@@ -70,6 +69,9 @@ mod get {
 
 mod post {
     use db::{model::ModelGroupMeta, random_hex_32, time_now};
+    use service::thumbnail_service;
+
+    use crate::web_import_state::WebImportStateEmitter;
 
     use super::*;
 
@@ -86,8 +88,10 @@ mod post {
             return Ok((StatusCode::NOT_FOUND, "Model not found").into_response());
         }
 
-        let import_state =
+        let mut import_state =
             threemf_service::extract_models(&model[0], &user, &app_state.app_state).await?;
+
+        import_state.set_emitter(Box::new(WebImportStateEmitter {}));
 
         let model_ids: Vec<i64> = import_state
             .imported_models
@@ -97,7 +101,7 @@ mod post {
 
         let models = model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids).await?;
 
-        web_thumbnail_service::generate_thumbnails(&models, &app_state, false).await?;
+        thumbnail_service::generate_thumbnails(&models, &app_state.app_state, false, &mut import_state).await?;
 
         Ok(Json(ModelGroupMeta {
             id: import_state.imported_models[0].group_id.unwrap(),

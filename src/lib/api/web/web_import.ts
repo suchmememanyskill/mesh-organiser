@@ -1,4 +1,5 @@
 import { importState, resetImportState } from "$lib/import.svelte";
+import { updateSidebarState } from "$lib/sidebar_data.svelte";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
 import { ImportStatus, type ImportState } from "../shared/tauri_import_api";
 import type { IWebImportApi } from "../shared/web_import_api";
@@ -38,8 +39,10 @@ export class WebImportApi implements IWebImportApi {
             }
         }
 
+        await updateSidebarState();
         console.log(importState);
         importState.status = ImportStatus.Finished;
+
         return importState;
     }
 

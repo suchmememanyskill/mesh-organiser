@@ -1,6 +1,3 @@
-#![warn(clippy::large_futures)]
-#![warn(clippy::large_stack_frames)]
-
 use std::time::Duration;
 
 use tokio::time;
@@ -13,7 +10,7 @@ mod controller;
 mod error;
 mod user;
 mod web_app_state;
-mod web_thumbnail_service;
+mod web_import_state;
 
 fn remove_temp_paths() -> Result<(), ApplicationError> {
     let threshold = std::time::Duration::from_secs(5 * 60);

@@ -27,8 +27,6 @@ use db::model_db::{ModelFilterOptions, ModelOrderBy};
 use serde::Serialize;
 use service::export_service;
 
-use crate::web_thumbnail_service;
-
 pub fn router() -> Router<WebAppState> {
     Router::new().nest(
         "/api/v1",
@@ -216,7 +214,10 @@ mod delete {
 
 mod post {
     use db::random_hex_32;
+    use service::thumbnail_service;
     use tokio::io::AsyncWriteExt;
+
+    use crate::web_import_state::WebImportStateEmitter;
 
     use super::*;
 
@@ -253,6 +254,7 @@ mod post {
             let mut file = fs::File::create(&file_path).await?;
 
             while let Some(chunk) = field.chunk().await? {
+                #[cfg(debug_assertions)]
                 println!("Writing chunk of size {} for file {}", chunk.len(), file_name);
                 file.write(&chunk).await?;
             }
@@ -268,10 +270,12 @@ mod post {
 
         let mut model_ids: Vec<i64> = vec![];
 
+        let mut import_state = ImportState::new_with_emitter(None, false, true, user.clone(), Box::new(WebImportStateEmitter {}));
+
         for path in paths {
-            let mut import_state = ImportState::new(None, false, true, user.clone());
+            import_state = ImportState::new_with_emitter(None, false, true, user.clone(), Box::new(WebImportStateEmitter {}));
             import_state = import_service::import_path(
-                &path.to_string_lossy().to_string(),
+                &path.to_string_lossy(),
                 &app_state.app_state,
                 import_state,
             )
@@ -283,7 +287,7 @@ mod post {
         let models =
             model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids.clone()).await?;
 
-        web_thumbnail_service::generate_thumbnails(&models, &app_state, false).await?;
+        thumbnail_service::generate_thumbnails(&models, &app_state.app_state, false, &mut import_state).await?;
 
         Ok(Json(model_ids).into_response())
     }

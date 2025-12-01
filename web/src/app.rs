@@ -1,7 +1,5 @@
 use std::{
-    env,
-    path::PathBuf,
-    sync::{Arc, Mutex},
+    env, fs::File, io::Write, path::PathBuf, sync::{Arc, Mutex}
 };
 
 use axum::{
@@ -19,7 +17,7 @@ use db::{
     db_context::{self, DbContext},
     group_db, user_db,
 };
-use service::{AppState, StoredConfiguration, stored_to_configuration};
+use service::{AppState, Configuration, StoredConfiguration, stored_to_configuration};
 use time::{Duration, OffsetDateTime};
 use tokio::{fs, signal, task::AbortHandle};
 use tower_http::{compression::CompressionLayer, services::{ServeDir, ServeFile}};
@@ -75,7 +73,11 @@ impl App {
         let config_path = PathBuf::from(config_path);
 
         if !config_path.exists() {
-            panic!("APP_CONFIG_PATH does not exist on disk");
+            File::create(&config_path)?.write_all(
+                serde_json::to_string_pretty(&Configuration::default())
+                    .unwrap()
+                    .as_bytes(),
+            )?;
         }
 
         let json = fs::read_to_string(&config_path)

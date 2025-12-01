@@ -217,7 +217,7 @@
         toast.promise(
             promise,
             {
-                loading: `Extracting 3MF models from '${model.name}'...`,
+                loading: `Extracting models from '${model.name}'...`,
                 success: (newGroup) => {
                     return `Imported '${newGroup.name}''`;
                 },

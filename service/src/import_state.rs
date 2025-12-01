@@ -101,6 +101,10 @@ impl ImportState {
         }
     }
 
+    pub fn set_emitter(&mut self, emitter: Box<dyn ImportStateEmitter + Send + Sync>) {
+        self.emitter = emitter;
+    }
+
     pub fn update_total_model_count(&mut self, count: usize) {
         self.model_count = count;
         self.emitter.model_total_event(self);
