@@ -133,7 +133,6 @@ pub async fn generate_thumbnails(
 
     let mut futures = JoinSet::new();
     let mut active = 0;
-    let total = paths.len() / 100 + 1;
 
     for (model_path, image_path) in paths {
         let color = color.clone();
@@ -158,7 +157,7 @@ pub async fn generate_thumbnails(
     }
 
     futures.join_all().await;
-    import_state.update_finished_thumbnails_count(total);
+    import_state.update_finished_thumbnails_count(import_state.model_count - import_state.finished_thumbnails_count);
     import_state.update_status(ImportStatus::FinishedThumbnails);
     Ok(())
 }
