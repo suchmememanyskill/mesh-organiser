@@ -126,7 +126,6 @@ impl App {
         };
 
         user_db::edit_user_password(&web_app_state.app_state.db, 1, &local_pass).await?;
-        #[cfg(not(debug_assertions))]
         user_db::scramble_validity_token(&web_app_state.app_state.db, 1).await?;
         group_db::delete_dead_groups(&web_app_state.app_state.db).await?;
 

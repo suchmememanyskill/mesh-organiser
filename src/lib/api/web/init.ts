@@ -60,7 +60,7 @@ export async function initWebApi() : Promise<void> {
         return;
     }
 
-    const blob = new WebBlobApi(request);
+    const blob = new WebBlobApi(request, currentUser);
     const diskUsageInfo = new WebDiskUsageInfoApi(request);
     const group = new WebGroupApi(request);
     const host = new WebHostApi();
@@ -69,7 +69,7 @@ export async function initWebApi() : Promise<void> {
     const resource = new WebResourceApi(request);
     const settings = new WebSettingsApi();
     const importApi = new WebImportApi(request);
-    const slicer = new DefaultSlicerApi();
+    const slicer = new DefaultSlicerApi(blob);
     const sidebarApi = new DefaultSidebarStateApi();
     const downloadApi = new DefaultDownloadApi(blob);
     const internalBrowserApi = new WebBrowserApi();

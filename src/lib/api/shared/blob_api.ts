@@ -45,4 +45,5 @@ export const IBlobApi = Symbol('IBlobApi');
 export interface IBlobApi {
     getBlobBytes(blob : Blob) : Promise<Uint8Array>;
     getBlobThumbnailUrl(blob : Blob) : Promise<string>;
+    getBlobDownloadUrl(blob : Blob) : Promise<string>;
 }

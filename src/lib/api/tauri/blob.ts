@@ -26,6 +26,10 @@ export class BlobApi implements IBlobApi {
     constructor(appDataDir : string) {
         this.appDataDir = appDataDir;
     }
+    
+    getBlobDownloadUrl(blob: Blob): Promise<string> {
+        throw new Error("Method not implemented.");
+    }
 
     async getBlobBytes(blob: Blob): Promise<Uint8Array> {
         return new Uint8Array(await invoke<ArrayBuffer>("get_blob_bytes", { sha256: blob.sha256 }));

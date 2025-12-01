@@ -1,4 +1,5 @@
 import { configuration } from "$lib/configuration.svelte";
+import type { IBlobApi } from "./blob_api";
 import type { Model } from "./model_api";
 import { toast } from "svelte-sonner";
 
@@ -33,6 +34,12 @@ function slicerNameToDeepLink(slicerName: string): string | null {
 }
 
 export class DefaultSlicerApi implements ISlicerApi {
+    private blobApi : IBlobApi;
+
+    constructor(blobApi : IBlobApi) {
+        this.blobApi = blobApi;
+    }
+
     async openInSlicer(models: Model[]): Promise<void> {
         if (models.length === 0) {
             return;
@@ -44,7 +51,7 @@ export class DefaultSlicerApi implements ISlicerApi {
         }
 
         let model = models[0];
-        let modelUrl : string = (model.blob as any)._modelUrl;
+        let modelUrl = await this.blobApi.getBlobDownloadUrl(model.blob);
         let deepLink = slicerNameToDeepLink(configuration.slicer ?? "OrcaSlicer");
 
         if (deepLink === null) {
