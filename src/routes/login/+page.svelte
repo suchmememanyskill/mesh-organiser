@@ -60,7 +60,7 @@
                 <Input id="email" type="email" bind:value={email} />
             </div>
             <div class="grid gap-3">
-                <Label for="password">Username</Label>
+                <Label for="password">Password</Label>
                 <Input id="password" type="password" bind:value={password} />
             </div>
         </Card.Content>

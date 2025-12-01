@@ -1,4 +1,4 @@
-import type { ILabelApi, Label, LabelMeta } from "../shared/label_api";
+import { stringColorToNumber, type ILabelApi, type Label, type LabelMeta } from "../shared/label_api";
 import type { Model } from "../shared/model_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
 import { parseRawLabel, parseRawLabelMeta, type RawLabel, type RawLabelMeta } from "../tauri/label";
@@ -21,7 +21,7 @@ export class WebLabelApi implements ILabelApi {
     async addLabel(name: string, color: string): Promise<LabelMeta> {
         let data = {
             label_name: name,
-            label_color: color
+            label_color: stringColorToNumber(color)
         }
 
         return parseRawLabelMeta(await this.requestApi.request<RawLabelMeta>("/labels", HttpMethod.POST, data));
@@ -30,7 +30,7 @@ export class WebLabelApi implements ILabelApi {
     async editLabel(label: LabelMeta): Promise<void> {
         let data = {
             label_name: label.name,
-            label_color: label.color
+            label_color: stringColorToNumber(label.color)
         }
 
         await this.requestApi.request<void>(`/labels/${label.id}`, HttpMethod.PUT, data);
