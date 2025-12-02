@@ -1,6 +1,7 @@
 FROM rust:1.91.0-slim AS build
 WORKDIR /source
 COPY . .
+ARG VITE_APP_VERSION
 RUN apt update && apt install -y wget xz-utils nodejs libfontconfig1-dev libssl-dev openssl musl-tools build-essential
 RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.shrc" SHELL="$(which sh)" sh -
 RUN cd web && rustup target add x86_64-unknown-linux-musl && cargo build --release --locked --target=x86_64-unknown-linux-musl
