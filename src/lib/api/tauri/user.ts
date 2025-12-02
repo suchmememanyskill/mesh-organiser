@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createUserInstance, IAdminUserApi, ISwitchUserApi, type IUserApi, type User } from "../shared/user_api";
+import { createUserInstance, IAdminUserApi, ISwitchUserApi, IUserManageSelfApi, type IUserApi, type User } from "../shared/user_api";
 import { configuration } from "$lib/configuration.svelte";
 
 export interface TauriRawUser {
@@ -26,7 +26,7 @@ export function parseTauriRawUser(raw: TauriRawUser): User {
     );
 }
 
-export class UserApi implements IUserApi, IAdminUserApi, ISwitchUserApi {
+export class UserApi implements IUserApi, IAdminUserApi, ISwitchUserApi, IUserManageSelfApi {
     async isAuthenticated(): Promise<boolean> {
         return true;
     }
@@ -78,6 +78,14 @@ export class UserApi implements IUserApi, IAdminUserApi, ISwitchUserApi {
     }
 
     async editUserPassword(user: User, newPassword: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+
+    async editSelf(user: User): Promise<void> {
+        await this.editUser(user);
+    }
+
+    async editSelfPassword(newPassword: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
 }

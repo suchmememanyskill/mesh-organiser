@@ -30,7 +30,8 @@ export class WebSettingsApi implements ISettingsApi {
             SettingSection.UserInterface,
             SettingSection.Users,
             SettingSection.ThumbnailGenerationColorSection,
-            SettingSection.BehaviourSectionAllPlatforms
+            SettingSection.BehaviourSectionAllPlatforms,
+            SettingSection.CurrentUser,
         ]
     }
 }

@@ -2,7 +2,7 @@
     import { goto } from "$app/navigation";
     import { getContainer } from "$lib/api/dependency_injection";
     import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/disk_usage_info_api";
-    import { ISwitchUserApi, IUserApi, IUserLogoutApi, type User } from "$lib/api/shared/user_api";
+    import { ISwitchUserApi, IUserApi, IUserLogoutApi, IUserManageSelfApi, type User } from "$lib/api/shared/user_api";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { useSidebar } from "$lib/components/ui/sidebar/index.js";
@@ -14,23 +14,26 @@
     import { onMount } from "svelte";
     import Progress from "../ui/progress/progress.svelte";
     import { IHostApi, isCurrentPlatformDesktop } from "$lib/api/shared/host_api";
+    import { currentUser } from "$lib/configuration.svelte";
+    import Settings from "@lucide/svelte/icons/settings";
+    import CircleHelp from "@lucide/svelte/icons/circle-help";
+    import UserPen from "@lucide/svelte/icons/user-pen";
 
     const sidebar = useSidebar();
     
     const userApi = getContainer().require<IUserApi>(IUserApi);
+    const currentUserEditApi = getContainer().optional<IUserManageSelfApi>(IUserManageSelfApi);
     const logoutApi = getContainer().optional<IUserLogoutApi>(IUserLogoutApi);
     const switchUserApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
     const hostApi = getContainer().optional<IHostApi>(IHostApi);
         
-    let currentUser = $state<User|null>(null);
     let availableUsers = $state<User[]>([]);
     let filteredUsers = $derived(availableUsers.filter(x => x.id !== currentUser?.id));
     let diskUsage = $state<DiskUsageInfo|null>(null);
     let isDesktop = $state<boolean>(false);
 
     onMount(async () => {
-        currentUser = await userApi.getCurrentUser();
         console.log(switchUserApi);
         if (switchUserApi) {
             availableUsers = await switchUserApi.getAvailableUsers();
@@ -143,23 +146,39 @@
                             </DropdownMenu.Item>
                         {/each}
                     </DropdownMenu.Group>
-                {:else if !!switchUserApi}
+                {:else if switchUserApi}
                     <DropdownMenu.Separator />
                     <DropdownMenu.Label class="font-normal">No other users available. { currentUser!.permissions.admin ? "See settings to create new users" : "" }</DropdownMenu.Label>
                 {/if}
-                {#if logoutApi}
+                {#if currentUserEditApi || logoutApi}
                     <DropdownMenu.Separator />
+                {/if}
+                {#if currentUserEditApi}
+                    <DropdownMenu.Item onclick={() => goto("/settings")}>
+                        <UserPen />
+                        Edit profile
+                    </DropdownMenu.Item>
+                {/if}
+                {#if logoutApi}
                     <DropdownMenu.Item onclick={logout}>
                         <LogOutIcon />
                         Log out
                     </DropdownMenu.Item>
                 {/if}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item onclick={() => goto("/settings")}>
+                    <Settings />
+                    Settings
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onclick={() => goto("/about")}>
+                    <CircleHelp />
+                    About
+                </DropdownMenu.Item>
                 {#if diskUsage}
                     <DropdownMenu.Separator />
                     <DropdownMenu.Group>
                         <DropdownMenu.GroupHeading>Disk Usage</DropdownMenu.GroupHeading>
-                        <DropdownMenu.Label class="font-normal">Uncompressed: {toReadableSize(diskUsage.size_uncompressed)}</DropdownMenu.Label>
-                        <DropdownMenu.Label class="font-normal">Compressed: {toReadableSize(diskUsage.size_compressed)} ({Number((diskUsage.size_uncompressed - diskUsage.size_compressed) / diskUsage.size_uncompressed * 100).toFixed(1)}% savings)</DropdownMenu.Label>
+                        <DropdownMenu.Label class="font-normal">Used: {toReadableSize(diskUsage.size_uncompressed)}</DropdownMenu.Label>
                     </DropdownMenu.Group>
                 {/if}
             </DropdownMenu.Content>

@@ -1,12 +1,14 @@
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
-import { createUserInstance, permissionsToStringArray, type IAdminUserApi, type User } from "../shared/user_api";
+import { createUserInstance, IUserManageSelfApi, permissionsToStringArray, type IAdminUserApi, type User } from "../shared/user_api";
 import { parseTauriRawUser, type TauriRawUser } from "../tauri/user";
 
-export class WebUserAdminApi implements IAdminUserApi {
+export class WebUserAdminApi implements IAdminUserApi, IUserManageSelfApi {
     private requestApi : IServerRequestApi;
+    private currentUser : User;
 
-    constructor(requestApi : IServerRequestApi) {
+    constructor(requestApi : IServerRequestApi, currentUser : User) {
         this.requestApi = requestApi;
+        this.currentUser = currentUser;
     }
 
     async getAllUsers(): Promise<User[]> {
@@ -59,5 +61,22 @@ export class WebUserAdminApi implements IAdminUserApi {
         }
 
         await this.requestApi.request<void>(`/users/${user.id}/password`, HttpMethod.PUT, data);
+    }
+
+    async editSelf(user: User): Promise<void> {
+        let dataUserEdit = {
+            user_name: user.username,
+            user_email: user.email,
+        };
+
+        await this.requestApi.request<void>(`/users/${user.id}`, HttpMethod.PUT, dataUserEdit);
+    }
+
+    async editSelfPassword(newPassword: string): Promise<void> {
+        let data = {
+            new_password: newPassword,
+        }
+
+        await this.requestApi.request<void>(`/users/${this.currentUser.id}/password`, HttpMethod.PUT, data);
     }
 }

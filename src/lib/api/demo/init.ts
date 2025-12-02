@@ -17,7 +17,7 @@ import { IResourceApi } from "../shared/resource_api";
 import { ISettingsApi } from "../shared/settings_api";
 import { DefaultSlicerApi, ISlicerApi } from "../shared/slicer_api";
 import { DefaultSidebarStateApi, ISidebarStateApi } from "../shared/sidebar_state_api";
-import { configuration } from "$lib/configuration.svelte";
+import { configuration, currentUser as globalCurrentUser } from "$lib/configuration.svelte";
 import { DemoUserApi } from "./user";
 import { IUserApi } from "../shared/user_api";
 import { DefaultDownloadApi, IDownloadApi } from "../shared/download_api";
@@ -60,4 +60,7 @@ export async function initDemoApis(): Promise<void> {
     container.addSingleton(IUserApi, user);
     container.addSingleton(IDownloadApi, downloadApi);
     container.addSingleton(IInternalBrowserApi, internalBrowserApi);
+
+    let currentUser = await user.getCurrentUser();
+    Object.assign(globalCurrentUser, currentUser);
 }

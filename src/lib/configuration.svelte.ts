@@ -1,5 +1,6 @@
 import { getContainer } from "./api/dependency_injection";
 import { configurationDefault, ISettingsApi, type Configuration } from "./api/shared/settings_api";
+import { type User } from "./api/shared/user_api";
 import { debounce } from "./utils";
 
 // TODO: Change this to use the same structure as useSidebar()
@@ -7,6 +8,20 @@ export const configuration = $state(configurationDefault());
 export const configurationMeta = $state({
     configurationLoaded: false,
 });
+export const currentUser = $state<User>({
+  id: -1,
+  username: "",
+  email: "",
+  created: new Date(),
+  permissions: {
+    admin: false,
+    sync: false,
+    onlineAccount: false,
+  },
+  syncUrl: null,
+  syncToken: null,
+  lastSync: null,
+})
 
 export async function updateConfiguration(config : Configuration) : Promise<void> {
     let settingsApi = getContainer().optional<ISettingsApi>(ISettingsApi);

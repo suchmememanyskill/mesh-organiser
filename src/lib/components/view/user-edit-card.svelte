@@ -48,7 +48,7 @@
     }
 
     async function editUser(user : User) : Promise<void> {
-        await userAdminApi.editUser(user, password.length > 0 ? password : null);
+        await userAdminApi.editUser(user);
     }
 
     async function addUser() : Promise<void> {

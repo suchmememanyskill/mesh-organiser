@@ -8,7 +8,7 @@
     import { ILocalApi } from "$lib/api/shared/local_api";
     import { configurationDefault, ISettingsApi, SettingSection } from "$lib/api/shared/settings_api";
     import { IThumbnailApi } from "$lib/api/shared/thumbnail_api";
-    import { IAdminUserApi, IUserApi } from "$lib/api/shared/user_api";
+    import { IAdminUserApi, IUserApi, IUserManageSelfApi } from "$lib/api/shared/user_api";
     import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
     import {
         Card,
@@ -29,6 +29,7 @@
     import Moon from "@lucide/svelte/icons/moon";
     import Sun from "@lucide/svelte/icons/sun";
     import { resetMode, setMode } from "mode-watcher";
+    import CurrentUserEditCard from "$lib/components/view/current-user-edit-card.svelte";
 
     const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
@@ -458,6 +459,10 @@
                 </div>
             </CardContent>
         </Card>
+        {/if}
+
+        {#if sections.includes(SettingSection.CurrentUser)}
+        <CurrentUserEditCard />
         {/if}
 
         {#if userAdminApi && sections.includes(SettingSection.Users)}

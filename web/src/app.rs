@@ -26,7 +26,7 @@ use tower_sessions_sqlx_store::SqliteStore;
 
 use crate::{
     controller::{
-        auth_controller, blob_controller, group_controller, label_controller, model_controller, resource_controller, threemf_controller, user_controller
+        auth_controller, blob_controller, group_controller, label_controller, model_controller, page_controller, resource_controller, threemf_controller, user_controller
     },
     user::{AuthSession, Backend},
     web_app_state::WebAppState,
@@ -188,6 +188,7 @@ impl App {
             .merge(resource_controller::router())
             .merge(user_controller::router())
             .merge(threemf_controller::router())
+            .merge(page_controller::router())
             .with_state(self.app_state)
             .layer(middleware::from_fn(update_session_middleware))
             .layer(MessagesManagerLayer)

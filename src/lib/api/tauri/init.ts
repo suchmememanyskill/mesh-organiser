@@ -18,7 +18,7 @@ import { IResourceFolderApi } from "../shared/resource_folder_api";
 import { IResourceApi } from "../shared/resource_api";
 import { ISettingsApi } from "../shared/settings_api";
 import { ITauriImportApi } from "../shared/tauri_import_api";
-import { configuration } from "$lib/configuration.svelte";
+import { configuration, currentUser as globalCurrentUser } from "$lib/configuration.svelte";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { debounce } from "$lib/utils";
@@ -35,7 +35,7 @@ import { LocalApi } from "./local";
 import { ISlicerApi } from "../shared/slicer_api";
 import { ILocalApi } from "../shared/local_api";
 import { UserApi } from "./user";
-import { IAdminUserApi, ISwitchUserApi, IUserApi } from "../shared/user_api";
+import { IAdminUserApi, ISwitchUserApi, IUserApi, IUserManageSelfApi } from "../shared/user_api";
 import { ThreemfApi } from "./threemf";
 import { IThreemfApi } from "../shared/threemf_api";
 
@@ -126,7 +126,15 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(IThreemfApi, threemfApi);
     container.addSingleton(ISwitchUserApi, userApi);
     container.addSingleton(IAdminUserApi, userApi);
+    container.addSingleton(IUserManageSelfApi, userApi);
 
+    checkForUpdates();
+
+    let currentUser = await userApi.getCurrentUser();
+    Object.assign(globalCurrentUser, currentUser);
+}
+
+async function checkForUpdates() : Promise<void> { 
     try 
     {
         const update = await check();

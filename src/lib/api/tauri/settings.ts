@@ -26,6 +26,7 @@ export class SettingsApi implements ISettingsApi {
             SettingSection.WindowZoom,
             SettingSection.UserInterface,
             SettingSection.Users,
+            SettingSection.CurrentUser,
         ]
     }
 }

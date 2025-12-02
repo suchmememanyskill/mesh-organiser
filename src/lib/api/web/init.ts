@@ -17,7 +17,7 @@ import { WebImportApi } from "./web_import";
 import { DefaultSlicerApi, ISlicerApi } from "../shared/slicer_api";
 import { DefaultSidebarStateApi, ISidebarStateApi } from "../shared/sidebar_state_api";
 import { DefaultDownloadApi, IDownloadApi } from "../shared/download_api";
-import { configuration } from "$lib/configuration.svelte";
+import { configuration, currentUser as globalCurrentUser } from "$lib/configuration.svelte";
 import { IBlobApi } from "../shared/blob_api";
 import { IDiskUsageInfoApi } from "../shared/disk_usage_info_api";
 import { IGroupApi } from "../shared/group_api";
@@ -60,6 +60,7 @@ export async function initWebApi() : Promise<void> {
         return;
     }
 
+    Object.assign(globalCurrentUser, currentUser);
     const blob = new WebBlobApi(request, currentUser);
     const diskUsageInfo = new WebDiskUsageInfoApi(request);
     const group = new WebGroupApi(request);
@@ -74,7 +75,7 @@ export async function initWebApi() : Promise<void> {
     const downloadApi = new DefaultDownloadApi(blob);
     const internalBrowserApi = new WebBrowserApi();
     const threemf = new WebThreemfApi(request);
-    const userAdmin = new WebUserAdminApi(request);
+    const userAdmin = new WebUserAdminApi(request, currentUser);
 
     const config = await settings.getConfiguration();
     Object.assign(configuration, config);

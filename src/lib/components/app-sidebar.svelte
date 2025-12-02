@@ -93,18 +93,6 @@
             url: "/resource",
             count: sidebarState.projectCount,
         },
-        {
-            title: "Settings",
-            icon: Settings,
-            url: "/settings",
-            count: 0,
-        },
-        {
-            title: "About",
-            icon: CircleHelp,
-            url: "/about",
-            count: 0,
-        },
     ]);
 
     function cloneOnHover(event: MouseEvent) {

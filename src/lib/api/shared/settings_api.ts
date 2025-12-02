@@ -148,7 +148,8 @@ export enum SettingSection {
     UserInterface,
     Users,
     ThumbnailGenerationColorSection,
-    BehaviourSectionAllPlatforms
+    BehaviourSectionAllPlatforms,
+    CurrentUser,
 }
 
 export const ISettingsApi = Symbol('ISettingsApi');
