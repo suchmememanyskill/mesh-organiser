@@ -10,7 +10,7 @@ use crate::{AppState, ServiceError, import_state::{ImportState, ImportStatus}};
 
 const IMAGE_WIDTH: usize = 512;
 const IMAGE_HEIGHT: usize = 512;
-const FIXED_ANGLE: Vec3<f32> = Vec3::new(-35.0, 30.0, 0.0);
+const FIXED_ANGLE: Vec3<f32> = Vec3::new(35.0, 30.0, 0.0);
 const IMAGE_SIZE: Vec2<usize> = Vec2::new(IMAGE_WIDTH, IMAGE_HEIGHT);
 
 fn render(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>) -> Result<(), ServiceError> {
