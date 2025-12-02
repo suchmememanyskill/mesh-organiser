@@ -228,7 +228,7 @@ pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_name:
     let timestamp = update_timestamp.unwrap_or(&now);
 
     sqlx::query!(
-        "UPDATE models_group SET group_name = ? AND group_last_modified = ? WHERE group_id = ? AND group_user_id = ?",
+        "UPDATE models_group SET group_name = ?, group_last_modified = ? WHERE group_id = ? AND group_user_id = ?",
         group_name,
         timestamp,
         group_id,

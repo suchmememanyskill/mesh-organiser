@@ -130,6 +130,7 @@ mod put {
         Json(params): Json<PutGroupParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
+
         group_db::edit_group(
             &app_state.app_state.db,
             &user,
