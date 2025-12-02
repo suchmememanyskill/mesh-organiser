@@ -121,4 +121,10 @@ export class DemoModelApi implements IModelApi {
 
         return models.length;
     }
+
+    async deleteModels(models: Model[]): Promise<void> {
+        for (const model of models) {
+            await this.deleteModel(model);
+        }
+    }
 }

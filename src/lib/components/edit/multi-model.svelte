@@ -255,11 +255,7 @@
     async function onDelete() {
         const affected_models = models;
 
-        let promise = Promise.all(
-            affected_models.map(async (x) => {
-                await modelApi.deleteModel(x);
-            }),
-        );
+        let promise = modelApi.deleteModels(affected_models);
 
         toast.promise(
             promise,

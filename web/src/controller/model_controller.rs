@@ -33,6 +33,7 @@ pub fn router() -> Router<WebAppState> {
         Router::new()
             .route("/models", post(post::add_model))
             .route("/models", get(get::get_models))
+            .route("/models", delete(delete::delete_models))
             .route("/models/count", get(get::get_model_count))
             .route("/models/disk_usage", get(get::get_model_disk_space_usage))
             .route("/models/{model_id}", put(put::edit_model))
@@ -170,6 +171,8 @@ mod put {
 }
 
 mod delete {
+    use db::model::User;
+
     use super::*;
 
     pub async fn delete_model(
@@ -178,37 +181,69 @@ mod delete {
         State(app_state): State<WebAppState>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
-        let model =
-            model_db::get_models_via_ids(&app_state.app_state.db, &user, vec![model_id]).await?;
+        
+        delete_model_inner(&app_state, &user, vec![model_id]).await?;
 
-        if model.len() != 1 {
+        Ok(StatusCode::NO_CONTENT.into_response())
+    }
+
+    #[derive(Deserialize)]
+    pub struct DeleteModelsParams {
+        pub model_ids: Vec<i64>,
+    }
+
+    pub async fn delete_models(
+        auth_session: AuthSession,
+        State(app_state): State<WebAppState>,
+        Json(params): Json<DeleteModelsParams>,
+    ) -> Result<Response, ApplicationError> {
+        let user = auth_session.user.unwrap().to_user();
+        
+        delete_model_inner(&app_state, &user, params.model_ids).await?;
+
+        Ok(StatusCode::NO_CONTENT.into_response())
+    }
+
+    async fn delete_model_inner(
+        app_state: &WebAppState,
+        user: &User,
+        model_ids: Vec<i64>,
+    ) -> Result<(), ApplicationError> {
+        let ids_len = model_ids.len();
+        let models =
+            model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids).await?;
+
+        if models.len() != ids_len {
             return Err(ApplicationError::InternalError(String::from(
                 "Failed to find model to delete",
             )));
         }
 
-        let model = &model[0];
+        let ids = models.iter().map(|m| m.id).collect::<Vec<i64>>();
 
-        model_db::delete_model(&app_state.app_state.db, &user, model_id).await?;
+        model_db::delete_models(&app_state.app_state.db, user, &ids).await?;
 
-        if blob_db::get_blob_model_usage_count(&app_state.app_state.db, model.blob.id).await? <= 0 {
-            let model_path = PathBuf::from(app_state.get_model_dir())
-                .join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
-            let image_path =
-                PathBuf::from(app_state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
+        // TODO: Optimize
+        let model_dir = app_state.get_model_dir();
+        let image_dir = app_state.get_image_dir();
+        for model in models {
+            if blob_db::get_blob_model_usage_count(&app_state.app_state.db, model.blob.id).await? <= 0 {
+                let model_path = model_dir.join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
+                let image_path = image_dir.join(format!("{}.png", model.blob.sha256));
 
-            if model_path.exists() {
-                std::fs::remove_file(model_path)?;
+                if model_path.exists() {
+                    std::fs::remove_file(model_path)?;
+                }
+
+                if image_path.exists() {
+                    std::fs::remove_file(image_path)?;
+                }
+
+                blob_db::delete_blob(&app_state.app_state.db, model.blob.id).await?;
             }
-
-            if image_path.exists() {
-                std::fs::remove_file(image_path)?;
-            }
-
-            blob_db::delete_blob(&app_state.app_state.db, model.blob.id).await?;
         }
 
-        Ok(StatusCode::NO_CONTENT.into_response())
+        Ok(())
     }
 }
 

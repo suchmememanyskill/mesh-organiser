@@ -220,8 +220,6 @@ pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: 
 
 pub async fn delete_model(db: &DbContext, user: &User, id: i64) -> Result<(), DbError>
 {
-    let hex = get_unique_id_from_model_id(db, id).await?;
-
     sqlx::query!(
         "DELETE FROM models WHERE model_id = ? AND model_user_id = ?",
         id,
@@ -229,6 +227,27 @@ pub async fn delete_model(db: &DbContext, user: &User, id: i64) -> Result<(), Db
     )
     .execute(db)
     .await?;
+
+    Ok(())
+}
+
+pub async fn delete_models(db: &DbContext, user: &User, ids: &[i64]) -> Result<(), DbError>
+{
+    if ids.is_empty() {
+        return Ok(());
+    }
+
+    let ids_placeholder = join(ids.iter(), ",");
+
+    let query = format!(
+        "DELETE FROM models WHERE model_user_id = ? AND model_id IN ({})",
+        ids_placeholder
+    );
+
+    sqlx::query(&query)
+        .bind(user.id)
+        .execute(db)
+        .await?;
 
     Ok(())
 }

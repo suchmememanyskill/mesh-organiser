@@ -40,6 +40,14 @@ export class WebModelApi implements IModelApi {
         await this.requestApi.request<void>(`/models/${model.id}`, HttpMethod.DELETE);
     }
 
+    async deleteModels(models: Model[]): Promise<void> {
+        let data = {
+            model_ids: models.map(model => model.id)
+        }
+
+        await this.requestApi.request<void>(`/models`, HttpMethod.DELETE, data);
+    }
+
     async getModelCount(flags: ModelFlags | null): Promise<number> {
         let data = {
             model_flags: convertModelFlagsToRaw(flags)

@@ -12,7 +12,8 @@ export class WebGroupApi implements IGroupApi {
 
     async getGroups(model_ids: number[] | null, group_ids: number[] | null, label_ids: number[] | null, order_by: GroupOrderBy, text_search: string | null, page: number, page_size: number, include_ungrouped_models: boolean): Promise<Group[]> {
         let data = {
-            model_ids: model_ids,
+            // Hack to bypass request uri becoming too large
+            model_ids_str: model_ids?.join(","),
             group_ids: group_ids,
             label_ids: label_ids,
             order_by: order_by,

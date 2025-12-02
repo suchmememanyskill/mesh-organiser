@@ -74,6 +74,7 @@ export interface IModelApi {
     getModels(model_ids : number[]|null, group_ids : number[]|null, label_ids : number[]|null, order_by: ModelOrderBy, text_search: string|null, page : number, page_size : number, flags: ModelFlags|null) : Promise<Model[]>;
     editModel(model : Model) : Promise<void>;
     deleteModel(model : Model) : Promise<void>;
+    deleteModels(models : Model[]) : Promise<void>;
     getModelCount(flags: ModelFlags|null) : Promise<number>;
 }
 

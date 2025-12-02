@@ -81,6 +81,14 @@ export class ModelApi implements IModelApi {
         return await invoke("delete_model", { modelId: model.id });
     }
 
+    async deleteModels(models: Model[]): Promise<void> {
+        await Promise.all(
+            models.map(async (x) => {
+                await this.deleteModel(x);
+            }),
+        );
+    }
+
     async getModelCount(flags : ModelFlags|null): Promise<number> {
         return await invoke("get_model_count", { flags: convertModelFlagsToRaw(flags) });
     }

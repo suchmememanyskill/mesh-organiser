@@ -43,6 +43,7 @@ mod get {
     pub struct GetGroupParams {
         #[serde(default)]
         pub model_ids: Vec<i64>,
+        pub model_ids_str: Option<String>,
         #[serde(default)]
         pub group_ids: Vec<i64>,
         #[serde(default)]
@@ -60,11 +61,17 @@ mod get {
         Query(params): Query<GetGroupParams>,
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
+        let model_ids_from_str = params.model_ids_str.map(|s| {
+            s.split(',')
+                .filter_map(|x| x.parse::<i64>().ok())
+                .collect::<Vec<i64>>()
+        });
+
         let groups = group_db::get_groups(
             &app_state.app_state.db,
             &user,
             GroupFilterOptions {
-                model_ids: if params.model_ids.is_empty() { None } else { Some(params.model_ids) },
+                model_ids: if params.model_ids.is_empty() { model_ids_from_str } else { Some(params.model_ids) },
                 group_ids: if params.group_ids.is_empty() { None } else { Some(params.group_ids) },
                 label_ids: if params.label_ids.is_empty() { None } else { Some(params.label_ids) },
                 order_by: params
