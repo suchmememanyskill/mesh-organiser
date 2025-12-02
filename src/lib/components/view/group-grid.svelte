@@ -456,5 +456,7 @@
             () => isSelected,
             (val) => val ? selected = [...selected, group] : selected = selected.filter(x => x.meta.id !== group.meta.id)
         } />
+    {:else}
+        <div></div>
     {/if}
 {/snippet}
