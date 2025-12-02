@@ -1,9 +1,11 @@
-use std::{path::PathBuf, thread};
+use std::{path::PathBuf, thread, u32};
 
 use async_zip::tokio::read::seek::ZipFileReader;
 use chrono::Utc;
 use db::model::{Model, User};
+use indexmap::IndexMap;
 use itertools::join;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use stl_io::Vector;
 use tokio::{fs::File, io::BufReader};
@@ -101,6 +103,46 @@ async fn parse_slicer_pe_config(data: String) -> Result<ThreemfMetadata, Service
     Ok(threemf)
 }
 
+pub fn parse_model_settings_config(data: String) -> IndexMap<u32, String> {
+    let mut names_map = IndexMap::new();
+
+    let re = Regex::new(
+        r#"(?s)<part\s+id="(\d+)"[^>]*>.*?<metadata\s+key="name"\s+value="([^"]+)"\s*/>"#
+    ).unwrap();
+
+    for captures in re.captures_iter(&data) {
+        let part_id = captures[1].parse::<u32>().unwrap_or(u32::MAX);
+        let part_name = captures[2].to_string();
+        names_map.insert(part_id, part_name);
+    }
+
+    names_map
+}
+
+pub async fn fetch_model_settings_config_from_3mf(threemf_path : PathBuf) -> Result<IndexMap<u32, String>, ServiceError> {
+    let zip_file = File::open(threemf_path).await?;
+    let mut buffered_reader = BufReader::new(zip_file);
+    let mut zip = ZipFileReader::with_tokio(&mut buffered_reader).await?;
+
+    let entries : Vec<_> = zip.file().entries().iter().cloned().collect();
+
+    for (i, entry) in entries.iter().enumerate() {
+        let entry_filename = match entry.filename().as_str() {
+            Ok(name) => name,
+            Err(_) => continue,
+        };
+
+        if entry_filename.ends_with("model_settings.config") {
+            let mut file = zip.reader_with_entry(i).await?;
+            let mut contents = String::new();
+            file.read_to_string_checked(&mut contents).await?;
+            return Ok(parse_model_settings_config(contents));
+        }
+    }
+
+    return Err(ServiceError::InternalError("Failed to extract model settings".to_string()));
+}
+
 pub async fn extract_metadata(model : &Model, app_state: &AppState) -> Result<ThreemfMetadata, ServiceError> {
     if !model.blob.filetype.contains("3mf") {
         return Err(ServiceError::InternalError("Model is not a 3MF file".to_string()));
@@ -143,7 +185,7 @@ pub async fn extract_metadata(model : &Model, app_state: &AppState) -> Result<Th
     return Err(ServiceError::InternalError("Failed to extract metadata".to_string()));
 }
 
-fn extract_models_inner(theemf_path : PathBuf, temp_dir : &PathBuf) -> Result<(), ServiceError> {
+fn extract_models_inner(theemf_path : PathBuf, temp_dir : &PathBuf, names_map : IndexMap<u32, String>) -> Result<(), ServiceError> {
     let handle = std::fs::File::open(theemf_path)?;
     let threemf_model = threemf::read(handle)?;
 
@@ -156,9 +198,12 @@ fn extract_models_inner(theemf_path : PathBuf, temp_dir : &PathBuf) -> Result<()
     for obj in objects {
         let mesh = obj.mesh.as_ref().unwrap();
         
-        let obj_name = obj.name.as_ref()
-            .map(|s| cleanse_evil_from_name(s))
-            .unwrap_or_else(|| format!("object_{}", obj.id));
+        let obj_name = match names_map.get(&(obj.id as u32)) {
+            Some(name) => name.clone(),
+            None => obj.name.as_ref()
+                .map(|s| cleanse_evil_from_name(s))
+                .unwrap_or_else(|| format!("object_{}", obj.id))
+        };
         
         let stl_path = temp_dir.join(format!("{}.stl", obj_name));
 
@@ -219,12 +264,13 @@ pub async fn extract_models(model : &Model, user: &User, app_state: &AppState) -
     temp_dir.push(safe_model_name);
 
     std::fs::create_dir(&temp_dir)?;
-    
+
     {
         let temp_dir = temp_dir.clone();
+        let names_map = fetch_model_settings_config_from_3mf(theemf_path.clone()).await.unwrap_or_default();
 
         tokio::task::spawn_blocking(move || {
-            extract_models_inner(theemf_path, &temp_dir)
+            extract_models_inner(theemf_path, &temp_dir, names_map)
         }).await??;
     }
 
