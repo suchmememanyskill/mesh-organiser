@@ -1,5 +1,5 @@
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
-import { createUserInstance, type IAdminUserApi, type User } from "../shared/user_api";
+import { createUserInstance, permissionsToStringArray, type IAdminUserApi, type User } from "../shared/user_api";
 import { parseTauriRawUser, type TauriRawUser } from "../tauri/user";
 
 export class WebUserAdminApi implements IAdminUserApi {
@@ -38,7 +38,26 @@ export class WebUserAdminApi implements IAdminUserApi {
         await this.requestApi.request<void>(`/users/${user.id}`, HttpMethod.DELETE);
     }
     
-    async editUser(user: User, password_hash: string | null): Promise<void> {
-        // Unimplemented
+    async editUser(user: User): Promise<void> {
+        let dataUserEdit = {
+            user_name: user.username,
+            user_email: user.email,
+        };
+
+        await this.requestApi.request<void>(`/users/${user.id}`, HttpMethod.PUT, dataUserEdit);
+
+        let dataPermissionsEdit = {
+            permissions: permissionsToStringArray(user.permissions),
+        };
+
+        await this.requestApi.request<void>(`/users/${user.id}/permissions`, HttpMethod.PUT, dataPermissionsEdit);
+    }
+
+    async editUserPassword(user: User, newPassword: string): Promise<void> {
+        let data = {
+            new_password: newPassword,
+        }
+
+        await this.requestApi.request<void>(`/users/${user.id}/password`, HttpMethod.PUT, data);
     }
 }

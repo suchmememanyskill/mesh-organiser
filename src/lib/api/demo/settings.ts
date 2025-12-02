@@ -30,11 +30,11 @@ export class DemoSettingsApi implements ISettingsApi {
     availableSections(): SettingSection[] {
         // Return only relevant sections for demo
         return [
-            SettingSection.ThumbnailGeneration,
             SettingSection.ModelPreview,
-            SettingSection.Behaviour,
-            SettingSection.WindowZoom,
-            SettingSection.UserInterface
+            SettingSection.UserInterface,
+            SettingSection.Users,
+            SettingSection.ThumbnailGenerationColorSection,
+            SettingSection.BehaviourSectionAllPlatforms
         ];
     }
 }

@@ -140,13 +140,15 @@ export function configurationDefault() : Configuration
 export enum SettingSection {
     ThumbnailGeneration,
     ModelPreview,
-    ImportExportSettings,
-    DeepLinkSettings,
+    ImportExport,
+    DeepLink,
     CustomSlicer,
     Behaviour,
     WindowZoom,
     UserInterface,
-    UsersLocal
+    Users,
+    ThumbnailGenerationColorSection,
+    BehaviourSectionAllPlatforms
 }
 
 export const ISettingsApi = Symbol('ISettingsApi');

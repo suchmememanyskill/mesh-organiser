@@ -151,6 +151,8 @@ mod put {
             &hash_password(&params.new_password),
         ).await?;
 
+        user_db::scramble_validity_token(&app_state.app_state.db, user_id).await?;
+
         Ok(StatusCode::OK.into_response())
     }
 

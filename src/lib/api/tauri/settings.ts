@@ -19,13 +19,13 @@ export class SettingsApi implements ISettingsApi {
         return [
             SettingSection.ThumbnailGeneration,
             SettingSection.ModelPreview,
-            SettingSection.ImportExportSettings,
-            SettingSection.DeepLinkSettings,
+            SettingSection.ImportExport,
+            SettingSection.DeepLink,
             SettingSection.CustomSlicer,
             SettingSection.Behaviour,
             SettingSection.WindowZoom,
             SettingSection.UserInterface,
-            SettingSection.UsersLocal,
+            SettingSection.Users,
         ]
     }
 }

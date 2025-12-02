@@ -73,7 +73,11 @@ export class UserApi implements IUserApi, IAdminUserApi, ISwitchUserApi {
         await invoke("set_current_user", { userId: user.id });
     }
 
-    async editUser(user: User, password_hash: string | null): Promise<void> {
+    async editUser(user: User): Promise<void> {
         await invoke("edit_user", { userId: user.id, userName: user.username, userEmail: user.email, userLastSync: user.lastSync?.toISOString() ?? null, userSyncToken: user.syncToken, userSyncUrl: user.syncUrl });
+    }
+
+    async editUserPassword(user: User, newPassword: string): Promise<void> {
+        throw new Error("Method not implemented.");
     }
 }

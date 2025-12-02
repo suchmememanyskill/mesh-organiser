@@ -1,6 +1,10 @@
 import { type Blob, IBlobApi } from "../shared/blob_api";
 
 export class DemoBlobApi implements IBlobApi {
+    getBlobDownloadUrl(blob: Blob): Promise<string> {
+        return (blob as any)._modelUrl || "";
+    }
+
     async getBlobBytes(blob: Blob): Promise<Uint8Array> {
         const modelUrl = (blob as any)._modelUrl;
         if (!modelUrl) {

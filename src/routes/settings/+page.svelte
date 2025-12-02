@@ -6,7 +6,7 @@
     import { getContainer } from "$lib/api/dependency_injection";
     import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/disk_usage_info_api";
     import { ILocalApi } from "$lib/api/shared/local_api";
-    import { configurationDefault } from "$lib/api/shared/settings_api";
+    import { configurationDefault, ISettingsApi, SettingSection } from "$lib/api/shared/settings_api";
     import { IThumbnailApi } from "$lib/api/shared/thumbnail_api";
     import { IAdminUserApi, IUserApi } from "$lib/api/shared/user_api";
     import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
@@ -34,6 +34,8 @@
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
     const userAdminApi = getContainer().optional<IAdminUserApi>(IAdminUserApi);
+    const settingsApi = getContainer().optional<ISettingsApi>(ISettingsApi);
+    let sections = $state<SettingSection[]>(settingsApi ? settingsApi.availableSections() : Object.values(SettingSection).map(x => x as SettingSection)); 
     let diskUsage = $state<DiskUsageInfo|null>(null);
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
@@ -111,12 +113,13 @@
     <div
         class="flex flex-row flex-wrap gap-5 justify-center relative my-3 fix-card-width"
     >
+        {#if sections.includes(SettingSection.ThumbnailGeneration)}
         <Card>
             <CardHeader>
                 <CardTitle>Thumbnail generation</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                {#if thumbnail_regen_button_enabled}
+                {#if thumbnail_regen_button_enabled && thumbnailApi}
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <Button
                         onclick={() => replaceAllThumbnails(true)}>
@@ -127,7 +130,7 @@
                             Generate missing thumbnails
                         </Button>
                     </div>
-                {:else}
+                {:else if thumbnailApi}
                     <Label class="p-2 mx-auto">Progress: {(importState.finished_thumbnails_count/importState.model_count*100).toFixed(1)}%</Label>
                 {/if}
 
@@ -174,12 +177,34 @@
                 </div>
             </CardFooter>
         </Card>
+        {/if}
 
+        {#if sections.includes(SettingSection.ModelPreview) }
         <Card>
             <CardHeader>
                 <CardTitle>Model preview</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
+                {#if sections.includes(SettingSection.ThumbnailGenerationColorSection) }
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="color">Color of the 3d preview</Label>
+                    <div class="flex flex-row gap-2">
+                        <Input
+                            id="color"
+                            placeholder="color"
+                            type="color"
+                            class="flex-grow"
+                            bind:value={configuration.thumbnail_color}
+                        />
+                        <Button
+                            onclick={() =>
+                                (configuration.thumbnail_color = "#EEEEEE")}
+                            >Default</Button
+                        >
+                    </div>
+                </div>
+                {/if}
+
                 <div class="flex flex-col gap-3">
                     <Label>Max filesize where STL models are automatically loaded (in MB)</Label>
 
@@ -229,7 +254,9 @@
                 </div>
             </CardContent>
         </Card>
+        {/if}
 
+        {#if sections.includes(SettingSection.ImportExport)}
         <Card>
             <CardHeader>
                 <CardTitle>Import/Export settings</CardTitle>
@@ -282,7 +309,9 @@
                 {/if}
             </CardContent>
         </Card>
+        {/if}
 
+        {#if sections.includes(SettingSection.DeepLink)}
         <Card>
             <CardHeader>
                 <CardTitle>Open links from browser</CardTitle>
@@ -298,7 +327,9 @@
                 </div>
             </CardContent>
         </Card>
+        {/if}
 
+        {#if sections.includes(SettingSection.CustomSlicer)}
         <Card>
             <CardHeader>
                 <CardTitle>Custom Slicer</CardTitle>
@@ -321,19 +352,25 @@
                 </div>
             </CardContent>
         </Card>
+        {/if}
 
+        {#if sections.includes(SettingSection.Behaviour) || sections.includes(SettingSection.BehaviourSectionAllPlatforms)}
         <Card>
             <CardHeader>
                 <CardTitle>Behaviour</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
+                {#if sections.includes(SettingSection.Behaviour) }
                 <CheckboxWithLabel bind:value={configuration.open_slicer_on_remote_model_import} label="Open slicer after importing from website" />
                 <CheckboxWithLabel bind:value={configuration.focus_after_link_import} label="Focus window after importing from website" />
                 <CheckboxWithLabel bind:value={configuration.open_links_in_external_browser} label="Open links in external browser" />
+                {/if}
                 <CheckboxWithLabel bind:value={configuration.label_exported_model_as_printed} label="Label exported models as printed" />             
             </CardContent>
         </Card>
+        {/if}
 
+        {#if sections.includes(SettingSection.WindowZoom)}
         <Card>
             <CardHeader>
                 <CardTitle>Window Zoom</CardTitle>
@@ -343,7 +380,9 @@
                 <Label>Change the zoom level using Control and +/-</Label>
             </CardContent>
         </Card>
+        {/if}
 
+        {#if sections.includes(SettingSection.UserInterface)}
         <Card>
             <CardHeader>
                 <CardTitle>User Interface</CardTitle>
@@ -419,8 +458,9 @@
                 </div>
             </CardContent>
         </Card>
+        {/if}
 
-        {#if userAdminApi}
+        {#if userAdminApi && sections.includes(SettingSection.Users)}
             <UserEditCard />
         {/if}
     </div>

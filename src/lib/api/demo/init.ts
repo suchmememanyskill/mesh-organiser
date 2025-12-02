@@ -36,7 +36,7 @@ export async function initDemoApis(): Promise<void> {
     const model = new DemoModelApi();
     const resource = new DemoResourceApi();
     const settings = new DemoSettingsApi();
-    const slicer = new DefaultSlicerApi();
+    const slicer = new DefaultSlicerApi(blob);
     const sidebarApi = new DefaultSidebarStateApi();
     const user = new DemoUserApi();
     const downloadApi = new DefaultDownloadApi(blob);

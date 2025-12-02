@@ -48,6 +48,24 @@ export function createUserInstance(id: number, username: string, email: string, 
     };
 }
 
+export function permissionsToStringArray(permissions: UserPermissions) : string[] {
+    let perms : string[] = [];
+
+    if (permissions.admin) {
+        perms.push("Admin");
+    }
+
+    if (permissions.sync) {
+        perms.push("Sync");
+    }
+
+    if (permissions.onlineAccount) {
+        perms.push("OnlineAccount");
+    }
+
+    return perms;
+}
+
 export const IUserApi = Symbol('IUserApi');
 export const ISwitchUserApi = Symbol('ISwitchUserApi');
 export const IAdminUserApi = Symbol('IAdminUserApi');
@@ -61,13 +79,13 @@ export interface IAdminUserApi {
     getAllUsers() : Promise<User[]>;
     addUser(username : string, email : string, password : string) : Promise<User>;
     deleteUser(user : User) : Promise<void>;
-    editUser(user : User, password_hash : string|null) : Promise<void>;
+    editUser(user : User) : Promise<void>;
+    editUserPassword(user : User, newPassword : string) : Promise<void>;
 }
 
 export interface IUserApi {
     getCurrentUser() : Promise<User>;
     isAuthenticated() : Promise<boolean>;
-    // TODO: Allow own editing
 }
 
 export const IUserLogoutApi = Symbol('IUserLogoutApi');
@@ -80,4 +98,11 @@ export const IUserLoginApi = Symbol('IUserLoginApi');
 
 export interface IUserLoginApi {
     loginUser(email : string, password : string) : Promise<void>;
+}
+
+export const IUserManageSelfApi = Symbol('IUserManageSelfApi');
+
+export interface IUserManageSelfApi {
+    editSelf(user : User) : Promise<void>;
+    editSelfPassword(newPassword : string) : Promise<void>;
 }

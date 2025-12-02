@@ -30,7 +30,8 @@ export class WebSettingsApi implements ISettingsApi {
             SettingSection.ModelPreview,
             SettingSection.Behaviour,
             SettingSection.UserInterface,
-            SettingSection.UsersLocal,
+            SettingSection.Users,
+            SettingSection.Behaviour,
         ]
     }
 }

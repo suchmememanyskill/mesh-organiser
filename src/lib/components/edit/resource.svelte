@@ -27,6 +27,7 @@
     const props: { resource: ResourceMeta; class?: ClassValue, onDelete? : Function } = $props();
     const trackedResource = $derived(props.resource);
     const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
+    const resourceFolderApi = getContainer().optional<IResourceFolderApi>(IResourceFolderApi);
 
     const saveResourceDebounced = debounce(async (editedResource: ResourceMeta) => {
         console.log("Saving Resource");
@@ -47,8 +48,6 @@
 
     function onOpenFolder()
     {
-        let resourceFolderApi = getContainer().require<IResourceFolderApi>(IResourceFolderApi);
-        
         if (resourceFolderApi)
         {
             resourceFolderApi.openResourceFolder(trackedResource);
@@ -87,9 +86,11 @@
                     bind:value={trackedResource.name}
                 />
             </div>
-            <Button class="flex flex-col space-y-1.5" variant="default" onclick={onOpenFolder}>
-                Open project folder
-            </Button>
+            {#if resourceFolderApi}
+                <Button class="flex flex-col space-y-1.5" variant="default" onclick={onOpenFolder}>
+                    Open project folder
+                </Button>
+            {/if}
 
             <CheckboxWithLabel
                 label="Completed"
