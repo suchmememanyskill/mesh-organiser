@@ -14,6 +14,7 @@ export class WebImportApi implements IWebImportApi {
     async import(files: File[]): Promise<ImportState> {
         resetImportState();
         importState.status = ImportStatus.ProcessingModels;
+        importState.model_count = files.length;
 
         for (const file of files) {
             try {
@@ -29,7 +30,7 @@ export class WebImportApi implements IWebImportApi {
 
                 importState.imported_models[0].model_ids.push(...data);
                 importState.imported_models_count += data.length;
-                importState.model_count += data.length;
+                importState.model_count += (data.length - 1);
                 importState.finished_thumbnails_count += data.length;
             }
             catch (e) {

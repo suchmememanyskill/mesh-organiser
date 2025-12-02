@@ -159,7 +159,7 @@
                     <DropdownMenu.Group>
                         <DropdownMenu.GroupHeading>Disk Usage</DropdownMenu.GroupHeading>
                         <DropdownMenu.Label class="font-normal">Uncompressed: {toReadableSize(diskUsage.size_uncompressed)}</DropdownMenu.Label>
-                        <DropdownMenu.Label class="font-normal">Compressed: {toReadableSize(diskUsage.size_compressed)} ({Number((diskUsage.size_uncompressed - diskUsage.size_compressed) / diskUsage.size_uncompressed * 100).toFixed(1)}%)</DropdownMenu.Label>
+                        <DropdownMenu.Label class="font-normal">Compressed: {toReadableSize(diskUsage.size_compressed)} ({Number((diskUsage.size_uncompressed - diskUsage.size_compressed) / diskUsage.size_uncompressed * 100).toFixed(1)}% savings)</DropdownMenu.Label>
                     </DropdownMenu.Group>
                 {/if}
             </DropdownMenu.Content>
