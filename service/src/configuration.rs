@@ -49,6 +49,7 @@ pub struct StoredConfiguration {
     pub use_worker_for_model_parsing: Option<bool>,
     pub prefer_gcode_thumbnail: Option<bool>,
     pub last_user_id: Option<i64>,
+    pub custom_css : Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -94,6 +95,7 @@ pub struct Configuration {
     pub use_worker_for_model_parsing: bool,
     pub prefer_gcode_thumbnail: bool,
     pub last_user_id: i64,
+    pub custom_css : String,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -213,6 +215,7 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
             .prefer_gcode_thumbnail
             .unwrap_or(default.prefer_gcode_thumbnail),
         last_user_id: configuration.last_user_id.unwrap_or(default.last_user_id),
+        custom_css : configuration.custom_css.unwrap_or(default.custom_css),
     }
 }
 
@@ -270,6 +273,7 @@ impl Default for Configuration {
             use_worker_for_model_parsing: true,
             prefer_gcode_thumbnail: true,
             last_user_id: 1,
+            custom_css : String::new(),
         }
     }
 }

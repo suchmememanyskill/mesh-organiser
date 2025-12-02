@@ -30,6 +30,7 @@
     import Sun from "@lucide/svelte/icons/sun";
     import { resetMode, setMode } from "mode-watcher";
     import CurrentUserEditCard from "$lib/components/view/current-user-edit-card.svelte";
+    import { Textarea } from "$lib/components/ui/textarea/index.js";
 
     const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
@@ -387,7 +388,7 @@
                     </Select.Root>                    
                 </div>
 
-                <div class="flex flex-col space-y-1.5">
+                <div class="flex flex-col space-y-1.5 gap-2">
                     <Label>Theme</Label>
                     <div class="grid grid-cols-2 gap-2">
                         <Select.Root type="single" bind:value={configuration.theme} onValueChange={(val) => setTheme(val)}>
@@ -427,10 +428,7 @@
                         </DropdownMenu.Root>
                     </div>
                     {#if configuration.theme === "custom"}
-                        <div class="grid grid-cols-2 gap-2">
-                                <Button onclick={() => setTheme("custom")}>Reload theme</Button>
-                                <Button onclick={openCustomCss}>Open custom.css</Button>
-                        </div>
+                        <Textarea bind:value={configuration.custom_css} class="min-h-48" oninput={() => setTheme("custom")} />
                     {/if}
                 </div>
             </CardContent>
@@ -438,7 +436,7 @@
         {/if}
 
         {#if sections.includes(SettingSection.CurrentUser)}
-        <CurrentUserEditCard />
+            <CurrentUserEditCard />
         {/if}
 
         {#if userAdminApi && sections.includes(SettingSection.Users)}

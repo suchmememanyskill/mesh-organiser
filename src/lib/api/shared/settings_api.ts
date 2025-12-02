@@ -47,6 +47,7 @@ export interface Configuration {
     show_multiselect_checkboxes : boolean;
     use_worker_for_model_parsing : boolean;
     prefer_gcode_thumbnail : boolean;
+    custom_css : string;
 }
 
 export function convertOrderOptionModelsToEnum(orderOption : OrderOptionModels) : ModelOrderBy {
@@ -134,6 +135,7 @@ export function configurationDefault() : Configuration
         show_multiselect_checkboxes: false,
         use_worker_for_model_parsing: true,
         prefer_gcode_thumbnail: true,
+        custom_css : "",
     }
 }
 
