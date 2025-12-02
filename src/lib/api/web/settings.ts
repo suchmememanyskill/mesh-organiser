@@ -26,12 +26,11 @@ export class WebSettingsApi implements ISettingsApi {
 
     availableSections(): SettingSection[] {
         return [
-            SettingSection.ThumbnailGeneration,
             SettingSection.ModelPreview,
-            SettingSection.Behaviour,
             SettingSection.UserInterface,
             SettingSection.Users,
-            SettingSection.Behaviour,
+            SettingSection.ThumbnailGenerationColorSection,
+            SettingSection.BehaviourSectionAllPlatforms
         ]
     }
 }
