@@ -1,7 +1,7 @@
 import { contain } from "three/src/extras/TextureUtils.js";
 import { getContainer, resetContainer } from "../dependency_injection";
 import { IServerRequestApi } from "../shared/server_request_api";
-import { IAdminUserApi, IUserApi, IUserLoginApi, IUserLogoutApi } from "../shared/user_api";
+import { IAdminUserApi, IUserApi, IUserLoginApi, IUserLogoutApi, IUserManageSelfApi } from "../shared/user_api";
 import { WebUserLoginApi } from "./login";
 import { ServerRequestApi } from "./request";
 import { WebUserApi } from "./user";
@@ -95,6 +95,7 @@ export async function initWebApi() : Promise<void> {
     container.addSingleton(IDownloadApi, downloadApi);
     container.addSingleton(IInternalBrowserApi, internalBrowserApi);
     container.addSingleton(IThreemfApi, threemf);
+    container.addSingleton(IUserManageSelfApi, userAdmin);
 
     if (currentUser.permissions.admin) {
         container.addSingleton(IAdminUserApi, userAdmin);

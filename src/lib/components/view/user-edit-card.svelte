@@ -21,6 +21,7 @@
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
     import { currentUser } from "$lib/configuration.svelte";
     import KeyRound from "@lucide/svelte/icons/key-round";
+    import { pass } from "three/tsl";
 
     const userAdminApi = getContainer().require<IAdminUserApi>(IAdminUserApi);
     const hostApi = getContainer().require<IHostApi>(IHostApi);
@@ -34,7 +35,8 @@
         const lower = "abcdefghijklmnopqrstuvwxyz";
         const upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const numChars = "0123456789";
-        const specialChars = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+        //const specialChars = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+        const specialChars = "!$%^&()=+[]{}|;:,.<>?";
         let chars = lower;
         chars += upperChars;
         chars += numChars;
@@ -78,7 +80,7 @@
     async function resetPassword(user : User) : Promise<void> {
         let newPassword = genPass(12);
         await userAdminApi.editUserPassword(user, newPassword);
-        toast.success(`Password for user '${user.username}' reset to: ${newPassword}. The password has also been copied to your clipboard.`, { duration: 10000 });
+        toast.success(`Password for user '${user.email}' reset to '${newPassword}'. The password has also been copied to your clipboard.`, { duration: 10000 });
 
         try {
             await navigator.clipboard.writeText(newPassword);
@@ -109,6 +111,14 @@
         let createdUser = await userAdminApi.addUser(newUser.username, newUser.email, password);
         users = [...users, createdUser];
         newUser = createFakeUser();
+        
+        try {
+            await navigator.clipboard.writeText(`Email: ${createdUser.email}\nPassword: ${password}`);
+            toast.success(`User '${createdUser.username}' created. Login details have been copied to your clipboard.`, { duration: 10000 });
+        } catch (e) {
+            console.error("Failed to copy password to clipboard", e);
+        }
+
         password = "";
     }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IAdminUserApi, IUserApi, IUserManageSelfApi, type User } from "$lib/api/shared/user_api";
+    import { IAdminUserApi, IUserApi, IUserLoginApi, IUserManageSelfApi, type User } from "$lib/api/shared/user_api";
     import {
         Card,
         CardContent,
@@ -24,6 +24,7 @@
     import { debounce, toReadableSize } from "$lib/utils";
     import AsyncButton from "../ui/button/async-button.svelte";
 
+    const loginApi = getContainer().optional<IUserLoginApi>(IUserLoginApi);
     const hostApi = getContainer().optional<IHostApi>(IHostApi);
     const currentUserEditApi = getContainer().optional<IUserManageSelfApi>(IUserManageSelfApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
@@ -78,6 +79,10 @@
             await currentUserEditApi.editSelfPassword(newPassword);
             toast.success("Password changed successfully");
             password = "";
+
+            if (loginApi) {
+                await loginApi.loginUser(currentUser.email, newPassword);
+            }
         } catch (e) {
             toast.error("Failed to change password");
             console.error("Failed to change password", e);

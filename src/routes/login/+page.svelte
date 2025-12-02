@@ -35,6 +35,12 @@
         }
     }
 
+    function onEnterTryLogin(event: any) {
+        if (event.key === "Enter") {
+            login();
+        }
+    }
+
     onMount(async () => {
         if (!userApi) {
             return;
@@ -57,11 +63,11 @@
         <Card.Content class="grid gap-5">
             <div class="grid gap-3">
                 <Label for="email">Email</Label>
-                <Input id="email" type="email" bind:value={email} />
+                <Input id="email" type="email" onkeydown={onEnterTryLogin} bind:value={email} />
             </div>
             <div class="grid gap-3">
                 <Label for="password">Password</Label>
-                <Input id="password" type="password" bind:value={password} />
+                <Input id="password" type="password" onkeydown={onEnterTryLogin} bind:value={password} />
             </div>
         </Card.Content>
         <Card.Footer>

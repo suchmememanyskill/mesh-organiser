@@ -123,7 +123,7 @@ mod put {
             &params.user_email,
         ).await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -148,12 +148,12 @@ mod put {
         user_db::edit_user_password(
             &app_state.app_state.db,
             user_id,
-            &hash_password(&params.new_password),
+            &params.new_password,
         ).await?;
 
         user_db::scramble_validity_token(&app_state.app_state.db, user_id).await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 
     #[derive(Deserialize)]
@@ -181,7 +181,7 @@ mod put {
             params.permissions,
         ).await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
 
@@ -205,6 +205,6 @@ mod delete {
 
         export_service::delete_dead_blobs(&app_state.app_state).await?;
 
-        Ok(StatusCode::OK.into_response())
+        Ok(StatusCode::NO_CONTENT.into_response())
     }
 }
