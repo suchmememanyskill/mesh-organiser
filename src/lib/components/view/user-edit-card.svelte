@@ -18,12 +18,36 @@
     import Plus from "@lucide/svelte/icons/plus";
     import { IHostApi, isCurrentPlatformDesktop, Platform } from "$lib/api/shared/host_api";
     import { toast } from "svelte-sonner";
+    import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import { currentUser } from "$lib/configuration.svelte";
+    import KeyRound from "@lucide/svelte/icons/key-round";
 
     const userAdminApi = getContainer().require<IAdminUserApi>(IAdminUserApi);
     const hostApi = getContainer().require<IHostApi>(IHostApi);
     let users = $state<User[]>([]);
     let password = $state<string>("");
     let newUser = $state(createFakeUser());
+    let isDesktop = $state<boolean>(false);
+
+    // From https://www.geeksforgeeks.org/javascript/how-to-generate-a-random-password-using-javascript/
+    function genPass(len : number) {
+        const lower = "abcdefghijklmnopqrstuvwxyz";
+        const upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const numChars = "0123456789";
+        const specialChars = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+        let chars = lower;
+        chars += upperChars;
+        chars += numChars;
+        chars += specialChars;
+
+        let pass = "";
+        for (let i = 0; i < len; i++) {
+            const randIdx = Math.floor(Math.random() * chars.length);
+            pass += chars[randIdx];
+        }
+
+        return pass;
+    }
 
     function createFakeUser() : User {
         return {
@@ -51,9 +75,19 @@
         await userAdminApi.editUser(user);
     }
 
-    async function addUser() : Promise<void> {
-        let desktopPlatform = await isCurrentPlatformDesktop(hostApi);
+    async function resetPassword(user : User) : Promise<void> {
+        let newPassword = genPass(12);
+        await userAdminApi.editUserPassword(user, newPassword);
+        toast.success(`Password for user '${user.username}' reset to: ${newPassword}. The password has also been copied to your clipboard.`, { duration: 10000 });
 
+        try {
+            await navigator.clipboard.writeText(newPassword);
+        } catch (e) {
+            console.error("Failed to copy password to clipboard", e);
+        }
+    }
+    
+    async function addUser() : Promise<void> {
         if (newUser.username.length <= 0)
         {
             toast.error("Username cannot be empty");
@@ -66,7 +100,7 @@
             return;
         }
 
-        if (password.length < 6 && !desktopPlatform)
+        if (password.length < 6 && !isDesktop)
         {
             toast.error("Password must be at least 6 characters long");
             return;
@@ -80,18 +114,30 @@
 
     onMount(async () => {
         users = await userAdminApi.getAllUsers();
+        isDesktop = await isCurrentPlatformDesktop(hostApi);
     });
 </script>
 
 <Card>
     <CardHeader>
-        <CardTitle>User Administration</CardTitle>
+        <CardTitle>User administration</CardTitle>
     </CardHeader>
     <CardContent class="flex flex-col gap-2">
-        {#each users as user (user.id)}
+        {#each users.filter(x => x.id > 1 && x.id != currentUser.id) as user (user.id)}
             <div class="flex flex-row gap-2 mr-1">
                 <p class="text-sm truncate grow capitalize">{user.username}</p>
-                <Popover.Root onOpenChange={x => { if (!x) { editUser(user); } else { password = ""; } }}>
+                {#if !isDesktop}
+                <Popover.Root>
+                    <Popover.Trigger class={buttonVariants({ "variant": "ghost", "size": "mi"})}>
+                        <KeyRound />
+                    </Popover.Trigger>
+                    <Popover.Content class="w-80 flex flex-col gap-10">
+                        <h1 class="text-center font-bold">Reset password</h1>
+                        <Button variant="destructive" onclick={() => resetPassword(user)}>Reset password for '{user.username}'</Button>
+                    </Popover.Content>
+                </Popover.Root>
+                {/if}
+                <Popover.Root onOpenChange={x => { if (!x) { editUser(user); } }}>
                     <Popover.Trigger class={buttonVariants({ "variant": "ghost", "size": "mi"})}>
                         <Pencil />
                     </Popover.Trigger>
@@ -105,7 +151,13 @@
                                     <Label for="username">Username</Label>
                                     <Input id="username" class="col-span-2 h-8" bind:value={user.username} />
                                 </div>
-                                <!-- Add other things for web specific edits later! -->
+                                {#if !isDesktop}
+                                <div class="grid grid-cols-3 items-center gap-4">
+                                    <Label for="email">Email</Label>
+                                    <Input id="email" class="col-span-2 h-8" type="email" bind:value={user.email} />
+                                </div>
+                                <CheckboxWithLabel bind:value={user.permissions.admin} label="Admin user" />
+                                {/if}
                             </div>
                         </div>
                     </Popover.Content>
@@ -122,7 +174,7 @@
             </div>
             <Separator />
         {/each}
-        <Popover.Root onOpenChange={x => { if (x) { password = ""; }}}>
+        <Popover.Root onOpenChange={x => { if (x) { password = genPass(12); }}}>
             <Popover.Trigger class="{buttonVariants({ "variant": "default" })} mt-2">
                 <Plus /> Create new user
             </Popover.Trigger>
@@ -136,14 +188,16 @@
                             <Label for="username">Username</Label>
                             <Input id="username" class="col-span-2 h-8" bind:value={newUser.username} />
                         </div>
+                        {#if !isDesktop}
                         <div class="grid grid-cols-3 items-center gap-4">
                             <Label for="email">Email</Label>
                             <Input id="email" class="col-span-2 h-8" type="email" bind:value={newUser.email} />
                         </div>
                         <div class="grid grid-cols-3 items-center gap-4">
                             <Label for="password">Password</Label>
-                            <Input id="password" class="col-span-2 h-8" type="password" bind:value={password} />
+                            <Input id="password" class="col-span-2 h-8" bind:value={password} />
                         </div>
+                        {/if}
                     </div>
                     <Button class="mt-4" onclick={addUser}>Create user</Button>
                 </div>

@@ -21,7 +21,6 @@
 
     const sidebar = useSidebar();
     
-    const userApi = getContainer().require<IUserApi>(IUserApi);
     const currentUserEditApi = getContainer().optional<IUserManageSelfApi>(IUserManageSelfApi);
     const logoutApi = getContainer().optional<IUserLogoutApi>(IUserLogoutApi);
     const switchUserApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);

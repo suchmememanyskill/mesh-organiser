@@ -33,11 +33,9 @@
 
     const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
-    const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
     const userAdminApi = getContainer().optional<IAdminUserApi>(IAdminUserApi);
     const settingsApi = getContainer().optional<ISettingsApi>(ISettingsApi);
     let sections = $state<SettingSection[]>(settingsApi ? settingsApi.availableSections() : Object.values(SettingSection).map(x => x as SettingSection)); 
-    let diskUsage = $state<DiskUsageInfo|null>(null);
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
     let app_data_dir = "";
@@ -95,10 +93,6 @@
 
         if (localApi) {
             app_data_dir = await localApi.getAppDataDir();
-        }
-
-        if (diskUsageInfoApi) {
-            diskUsage = await diskUsageInfoApi.getDiskUsageInfo();
         }
     });
     
@@ -290,24 +284,6 @@
                         Note: Data path is not updated until the application is restarted.
                     </div>
                 </div>
-
-                {#if diskUsage}
-                    <div class="flex flex-col gap-3">
-                        <Label>Total size of stored models</Label>
-                        <div class="grid grid-cols-2 text-sm">
-                            <div class="text-left space-y-1">
-                                <div>Uncompressed</div>
-                                <div>Compressed (Stored)</div>
-                                <div>Savings</div>
-                            </div>
-                            <div class="text-right space-y-1">
-                                <div>{toReadableSize(diskUsage.size_uncompressed)}</div>
-                                <div>{toReadableSize(diskUsage.size_compressed)}</div>
-                                <div>{Number((diskUsage.size_uncompressed - diskUsage.size_compressed) / diskUsage.size_uncompressed * 100).toFixed(1)}%</div>
-                            </div>
-                        </div>
-                    </div>
-                {/if}
             </CardContent>
         </Card>
         {/if}
@@ -333,10 +309,10 @@
         {#if sections.includes(SettingSection.CustomSlicer)}
         <Card>
             <CardHeader>
-                <CardTitle>Custom Slicer</CardTitle>
+                <CardTitle>Custom slicer</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
-                <Label for="custom_slicer_path">Custom Slicer Path</Label>
+                <Label for="custom_slicer_path">Custom slicer path</Label>
 
                 <div class="flex flex-row gap-2">
                     <Input
@@ -374,7 +350,7 @@
         {#if sections.includes(SettingSection.WindowZoom)}
         <Card>
             <CardHeader>
-                <CardTitle>Window Zoom</CardTitle>
+                <CardTitle>Window zoom</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
                 <Label>Current zoom level: {configuration.zoom_level}%</Label>
@@ -386,7 +362,7 @@
         {#if sections.includes(SettingSection.UserInterface)}
         <Card>
             <CardHeader>
-                <CardTitle>User Interface</CardTitle>
+                <CardTitle>User interface</CardTitle>
             </CardHeader>
             <CardContent class="text-sm flex flex-col gap-5">
                 <CheckboxWithLabel bind:value={

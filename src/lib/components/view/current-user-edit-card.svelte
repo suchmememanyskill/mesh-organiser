@@ -105,10 +105,10 @@
 
             <Input
                 id="username"
-                type="email"
                 oninput={onUpdateUser}
                 bind:value={currentUser.username} />
         </div>
+        {#if !isDesktop}
         <div class="flex flex-col gap-3">
             <Label for="email">Email</Label>
 
@@ -118,7 +118,7 @@
                 oninput={onUpdateUser}
                 bind:value={currentUser.email} />
         </div>
-        {#if !isDesktop}
+        
         <Separator class="my-2" />
 
         <div class="flex flex-col gap-3">
