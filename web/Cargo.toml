@@ -24,6 +24,7 @@ tower-sessions = { version = "0", default-features = false, features = ["signed"
 tower-sessions-sqlx-store = { version = "0", features = ["sqlite"] }
 async_zip = { version = "0.0.17", features = ["full"] }
 openssl = { version = "0.10", features = ["vendored"] }
+htmlescape = "0"
 
 [patch.crates-io]
 sqlx = { git = "https://github.com/suchmememanyskill/sqlx", features = ["sqlite", "runtime-tokio", "chrono"] }
