@@ -7,6 +7,7 @@ pub mod group_db;
 pub mod label_keyword_db;
 pub mod user_db;
 pub mod resource_db;
+pub mod share_db;
 mod paginated_response;
 pub use paginated_response::PaginatedResponse;
 mod util;

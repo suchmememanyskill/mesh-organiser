@@ -35,6 +35,10 @@
     import NavUser from "./view/nav-user.svelte";
     import { IHostApi, Platform } from "$lib/api/shared/host_api";
     import DemoMode from "./view/demo-mode.svelte";
+    import Share2 from "@lucide/svelte/icons/share-2";
+    import { IShareApi } from "$lib/api/shared/share_api";
+
+    const shareApi = getContainer().optional<IShareApi>(IShareApi);
 
     async function addLabel(newLabelName: string, newLabelColor: string) {
         let labelApi = getContainer().require<ILabelApi>(ILabelApi);
@@ -56,7 +60,8 @@
         return label;
     });
 
-    const main_group_entries = $derived([
+    const main_group_entries = $derived.by(() => {
+        let base = [
         {
             title: "Import",
             icon: FolderInput,
@@ -92,8 +97,19 @@
             icon: NotebookText,
             url: "/resource",
             count: sidebarState.projectCount,
-        },
-    ]);
+        }];
+    
+        if (shareApi) {
+            base.push(        {
+                title: "Shares",
+                icon: Share2,
+                url: "/share",
+                count: sidebarState.shareCount,
+            });
+        }
+
+        return base;
+    });
 
     function cloneOnHover(event: MouseEvent) {
         if (sidebar.open || sidebar.isMobile) {

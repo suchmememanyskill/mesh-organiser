@@ -45,25 +45,21 @@ export class DefaultSlicerApi implements ISlicerApi {
             return;
         }
 
-        if ( models.length >= 2) {
-            toast.error("Opening multiple models in slicer is not supported in browser.");
-            return;
+        for (const model of models) {
+            let modelUrl = await this.blobApi.getBlobDownloadUrl(model.blob);
+            let deepLink = slicerNameToDeepLink(configuration.slicer ?? "OrcaSlicer");
+
+            if (deepLink === null) {
+                return;
+            }
+
+            deepLink += encodeURIComponent(modelUrl);
+
+            const link = document.createElement("a");
+            link.href = deepLink;
+            link.click();
+            link.remove();
         }
-
-        let model = models[0];
-        let modelUrl = await this.blobApi.getBlobDownloadUrl(model.blob);
-        let deepLink = slicerNameToDeepLink(configuration.slicer ?? "OrcaSlicer");
-
-        if (deepLink === null) {
-            return;
-        }
-
-        deepLink += encodeURIComponent(modelUrl);
-
-        const link = document.createElement("a");
-        link.href = deepLink;
-        link.click();
-        link.remove();
     }
 
     async availableSlicers(): Promise<SlicerEntry[]> {

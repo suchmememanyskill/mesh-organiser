@@ -32,7 +32,7 @@
     import ThreeCanvas from "$lib/components/view/three-d-canvas.svelte";
     import { configuration } from "$lib/configuration.svelte";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
-    import { debounce, fileTypeToColor, fileTypeToDisplayName, isModelPreviewable, loadModelAutomatically, toReadableSize } from "$lib/utils";
+    import { debounce, fileTypeToColor, fileTypeToDisplayName, isModelPreviewable, loadModelAutomatically, nameCollectionOfModels, toReadableSize } from "$lib/utils";
     import Box from "@lucide/svelte/icons/box";
     import Edit from "@lucide/svelte/icons/edit";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
@@ -48,6 +48,9 @@
     import { IThreemfApi } from "$lib/api/shared/threemf_api";
     import { FileType } from "$lib/api/shared/blob_api";
     import PackageOpen from "@lucide/svelte/icons/package-open";
+    import { IShareApi } from "$lib/api/shared/share_api";
+    import Share2 from "@lucide/svelte/icons/share-2";
+    import OpenInSlicerButton from "../view/open-in-slicer-button.svelte";
     
     interface Function {
         (): void;
@@ -66,9 +69,9 @@
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
     const labelApi = getContainer().require<ILabelApi>(ILabelApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
-    const slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
     const downloadApi = getContainer().optional<IDownloadApi>(IDownloadApi);
     const threemfApi = getContainer().optional<IThreemfApi>(IThreemfApi);
+    const shareApi = getContainer().optional<IShareApi>(IShareApi);
 
     let nozzle_diameter = $state<number | null>(null);
     let layer_height = $state<number | null>(null);
@@ -133,17 +136,10 @@
 
     async function onOpenInSlicer()
     {
-        if (!slicerApi) {
-            return;
-        }
-        
-
         if (configuration.label_exported_model_as_printed && !model.flags.printed) {
             model.flags.printed = true;
             await onUpdateModel();
         }
-
-        await slicerApi.openInSlicer([model]);
     }
 
     async function onOpenInFolder()
@@ -230,6 +226,18 @@
         await updateSidebarState();
 
         goto("/group/" + newGroup.id);
+    }
+
+    async function createShare()
+    {
+        if (!shareApi) {
+            return;
+        }
+
+        let share = await shareApi.createShare(nameCollectionOfModels([model]));
+        await shareApi.setModelsOnShare(share, [model]);
+
+        await goto("/share/");
     }
 </script>
 
@@ -319,6 +327,11 @@
                                     <PackageOpen /> Extract models from 3MF
                                 </DropdownMenu.Item>
                             {/if}
+                            {#if shareApi}
+                                <DropdownMenu.Item onclick={createShare}>
+                                    <Share2 /> Create share for model
+                                </DropdownMenu.Item>
+                            {/if}
                             <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
                                 <GroupIcon /> Create new group with model
                             </DropdownMenu.Item>
@@ -343,7 +356,7 @@
                 {:else if downloadApi}
                     <AsyncButton class="flex-grow" onclick={onDownloadModel}><Download /> Download model</AsyncButton>
                 {/if}
-                <AsyncButton class="flex-grow" onclick={onOpenInSlicer}><Slice /> Open in slicer</AsyncButton>
+                <OpenInSlicerButton models={model} class="flex-grow" onOpen={onOpenInSlicer} />
             </div>
 
             {#if editMode}

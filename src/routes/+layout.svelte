@@ -116,7 +116,7 @@
             <AppSidebar />
         {/if}
         <main class="h-full flex-1 flex flex-row" style="min-width: 0;">
-            {#if is_mobile.current}
+            {#if is_mobile.current && hasSidebar}
                 <Sidebar.Trigger class="aspect-square absolute z-10 h-10 w-10 bg-background" />
             {/if}
             <div class="flex-1 pl-2" style="min-width: 0;">

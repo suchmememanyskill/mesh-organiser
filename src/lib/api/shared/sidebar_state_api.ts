@@ -6,6 +6,7 @@ import { IGroupApi } from "./group_api";
 import { ILabelApi, type Label } from "./label_api";
 import { IModelApi } from "./model_api";
 import { IResourceApi } from "./resource_api";
+import { IShareApi, type Share } from "./share_api";
 import { ISlicerApi, type SlicerEntry } from "./slicer_api";
 
 export interface SidebarState {
@@ -16,6 +17,7 @@ export interface SidebarState {
     projectCount: number;
     labels: Label[];
     availableSlicers : SlicerEntry[];
+    shareCount: number;
 }
 
 export function defaultSidebarState() : SidebarState {
@@ -27,6 +29,7 @@ export function defaultSidebarState() : SidebarState {
         projectCount: 0,
         labels: [],
         availableSlicers : [],
+        shareCount: 0,
     };
 }
 
@@ -44,6 +47,7 @@ export class DefaultSidebarStateApi implements ISidebarStateApi {
         let resourceApi = container.require<IResourceApi>(IResourceApi);
         let labelApi = container.require<ILabelApi>(ILabelApi);
         let slicerApi = container.optional<ISlicerApi>(ISlicerApi);
+        let shareApi = container.optional<IShareApi>(IShareApi);
 
         let results = await Promise.all([
             modelApi.getModelCount(null),
@@ -53,6 +57,7 @@ export class DefaultSidebarStateApi implements ISidebarStateApi {
             resourceApi.getResources(),
             labelApi.getLabels(true),
             slicerApi ? slicerApi.availableSlicers() : Promise.resolve([] as SlicerEntry[]),
+            shareApi ? shareApi.getShares() : Promise.resolve([] as Share[]),
         ]);
 
         return {
@@ -63,6 +68,7 @@ export class DefaultSidebarStateApi implements ISidebarStateApi {
             projectCount: results[4].length,
             labels: results[5],
             availableSlicers: results[6],
+            shareCount: results[7].length,
         };
     }
 }

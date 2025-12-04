@@ -7,3 +7,4 @@ pub mod resource_controller;
 pub mod user_controller;
 pub mod threemf_controller;
 pub mod page_controller;
+pub mod share_controller;

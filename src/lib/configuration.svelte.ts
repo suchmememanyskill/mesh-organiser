@@ -7,6 +7,7 @@ import { debounce } from "./utils";
 export const configuration = $state(configurationDefault());
 export const configurationMeta = $state({
     configurationLoaded: false,
+    allowEdits: true,
 });
 export const currentUser = $state<User>({
   id: -1,

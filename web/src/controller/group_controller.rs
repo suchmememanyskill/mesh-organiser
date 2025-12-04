@@ -30,12 +30,14 @@ pub fn router() -> Router<WebAppState> {
             .route("/groups/{group_id}", put(put::edit_group))
             .route("/groups/{group_id}", delete(delete::delete_group))
             .route("/groups/{group_id}/models", post(post::add_models_to_group))
-            .route_layer(login_required!(Backend)),
+            .route_layer(login_required!(Backend))
+            .route("/shares/{share_id}/groups", get(get::get_share_groups)),
     )
 }
 
 mod get {
     use axum_extra::extract::Query;
+    use db::{share_db, user_db};
 
     use super::*;
 
@@ -84,6 +86,39 @@ mod get {
             },
         )
         .await?;
+
+        Ok(Json(groups.items).into_response())
+    }
+
+    pub async fn get_share_groups(
+        Path(share_id): Path<String>,
+        State(app_state): State<WebAppState>,
+        Query(params): Query<GetGroupParams>,
+    ) -> Result<Response, ApplicationError> {
+        let share = share_db::get_share_via_id(&app_state.app_state.db, &share_id).await?;
+        let user = match user_db::get_user_by_id(&app_state.app_state.db, share.user_id).await? {
+            Some(u) => u,
+            _ => return Err(ApplicationError::InternalError(
+                "Share owner user not found.".into(),
+            )),
+        };
+
+        let groups = group_db::get_groups(
+            &app_state.app_state.db, 
+            &user, 
+            GroupFilterOptions {
+                model_ids: share.model_ids.into(),
+                group_ids: if params.group_ids.is_empty() { None } else { Some(params.group_ids) },
+                label_ids: None,
+                order_by: params
+                    .order_by
+                    .map(|s| GroupOrderBy::from_str(&s).unwrap_or(GroupOrderBy::NameAsc)),
+                text_search: params.text_search,
+                page: params.page,
+                page_size: params.page_size,
+                include_ungrouped_models: params.include_ungrouped_models.unwrap_or(true),
+            }
+        ).await?;
 
         Ok(Json(groups.items).into_response())
     }

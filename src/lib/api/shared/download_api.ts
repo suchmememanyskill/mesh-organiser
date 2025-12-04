@@ -1,6 +1,7 @@
 import { zipSync, type Zippable } from "fflate";
 import { fileTypeToPlainFileExtension, type IBlobApi } from "./blob_api";
 import type { Model } from "./model_api";
+import { nameCollectionOfModels } from "$lib/utils";
 
 export const IDownloadApi = Symbol('IDownloadApi');
 
@@ -48,7 +49,7 @@ export class DefaultDownloadApi implements IDownloadApi {
 
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([(zipped as any).buffer], { type: 'application/zip' }));
-        link.download = models.map(x => this.makeStringSafeFilename(x.name)).join("+") + ".zip";
+        link.download = this.makeStringSafeFilename(nameCollectionOfModels(models)) + ".zip";
         link.click();
         link.remove();
     }

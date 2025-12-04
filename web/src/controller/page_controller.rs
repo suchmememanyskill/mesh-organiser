@@ -17,6 +17,10 @@ pub fn router() -> Router<WebAppState> {
         .route_service("/model", index.clone())
         .route_service("/printed", index.clone())
         .route_service("/resource", index.clone())
+        .route_service("/group/", sub_index.clone())
+        .route_service("/label/", sub_index.clone())
+        .route_service("/share/", sub_index.clone())
         .route_service("/group/{group_id}", sub_index.clone())
         .route_service("/label/{label_id}", sub_index.clone())
+        .route_service("/share/{share_id}", sub_index.clone()) // TODO: Make this return social media metadata
 }

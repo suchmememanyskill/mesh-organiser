@@ -100,3 +100,12 @@ export function fileTypeToColor(fileType: FileType): string {
             return "text-black bg-gray-300 hover:bg-gray-400";
     }
 }
+
+export function nameCollectionOfModels(models: Model[]): string {
+    let set = new Set<number>(models.map(x => x.group?.id ?? -1));
+    if (set.size === 1 && !set.has(-1)) {
+        return models[0].group!.name
+    }
+
+    return models.map(x => x.name).join("+")
+}

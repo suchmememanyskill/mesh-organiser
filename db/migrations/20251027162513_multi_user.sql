@@ -2,7 +2,7 @@
 
 CREATE TABLE users (
     user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    user_name TEXT NOT NULL UNIQUE,
+    user_name TEXT NOT NULL,
     user_email TEXT NOT NULL UNIQUE,
     user_password_hash TEXT NOT NULL,
     user_created_at TEXT NOT NULL,
@@ -74,3 +74,18 @@ CREATE INDEX idx_models_labels_model_id_label_id ON models_labels(model_id, labe
 
 -- TODO: This transaction is quite messy. labels/models_group/resources have a new unconstrained (nullable) unique_global_id and user_id column.
 -- Consider cleaning this up in a future migration.
+
+CREATE TABLE shares (
+    share_id TEXT NOT NULL PRIMARY KEY,
+    share_user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    share_created_at TEXT NOT NULL,
+    share_name TEXT NOT NULL
+);
+
+CREATE INDEX idx_shares_user_id ON shares(share_user_id);
+
+CREATE TABLE shares_models (
+    share_model_id INTEGER NOT NULL PRIMARY KEY,
+    share_id INTEGER NOT NULL REFERENCES shares(share_id) ON DELETE CASCADE,
+    model_id INTEGER NOT NULL REFERENCES models(model_id) ON DELETE CASCADE
+);

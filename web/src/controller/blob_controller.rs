@@ -25,7 +25,7 @@ mod get {
     };
 
     use axum_extra::extract::Query;
-    use db::{model_db, user_db};
+    use db::{model::User, model_db, user_db};
     use serde::Deserialize;
     use service::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
     use tokio::{fs::File, io::BufReader};
@@ -37,8 +37,43 @@ mod get {
 
     #[derive(Deserialize)]
     pub struct DownloadModelParams {
-        pub user_id: i64,
-        pub user_hash: String,
+        pub user_id: Option<i64>,
+        pub user_hash: Option<String>,
+        pub share_id: Option<String>,
+    }
+
+    async fn extract_user_via_id_and_hash(
+        app_state: &WebAppState,
+        user_id: i64,
+        user_hash: &String,
+    ) -> Option<User> {
+        let user = match user_db::get_user_by_id(&app_state.app_state.db, user_id).await {
+            Ok(Some(u)) => u,
+            _ => return None,
+        };
+
+        if user.sync_url.is_none() || user.sync_url.clone().unwrap() != *user_hash {
+            return None;
+        }
+
+        Some(user)
+    }
+
+    async fn extract_user_via_share_id(
+        app_state: &WebAppState,
+        share_id: &String,
+    ) -> Option<User> {
+        let share = match db::share_db::get_share_via_id(&app_state.app_state.db, share_id).await {
+            Ok(s) => s,
+            _ => return None,
+        };
+
+        let user = match user_db::get_user_by_id(&app_state.app_state.db, share.user_id).await {
+            Ok(Some(u)) => u,
+            _ => return None,
+        };
+
+        Some(user)
     }
 
     pub async fn download_model(
@@ -46,14 +81,30 @@ mod get {
         State(app_state): State<WebAppState>,
         Query(params): Query<DownloadModelParams>,
     ) -> Response {
-        let user = match user_db::get_user_by_id(&app_state.app_state.db, params.user_id).await {
-            Ok(Some(u)) => u,
+
+        let user = match params {
+            DownloadModelParams {
+                user_id: Some(user_id),
+                user_hash: Some(user_hash),
+                share_id: None,
+            } => {
+                match extract_user_via_id_and_hash(&app_state, user_id, &user_hash).await {
+                    Some(u) => u,
+                    None => return StatusCode::NOT_FOUND.into_response(),
+                }
+            }
+            DownloadModelParams {
+                user_id: None,
+                user_hash: None,
+                share_id: Some(share_id),
+            } => {
+                match extract_user_via_share_id(&app_state, &share_id).await {
+                    Some(u) => u,
+                    None => return StatusCode::NOT_FOUND.into_response(),
+                }
+            }
             _ => return StatusCode::NOT_FOUND.into_response(),
         };
-
-        if user.sync_url.is_none() || user.sync_url.clone().unwrap() != params.user_hash {
-            return StatusCode::NOT_FOUND.into_response();
-        }
 
         let model_id = match model_db::get_model_id_via_sha256(&app_state.app_state.db, &user, &blob_sha256).await {
             Ok(Some(m)) => m,

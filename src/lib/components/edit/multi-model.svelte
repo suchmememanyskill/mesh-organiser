@@ -9,7 +9,7 @@
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
     import { Label } from "$lib/components/ui/label";
     import LabelSelect from "$lib/components/view/label-select.svelte";
-    import { countWriter } from "$lib/utils";
+    import { countWriter, nameCollectionOfModels } from "$lib/utils";
 
     import { goto } from "$app/navigation";
 
@@ -39,6 +39,9 @@
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import { IDownloadApi } from "$lib/api/shared/download_api";
     import Download from "@lucide/svelte/icons/download";
+    import OpenInSlicerButton from "../view/open-in-slicer-button.svelte";
+    import { IShareApi } from "$lib/api/shared/share_api";
+    import Share2 from "@lucide/svelte/icons/share-2";
 
     interface Function {
         (): void;
@@ -63,9 +66,9 @@
     const modelApi = getContainer().require<IModelApi>(IModelApi);
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
     const labelApi = getContainer().require<ILabelApi>(ILabelApi);
-    const slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
     const downloadApi = getContainer().optional<IDownloadApi>(IDownloadApi);
+    const shareApi = getContainer().optional<IShareApi>(IShareApi);
 
     async function setLabelOnAllModels(label: LabelMeta) {
         const affected_models = models;
@@ -181,14 +184,6 @@
         }
     }
 
-    async function onOpenInSlicer() {
-        if (!slicerApi){
-            return; 
-        }
-
-        await slicerApi.openInSlicer(models);
-    }
-
     async function onOpenInFolder() {
         if (!localApi){
             return;
@@ -271,6 +266,18 @@
         await updateSidebarState();
         props.onDelete?.();
     }
+
+    async function createShare()
+    {
+        if (!shareApi) {
+            return;
+        }
+
+        let share = await shareApi.createShare(nameCollectionOfModels(models));
+        await shareApi.setModelsOnShare(share, models);
+
+        await goto("/share/");
+    }
 </script>
 
 {#if models.length <= 0}
@@ -285,6 +292,12 @@
                         <Ellipsis />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content side="right" align="start">
+                        {#if shareApi}
+                            <DropdownMenu.Item onclick={createShare}>
+                                <Share2 /> Create share for models
+                            </DropdownMenu.Item>
+                        {/if}
+                        <DropdownMenu.Separator />
                         <DropdownMenu.Item onclick={onDelete}>
                             <Trash2 /> Delete selected models
                         </DropdownMenu.Item>
@@ -305,9 +318,7 @@
                             ><Download /> Download {models.length > 1 ? "models" : "model"}</AsyncButton
                         >
                     {/if}
-                    <AsyncButton class="flex-grow" onclick={onOpenInSlicer}
-                        ><Slice /> Open in slicer</AsyncButton
-                    >
+                    <OpenInSlicerButton models={models} class="flex-grow" />
                 </div>
             </div>
             <div class="flex flex-col gap-4">

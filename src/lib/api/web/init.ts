@@ -32,6 +32,8 @@ import { IInternalBrowserApi } from "../shared/internal_browser_api";
 import { WebThreemfApi } from "./threemf";
 import { IThreemfApi } from "../shared/threemf_api";
 import { WebUserAdminApi } from "./user_admin";
+import { WebShareApi } from "./share";
+import { IShareApi } from "../shared/share_api";
 
 export async function initWebApi() : Promise<void> {
     resetContainer();
@@ -76,6 +78,7 @@ export async function initWebApi() : Promise<void> {
     const internalBrowserApi = new WebBrowserApi();
     const threemf = new WebThreemfApi(request);
     const userAdmin = new WebUserAdminApi(request, currentUser);
+    const shareApi = new WebShareApi(request);
 
     const config = await settings.getConfiguration();
     Object.assign(configuration, config);
@@ -96,6 +99,7 @@ export async function initWebApi() : Promise<void> {
     container.addSingleton(IInternalBrowserApi, internalBrowserApi);
     container.addSingleton(IThreemfApi, threemf);
     container.addSingleton(IUserManageSelfApi, userAdmin);
+    container.addSingleton(IShareApi, shareApi);
 
     if (currentUser.permissions.admin) {
         container.addSingleton(IAdminUserApi, userAdmin);

@@ -49,7 +49,7 @@
             .filter((value, index, self) => self.indexOf(value) === index);
     });
 
-    let link = $derived(links.length === 1 ? links[0]! : "");
+    let link = $derived(links.length === 1 ? links[0]! : null);
     let link_disabled = $derived(links.length > 1);
     let resource = $derived(tracked_group.resource);
     let availableResources = $state<ResourceMeta[]>([]);
@@ -161,7 +161,7 @@
 
 {#snippet ViewContent()}
     <div class="grid grid-cols-2 gap-4">
-        <LinkButton link={link} visible={true} />
+        <LinkButton link={link} visible={!(link_disabled || link === null)} withFallback={true} />
         <Button disabled={!resource} onclick={openResourceInFolder}><NotebookText /> Open project</Button>
     </div>
 {/snippet}

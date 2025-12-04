@@ -16,7 +16,6 @@ use db::model::ModelFlags;
 use db::model_db;
 use serde::Deserialize;
 use service::{cleanse_evil_from_name, import_service, import_state::ImportState};
-use std::path::PathBuf;
 use std::str::FromStr;
 use time::OffsetDateTime;
 use tokio::fs;
@@ -38,12 +37,14 @@ pub fn router() -> Router<WebAppState> {
             .route("/models/disk_usage", get(get::get_model_disk_space_usage))
             .route("/models/{model_id}", put(put::edit_model))
             .route("/models/{model_id}", delete(delete::delete_model))
-            .route_layer(login_required!(Backend)),
+            .route_layer(login_required!(Backend))
+            .route("/shares/{share_id}/models", get(get::get_share_models)),
     )
 }
 
 mod get {
     use axum_extra::extract::Query;
+    use db::{model::User, share_db};
 
     use super::*;
 
@@ -63,12 +64,11 @@ mod get {
         pub page_size: u32,
     }
 
-    pub async fn get_models(
-        auth_session: AuthSession,
-        State(app_state): State<WebAppState>,
-        Query(params): Query<GetModelParams>,
+    async fn get_models_inner(
+        app_state: &WebAppState,
+        user: &User,
+        params: GetModelParams,
     ) -> Result<Response, ApplicationError> {
-        let user = auth_session.user.unwrap().to_user();
         let flags = params.model_flags;
 
         let models = model_db::get_models(
@@ -90,6 +90,36 @@ mod get {
         .await?;
 
         Ok(Json(models.items).into_response())
+    }
+
+    pub async fn get_models(
+        auth_session: AuthSession,
+        State(app_state): State<WebAppState>,
+        Query(params): Query<GetModelParams>,
+    ) -> Result<Response, ApplicationError> {
+        let user = auth_session.user.unwrap().to_user();
+
+        get_models_inner(&app_state, &user, params).await
+    }
+
+    pub async fn get_share_models(
+        Path(share_id): Path<String>,
+        State(app_state): State<WebAppState>,
+        Query(mut params): Query<GetModelParams>,
+    ) -> Result<Response, ApplicationError> {
+        let share = share_db::get_share_via_id(&app_state.app_state.db, &share_id).await?;
+
+        params.model_ids = match params.model_ids.is_empty() {
+            true => vec![],
+            false => share.model_ids.into_iter().filter(|x| params.model_ids.contains(x)).collect(),
+        };
+
+        params.label_ids = vec![];
+        
+        get_models_inner(&app_state, &User { 
+            id: share.user_id,
+            ..Default::default()
+        }, params).await
     }
 
     #[derive(Deserialize)]

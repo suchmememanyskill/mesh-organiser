@@ -5,6 +5,7 @@ mod label_keyword;
 mod resource;
 mod user;
 mod blob;
+mod share;
 
 pub use model::*;
 pub use model_group::*;
@@ -13,3 +14,4 @@ pub use label_keyword::*;
 pub use resource::*;
 pub use user::*;
 pub use blob::*;
+pub use share::*;
