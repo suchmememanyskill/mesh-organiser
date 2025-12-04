@@ -76,8 +76,8 @@
 
 <Card class="w-full {props.class}">
     <CardHeader class="relative">
-        <CardTitle class="break-all">Share '{props.share.shareName}'</CardTitle>
-        <p class="text-sm">Shared by user '{props.share.userName}', contains {countWriter("model", props.share.modelIds)}</p>
+        <CardTitle class="break-all">Share: {props.share.shareName}</CardTitle>
+        <p class="text-sm">Shared by user {props.share.userName}. Contains {countWriter("model", props.share.modelIds)}</p>
 
         <div class="absolute right-0 top-5 mr-8">
             <DropdownMenu.Root>
@@ -93,16 +93,16 @@
         </div>
     </CardHeader>
     <CardContent class="flex flex-col gap-4">
-        <Label for="share_name_{props.share.id}">Share name</Label>
-
-        <Input
-            id="share_name_{props.share.id}"
-            type="text"
-            class="flex-grow"
-            oninput={onUpdateShare}
-            bind:value={props.share.shareName}
-        />
-
+        <div class="flex flex-col space-y-1.5">
+            <Label for="share_name_{props.share.id}">Share name</Label>
+            <Input
+                id="share_name_{props.share.id}"
+                type="text"
+                class="flex-grow"
+                oninput={onUpdateShare}
+                bind:value={props.share.shareName}
+            />
+        </div>
         <div class="flex flex-col space-y-1.5">
             <Label>Share link</Label>
             <div class="flex flex-row gap-2">

@@ -49,7 +49,7 @@ async fn serve_share_page(
 
     html = html
         .replace("content=\"Mesh Organiser\"", &format!("content=\"Share: {}\"", htmlescape::encode_attribute(&share.share_name)))
-        .replace("content=\"A personal 3d printing model library.\"", &format!("content=\"By {}. Contains {} model{}.\"", htmlescape::encode_attribute(&user.username), share.model_ids.len(), if share.model_ids.len() >= 2 { "s" } else { "" }));
+        .replace("content=\"A personal 3d printing model library.\"", &format!("content=\"Shared by user {}. Contains {} model{}.\"", htmlescape::encode_attribute(&user.username), share.model_ids.len(), if share.model_ids.len() >= 2 { "s" } else { "" }));
 
     Ok(Html(html))
 }
