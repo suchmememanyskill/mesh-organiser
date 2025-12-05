@@ -4,6 +4,38 @@ import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api
 import { ImportStatus, type ImportState } from "../shared/tauri_import_api";
 import type { IWebImportApi } from "../shared/web_import_api";
 
+const CONCURRENT_FILES = 4;
+
+async function runGeneratorWithLimit(
+    gen: Generator<Promise<void>>,
+): Promise<void> {
+    let active = 0;
+
+    return new Promise((resolve, reject) => {
+        const launchNext = () => {
+            while (active < CONCURRENT_FILES) {
+                const { value: task, done } = gen.next();
+
+                if (done) {
+                    if (active === 0) resolve();
+                    break;
+                }
+
+                active++;
+
+                task
+                    .catch(reject)
+                    .finally(() => {
+                        active--;
+                        launchNext();
+                    });
+            }
+        };
+
+        launchNext();
+    });
+}
+
 export class WebImportApi implements IWebImportApi {
     private requestApi : IServerRequestApi;
 
@@ -16,29 +48,28 @@ export class WebImportApi implements IWebImportApi {
         importState.status = ImportStatus.ProcessingModels;
         importState.model_count = files.length;
 
-        for (const file of files) {
-            try {
-                let data = await this.requestApi.sendBinary<number[]>("/models", HttpMethod.POST, file);
-
-                if (importState.imported_models.length === 0) {
-                    importState.imported_models.push({
-                        group_id: null,
-                        group_name: null,
-                        model_ids: []
-                    })
-                }
-
-                importState.imported_models[0].model_ids.push(...data);
-                importState.imported_models_count += data.length;
-                importState.model_count += (data.length - 1);
-                importState.finished_thumbnails_count += data.length;
+        function handleResponse(data: number[]) {
+            if (importState.imported_models.length === 0) {
+                importState.imported_models.push({
+                    group_id: null,
+                    group_name: null,
+                    model_ids: []
+                })
             }
-            catch (e) {
-                importState.status = ImportStatus.Failure;
-                importState.failure_reason = `${e}`
-                throw e;
+
+            importState.imported_models[0].model_ids.push(...data);
+            importState.imported_models_count += data.length;
+            importState.model_count += (data.length - 1);
+            importState.finished_thumbnails_count += data.length;
+        }
+
+        function* filePromises(files : File[], requestApi : IServerRequestApi) : Generator<Promise<void>> {
+            for (const file of files) {
+                yield requestApi.sendBinary<number[]>("/models", HttpMethod.POST, file).then(x => handleResponse(x));
             }
         }
+
+        await runGeneratorWithLimit(filePromises(files, this.requestApi));
 
         await updateSidebarState();
         console.log(importState);

@@ -92,6 +92,7 @@
     $effect(() => {
         if (importState.status != ImportStatus.Finished) {
             importedGroups = [];
+            return;
         }
 
         let importedModelIds = importState.imported_models.map((res) => res.model_ids).flat();
