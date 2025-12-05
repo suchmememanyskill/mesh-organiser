@@ -540,8 +540,8 @@ pub fn run() {
 
                 let config = read_configuration(&app_data_path);
 
-                let sqlite_path = PathBuf::from(&app_data_path).join("db.sqlite");
-                let sqlite_backup_dir = PathBuf::from(&app_data_path).join("backups");
+                let sqlite_path = PathBuf::from(&config.data_path).join("db.sqlite");
+                let sqlite_backup_dir = PathBuf::from(&config.data_path).join("backups");
                 let db = db::db_context::setup_db(&sqlite_path, &sqlite_backup_dir).await;
 
                 let mut initial_state = InitialState {

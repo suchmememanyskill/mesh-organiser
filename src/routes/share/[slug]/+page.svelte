@@ -24,10 +24,11 @@
 {#if groups.length > 0}
     <div class="w-full h-full flex flex-col">
         <div class="py-2 px-4 mx-auto my-1 w-fit bg-secondary text-secondary-foreground rounded-md">
-            <p class="text-xl">Share '{share?.shareName}', by user '{share?.userName}'</p>
+            <p class="text-xl">{share?.shareName}, by user {share?.userName}</p>
         </div>
-        
-        <GroupGrid groupStream={new PredefinedGroupStreamManager(groups)} default_show_multiselect_all={true} />
+        <div class="overflow-hidden h-full">
+            <GroupGrid groupStream={new PredefinedGroupStreamManager(groups)} default_show_multiselect_all={true} />
+        </div>
     </div>
     
 {:else}
