@@ -106,3 +106,10 @@ export interface IUserManageSelfApi {
     editSelf(user : User) : Promise<void>;
     editSelfPassword(newPassword : string) : Promise<void>;
 }
+
+export const IUserTokenApi = Symbol('IUserTokenApi');
+
+export interface IUserTokenApi {
+    resetSyncToken() : Promise<string>;
+    openMeshOrganiserDesktopWithToken() : Promise<void>;
+}

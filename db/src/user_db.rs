@@ -133,6 +133,20 @@ pub async fn scramble_validity_token(db: &DbContext, user_id: i64) -> Result<(),
     Ok(())
 }
 
+pub async fn scramble_login_token(db: &DbContext, user_id: i64) -> Result<(), DbError> {
+    let random = random_hex_32();
+
+    sqlx::query!(
+        "UPDATE users SET user_sync_token = ? WHERE user_id = ?",
+        random,
+        user_id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn edit_user_password(db: &DbContext, user_id: i64, password: &str) -> Result<(), DbError> {
     let password = hash_password(password);
     sqlx::query!(

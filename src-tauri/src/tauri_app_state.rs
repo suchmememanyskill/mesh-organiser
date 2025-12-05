@@ -1,16 +1,24 @@
 use std::{path::PathBuf, sync::{Arc, Mutex}};
 
 use db::model::User;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use service::{AppState, Configuration};
 use tauri::AppHandle;
 use tauri_plugin_deep_link::DeepLinkExt;
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AccountLinkEmit {
+    pub base_url: String,
+    pub user_name: String,
+    pub link_token: String,
+}
 
 #[derive(Clone, Serialize)]
 pub struct InitialState {
     pub deep_link_url: Option<String>,
     pub max_parallelism: usize,
     pub collapse_sidebar: bool,
+    pub account_link: Option<AccountLinkEmit>,
 }
 
 pub struct TauriAppState {

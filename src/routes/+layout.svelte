@@ -27,6 +27,8 @@
     import { getContainer } from "$lib/api/dependency_injection";
     import { ISidebarStateApi } from "$lib/api/shared/sidebar_state_api";
     import { IUserApi } from "$lib/api/shared/user_api";
+    import { accountLinkData } from "$lib/account_link_data.svelte";
+    import WebAccountLinkPopup from "$lib/components/view/web-account-link-popup.svelte";
 
     let { children } = $props();
     let initializationDone = $state(false);
@@ -125,6 +127,9 @@
         </main>
         {#if updateState.update}
             <UpdatePopup update={updateState.update} onDismiss={() => updateState.update = null} />
+        {/if}
+        {#if accountLinkData.showLinkUi}
+            <WebAccountLinkPopup data={accountLinkData} onDismiss={() => accountLinkData.showLinkUi = false} />
         {/if}
     </Sidebar.Provider>
 </DragSelectedModelsRoot>

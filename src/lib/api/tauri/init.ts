@@ -8,7 +8,7 @@ import { LabelApi } from "./label";
 import { ResourceFolderApi } from "./resource_folder";
 import { ResourceApi } from "./resource";
 import { SettingsApi } from "./settings";
-import { TauriImportApi } from "./tauri_import";
+import { TauriImportApi, type AccountLinkEmit } from "./tauri_import";
 import { IBlobApi } from "../shared/blob_api";
 import { IGroupApi } from "../shared/group_api";
 import { IInternalBrowserApi } from "../shared/internal_browser_api";
@@ -44,6 +44,7 @@ interface InitialState
     deep_link_url?: string;
     max_parallelism?: number;
     collapse_sidebar?: boolean;
+    account_link?: AccountLinkEmit;
 }
 
 async function getInitialState() : Promise<InitialState>
@@ -132,6 +133,11 @@ export async function initTauriLocalApis() : Promise<void> {
 
     let currentUser = await userApi.getCurrentUser();
     Object.assign(globalCurrentUser, currentUser);
+
+    if (state.account_link)
+    {
+        await tauriImport.setAccountLink(state.account_link);
+    }
 }
 
 async function checkForUpdates() : Promise<void> { 

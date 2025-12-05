@@ -51,6 +51,7 @@ actix-cors = "0"
 async_zip = { version = "0.0.17", features = ["full"] }
 db = { path = "../db" }
 service = { path = "../service" }
+serde_html_form = "0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0"

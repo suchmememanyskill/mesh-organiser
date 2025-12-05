@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IAdminUserApi, IUserApi, IUserLoginApi, IUserManageSelfApi, type User } from "$lib/api/shared/user_api";
+    import { IAdminUserApi, IUserApi, IUserLoginApi, IUserManageSelfApi, IUserTokenApi, type User } from "$lib/api/shared/user_api";
     import {
         Card,
         CardContent,
@@ -28,6 +28,7 @@
     const hostApi = getContainer().optional<IHostApi>(IHostApi);
     const currentUserEditApi = getContainer().optional<IUserManageSelfApi>(IUserManageSelfApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
+    const userTokenApi = getContainer().optional<IUserTokenApi>(IUserTokenApi);
 
     let diskUsage = $state<DiskUsageInfo|null>(null);
     let password = $state<string>("");
@@ -89,6 +90,15 @@
         }
     }
 
+    async function resetDesktopInstances() {
+        if (!userTokenApi) {
+            return;
+        }
+
+        await userTokenApi.resetSyncToken();
+        toast.success("Linked desktop instances reset successfully");
+    }
+
     onMount(async () => {
         if (diskUsageInfoApi) {
             diskUsage = await diskUsageInfoApi.getDiskUsageInfo();
@@ -138,6 +148,10 @@
                 <AsyncButton onclick={changePassword}>Change password</AsyncButton>
             </div>
         </div>
+        
+        {#if userTokenApi}
+            <Button class="w-full" variant="destructive" onclick={resetDesktopInstances}>Reset linked desktop instances</Button>
+        {/if}
         {/if}
 
         <Separator class="my-2" />

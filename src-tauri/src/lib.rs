@@ -13,11 +13,12 @@ use db::{
 use service::threemf_service;
 use service::ThreemfMetadata;
 use error::ApplicationError;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use service::{
     download_file_service, import_service,
     slicer_service::Slicer,
 };
+use crate::tauri_app_state::AccountLinkEmit;
 use std::fs::File;
 use std::io::prelude::*;
 use strum::IntoEnumIterator;
@@ -400,6 +401,26 @@ fn extract_deep_link(data: &str) -> Option<String> {
     None
 }
 
+fn extract_account_link_via_deep_link(data: &str) -> Option<AccountLinkEmit> {
+    let possible_starts = vec![
+        "meshorganiser://link_account/?",
+        "meshorganiser://link_account?",
+    ];
+
+    for start in possible_starts {
+        if data.starts_with(start) {
+            let encoded = data[start.len()..].to_string();
+
+            match serde_html_form::from_str::<AccountLinkEmit>(&encoded) {
+                Ok(e) => return Some(e),
+                Err(_) => return None
+            };
+        }
+    }
+
+    None
+}
+
 fn remove_temp_paths() -> Result<(), ApplicationError> {
     let threshold = std::time::Duration::from_secs(5 * 60);
     let now = std::time::SystemTime::now();
@@ -467,11 +488,17 @@ pub fn run() {
             if argv.len() == 2
             {
                 let deep_link = extract_deep_link(&argv[1]);
+                let account_link = extract_account_link_via_deep_link(&argv[1]);
 
                 if let Some(deep_link) = deep_link
                 {
                     println!("Emitting deep link {:?}", deep_link);
                     _app.emit("deep-link", DeepLinkEmit { download_url: deep_link, source_url: None } ).unwrap();
+                }
+                else if let Some(account_link) = account_link
+                {
+                    println!("Emitting account link");
+                    _app.emit("account-link", account_link ).unwrap();
                 }
                 else
                 {
@@ -550,6 +577,7 @@ pub fn run() {
                         .unwrap_or(std::num::NonZeroUsize::new(6).unwrap())
                         .get(),
                     collapse_sidebar: config.collapse_sidebar,
+                    account_link: None,
                 };
 
                 let argv = std::env::args();
@@ -558,10 +586,16 @@ pub fn run() {
                 {
                     let arg = argv.skip(1).next().unwrap();
                     let deep_link = extract_deep_link(&arg);
+                    let account_link = extract_account_link_via_deep_link(&arg);
 
                     if let Some(deep_link) = deep_link
                     {
                         initial_state.deep_link_url = Some(deep_link);
+                    }
+
+                    if let Some(account_link) = account_link
+                    {
+                        initial_state.account_link = Some(account_link);
                     }
                 }
 

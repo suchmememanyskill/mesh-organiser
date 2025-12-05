@@ -7,6 +7,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { updateSidebarState } from "$lib/sidebar_data.svelte";
 import { configuration } from "$lib/configuration.svelte";
 import { open } from "@tauri-apps/plugin-dialog";
+import { accountLinkData } from "$lib/account_link_data.svelte";
 
 interface DeepLinkEmit
 {
@@ -24,6 +25,12 @@ export interface DownloadResult
 {
     path : string;
     source_uri : string|null;
+}
+
+export interface AccountLinkEmit {
+    base_url: string;
+    user_name: string;
+    link_token: string;
 }
 
 async function downloadFile(url : string) : Promise<DownloadResult>
@@ -95,6 +102,14 @@ export class TauriImportApi implements ITauriImportApi {
         importState.status = ImportStatus.Finished;
     };
 
+    public async setAccountLink(accountLink : AccountLinkEmit) : Promise<void>
+    {
+        accountLinkData.baseUrl = accountLink.base_url;
+        accountLinkData.userName = accountLink.user_name;
+        accountLinkData.linkToken = accountLink.link_token;
+        accountLinkData.showLinkUi = true;
+    }
+
     public async initImportListeners() : Promise<void>
     {
         resetImportState();
@@ -143,6 +158,7 @@ export class TauriImportApi implements ITauriImportApi {
         this.eventListeners.push(await listen<string>('download-started', async (event) => await this.handleBuiltInBrowserDownloadStarted(event.payload)));
         this.eventListeners.push(await listen<DownloadFinishedEvent>('download-finished', async (event) => await this.handleBuiltInBrowserDownloadFinished(event.payload)));
         this.eventListeners.push(await listen("tauri://drag-drop", async (event) => await this.handleDragDropEvent(event)));
+        this.eventListeners.push(await listen<AccountLinkEmit>('account-link', async (event) => await this.setAccountLink(event.payload)));
 
         globalImportSettings.delete_after_import = configuration.default_enabled_delete_after_import;
         globalImportSettings.recursive = configuration.default_enabled_recursive_import;

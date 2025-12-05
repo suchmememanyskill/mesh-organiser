@@ -9,7 +9,6 @@ use axum::{
 use axum_login::login_required;
 use crate::user::Backend;
 use axum::extract::Path;
-use db::model::{hash_password, User};
 use db::user_db;
 use service::export_service;
 use serde::{Deserialize, Serialize};
@@ -25,6 +24,7 @@ pub fn router() -> Router<WebAppState> {
                 .route("/users", post(post::add_user))
                 .route("/users/{user_id}", put(put::edit_user))
                 .route("/users/{user_id}", delete(delete::delete_user))
+                .route("/users/{user_id}/token", delete(delete::generate_new_sync_token))
                 .route("/users/{user_id}/password", put(put::edit_user_password))
                 .route("/users/{user_id}/permissions", put(put::edit_user_permissions))
                 .route_layer(login_required!(Backend))
@@ -204,6 +204,24 @@ mod delete {
         user_db::delete_user(&app_state.app_state.db, user_id).await?;
 
         export_service::delete_dead_blobs(&app_state.app_state).await?;
+
+        Ok(StatusCode::NO_CONTENT.into_response())
+    }
+
+    pub async fn generate_new_sync_token(
+        auth_session: AuthSession,
+        Path(user_id): Path<i64>,
+        State(app_state): State<WebAppState>,
+    ) -> Result<Response, ApplicationError> {
+        let user = auth_session.user.unwrap().to_user();
+
+        if !user.permissions.contains(UserPermissions::Admin) && user.id != user_id {
+            return Err(ApplicationError::InternalError(
+                "Insufficient permissions to generate a new sync token for this user.".into(),
+            ));
+        }
+
+        user_db::scramble_login_token(&app_state.app_state.db, user_id).await?;
 
         Ok(StatusCode::NO_CONTENT.into_response())
     }

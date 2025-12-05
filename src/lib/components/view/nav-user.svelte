@@ -2,7 +2,7 @@
     import { goto } from "$app/navigation";
     import { getContainer } from "$lib/api/dependency_injection";
     import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/disk_usage_info_api";
-    import { ISwitchUserApi, IUserApi, IUserLogoutApi, IUserManageSelfApi, type User } from "$lib/api/shared/user_api";
+    import { ISwitchUserApi, IUserApi, IUserLogoutApi, IUserManageSelfApi, IUserTokenApi, type User } from "$lib/api/shared/user_api";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { useSidebar } from "$lib/components/ui/sidebar/index.js";
@@ -18,6 +18,7 @@
     import Settings from "@lucide/svelte/icons/settings";
     import CircleHelp from "@lucide/svelte/icons/circle-help";
     import UserPen from "@lucide/svelte/icons/user-pen";
+    import Link from "@lucide/svelte/icons/link";
 
     const sidebar = useSidebar();
     
@@ -26,6 +27,7 @@
     const switchUserApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
     const hostApi = getContainer().optional<IHostApi>(IHostApi);
+    const userTokenApi = getContainer().optional<IUserTokenApi>(IUserTokenApi);
         
     let availableUsers = $state<User[]>([]);
     let filteredUsers = $derived(availableUsers.filter(x => x.id !== currentUser?.id));
@@ -149,13 +151,19 @@
                     <DropdownMenu.Separator />
                     <DropdownMenu.Label class="font-normal">No other users available. { currentUser!.permissions.admin ? "See settings to create new users" : "" }</DropdownMenu.Label>
                 {/if}
-                {#if currentUserEditApi || logoutApi}
+                {#if currentUserEditApi || logoutApi || userTokenApi}
                     <DropdownMenu.Separator />
                 {/if}
                 {#if currentUserEditApi}
                     <DropdownMenu.Item onclick={() => goto("/settings")}>
                         <UserPen />
                         Edit profile
+                    </DropdownMenu.Item>
+                {/if}
+                {#if userTokenApi}
+                    <DropdownMenu.Item onclick={async () => await userTokenApi.openMeshOrganiserDesktopWithToken()}>
+                        <Link />
+                        Link account to desktop Mesh Organiser
                     </DropdownMenu.Item>
                 {/if}
                 {#if logoutApi}
