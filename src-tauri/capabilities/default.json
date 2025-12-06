@@ -30,6 +30,10 @@
     {
       "identifier": "opener:allow-open-path",
       "allow": [{ "path": "$APPDATA/custom.css" }]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [{"url": "https://*"}, {"url": "http://*:3000"}]
     }
   ]
 }

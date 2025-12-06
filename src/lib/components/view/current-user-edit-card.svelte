@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IAdminUserApi, IUserApi, IUserLoginApi, IUserManageSelfApi, IUserTokenApi, type User } from "$lib/api/shared/user_api";
+    import { IAdminUserApi, ISwitchUserApi, IUserApi, IUserLoginApi, IUserManageSelfApi, IUserTokenApi, type User } from "$lib/api/shared/user_api";
     import {
         Card,
         CardContent,
@@ -23,12 +23,16 @@
     import { IDiskUsageInfoApi, type DiskUsageInfo } from "$lib/api/shared/disk_usage_info_api";
     import { debounce, toReadableSize } from "$lib/utils";
     import AsyncButton from "../ui/button/async-button.svelte";
+    import { IUserSyncApi } from "$lib/api/shared/user_sync_api";
 
     const loginApi = getContainer().optional<IUserLoginApi>(IUserLoginApi);
     const hostApi = getContainer().optional<IHostApi>(IHostApi);
     const currentUserEditApi = getContainer().optional<IUserManageSelfApi>(IUserManageSelfApi);
     const diskUsageInfoApi = getContainer().optional<IDiskUsageInfoApi>(IDiskUsageInfoApi);
     const userTokenApi = getContainer().optional<IUserTokenApi>(IUserTokenApi);
+    const userSyncApi = getContainer().optional<IUserSyncApi>(IUserSyncApi);
+    const userAdminApi = getContainer().optional<IAdminUserApi>(IAdminUserApi);
+    const userSwtichApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
 
     let diskUsage = $state<DiskUsageInfo|null>(null);
     let password = $state<string>("");
@@ -99,6 +103,26 @@
         toast.success("Linked desktop instances reset successfully");
     }
 
+    async function clearSyncState(){
+        if (!userSyncApi || !userAdminApi || !userSwtichApi) {
+            return;
+        }
+
+        await userSyncApi.clearSyncState();
+
+        if (currentUser.permissions.onlineAccount) {
+            let fakeUser = { ... currentUser };
+            fakeUser.id = 1;
+            await userSwtichApi.switchUser(fakeUser);
+            await userAdminApi.deleteUser(currentUser);
+        }
+        else {
+            await userSwtichApi.switchUser(currentUser);
+        }
+
+        location.reload();
+    }
+
     onMount(async () => {
         if (diskUsageInfoApi) {
             diskUsage = await diskUsageInfoApi.getDiskUsageInfo();
@@ -152,6 +176,10 @@
         {#if userTokenApi}
             <Button class="w-full" variant="destructive" onclick={resetDesktopInstances}>Reset linked desktop instances</Button>
         {/if}
+        {:else}
+            {#if currentUser.syncToken}
+                <Button class="w-full" variant="destructive" onclick={clearSyncState}>Clear sync state</Button>
+            {/if}
         {/if}
 
         <Separator class="my-2" />

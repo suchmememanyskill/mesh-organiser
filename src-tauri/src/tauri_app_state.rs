@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use db::model::User;
 use serde::{Deserialize, Serialize};
@@ -49,12 +52,17 @@ impl TauriAppState {
         user.clone()
     }
 
-    pub async fn set_current_user_by_id(&self, user_id: i64) -> Result<(), crate::error::ApplicationError> {
+    pub async fn set_current_user_by_id(
+        &self,
+        user_id: i64,
+    ) -> Result<(), crate::error::ApplicationError> {
         let path = self.get_settings_path();
         let user = db::user_db::get_user_by_id(&self.app_state.db, user_id).await?;
 
         if user.is_none() {
-            return Err(crate::error::ApplicationError::InternalError("User not found".into()));
+            return Err(crate::error::ApplicationError::InternalError(
+                "User not found".into(),
+            ));
         }
 
         let mut current_user = self.current_user.lock().unwrap();
@@ -73,7 +81,7 @@ impl TauriAppState {
         let mut path_buff = PathBuf::from(self.app_state.app_data_path.clone());
         path_buff.push("settings.json");
         path_buff
-    }    
+    }
 
     pub fn write_configuration(&self, new_configuration: &Configuration) -> bool {
         let path = self.get_settings_path();

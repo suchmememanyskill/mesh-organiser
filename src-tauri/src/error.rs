@@ -9,8 +9,6 @@ pub enum ApplicationError {
     ZipError(#[from] zip::result::ZipError),
     #[error("Internal error")]
     InternalError(String),
-    #[error("Failed to download file")]
-    DownloadError(#[from] reqwest::Error),
     #[error("Failed to process JSON")]
     JsonError(#[from] serde_json::Error),
     #[error("Framework error")]
@@ -46,11 +44,6 @@ impl Serialize for ApplicationError {
                 state.serialize_field("error_type", "InternalError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", s)?;
-            }
-            ApplicationError::DownloadError(inner) => {
-                state.serialize_field("error_type", "DownloadError")?;
-                state.serialize_field("error_message", &self.to_string())?;
-                state.serialize_field("error_inner_message", &inner.to_string())?;
             }
             ApplicationError::JsonError(inner) => {
                 state.serialize_field("error_type", "JsonError")?;

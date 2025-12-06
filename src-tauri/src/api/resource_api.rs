@@ -1,13 +1,18 @@
-use db::{model::{ModelGroup, Resource, ResourceFlags, ResourceMeta}, random_hex_32, time_now, resource_db};
+use db::{
+    model::{ModelGroup, Resource, ResourceFlags, ResourceMeta},
+    random_hex_32, resource_db, time_now,
+};
 use service::resource_service;
 use tauri::State;
 
 use crate::{api, error::ApplicationError, tauri_app_state::TauriAppState};
 
 #[tauri::command]
-pub async fn get_resources(state: State<'_, TauriAppState>) -> Result<Vec<ResourceMeta>, ApplicationError> {
-    let resources = resource_db::get_resources(&state.app_state.db, &state.get_current_user())
-        .await?;
+pub async fn get_resources(
+    state: State<'_, TauriAppState>,
+) -> Result<Vec<ResourceMeta>, ApplicationError> {
+    let resources =
+        resource_db::get_resources(&state.app_state.db, &state.get_current_user()).await?;
 
     Ok(resources)
 }
@@ -17,8 +22,13 @@ pub async fn add_resource(
     resource_name: &str,
     state: State<'_, TauriAppState>,
 ) -> Result<ResourceMeta, ApplicationError> {
-    let id = resource_db::add_resource(&state.app_state.db, &state.get_current_user(), resource_name, None)
-        .await?;
+    let id = resource_db::add_resource(
+        &state.app_state.db,
+        &state.get_current_user(),
+        resource_name,
+        None,
+    )
+    .await?;
 
     Ok(ResourceMeta {
         id: id,
@@ -36,8 +46,15 @@ pub async fn edit_resource(
     resource_flags: ResourceFlags,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    resource_db::edit_resource(&state.app_state.db, &state.get_current_user(), resource_id, resource_name, resource_flags, None)
-        .await?;
+    resource_db::edit_resource(
+        &state.app_state.db,
+        &state.get_current_user(),
+        resource_id,
+        resource_name,
+        resource_flags,
+        None,
+    )
+    .await?;
 
     Ok(())
 }
@@ -48,8 +65,8 @@ pub async fn remove_resource(
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
     let user = state.get_current_user();
-    let resource = resource_db::get_resource_meta_by_id(&state.app_state.db, &user, resource_id)
-        .await?;
+    let resource =
+        resource_db::get_resource_meta_by_id(&state.app_state.db, &user, resource_id).await?;
 
     if resource.is_none() {
         return Err(ApplicationError::InternalError(String::from(
@@ -94,8 +111,14 @@ pub async fn set_resource_on_group(
     group_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    resource_db::set_resource_on_group(&state.app_state.db, &state.get_current_user(), resource_id, group_id, None)
-        .await?;
+    resource_db::set_resource_on_group(
+        &state.app_state.db,
+        &state.get_current_user(),
+        resource_id,
+        group_id,
+        None,
+    )
+    .await?;
 
     Ok(())
 }
@@ -105,8 +128,12 @@ pub async fn get_groups_for_resource(
     resource_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<Vec<ModelGroup>, ApplicationError> {
-    let groups = resource_db::get_groups_for_resource(&state.app_state.db, &state.get_current_user(), resource_id)
-        .await?;
+    let groups = resource_db::get_groups_for_resource(
+        &state.app_state.db,
+        &state.get_current_user(),
+        resource_id,
+    )
+    .await?;
 
     Ok(groups)
 }

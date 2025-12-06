@@ -119,6 +119,38 @@ pub async fn edit_user(db: &DbContext, user_id: i64, username: &str, email: &str
     Ok(())
 }
 
+pub async fn set_user_sync_token(db: &DbContext, user_id: i64, sync_token: &str, sync_url: &str, online : bool) -> Result<(), DbError> {
+    let clear_bits = (UserPermissions::OnlineAccount.bits() ^ u32::MAX) as i64;
+    let set_bits = if online { UserPermissions::OnlineAccount.bits() as i64 } else { 0 };
+
+    sqlx::query!(
+        "UPDATE users SET user_sync_token = ?, user_sync_url = ?, user_last_sync = NULL, user_permissions = (user_permissions & ?) | ? WHERE user_id = ?",
+        sync_token,
+        sync_url,
+        clear_bits,
+        set_bits,
+        user_id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn clear_user_sync(db: &DbContext, user_id: i64) -> Result<(), DbError> {
+    let bits = (UserPermissions::OnlineAccount.bits() ^ u32::MAX) as i64;
+
+    sqlx::query!(
+        "UPDATE users SET user_sync_token = NULL, user_sync_url = NULL, user_permissions = user_permissions & ? WHERE user_id = ?",
+        bits,
+        user_id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn scramble_validity_token(db: &DbContext, user_id: i64) -> Result<(), DbError> {
     let random = random_hex_32();
 

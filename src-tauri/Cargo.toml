@@ -30,7 +30,6 @@ zip = { version = "6"}
 tauri-plugin-dialog = "2"
 tauri-plugin-deep-link = "2"
 urlencoding = "2"
-reqwest = "0"
 regex = "1"
 strum = { version = "0", features = ["derive"] }
 tauri-plugin-updater = "2"
@@ -49,6 +48,7 @@ async_zip = { version = "0.0.17", features = ["full"] }
 db = { path = "../db" }
 service = { path = "../service" }
 serde_html_form = "0"
+tauri-plugin-http = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0"

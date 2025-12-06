@@ -40,6 +40,11 @@ import { ThreemfApi } from "./threemf";
 import { IThreemfApi } from "../shared/threemf_api";
 import { ThumbnailApi } from "./thumbnail";
 import { IThumbnailApi } from "../shared/thumbnail_api";
+import { TauriUserSyncApi } from "./user_sync";
+import { IUserSyncApi } from "../shared/user_sync_api";
+import { TauriServerRequestApi } from "./request";
+import { IServerRequestApi } from "../shared/server_request_api";
+import { WebModelApi } from "../web/model";
 
 interface InitialState
 {
@@ -77,6 +82,7 @@ export async function initTauriLocalApis() : Promise<void> {
     const userApi = new UserApi();
     const threemfApi = new ThreemfApi();
     const thumbnailApi = new ThumbnailApi();
+    const userSyncApi = new TauriUserSyncApi();
 
     let config = await settings.getConfiguration();
     Object.assign(configuration, config);
@@ -128,6 +134,7 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(IAdminUserApi, userApi);
     container.addSingleton(IUserManageSelfApi, userApi);
     container.addSingleton(IThumbnailApi, thumbnailApi);
+    container.addSingleton(IUserSyncApi, userSyncApi);
 
     checkForUpdates();
 
@@ -137,6 +144,16 @@ export async function initTauriLocalApis() : Promise<void> {
     if (state.account_link)
     {
         await tauriImport.setAccountLink(state.account_link);
+    }
+
+    if (currentUser.syncToken && currentUser.syncUrl)
+    {
+        const tauriRequestApi = new TauriServerRequestApi(currentUser.syncUrl);
+        let init = await tauriRequestApi.login(currentUser.syncToken);
+        if (init)
+        {
+            container.addSingleton(IServerRequestApi, tauriRequestApi);
+        }
     }
 }
 

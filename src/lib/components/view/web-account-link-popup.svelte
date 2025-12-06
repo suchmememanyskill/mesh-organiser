@@ -20,15 +20,19 @@
     import { configuration } from "$lib/configuration.svelte";
     import type { AccountLinkData } from "$lib/account_link_data.svelte";
     import { getContainer } from "$lib/api/dependency_injection";
-    import { IAdminUserApi, IUserApi, type User } from "$lib/api/shared/user_api";
+    import { IAdminUserApi, ISwitchUserApi, IUserApi, type User } from "$lib/api/shared/user_api";
     import { onMount } from "svelte";
     import Input from "../ui/input/input.svelte";
     import * as Select from "$lib/components/ui/select/index.js";
     import { Label } from "../ui/label";
+    import { IUserSyncApi } from "$lib/api/shared/user_sync_api";
+    import { goto } from "$app/navigation";
 
     let props : { data: AccountLinkData, onDismiss? : Function } = $props();
     const userApi = getContainer().optional<IUserApi>(IUserApi);
     const userAdminApi = getContainer().optional<IAdminUserApi>(IAdminUserApi);
+    const userSyncApi = getContainer().optional<IUserSyncApi>(IUserSyncApi);
+    const userSwitchApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
     let users = $state<User[]>([]);
     let currentUser = $state<User|null>(null);
 
@@ -40,10 +44,79 @@
         }
     }
 
+    async function linkLocalAccount()
+    {
+        if (!userSyncApi || !userSwitchApi)
+        {
+            return;
+        }
+
+        if (!currentUser)
+        {
+            toast.error("Please select a user to link.");
+            return;
+        }
+
+        try
+        {
+            await userSwitchApi.switchUser(currentUser);
+            await userSyncApi.setSyncState(props.data.baseUrl, props.data.linkToken, false);
+            await userSwitchApi.switchUser(currentUser);
+
+            if (location.href.includes("/group/"))
+            {
+                await goto("/group");
+            }
+
+            if (location.href.includes("/label/"))
+            {
+                await goto("/");
+            }
+
+            dismiss();
+            location.reload();
+        }
+        catch (e)
+        {
+            toast.error("Failed to link local account: " + e);
+        }
+    }
+
+    async function createOnlineAccount()
+    {
+        if (!userSyncApi || !userSwitchApi || !userAdminApi)
+        {
+            return;
+        }
+
+        if (!props.data.userName || props.data.userName.trim().length === 0)
+        {
+            toast.error("Please enter a valid user name.");
+            return;
+        }
+
+        try
+        {
+            let newUser = await userAdminApi.addUser(props.data.userName.trim(), Math.round(Math.random() * 10000000) + "@noemail.com", "none");
+
+            await userSwitchApi.switchUser(newUser);
+            await userSyncApi.setSyncState(props.data.baseUrl, props.data.linkToken, true);
+            await userSwitchApi.switchUser(newUser);
+            await goto("/");
+
+            dismiss();
+            location.reload();
+        }
+        catch (e)
+        {
+            toast.error("Failed to create online account: " + e);
+        }
+    }
+
     onMount(async () => {
         if (userAdminApi)
         {
-            users = (await userAdminApi.getAllUsers()).filter(u => !u.permissions.onlineAccount);
+            users = (await userAdminApi.getAllUsers()).filter(u => !(u.permissions.onlineAccount || !!u.syncToken));
         }
 
         if (userApi)
@@ -111,10 +184,10 @@
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-10">
-                <Button>
+                <Button onclick={linkLocalAccount}>
                     <FolderSync /> Link to local account
                 </Button>
-                <Button>
+                <Button onclick={createOnlineAccount}>
                     <Globe /> Create new online account
                 </Button>
             </div>

@@ -9,7 +9,12 @@ pub async fn get_model_bytes(
     model_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<Response, ApplicationError> {
-    let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), vec![model_id]).await?;
+    let model = model_db::get_models_via_ids(
+        &state.app_state.db,
+        &state.get_current_user(),
+        vec![model_id],
+    )
+    .await?;
 
     if model.len() <= 0 {
         return Err(ApplicationError::InternalError(String::from(
@@ -32,7 +37,7 @@ pub async fn get_blob_bytes(
         None => {
             return Err(ApplicationError::InternalError(String::from(
                 "Failed to find blob",
-            )))
+            )));
         }
     };
 

@@ -1,28 +1,36 @@
+use crate::tauri_app_state::AccountLinkEmit;
+use crate::tauri_app_state::InitialState;
+use crate::tauri_app_state::TauriAppState;
+use crate::tauri_import_state::import_state_new_tauri;
+use arboard::Clipboard;
+use base64::prelude::*;
+use db::group_db;
+use db::model::Blob;
+use db::{
+    label_db,
+    model::{ModelFlags, Resource, ResourceFlags, User},
+    model_db,
+};
+use db::{model::ModelGroupMeta, user_db};
+use db::{random_hex_32, time_now};
+use error::ApplicationError;
+use serde::{Deserialize, Serialize};
+use service::AppState;
+use service::Configuration;
+use service::StoredConfiguration;
+use service::ThreemfMetadata;
+use service::export_service;
+use service::import_state::ImportState;
+use service::stored_to_configuration;
+use service::{download_file_service, import_service, slicer_service::Slicer};
+use service::{threemf_service, thumbnail_service};
+use std::fs::File;
+use std::io::prelude::*;
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
     thread,
 };
-use db::{model::ModelGroupMeta, user_db};
-use arboard::Clipboard;
-use base64::prelude::*;
-use crate::tauri_import_state::import_state_new_tauri;
-use db::{
-    label_db, model::{ModelFlags, Resource, ResourceFlags, User}, model_db
-};
-use db::model::Blob;
-use service::{threemf_service, thumbnail_service};
-use service::ThreemfMetadata;
-use error::ApplicationError;
-use serde::{Deserialize, Serialize};
-use service::{
-    download_file_service, import_service,
-    slicer_service::Slicer,
-};
-use db::group_db;
-use crate::tauri_app_state::AccountLinkEmit;
-use std::fs::File;
-use std::io::prelude::*;
 use strum::IntoEnumIterator;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri::{
@@ -30,20 +38,11 @@ use tauri::{
     menu::{MenuBuilder, SubmenuBuilder},
     webview::{DownloadEvent, PageLoadEvent},
 };
-use service::export_service;
 use urlencoding::decode;
-use service::import_state::ImportState;
-use service::Configuration;
-use crate::tauri_app_state::TauriAppState;
-use crate::tauri_app_state::InitialState;
-use service::StoredConfiguration;
-use service::stored_to_configuration;
-use service::AppState;
-use db::{time_now, random_hex_32};
 
-mod tauri_app_state;
-mod error;
 mod api;
+mod error;
+mod tauri_app_state;
 mod tauri_import_state;
 
 #[derive(Serialize, Clone)]
@@ -51,7 +50,6 @@ struct DeepLinkEmit {
     download_url: String,
     source_url: Option<String>,
 }
-
 
 #[tauri::command]
 async fn get_configuration(
@@ -114,7 +112,9 @@ async fn open_in_slicer(
     model_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
+    let models =
+        model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids)
+            .await?;
 
     if let Some(slicer) = &state.get_configuration().slicer {
         slicer.open(models, &state.app_state).await?;
@@ -124,7 +124,9 @@ async fn open_in_slicer(
 }
 
 #[tauri::command]
-async fn get_initial_state(state: State<'_, TauriAppState>) -> Result<InitialState, ApplicationError> {
+async fn get_initial_state(
+    state: State<'_, TauriAppState>,
+) -> Result<InitialState, ApplicationError> {
     Ok(state.initial_state.clone())
 }
 
@@ -142,10 +144,13 @@ async fn open_in_folder(
     model_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
+    let models =
+        model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids)
+            .await?;
 
     let (temp_dir, _) =
-        service::export_service::export_to_temp_folder(models, &state.app_state, false, "export").await?;
+        service::export_service::export_to_temp_folder(models, &state.app_state, false, "export")
+            .await?;
 
     service::open_folder_in_explorer(&temp_dir);
 
@@ -157,7 +162,12 @@ async fn get_theemf_metadata(
     model_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<ThreemfMetadata, ApplicationError> {
-    let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), vec![model_id]).await?;
+    let model = model_db::get_models_via_ids(
+        &state.app_state.db,
+        &state.get_current_user(),
+        vec![model_id],
+    )
+    .await?;
 
     let metadata = threemf_service::extract_metadata(&model[0], &state.app_state).await?;
 
@@ -169,9 +179,16 @@ async fn extract_threemf_models(
     model_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<ModelGroupMeta, ApplicationError> {
-    let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), vec![model_id]).await?;
+    let model = model_db::get_models_via_ids(
+        &state.app_state.db,
+        &state.get_current_user(),
+        vec![model_id],
+    )
+    .await?;
 
-    let mut import_state = threemf_service::extract_models(&model[0], &state.get_current_user(), &state.app_state).await?;
+    let mut import_state =
+        threemf_service::extract_models(&model[0], &state.get_current_user(), &state.app_state)
+            .await?;
 
     let model_ids: Vec<i64> = import_state
         .imported_models
@@ -179,35 +196,32 @@ async fn extract_threemf_models(
         .flat_map(|f| f.model_ids.clone())
         .collect();
 
-    let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
+    let models =
+        model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids)
+            .await?;
     let blobs: Vec<&Blob> = models.iter().map(|m| &m.blob).collect();
 
-    thumbnail_service::generate_thumbnails(
-        &blobs,
-        &state.app_state,
-        false,
-        &mut import_state,
-    )
-    .await?;
-    
-    Ok(ModelGroupMeta { 
-        id: import_state.imported_models[0].group_id.unwrap(), 
-        name: import_state.imported_models[0].group_name.clone().unwrap(), 
-        created: time_now(), 
-        last_modified: time_now(), 
-        resource_id: None, 
-        unique_global_id: random_hex_32(), 
+    thumbnail_service::generate_thumbnails(&blobs, &state.app_state, false, &mut import_state)
+        .await?;
+
+    Ok(ModelGroupMeta {
+        id: import_state.imported_models[0].group_id.unwrap(),
+        name: import_state.imported_models[0].group_name.clone().unwrap(),
+        created: time_now(),
+        last_modified: time_now(),
+        resource_id: None,
+        unique_global_id: random_hex_32(),
     })
 }
 
-
 #[tauri::command]
-async fn compute_model_folder_size(state: State<'_, TauriAppState>) -> Result<u64, ApplicationError> {
+async fn compute_model_folder_size(
+    state: State<'_, TauriAppState>,
+) -> Result<u64, ApplicationError> {
     let size = service::get_folder_size(&state.get_model_dir());
 
     Ok(size)
 }
-
 
 #[derive(Serialize, Clone)]
 struct DownloadFinishedEvent {
@@ -336,13 +350,22 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
         }
     })
     .on_download(|f, event| {
-        if let DownloadEvent::Requested { url, destination: _ } = &event {
+        if let DownloadEvent::Requested {
+            url,
+            destination: _,
+        } = &event
+        {
             println!("Download started: {:?}", url);
             let _ = f.app_handle().emit("download-started", url).unwrap();
             let _ = f.window().set_title("Downloading model...");
         }
 
-        if let DownloadEvent::Finished { url: _, path, success } = event {
+        if let DownloadEvent::Finished {
+            url: _,
+            path,
+            success,
+        } = event
+        {
             if path.is_some() && success {
                 let path = path.unwrap();
                 let handle = f.app_handle();
@@ -368,8 +391,6 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
 
     Ok(())
 }
-
-
 
 fn extract_deep_link(data: &str) -> Option<String> {
     let possible_starts = vec![
@@ -416,7 +437,7 @@ fn extract_account_link_via_deep_link(data: &str) -> Option<AccountLinkEmit> {
 
             match serde_html_form::from_str::<AccountLinkEmit>(&encoded) {
                 Ok(e) => return Some(e),
-                Err(_) => return None
+                Err(_) => return None,
             };
         }
     }
@@ -474,7 +495,6 @@ pub fn read_configuration(app_data_path: &str) -> Configuration {
     return stored_to_configuration(stored_configuration);
 }
 
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     thread::spawn(move || {
@@ -482,6 +502,7 @@ pub fn run() {
     });
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -650,6 +671,8 @@ pub fn run() {
             api::delete_models,
             api::edit_label,
             api::delete_label,
+            api::set_sync_state,
+            api::unset_sync_state,
             update_images,
             get_slicers,
             set_configuration,
