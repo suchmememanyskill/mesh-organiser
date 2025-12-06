@@ -31,12 +31,18 @@ pub async fn import_path(
     app_state: &AppState,
     mut import_state: ImportState,
 ) -> Result<ImportState, ServiceError> {
+    if import_state.delete_after_import && import_state.import_as_path {
+        return Err(ServiceError::InternalError(String::from(
+            "Cannot delete after import when importing as path",
+        )));
+    }
+
     let _lock = app_state.import_mutex.lock().await;
     import_state.status = ImportStatus::ProcessingModels;
     import_state.emit_all();
 
     let configuration = app_state.get_configuration();
-    let model_count = get_model_count(path, &configuration, import_state.recursive).await?;
+    let model_count = get_model_count(path, &configuration, import_state.recursive, &import_state).await?;
     import_state.update_total_model_count(model_count);
 
     let import_state = Arc::new(Mutex::new(import_state));
@@ -49,7 +55,7 @@ pub async fn import_path(
             import_state.create_groups_from_all_sets(app_state).await?;
 
             let import_state = {
-                let fake = ImportState::new(None, false, false, User::default());
+                let fake = ImportState::new(None, false, false, false, User::default());
                 std::mem::replace(&mut *import_state, fake)
             };
 
@@ -67,6 +73,7 @@ pub async fn get_model_count(
     path: &str,
     configuration: &Configuration,
     recursive: bool,
+    import_state: &ImportState,
 ) -> Result<usize, ServiceError> {
     let path_buff = PathBuf::from(path);
 
@@ -77,6 +84,11 @@ pub async fn get_model_count(
             get_model_count_from_dir(path, configuration)
         }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
+        if import_state.import_as_path {
+            return Err(ServiceError::InternalError(String::from(
+                "Cannot import a zip as path",
+            )));
+        }
         get_model_count_from_zip(path, configuration).await
     } else if is_supported_extension(&path_buff, &configuration) {
         Ok(1)
@@ -116,8 +128,13 @@ pub async fn import_path_inner(
         let mut import_state = import_state.lock().await;
 
         {
-            
             let mut file = File::open(&path_buff).await?;
+            let permanent_disk_path = if import_state.import_as_path {
+                Some(path_buff.clone())
+            } else {
+                None
+            };
+
             let id = import_single_model(
                 &mut file,
                 extension,
@@ -125,7 +142,8 @@ pub async fn import_path_inner(
                 &name,
                 import_state.origin_url.clone(),
                 app_state,
-                &import_state.user
+                &import_state.user,
+                permanent_disk_path,
             ).await?;
             import_state.add_model_id_to_current_set(id);
         }
@@ -264,6 +282,7 @@ async fn import_models_from_dir_inner(
     user: &User,
     link: &Option<String>,
     delete_after_import: bool,
+    import_as_path: bool,
 ) -> Result<(), ServiceError> {
     if !is_supported_extension(&path, configuration) {
         return Err(ServiceError::InternalError("Unsupported filetype".into()));
@@ -274,9 +293,14 @@ async fn import_models_from_dir_inner(
     let file_size = path.metadata().unwrap().len() as usize;
 
     let mut file = File::open(&path).await?;
+    let permanent_disk_path = if import_as_path {
+        Some(path.clone())
+    } else {
+       None
+    };
 
     let id = import_single_model(
-        &mut file, extension, file_size, &file_name, link.clone(), app_state, user,
+        &mut file, extension, file_size, &file_name, link.clone(), app_state, user, permanent_disk_path
     ).await?;
 
     {
@@ -301,6 +325,7 @@ async fn import_models_from_dir(
     let user;
     let origin_url;
     let delete_after_import;
+    let import_as_path;
     {
         let mut import_state = import_state.lock().await;
 
@@ -308,6 +333,7 @@ async fn import_models_from_dir(
         user = import_state.user.clone();
         origin_url = import_state.origin_url.clone();
         delete_after_import = import_state.delete_after_import;
+        import_as_path = import_state.import_as_path;
     }
     
     let mut entries: Vec<PathBuf> = read_dir(path)?
@@ -331,10 +357,11 @@ async fn import_models_from_dir(
         let user = user.clone();
         let origin_url = origin_url.clone();
         let delete_after_import = delete_after_import;
+        let import_as_path = import_as_path;
         active += 1;
 
         futures.spawn(async move {
-            import_models_from_dir_inner(&configuration, &app_state, entry, import_state_mutex, &user, &origin_url, delete_after_import).await
+            import_models_from_dir_inner(&configuration, &app_state, entry, import_state_mutex, &user, &origin_url, delete_after_import, import_as_path).await
         });
 
         if active >= max {
@@ -348,14 +375,7 @@ async fn import_models_from_dir(
         }
     }
 
-    // Drain remaining futures iteratively instead of recursively with join_all()
-    while let Some(res) = futures.join_next().await {
-        match res {
-            Err(err) if err.is_panic() => panic::resume_unwind(err.into_panic()),
-            Err(err) => panic!("{err}"),
-            _ => {}
-        }
-    }
+    futures.join_all().await;
 
     Ok(())
 }
@@ -369,6 +389,12 @@ async fn import_models_from_zip(
     let configuration = app_state.get_configuration();
     let mut import_state = import_state.lock().await;
     import_state.add_new_import_set(Some(group_name));
+
+    if import_state.import_as_path {
+        return Err(ServiceError::InternalError(String::from(
+            "Cannot import a zip as path",
+        )));
+    }
 
     {
         let zip_file = File::open(path).await?;
@@ -404,7 +430,7 @@ async fn import_models_from_zip(
             let mut file_compat = file.compat();
 
             let id = import_single_model(
-                    &mut file_compat, extension, file_size, &file_name, link, app_state, &import_state.user
+                    &mut file_compat, extension, file_size, &file_name, link, app_state, &import_state.user, None
             ).await?;
 
             import_state.add_model_id_to_current_set(id);
@@ -426,6 +452,7 @@ async fn import_single_model<W>(
     link: Option<String>,
     app_state: &AppState,
     user: &User,
+    permanent_disk_path: Option<PathBuf>,
 ) -> Result<i64, ServiceError>
 where
     W: AsyncRead + Unpin,
@@ -455,6 +482,8 @@ where
 
     if let Some(blob) = blob_id_optional {
         blob_id = blob.id;
+    } else if let Some(permanent_disk_path) = permanent_disk_path {
+        blob_id = blob_db::add_blob(&app_state.db, &hash, file_type, file_size as i64, Some(permanent_disk_path.to_str().unwrap().to_string())).await?;
     } else {
         let new_extension = convert_extension_to_zip(file_type);
 
@@ -473,8 +502,7 @@ where
             file_handle.write_all(&file_contents).await?;
         }
 
-        blob_id = blob_db::add_blob(&app_state.db, &hash, &new_extension, file_size as i64)
-                .await?;
+        blob_id = blob_db::add_blob(&app_state.db, &hash, &new_extension, file_size as i64, None).await?;
     }
 
     let id = model_db::add_model(

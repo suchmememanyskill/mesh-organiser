@@ -48,22 +48,6 @@ jobs:
         with:
           version: 10
 
-      - name: download mesh-thumbnail (not windows)
-        if: matrix.os != 'windows-latest'
-        run: |
-          mkdir external-binaries
-          cd external-binaries
-          wget https://github.com/${{ env.MESH_THUMBNAIL_REPO }}/releases/latest/download/mesh-thumbnail-${{ matrix.target }}
-          chmod a+x mesh-thumbnail-${{ matrix.target }}
-
-      - name: download mesh-thumbnail (windows only)
-        if: matrix.os == 'windows-latest'
-        run: |
-          mkdir external-binaries
-          cd external-binaries
-          #TODO: build mesh-thumbnail for windows with msvc instead of gnu in mesh-thumbnail
-          curl -L -o mesh-thumbnail-x86_64-pc-windows-msvc.exe https://github.com/${{ env.MESH_THUMBNAIL_REPO }}/releases/latest/download/mesh-thumbnail-${{ matrix.target }}.exe
-
       - name: install dependencies (ubuntu only)
         if: matrix.name == 'linux-amd64'
         run: |

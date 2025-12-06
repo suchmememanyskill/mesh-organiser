@@ -296,8 +296,8 @@
                             <DropdownMenu.Item onclick={createShare}>
                                 <Share2 /> Create share for models
                             </DropdownMenu.Item>
+                            <DropdownMenu.Separator />
                         {/if}
-                        <DropdownMenu.Separator />
                         <DropdownMenu.Item onclick={onDelete}>
                             <Trash2 /> Delete selected models
                         </DropdownMenu.Item>

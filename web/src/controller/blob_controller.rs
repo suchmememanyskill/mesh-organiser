@@ -25,9 +25,9 @@ mod get {
     };
 
     use axum_extra::extract::Query;
-    use db::{model::User, model_db, user_db};
+    use db::{model::{Blob, User}, model_db, user_db};
     use serde::Deserialize;
-    use service::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
+    use service::{cleanse_evil_from_name, convert_zip_to_extension, export_service::get_model_path_for_blob, is_zipped_file_extension};
     use tokio::{fs::File, io::BufReader};
     use tokio_util::{compat::FuturesAsyncReadCompatExt, io::ReaderStream};
 
@@ -127,7 +127,7 @@ mod get {
         }
 
         let filename = format!("{}.{}", cleanse_evil_from_name(&model.name).trim(), convert_zip_to_extension(&model.blob.filetype)).to_ascii_lowercase();
-        let mut response = get_blob_bytes_inner(&model.blob.sha256, &model.blob.filetype, &app_state)
+        let mut response = get_blob_bytes_inner(&model.blob, &app_state)
             .await;
 
         response.headers_mut().insert(
@@ -161,7 +161,7 @@ mod get {
 
         let model = &model[0];
 
-        get_blob_bytes_inner(&model.blob.sha256, &model.blob.filetype, &app_state)
+        get_blob_bytes_inner(&model.blob, &app_state)
             .await
     }
 
@@ -183,7 +183,7 @@ mod get {
             _ => return StatusCode::NOT_FOUND.into_response(),
         };
 
-        get_blob_bytes_inner(&blob.sha256, &blob.filetype, &app_state)
+        get_blob_bytes_inner(&blob, &app_state)
             .await
             .into_response()
     }
@@ -207,12 +207,10 @@ mod get {
     }
 
     async fn get_blob_bytes_inner(
-        sha256: &String,
-        filetype: &String,
+        blob: &Blob,
         app_state: &WebAppState,
     ) -> Response {
-        let base_dir = app_state.get_model_dir();
-        let src_file_path = base_dir.join(format!("{}.{}", sha256, filetype));
+        let src_file_path = get_model_path_for_blob(&blob, &app_state.app_state);
 
         let file = match File::open(src_file_path).await {
             Ok(f) => f,
@@ -221,7 +219,7 @@ mod get {
 
         let buffered_reader = BufReader::new(file);
 
-        if is_zipped_file_extension(&filetype) {
+        if is_zipped_file_extension(&blob.filetype) {
             let archive = match ZipFileReader::with_tokio(buffered_reader).await {
                 Ok(a) => a,
                 Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),

@@ -47,6 +47,10 @@
     }
 
     onMount(async () => {
+        if (sidebarApi)
+        {
+            return;
+        }
         slicers = await slicerApi.availableSlicers();
     });
 </script>

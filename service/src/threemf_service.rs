@@ -274,7 +274,7 @@ pub async fn extract_models(model : &Model, user: &User, app_state: &AppState) -
         }).await??;
     }
 
-    let import_state = ImportState::new(model.link.clone(), false, true, user.clone());
+    let import_state = ImportState::new(model.link.clone(), false, true, false, user.clone());
     let result = import_service::import_path(temp_dir.to_str().unwrap(), app_state, import_state).await?;
 
     Ok(result)

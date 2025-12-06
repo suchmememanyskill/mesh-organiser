@@ -48,6 +48,7 @@ export interface Configuration {
     use_worker_for_model_parsing : boolean;
     prefer_gcode_thumbnail : boolean;
     custom_css : string;
+    default_enabled_import_as_path : boolean;
 }
 
 export function convertOrderOptionModelsToEnum(orderOption : OrderOptionModels) : ModelOrderBy {
@@ -136,6 +137,7 @@ export function configurationDefault() : Configuration
         use_worker_for_model_parsing: true,
         prefer_gcode_thumbnail: true,
         custom_css : "",
+        default_enabled_import_as_path : false,
     }
 }
 

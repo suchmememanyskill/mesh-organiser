@@ -54,10 +54,11 @@ pub fn import_state_new_tauri(
     origin_url: Option<String>,
     recursive: bool,
     delete_after_import: bool,
+    import_as_path: bool,
     app_state: &TauriAppState,
     app_handle: &AppHandle,
 ) -> ImportState {
-    ImportState::new_with_emitter(origin_url, recursive, delete_after_import, app_state.get_current_user(), Box::new(TauriImportStateEmitter {
+    ImportState::new_with_emitter(origin_url, recursive, delete_after_import, import_as_path, app_state.get_current_user(), Box::new(TauriImportStateEmitter {
         handle: app_handle.clone(),
     }))
 }

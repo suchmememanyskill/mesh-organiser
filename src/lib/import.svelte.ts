@@ -9,11 +9,13 @@ interface GlobalImportSettings
 {
     delete_after_import: boolean;
     recursive: boolean;
+    import_as_path: boolean;
 }
 
 export const globalImportSettings : GlobalImportSettings = $state({
     delete_after_import: false,
     recursive: false,
+    import_as_path: false,
 });
 
 export const importState : ImportState = $state({
@@ -28,7 +30,6 @@ export const importState : ImportState = $state({
     delete_after_import: false,
     current_importing_group: undefined,
 })
-
 
 export function resetImportState() : void
 {

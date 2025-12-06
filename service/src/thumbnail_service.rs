@@ -1,12 +1,12 @@
 use std::{panic, path::PathBuf};
 
-use db::model::{self, Model};
+use db::{blob_db, model::{self, Blob, Model}};
 use image::imageops::FilterType::Triangle;
 use libmeshthumbnail::{extract_image, parse_model, render};
 use tokio::task::JoinSet;
 use vek::{Vec2, Vec3};
 
-use crate::{AppState, ServiceError, import_state::{ImportState, ImportStatus}};
+use crate::{AppState, ServiceError, export_service::{get_image_path_for_blob, get_model_path_for_blob}, import_state::{ImportState, ImportStatus}};
 
 const IMAGE_WIDTH: usize = 512;
 const IMAGE_HEIGHT: usize = 512;
@@ -88,15 +88,24 @@ fn process(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, fallback
     )))
 }
 
+pub async fn generate_all_thumbnails(
+    app_state: &AppState,
+    overwrite: bool,
+    import_state: &mut ImportState,
+) -> Result<(), ServiceError> {
+    let blobs = blob_db::get_blobs(&app_state.db).await?;
+    let blob_refs: Vec<&Blob> = blobs.iter().collect();
+
+    generate_thumbnails(&blob_refs, app_state, overwrite, import_state).await
+}
+
 pub async fn generate_thumbnails(
-    models: &[Model],
+    models: &[&Blob],
     app_state: &AppState,
     overwrite: bool,
     import_state: &mut ImportState,
 ) -> Result<(), ServiceError> {
     import_state.update_status(ImportStatus::ProcessingThumbnails);
-    let image_path = app_state.get_image_dir();
-    let model_path = app_state.get_model_dir();
     let fallback_3mf_thumbnail = app_state.get_configuration().fallback_3mf_thumbnail;
     let prefer_3mf_thumbnail = app_state.get_configuration().prefer_3mf_thumbnail;
     let prefer_gcode_thumbnail = app_state.get_configuration().prefer_gcode_thumbnail;
@@ -118,9 +127,9 @@ pub async fn generate_thumbnails(
 
     let paths: Vec<(PathBuf, PathBuf)> = models
         .iter()
-        .map(|f| {
-            let model_path = model_path.join(format!("{}.{}", f.blob.sha256, f.blob.filetype));
-            let image_path = image_path.join(format!("{}.png", f.blob.sha256));
+        .map(|blob| {
+            let model_path = get_model_path_for_blob(blob, app_state);
+            let image_path = get_image_path_for_blob(blob, app_state);
 
             (model_path, image_path)
         })
@@ -140,6 +149,7 @@ pub async fn generate_thumbnails(
             // Ignore errors for now
             let _ = process(&model_path, &image_path, color, fallback_3mf_thumbnail, prefer_3mf_thumbnail, prefer_gcode_thumbnail);
         });
+        active += 1;
 
         if active >= max_concurrent {
             if let Some(res) = futures.join_next().await {
@@ -148,12 +158,11 @@ pub async fn generate_thumbnails(
                     Err(err) => panic!("{err}"),
                     Ok(_) => {
                         active -= 1;
+                        import_state.update_finished_thumbnails_count(1);
                     }
                 }
             }
         }
-
-        import_state.update_finished_thumbnails_count(1);
     }
 
     futures.join_all().await;

@@ -50,6 +50,7 @@ pub struct StoredConfiguration {
     pub prefer_gcode_thumbnail: Option<bool>,
     pub last_user_id: Option<i64>,
     pub custom_css : Option<String>,
+    pub default_enabled_import_as_path: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -96,6 +97,7 @@ pub struct Configuration {
     pub prefer_gcode_thumbnail: bool,
     pub last_user_id: i64,
     pub custom_css : String,
+    pub default_enabled_import_as_path: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -216,6 +218,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
             .unwrap_or(default.prefer_gcode_thumbnail),
         last_user_id: configuration.last_user_id.unwrap_or(default.last_user_id),
         custom_css : configuration.custom_css.unwrap_or(default.custom_css),
+        default_enabled_import_as_path: configuration
+            .default_enabled_import_as_path
+            .unwrap_or(default.default_enabled_import_as_path),
     }
 }
 
@@ -274,6 +279,7 @@ impl Default for Configuration {
             prefer_gcode_thumbnail: true,
             last_user_id: 1,
             custom_css : String::new(),
+            default_enabled_import_as_path: false,
         }
     }
 }

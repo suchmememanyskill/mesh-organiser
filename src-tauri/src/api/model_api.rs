@@ -2,14 +2,16 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use db::blob_db;
-use db::model::{ModelFlags, User};
+use db::model::{Blob, ModelFlags, User};
 use db::model_db::{self, ModelFilterOptions, ModelOrderBy};
+use itertools::Itertools;
 use serde::Serialize;
-use service::{export_service, import_service};
+use service::export_service::{get_image_path_for_blob, get_model_path_for_blob};
+use service::{export_service, import_service, thumbnail_service};
 use service::import_state::ImportStatus;
 use tauri::{AppHandle, State};
 use crate::error::ApplicationError;
-use crate::{TauriAppState, tauri_thumbnail_service};
+use crate::TauriAppState;
 use crate::ImportState;
 use crate::tauri_import_state::import_state_new_tauri;
 
@@ -18,6 +20,7 @@ pub async fn add_model(
     path: &str,
     recursive: bool,
     delete_imported: bool,
+    import_as_path: bool,
     origin_url: Option<String>,
     open_in_slicer: bool,
     state: State<'_, TauriAppState>,
@@ -25,7 +28,7 @@ pub async fn add_model(
 ) -> Result<ImportState, ApplicationError> {
     let path_clone = String::from(path);
     let state_clone = state.clone();
-    let mut import_state = import_state_new_tauri(origin_url, recursive, delete_imported, &state, &app_handle);
+    let mut import_state = import_state_new_tauri(origin_url, recursive, delete_imported, import_as_path, &state, &app_handle);
     import_state = import_service::import_path(&path_clone, &state_clone.app_state, import_state).await?;
 
     let model_ids: Vec<i64> = import_state
@@ -35,10 +38,11 @@ pub async fn add_model(
         .collect();
 
     let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
-    tauri_thumbnail_service::generate_thumbnails(
-        &models,
-        &state,
-        &app_handle,
+    let blobs: Vec<&Blob> = models.iter().map(|m| &m.blob).collect();
+
+    thumbnail_service::generate_thumbnails(
+        &blobs,
+        &state.app_state,
         false,
         &mut import_state,
     )
@@ -115,27 +119,27 @@ pub async fn delete_model(model_id: i64, state: State<'_, TauriAppState>) -> Res
         )));
     }
 
-    let model = &model[0];
+    model_db::delete_model(&state.app_state.db, &state.get_current_user(), model_id).await?;
+    export_service::delete_dead_blobs(&state.app_state).await?;
+    Ok(())
+}
 
-    model_db::delete_model(&state.app_state.db, &state.get_current_user(), model_id)
-        .await?;
+#[tauri::command]
+pub async fn delete_models(model_ids: Vec<i64>, state: State<'_, TauriAppState>) -> Result<(), ApplicationError> {
+    let model_ids = model_ids.into_iter().unique().collect::<Vec<i64>>();
+    let model_ids_len = model_ids.len();
+    let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
 
-    if blob_db::get_blob_model_usage_count(&state.app_state.db, model.blob.id).await? <= 0 {
-        let model_path =
-            PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
-        let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.blob.sha256));
-
-        if model_path.exists() {
-            std::fs::remove_file(model_path)?;
-        }
-
-        if image_path.exists() {
-            std::fs::remove_file(image_path)?;
-        }
-
-        blob_db::delete_blob(&state.app_state.db, model.blob.id).await?;
+    if model.len() != model_ids_len {
+        return Err(ApplicationError::InternalError(String::from(
+            "Failed to find model to delete",
+        )));
     }
 
+    let model_ids = model.into_iter().map(|m| m.id).collect::<Vec<i64>>();
+
+    model_db::delete_models(&state.app_state.db, &state.get_current_user(), &model_ids).await?;
+    export_service::delete_dead_blobs(&state.app_state).await?;
     Ok(())
 }
 

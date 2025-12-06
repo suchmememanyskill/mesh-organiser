@@ -3,9 +3,32 @@ use serde::de;
 
 use crate::{DbError, db_context::DbContext, model::Blob, util::time_now};
 
+pub async fn get_blobs(db: &DbContext) -> Result<Vec<Blob>, DbError> {
+    let rows = sqlx::query!(
+        "SELECT blob_id, blob_sha256, blob_filetype, blob_size, blob_added, blob_path FROM blobs"
+    )
+    .fetch_all(db)
+    .await?;
+
+    let mut blobs = Vec::with_capacity(rows.len());
+
+    for row in rows {
+        blobs.push(Blob {
+            id: row.blob_id,
+            sha256: row.blob_sha256,
+            filetype: row.blob_filetype,
+            size: row.blob_size,
+            added: row.blob_added,
+            disk_path: row.blob_path,
+        });
+    }
+
+    Ok(blobs)
+}
+
 pub async fn get_blob_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<Blob>, DbError> {
     let row = sqlx::query!(
-        "SELECT blob_id, blob_sha256, blob_filetype, blob_size, blob_added FROM blobs WHERE blob_sha256 = ?",
+        "SELECT blob_id, blob_sha256, blob_filetype, blob_size, blob_added, blob_path FROM blobs WHERE blob_sha256 = ?",
         sha256
     )
     .fetch_optional(db)
@@ -17,21 +40,23 @@ pub async fn get_blob_via_sha256(db: &DbContext, sha256: &str) -> Result<Option<
             sha256: r.blob_sha256,
             filetype: r.blob_filetype,
             size: r.blob_size,
+            disk_path: r.blob_path,
             added: r.blob_added.to_string(),
         })),
         None => Ok(None),
     }
 }
 
-pub async fn add_blob(db: &DbContext, sha256: &str, filetype: &str, size: i64) -> Result<i64, DbError> {
+pub async fn add_blob(db: &DbContext, sha256: &str, filetype: &str, size: i64, disk_path: Option<String>) -> Result<i64, DbError> {
     let now = time_now();
 
     let result = sqlx::query!(
-        "INSERT INTO blobs (blob_sha256, blob_filetype, blob_size, blob_added) VALUES (?, ?, ?, ?)",
+        "INSERT INTO blobs (blob_sha256, blob_filetype, blob_size, blob_added, blob_path) VALUES (?, ?, ?, ?, ?)",
         sha256,
         filetype,
         size,
-        now
+        now,
+        disk_path,
     )
     .execute(db)
     .await?;
@@ -49,7 +74,7 @@ pub async fn delete_blob(db: &DbContext, blob_id: i64) -> Result<(), DbError> {
 
 pub async fn get_and_delete_dead_blobs(db: &DbContext) -> Result<Vec<Blob>, DbError> {
     let dead_blob_rows = sqlx::query!(
-        "SELECT blob_id, blob_sha256, blob_filetype, blob_size, blob_added FROM blobs
+        "SELECT blob_id, blob_sha256, blob_filetype, blob_size, blob_added, blob_path FROM blobs
             WHERE blob_id NOT IN 
                 (SELECT DISTINCT model_blob_id 
                     FROM models 
@@ -67,6 +92,7 @@ pub async fn get_and_delete_dead_blobs(db: &DbContext) -> Result<Vec<Blob>, DbEr
             filetype: row.blob_filetype,
             size: row.blob_size,
             added: row.blob_added,
+            disk_path: row.blob_path,
         });
     }
 

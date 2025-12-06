@@ -38,6 +38,8 @@ import { UserApi } from "./user";
 import { IAdminUserApi, ISwitchUserApi, IUserApi, IUserManageSelfApi } from "../shared/user_api";
 import { ThreemfApi } from "./threemf";
 import { IThreemfApi } from "../shared/threemf_api";
+import { ThumbnailApi } from "./thumbnail";
+import { IThumbnailApi } from "../shared/thumbnail_api";
 
 interface InitialState
 {
@@ -74,16 +76,13 @@ export async function initTauriLocalApis() : Promise<void> {
     const localApi = new LocalApi(appDataDirPath, state.max_parallelism ?? 2);
     const userApi = new UserApi();
     const threemfApi = new ThreemfApi();
+    const thumbnailApi = new ThumbnailApi();
 
-    // This should probably happen on the rust side
-    // TODO: Create routine to delete unused blobs
-    await invoke("remove_dead_groups", {});
     let config = await settings.getConfiguration();
     Object.assign(configuration, config);
 
     await tauriImport.initImportListeners();
 
-    
     console.log('initial state:', state);
     if (state.deep_link_url)
     {
@@ -128,6 +127,7 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(ISwitchUserApi, userApi);
     container.addSingleton(IAdminUserApi, userApi);
     container.addSingleton(IUserManageSelfApi, userApi);
+    container.addSingleton(IThumbnailApi, thumbnailApi);
 
     checkForUpdates();
 

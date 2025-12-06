@@ -68,7 +68,7 @@ mod get {
 }
 
 mod post {
-    use db::{model::ModelGroupMeta, random_hex_32, time_now};
+    use db::{model::{Blob, ModelGroupMeta}, random_hex_32, time_now};
     use service::thumbnail_service;
 
     use crate::web_import_state::WebImportStateEmitter;
@@ -100,8 +100,9 @@ mod post {
             .collect();
 
         let models = model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids).await?;
+        let blobs: Vec<&Blob> = models.iter().map(|m| &m.blob).collect();
 
-        thumbnail_service::generate_thumbnails(&models, &app_state.app_state, false, &mut import_state).await?;
+        thumbnail_service::generate_thumbnails(&blobs, &app_state.app_state, false, &mut import_state).await?;
 
         Ok(Json(ModelGroupMeta {
             id: import_state.imported_models[0].group_id.unwrap(),

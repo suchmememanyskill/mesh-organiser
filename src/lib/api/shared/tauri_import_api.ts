@@ -34,6 +34,7 @@ export interface ImportModelSettings
     recursive?: boolean;
     direct_open_in_slicer?: boolean;
     source_url?: string;
+    import_as_path?: boolean;
 }
 
 export const ITauriImportApi = Symbol('ITauriImportApi');

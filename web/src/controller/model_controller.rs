@@ -202,6 +202,7 @@ mod put {
 
 mod delete {
     use db::model::User;
+    use service::export_service::delete_dead_blobs;
 
     use super::*;
 
@@ -213,6 +214,7 @@ mod delete {
         let user = auth_session.user.unwrap().to_user();
         
         delete_model_inner(&app_state, &user, vec![model_id]).await?;
+        delete_dead_blobs(&app_state.app_state).await?;
 
         Ok(StatusCode::NO_CONTENT.into_response())
     }
@@ -230,6 +232,7 @@ mod delete {
         let user = auth_session.user.unwrap().to_user();
         
         delete_model_inner(&app_state, &user, params.model_ids).await?;
+        delete_dead_blobs(&app_state.app_state).await?;
 
         Ok(StatusCode::NO_CONTENT.into_response())
     }
@@ -253,32 +256,12 @@ mod delete {
 
         model_db::delete_models(&app_state.app_state.db, user, &ids).await?;
 
-        // TODO: Optimize
-        let model_dir = app_state.get_model_dir();
-        let image_dir = app_state.get_image_dir();
-        for model in models {
-            if blob_db::get_blob_model_usage_count(&app_state.app_state.db, model.blob.id).await? <= 0 {
-                let model_path = model_dir.join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
-                let image_path = image_dir.join(format!("{}.png", model.blob.sha256));
-
-                if model_path.exists() {
-                    std::fs::remove_file(model_path)?;
-                }
-
-                if image_path.exists() {
-                    std::fs::remove_file(image_path)?;
-                }
-
-                blob_db::delete_blob(&app_state.app_state.db, model.blob.id).await?;
-            }
-        }
-
         Ok(())
     }
 }
 
 mod post {
-    use db::random_hex_32;
+    use db::{model::Blob, random_hex_32};
     use service::thumbnail_service;
     use tokio::io::AsyncWriteExt;
 
@@ -335,10 +318,10 @@ mod post {
 
         let mut model_ids: Vec<i64> = vec![];
 
-        let mut import_state = ImportState::new_with_emitter(None, false, true, user.clone(), Box::new(WebImportStateEmitter {}));
+        let mut import_state = ImportState::new_with_emitter(None, false, true, false, user.clone(), Box::new(WebImportStateEmitter {}));
 
         for path in paths {
-            import_state = ImportState::new_with_emitter(None, false, true, user.clone(), Box::new(WebImportStateEmitter {}));
+            import_state = ImportState::new_with_emitter(None, false, true, false, user.clone(), Box::new(WebImportStateEmitter {}));
             import_state = import_service::import_path(
                 &path.to_string_lossy(),
                 &app_state.app_state,
@@ -349,10 +332,10 @@ mod post {
             model_ids.extend(&import_state.imported_models[0].model_ids);
         }
 
-        let models =
-            model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids.clone()).await?;
+        let models = model_db::get_models_via_ids(&app_state.app_state.db, &user, model_ids.clone()).await?;
+        let blobs: Vec<&Blob> = models.iter().map(|m| &m.blob).collect();
 
-        thumbnail_service::generate_thumbnails(&models, &app_state.app_state, false, &mut import_state).await?;
+        thumbnail_service::generate_thumbnails(&blobs, &app_state.app_state, false, &mut import_state).await?;
 
         Ok(Json(model_ids).into_response())
     }

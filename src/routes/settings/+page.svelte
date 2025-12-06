@@ -23,7 +23,7 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import UserEditCard from "$lib/components/view/user-edit-card.svelte";
     import { configuration } from "$lib/configuration.svelte";
-    import { importState, resetImportState } from "$lib/import.svelte";
+    import { globalImportSettings, importState, resetImportState } from "$lib/import.svelte";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
     import { getAvailableThemes, getThemeName, setTheme } from "$lib/theme";
     import Moon from "@lucide/svelte/icons/moon";
@@ -31,6 +31,7 @@
     import { resetMode, setMode } from "mode-watcher";
     import CurrentUserEditCard from "$lib/components/view/current-user-edit-card.svelte";
     import { Textarea } from "$lib/components/ui/textarea/index.js";
+    import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
 
     const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
@@ -260,9 +261,19 @@
             <CardContent class="text-sm flex flex-col gap-5">
                 <CheckboxWithLabel bind:value={configuration.default_enabled_recursive_import} label="Check 'Import folder recursively' by default" />
                 <CheckboxWithLabel bind:value={configuration.default_enabled_delete_after_import} label="Check 'Delete files after import' by default" />
+
                 <CheckboxWithLabel bind:value={configuration.export_metadata} label="Export metadata to .json when opening in folder" />
                 <CheckboxWithLabel bind:value={configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
                 <CheckboxWithLabel bind:value={configuration.allow_importing_gcode} label="Allow importing gcode files" />
+
+
+                <div class="flex flex-col space-y-1.5 p-4 border rounded-md border-destructive">
+                    <CheckboxWithLabel bind:value={
+                        () => configuration.default_enabled_import_as_path,
+                        (val) => { configuration.default_enabled_import_as_path = val; globalImportSettings.import_as_path = val; }
+                    } label="Reuse files on disk, do not import into internal registry" />
+                    <p>Mesh Organiser makes use of an internal file registry to manage imported models. This way, if the original files were deleted or moved, the models within Mesh Organiser would stay valid. The models also get compressed this way. Enabling the toggle above instead uses the location on disk of the imported files, instead of the internal registry. Moving or deleting imported model files will cause issues when this feature is enabled!</p>
+                </div>
 
                 <div class="flex flex-col space-y-1.5">
                     <Label for="path">Model directory*</Label>

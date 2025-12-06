@@ -15,6 +15,26 @@ use std::collections::HashSet;
 
 use super::app_state::AppState;
 
+pub fn get_model_path_for_blob(
+    blob: &Blob,
+    app_state: &AppState,
+) -> PathBuf {
+    if let Some(disk_path) = &blob.disk_path {
+        PathBuf::from(disk_path)
+    } else {
+        let base_dir = app_state.get_model_dir();
+        base_dir.join(format!("{}.{}", blob.sha256, blob.filetype))
+    }
+}
+
+pub fn get_image_path_for_blob(
+    blob: &Blob,
+    app_state: &AppState,
+) -> PathBuf {
+    let base_dir = app_state.get_image_dir();
+    base_dir.join(format!("{}.png", blob.sha256))
+}
+
 pub async fn export_to_temp_folder(
     mut models: Vec<Model>,
     app_state: &AppState,
@@ -87,8 +107,7 @@ pub async fn get_bytes_from_blob(
     blob: &Blob,
     app_state: &AppState,
 ) -> Result<Vec<u8>, ServiceError> {
-    let base_dir = PathBuf::from(app_state.get_model_dir());
-    let src_file_path = base_dir.join(format!("{}.{}", blob.sha256, blob.filetype));
+    let src_file_path = get_model_path_for_blob(blob, app_state);
     let mut file = File::open(src_file_path).await?;
     let mut buffer = Vec::new();
 
@@ -124,8 +143,7 @@ pub async fn get_path_from_model(
     app_state: &AppState,
     lazy: bool,
 ) -> Result<PathBuf, ServiceError> {
-    let base_dir = PathBuf::from(app_state.get_model_dir());
-    let src_file_path = base_dir.join(format!("{}.{}", model.blob.sha256, model.blob.filetype));
+    let src_file_path = get_model_path_for_blob(&model.blob, app_state);
     let cleansed_name = cleanse_evil_from_name(&model.name);
     let extension = convert_zip_to_extension(&model.blob.filetype);
     let dst_file_path = ensure_unique_file(temp_dir, &cleansed_name, &extension);
@@ -192,16 +210,13 @@ pub fn get_size_of_blobs(
 pub async fn delete_dead_blobs(
     app_state: &AppState,
 ) -> Result<(), ServiceError> {
-    let model_dir = PathBuf::from(app_state.get_model_dir());
-    let image_dir = PathBuf::from(app_state.get_image_dir());
-   
     let blobs = blob_db::get_and_delete_dead_blobs(&app_state.db).await?;
 
     for blob in blobs {
-        let model_path = model_dir.join(format!("{}.{}", blob.sha256, blob.filetype));
-        let image_path = image_dir.join(format!("{}.png", blob.sha256));
+        let model_path = get_model_path_for_blob(&blob, app_state);
+        let image_path = get_image_path_for_blob(&blob, app_state);
 
-        if model_path.exists() {
+        if blob.disk_path.is_none() && model_path.exists() {
             if let Err(e) = std::fs::remove_file(model_path) {
                 eprintln!("Failed to remove dead blob model file: {}", e);
             }

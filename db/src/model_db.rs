@@ -52,7 +52,7 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
 
     let mut query_builder = QueryBuilder::new(
         format!("SELECT models.model_id, model_name, model_url, model_desc, model_added, model_flags, model_unique_global_id, model_last_modified,
-				blob_id, blob_sha256, blob_filetype, blob_size,
+				blob_id, blob_sha256, blob_filetype, blob_size, blob_path,
                 GROUP_CONCAT(labels.label_id) AS label_ids,
                 models_group.group_id, group_name, group_created, group_resource_id, group_unique_global_id, group_last_modified
          FROM models 
@@ -128,6 +128,7 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
                 filetype: row.get("blob_filetype"),
                 size: row.get("blob_size"),
                 added: row.get("model_added"),
+                disk_path: row.get("blob_path"),
             },
             link: row.get("model_url"),
             description: row.get("model_desc"),

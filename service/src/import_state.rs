@@ -34,6 +34,7 @@ pub struct ImportState {
     pub failure_reason: Option<String>,
     pub recursive: bool,
     pub delete_after_import: bool,
+    pub import_as_path: bool,
     pub user: User,
     
     #[serde(skip)]
@@ -69,7 +70,7 @@ impl ImportStateEmitter for NoneImportStateEmitter {
 }
 
 impl ImportState {
-    pub fn new(origin_url: Option<String>, recursive: bool, delete_after_import : bool, user: User) -> Self {
+    pub fn new(origin_url: Option<String>, recursive: bool, delete_after_import : bool, import_as_path: bool, user: User) -> Self {
         Self {
             imported_models: Vec::new(),
             imported_models_count: 0,
@@ -82,10 +83,11 @@ impl ImportState {
             delete_after_import,
             emitter: Box::new(NoneImportStateEmitter {}),
             user: user,
+            import_as_path: import_as_path,
         }
     }
 
-    pub fn new_with_emitter(origin_url: Option<String>, recursive: bool, delete_after_import: bool, user: User, emitter: Box<dyn ImportStateEmitter + Send + Sync>) -> Self {
+    pub fn new_with_emitter(origin_url: Option<String>, recursive: bool, delete_after_import: bool, import_as_path: bool, user: User, emitter: Box<dyn ImportStateEmitter + Send + Sync>) -> Self {
         Self {
             imported_models: Vec::new(),
             imported_models_count: 0,
@@ -97,7 +99,8 @@ impl ImportState {
             recursive,
             delete_after_import,
             emitter: emitter,
-            user: user
+            user: user,
+            import_as_path: import_as_path,
         }
     }
 

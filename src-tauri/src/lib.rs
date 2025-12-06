@@ -6,11 +6,12 @@ use std::{
 use db::{model::ModelGroupMeta, user_db};
 use arboard::Clipboard;
 use base64::prelude::*;
-
+use crate::tauri_import_state::import_state_new_tauri;
 use db::{
     label_db, model::{ModelFlags, Resource, ResourceFlags, User}, model_db
 };
-use service::threemf_service;
+use db::model::Blob;
+use service::{threemf_service, thumbnail_service};
 use service::ThreemfMetadata;
 use error::ApplicationError;
 use serde::{Deserialize, Serialize};
@@ -18,6 +19,7 @@ use service::{
     download_file_service, import_service,
     slicer_service::Slicer,
 };
+use db::group_db;
 use crate::tauri_app_state::AccountLinkEmit;
 use std::fs::File;
 use std::io::prelude::*;
@@ -28,6 +30,7 @@ use tauri::{
     menu::{MenuBuilder, SubmenuBuilder},
     webview::{DownloadEvent, PageLoadEvent},
 };
+use service::export_service;
 use urlencoding::decode;
 use service::import_state::ImportState;
 use service::Configuration;
@@ -42,7 +45,6 @@ mod tauri_app_state;
 mod error;
 mod api;
 mod tauri_import_state;
-mod tauri_thumbnail_service;
 
 #[derive(Serialize, Clone)]
 struct DeepLinkEmit {
@@ -101,7 +103,8 @@ async fn update_images(
     overwrite: bool,
 ) -> Result<(), ApplicationError> {
     let _lock = state.app_state.import_mutex.lock().await;
-    crate::tauri_thumbnail_service::generate_all_thumbnails(&state, &app_handle, overwrite).await?;
+    let import_state = &mut import_state_new_tauri(None, false, false, false, &state, &app_handle);
+    thumbnail_service::generate_all_thumbnails(&state.app_state, overwrite, import_state).await?;
 
     Ok(())
 }
@@ -164,7 +167,6 @@ async fn get_theemf_metadata(
 #[tauri::command]
 async fn extract_threemf_models(
     model_id: i64,
-    app_handle: AppHandle,
     state: State<'_, TauriAppState>,
 ) -> Result<ModelGroupMeta, ApplicationError> {
     let model = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), vec![model_id]).await?;
@@ -178,10 +180,11 @@ async fn extract_threemf_models(
         .collect();
 
     let models = model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids).await?;
-    tauri_thumbnail_service::generate_thumbnails(
-        &models,
-        &state,
-        &app_handle,
+    let blobs: Vec<&Blob> = models.iter().map(|m| &m.blob).collect();
+
+    thumbnail_service::generate_thumbnails(
+        &blobs,
+        &state.app_state,
         false,
         &mut import_state,
     )
@@ -612,17 +615,17 @@ pub fn run() {
                     current_user: Arc::new(Mutex::new(user)),
                 };
 
+                {
+                    let app_state = state.app_state.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let _ = group_db::delete_dead_groups(&app_state.db).await;
+                        let _ = export_service::delete_dead_blobs(&app_state).await;
+                    });
+                }
+
                 state.configure_deep_links(&app.handle());
 
                 app.manage(state);
-
-                /*
-                let handle = app.handle().clone();
-
-                thread::spawn(move || {
-                    web_server::init(handle).unwrap();
-                });
-                */
             });
             Ok(())
         })
@@ -645,7 +648,7 @@ pub fn run() {
             api::add_group,
             api::add_models_to_group,
             api::remove_models_from_group,
-            api::remove_dead_groups,
+            api::delete_models,
             api::edit_label,
             api::delete_label,
             update_images,

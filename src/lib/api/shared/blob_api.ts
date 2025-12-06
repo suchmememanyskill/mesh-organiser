@@ -30,11 +30,26 @@ export function fileTypeToPlainFileExtension(fileType: FileType) : string {
     }
 }
 
+export function plainFileExtensionToFileType(extension: string) : FileType {
+    switch (extension.toLowerCase()) {
+        case "stl":
+            return FileType.STL;
+        case "obj":
+            return FileType.OBJ;
+        case "step":
+            return FileType.STEP;
+        case "gcode":
+            return FileType.GCODE;
+        default:
+            return extension as FileType;
+    }
+}
+
 export function createBlobInstance(id: number, sha256: string, filetype: string, size: number, added: string): Blob {
     return {
         id,
         sha256,
-        filetype: filetype as FileType,
+        filetype: plainFileExtensionToFileType(filetype),
         size,
         added: new Date(added)
     };

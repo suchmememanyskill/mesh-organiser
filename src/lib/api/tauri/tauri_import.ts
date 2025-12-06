@@ -38,7 +38,7 @@ async function downloadFile(url : string) : Promise<DownloadResult>
     return await invoke("download_file", { url: url });
 }
 
-async function importModel(path : string, recursive : boolean, delete_imported : boolean, origin_url : string|null, open_in_slicer: boolean) : Promise<ImportState>
+async function importModel(path : string, recursive : boolean, delete_imported : boolean, import_as_path : boolean, origin_url : string|null, open_in_slicer: boolean) : Promise<ImportState>
 {
     return await invoke("add_model", {
         path: path,
@@ -46,6 +46,7 @@ async function importModel(path : string, recursive : boolean, delete_imported :
         deleteImported : delete_imported,
         originUrl : origin_url,
         openInSlicer: open_in_slicer,
+        importAsPath: import_as_path,
     });
 }
 
@@ -58,7 +59,12 @@ export class TauriImportApi implements ITauriImportApi {
         let delete_after_import = settings.delete_after_import ?? globalImportSettings.delete_after_import;
         let recursive = settings.recursive ?? globalImportSettings.recursive;
         let direct_open_in_slicer = settings.direct_open_in_slicer ?? false;
+        let import_as_path = settings.import_as_path ?? globalImportSettings.import_as_path;
         let source_url = settings.source_url;
+
+        if (import_as_path) {
+            delete_after_import = false;
+        }
 
         if (!paths || paths.length === 0) {
             return;
@@ -74,6 +80,7 @@ export class TauriImportApi implements ITauriImportApi {
                     paths[i], 
                     recursive, 
                     delete_after_import,
+                    import_as_path,
                     source_url ?? null,
                     direct_open_in_slicer);
 
@@ -162,6 +169,7 @@ export class TauriImportApi implements ITauriImportApi {
 
         globalImportSettings.delete_after_import = configuration.default_enabled_delete_after_import;
         globalImportSettings.recursive = configuration.default_enabled_recursive_import;
+        globalImportSettings.import_as_path = configuration.default_enabled_import_as_path;
     };
 
     async focusWindow() : Promise<void>
@@ -178,6 +186,8 @@ export class TauriImportApi implements ITauriImportApi {
         this.startImportProcess([download_result.path], {
             source_url: source_uri ?? undefined,
             direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
+            delete_after_import: true,
+            import_as_path: false,
         });
         navigateToImportPage();
     }
@@ -223,6 +233,8 @@ export class TauriImportApi implements ITauriImportApi {
         this.startImportProcess([event.path], {
             source_url: event.url,
             direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
+            delete_after_import: true,
+            import_as_path: false,
         });
         navigateToImportPage();
     }

@@ -151,7 +151,7 @@
                         </div>
 
                         <CheckboxWithLabel label="Import folder recursively" bind:value={globalImportSettings.recursive} />
-                        <CheckboxWithLabel label="Delete files after import" bind:value={globalImportSettings.delete_after_import} />
+                        <CheckboxWithLabel label="Delete files after import" bind:value={globalImportSettings.delete_after_import} disabled={globalImportSettings.import_as_path} />
                     </CardContent>
                 </Card>
             {/if}
