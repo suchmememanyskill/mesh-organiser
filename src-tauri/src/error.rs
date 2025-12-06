@@ -9,8 +9,6 @@ pub enum ApplicationError {
     ZipError(#[from] zip::result::ZipError),
     #[error("Internal error")]
     InternalError(String),
-    #[error("Failed to launch thumbnail generator")]
-    SidecarError(#[from] tauri_plugin_shell::Error),
     #[error("Failed to download file")]
     DownloadError(#[from] reqwest::Error),
     #[error("Failed to process JSON")]
@@ -48,11 +46,6 @@ impl Serialize for ApplicationError {
                 state.serialize_field("error_type", "InternalError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", s)?;
-            }
-            ApplicationError::SidecarError(inner) => {
-                state.serialize_field("error_type", "SidecarError")?;
-                state.serialize_field("error_message", &self.to_string())?;
-                state.serialize_field("error_inner_message", &inner.to_string())?;
             }
             ApplicationError::DownloadError(inner) => {
                 state.serialize_field("error_type", "DownloadError")?;

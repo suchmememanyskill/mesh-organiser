@@ -11,8 +11,6 @@
     "dialog:allow-open",
     "dialog:allow-confirm",
     "deep-link:default",
-    "shell:allow-open",
-    "shell:default",
     "core:window:allow-set-focus",
     "core:window:allow-unminimize",
     "core:webview:allow-set-webview-zoom",
