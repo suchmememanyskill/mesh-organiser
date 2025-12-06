@@ -408,7 +408,7 @@ async fn import_models_from_zip(
             let link = import_state.origin_url.clone();
 
             if file.entry().dir()? {
-                return Err(ServiceError::InternalError("Zip entry is a folder".into()))
+                continue;
             }
 
             let path = PathBuf::from(file.entry().filename().as_str()?);
