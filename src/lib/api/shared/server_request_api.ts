@@ -15,5 +15,5 @@ export interface IServerRequestApi {
     requestBinary(endpoint: string, method: HttpMethod, data?: any) : Promise<Uint8Array>;
     requestBinary(endpoint: string, method: HttpMethod, data?: any, version?: string) : Promise<Uint8Array>;
     sendBinary<T>(endpoint: string, method: HttpMethod, data: File) : Promise<T>;
-    sendBinary<T>(endpoint: string, method: HttpMethod, data: File, version?: string) : Promise<T>;
+    sendBinary<T>(endpoint: string, method: HttpMethod, data: File, version?: string, extra_data?: Record<string, string>) : Promise<T>;
 }

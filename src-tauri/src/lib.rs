@@ -20,6 +20,7 @@ use service::Configuration;
 use service::StoredConfiguration;
 use service::ThreemfMetadata;
 use service::export_service;
+use service::export_service::get_temp_dir;
 use service::import_state::ImportState;
 use service::stored_to_configuration;
 use service::{download_file_service, import_service, slicer_service::Slicer};
@@ -117,7 +118,8 @@ async fn open_in_slicer(
             .await?;
 
     if let Some(slicer) = &state.get_configuration().slicer {
-        slicer.open(models, &state.app_state).await?;
+        let (_, paths) = export_service::export_to_temp_folder(models, &state.app_state, true, "open").await?;
+        slicer.open(paths, &state.app_state).await?;
     }
 
     Ok(())
@@ -705,6 +707,11 @@ pub fn run() {
             api::get_model_disk_space_usage,
             get_theemf_metadata,
             extract_threemf_models,
+            api::download_files_and_open_in_folder,
+            api::download_files_and_open_in_slicer,
+            api::expand_paths,
+            api::get_file_bytes,
+            api::upload_models_to_remote_server,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

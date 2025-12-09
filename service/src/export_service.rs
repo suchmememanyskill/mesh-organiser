@@ -15,6 +15,18 @@ use std::collections::HashSet;
 
 use super::app_state::AppState;
 
+pub fn get_temp_dir(
+    action: &str,
+) -> PathBuf {
+    let temp_dir = std::env::temp_dir().join(format!(
+        "meshorganiser_{}_action_{}",
+        action,
+        Utc::now().timestamp_nanos_opt().unwrap()
+    ));
+    std::fs::create_dir(&temp_dir).unwrap();
+    temp_dir
+}
+
 pub fn get_model_path_for_blob(
     blob: &Blob,
     app_state: &AppState,
@@ -42,12 +54,7 @@ pub async fn export_to_temp_folder(
     action: &str,
 ) -> Result<(PathBuf, Vec<PathBuf>), ServiceError> {
     let configuration = app_state.get_configuration();
-    let temp_dir = std::env::temp_dir().join(format!(
-        "meshorganiser_{}_action_{}",
-        action,
-        Utc::now().timestamp_nanos_opt().unwrap()
-    ));
-    std::fs::create_dir(&temp_dir)?;
+    let temp_dir = get_temp_dir(action);
 
     let mut futures = JoinSet::new();
 
@@ -125,7 +132,14 @@ pub async fn get_bytes_from_blob(
     Ok(buffer)
 }
 
-fn ensure_unique_file(base_path: &PathBuf, file_name: &str, extension: &str) -> PathBuf {
+pub fn ensure_unique_file_full_filename(base_path: &PathBuf, file_name : &str) -> PathBuf {
+    let extension = file_name.split(".").last().unwrap();
+    let base_file_name = &file_name[..file_name.len() - extension.len() - 1];
+
+    ensure_unique_file(base_path, base_file_name, extension)
+}
+
+pub fn ensure_unique_file(base_path: &PathBuf, file_name: &str, extension: &str) -> PathBuf {
     let mut counter = 1;
     let mut new_file_name = base_path.join(format!("{}.{}", file_name, extension));
 

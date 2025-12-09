@@ -1,9 +1,21 @@
 import { HttpMethod, IServerRequestApi } from "../shared/server_request_api";
 import qs from "qs";
 
+interface Fetch {
+    (input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+}
+
 export class ServerRequestApi implements IServerRequestApi {
+    private baseUrl : string;
+    private fetch : Fetch;
+
+    constructor(baseUrl : string, fetchImpl: Fetch) {
+        this.baseUrl = baseUrl;
+        this.fetch = fetchImpl;
+    }
+
     async request<T>(endpoint : string, method: HttpMethod, data : any|null = null, version = "1") : Promise<T> {
-        let url = document.location.origin + "/api/v" + version + endpoint;
+        let url = this.baseUrl + "/api/v" + version + endpoint;
 
         const options : any = {
             method: method,
@@ -21,7 +33,7 @@ export class ServerRequestApi implements IServerRequestApi {
             }
         }
 
-        const response = await fetch(url, options);
+        const response = await this.fetch(url, options);
 
         if (!response.ok) {
             let obj = null;
@@ -47,7 +59,7 @@ export class ServerRequestApi implements IServerRequestApi {
     }
 
     async requestBinary(endpoint: string, method: HttpMethod, data?: any, version = "1"): Promise<Uint8Array> {
-        const url = document.location.origin + "/api/v" + version + endpoint;
+        const url = this.baseUrl + "/api/v" + version + endpoint;
 
         const options: any = {
             method: method,
@@ -59,7 +71,7 @@ export class ServerRequestApi implements IServerRequestApi {
             options.body = JSON.stringify(data);
         }
 
-        const response = await fetch(url, options);
+        const response = await this.fetch(url, options);
 
         if (!response.ok) {
             let obj = null;
@@ -81,13 +93,18 @@ export class ServerRequestApi implements IServerRequestApi {
         return new Uint8Array(arrayBuffer);
     }
 
-    async sendBinary<T>(endpoint: string, method: HttpMethod, data: File, version = "1"): Promise<T> {
-        const url = document.location.origin + "/api/v" + version + endpoint;
+    async sendBinary<T>(endpoint: string, method: HttpMethod, data: File, version = "1", extra_data?: Record<string, string>): Promise<T> {
+        const url = this.baseUrl + "/api/v" + version + endpoint;
 
         const formData = new FormData();
         formData.append(data.name, data);
+        if (extra_data) {
+            for (const key in extra_data) {
+                formData.append(key, extra_data[key]);
+            }
+        }
 
-        const response = await fetch(url, {
+        const response = await this.fetch(url, {
             method: method,
             body: formData,
             credentials: "same-origin"

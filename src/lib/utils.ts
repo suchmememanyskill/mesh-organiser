@@ -109,3 +109,7 @@ export function nameCollectionOfModels(models: Model[]): string {
 
     return models.map(x => x.name).join("+")
 }
+
+export function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}

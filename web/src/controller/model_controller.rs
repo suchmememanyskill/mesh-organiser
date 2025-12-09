@@ -286,7 +286,14 @@ mod post {
 
         std::fs::create_dir(&temp_dir)?;
 
+        let mut link = None;
+
         while let Some(mut field) = multipart.next_field().await? {
+            if let Some("source_url") = field.name() {
+                link = Some(field.text().await?);
+                continue;
+            };
+
             let file_name = match field.file_name() {
                 Some(name) => name.to_string(),
                 None => continue,
@@ -321,7 +328,7 @@ mod post {
         let mut import_state = ImportState::new_with_emitter(None, false, true, false, user.clone(), Box::new(WebImportStateEmitter {}));
 
         for path in paths {
-            import_state = ImportState::new_with_emitter(None, false, true, false, user.clone(), Box::new(WebImportStateEmitter {}));
+            import_state = ImportState::new_with_emitter(link.clone(), false, true, false, user.clone(), Box::new(WebImportStateEmitter {}));
             import_state = import_service::import_path(
                 &path.to_string_lossy(),
                 &app_state.app_state,

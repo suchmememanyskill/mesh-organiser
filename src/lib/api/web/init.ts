@@ -39,7 +39,7 @@ export async function initWebApi() : Promise<void> {
     resetContainer();
 
     const container = getContainer();
-    const request = new ServerRequestApi();
+    const request = new ServerRequestApi(document.location.origin, fetch);
     const user = new WebUserApi(request);
     const login = new WebUserLoginApi(request);
 
@@ -86,7 +86,6 @@ export async function initWebApi() : Promise<void> {
     container.addSingleton(IBlobApi, blob);
     container.addSingleton(IDiskUsageInfoApi, diskUsageInfo);
     container.addSingleton(IGroupApi, group);
-    container.addSingleton(IHostApi, host);
     container.addSingleton(ILabelApi, label);
     container.addSingleton(IModelApi, model);
     container.addSingleton(IResourceApi, resource);

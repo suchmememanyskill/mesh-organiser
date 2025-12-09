@@ -18,9 +18,9 @@ impl Slicer {
         get_slicer_path(&self).is_some()
     }
 
-    pub async fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ServiceError> {
+    pub async fn open(&self, paths: Vec<PathBuf>, app_state: &AppState) -> Result<(), ServiceError> {
         if let Slicer::Custom = self {
-            return open_custom_slicer(models, app_state).await;
+            return open_custom_slicer(paths, app_state).await;
         }
 
         if !self.is_installed() {
@@ -31,7 +31,6 @@ impl Slicer {
 
         let slicer_pathbuf = get_slicer_path(&self).unwrap();
         let slicer_path = slicer_pathbuf.to_str().unwrap();
-        let (_, paths) = export_to_temp_folder(models, app_state, true, "open").await?;
 
         println!("Opening in slicer: {:?}", paths);
 

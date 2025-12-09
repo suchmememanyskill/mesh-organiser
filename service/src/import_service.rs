@@ -13,6 +13,7 @@ use db::model::{Model, User};
 use db::model_db::ModelFilterOptions;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use tokio::fs::File;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -532,6 +533,14 @@ pub fn is_supported_extension(path: &PathBuf, configuration: &Configuration) -> 
     }
 }
 
+pub fn is_any_supported_extension(path: &PathBuf) -> bool {
+    is_supported_extension(path, &Configuration {
+        allow_importing_gcode: true,
+        allow_importing_step: true,
+        ..Default::default()
+    })
+}
+
 fn get_model_count_from_dir_recursive(
     path: &str,
     configuration: &Configuration,
@@ -580,4 +589,68 @@ async fn get_model_count_from_zip(
     }
 
     Ok(count)
+}
+
+#[derive(Serialize)]
+pub struct DirectoryScanModel {
+    pub path: PathBuf,
+    pub group_set : Option<u32>,
+    pub group_name: Option<String>,
+    pub model_ids: Option<Vec<i64>>,
+}
+
+async fn traverse_directory(path : &PathBuf, recursive : bool, set_id : u32) -> Result<Vec<DirectoryScanModel>, ServiceError> {
+    let mut models = Vec::new();
+
+    let read_dir = match std::fs::read_dir(path) {
+        Ok(rd) => rd,
+        Err(_) => return Ok(models),
+    };
+
+    let group_name = util::prettify_file_name(path, true);
+
+    for entry in read_dir {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+
+        let entry_path = entry.path();
+
+        if entry_path.is_dir() && recursive {
+            let mut sub_models = Box::pin(traverse_directory(&entry_path, recursive, set_id + 1)).await?;
+            models.append(&mut sub_models);
+        } else if entry_path.is_file() && is_any_supported_extension(&entry.path()) {
+            models.push(DirectoryScanModel {
+                path: entry.path(),
+                group_set: Some(set_id),
+                group_name: Some(group_name.clone()),
+                model_ids: None,
+            });
+        }
+    }
+
+    Ok(models)
+}
+
+pub async fn expand_paths(paths: &[PathBuf], recursive: bool) -> Result<Vec<DirectoryScanModel>, ServiceError> {
+    let mut models = Vec::new();
+    let mut set_id = 0;
+
+    for path in paths {
+        if path.is_dir() {
+            let mut dir_models = traverse_directory(path, recursive, set_id).await?;
+            models.append(&mut dir_models);
+            set_id += 10000;
+        } else if path.is_file() {
+            models.push(DirectoryScanModel {
+                path: path.clone(),
+                group_set: None,
+                group_name: None,
+                model_ids: None,
+            });
+        }
+    }
+
+    Ok(models)
 }

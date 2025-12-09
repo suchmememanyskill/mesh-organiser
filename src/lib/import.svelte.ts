@@ -33,6 +33,7 @@ export const importState : ImportState = $state({
 
 export function resetImportState() : void
 {
+    console.log("Resetting import state");
     importState.imported_models = [];
     importState.imported_models_count = 0;
     importState.finished_thumbnails_count = 0;

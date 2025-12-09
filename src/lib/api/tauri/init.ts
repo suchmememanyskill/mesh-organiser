@@ -18,7 +18,7 @@ import { IResourceFolderApi } from "../shared/resource_folder_api";
 import { IResourceApi } from "../shared/resource_api";
 import { ISettingsApi } from "../shared/settings_api";
 import { ITauriImportApi } from "../shared/tauri_import_api";
-import { configuration, currentUser as globalCurrentUser } from "$lib/configuration.svelte";
+import { configuration, currentUser, currentUser as globalCurrentUser } from "$lib/configuration.svelte";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { debounce } from "$lib/utils";
@@ -32,19 +32,35 @@ import { DiskUsageInfoApi } from "./disk_usage_info";
 import { IDiskUsageInfoApi } from "../shared/disk_usage_info_api";
 import { SlicerApi } from "./slicer";
 import { LocalApi } from "./local";
-import { ISlicerApi } from "../shared/slicer_api";
+import { DefaultSlicerApi, ISlicerApi } from "../shared/slicer_api";
 import { ILocalApi } from "../shared/local_api";
 import { UserApi } from "./user";
-import { IAdminUserApi, ISwitchUserApi, IUserApi, IUserManageSelfApi } from "../shared/user_api";
+import { IAdminUserApi, ISwitchUserApi, IUserApi, IUserManageSelfApi, type User } from "../shared/user_api";
 import { ThreemfApi } from "./threemf";
 import { IThreemfApi } from "../shared/threemf_api";
 import { ThumbnailApi } from "./thumbnail";
 import { IThumbnailApi } from "../shared/thumbnail_api";
 import { TauriUserSyncApi } from "./user_sync";
 import { IUserSyncApi } from "../shared/user_sync_api";
-import { TauriServerRequestApi } from "./request";
-import { IServerRequestApi } from "../shared/server_request_api";
+import { HttpMethod, IServerRequestApi } from "../shared/server_request_api";
 import { WebModelApi } from "../web/model";
+import { WebUserApi } from "../web/user";
+import { DefaultDownloadApi } from "../shared/download_api";
+import { WebBlobApi } from "../web/blob";
+import { WebDiskUsageInfoApi } from "../web/disk_usage_info";
+import { WebGroupApi } from "../web/group";
+import { WebHostApi } from "../web/host";
+import { WebBrowserApi } from "../web/internal_browser_api";
+import { WebLabelApi } from "../web/label";
+import { WebResourceApi } from "../web/resource";
+import { WebSettingsApi } from "../web/settings";
+import { WebShareApi } from "../web/share";
+import { WebThreemfApi } from "../web/threemf";
+import { WebUserAdminApi } from "../web/user_admin";
+import { WebImportApi } from "../web/web_import";
+import { initTauriOnlineAccountApi } from "../tauri-online/init";
+import { ServerRequestApi } from "../web/request";
+import { fetch } from "@tauri-apps/plugin-http";
 
 interface InitialState
 {
@@ -87,8 +103,6 @@ export async function initTauriLocalApis() : Promise<void> {
     let config = await settings.getConfiguration();
     Object.assign(configuration, config);
 
-    await tauriImport.initImportListeners();
-
     console.log('initial state:', state);
     if (state.deep_link_url)
     {
@@ -113,48 +127,57 @@ export async function initTauriLocalApis() : Promise<void> {
     }, 100);
 
     addEventListener("resize", debounced_resize);
+
+    let currentUser = await userApi.getCurrentUser();
+    Object.assign(globalCurrentUser, currentUser);
+
+    container.addSingleton(IInternalBrowserApi, internalBrowser);
+    container.addSingleton(ISwitchUserApi, userApi);
+    container.addSingleton(ISettingsApi, settings);
+    container.addSingleton(IHostApi, hostApi);
+
+    checkForUpdates();
+
+    if (currentUser.syncToken && currentUser.syncUrl)
+    {
+        const tauriRequestApi = new ServerRequestApi(currentUser.syncUrl, fetch);
+        let user = await loginWeb(currentUser.syncToken, tauriRequestApi);
+        if (user)
+        {
+            container.addSingleton(IServerRequestApi, tauriRequestApi);
+
+            if (currentUser.permissions.onlineAccount)
+            {
+                await initTauriOnlineAccountApi(user, currentUser.syncUrl, appDataDirPath);
+                return;
+            }
+        }
+    }
     
     container.addSingleton(IBlobApi, blob);
     container.addSingleton(IGroupApi, group);
-    container.addSingleton(IInternalBrowserApi, internalBrowser);
     container.addSingleton(ILabelApi, label);
     container.addSingleton(IModelApi, model);
     container.addSingleton(IResourceFolderApi, resourceFolder);
     container.addSingleton(IResourceApi, resource);
-    container.addSingleton(ISettingsApi, settings);
     container.addSingleton(ITauriImportApi, tauriImport);
     container.addSingleton(ISidebarStateApi, sidebarApi);
-    container.addSingleton(IHostApi, hostApi);
     container.addSingleton(IDiskUsageInfoApi, diskUsageInfoApi);
     container.addSingleton(ISlicerApi, slicerApi);
     container.addSingleton(ILocalApi, localApi);
     container.addSingleton(IUserApi, userApi);
     container.addSingleton(IThreemfApi, threemfApi);
-    container.addSingleton(ISwitchUserApi, userApi);
     container.addSingleton(IAdminUserApi, userApi);
     container.addSingleton(IUserManageSelfApi, userApi);
     container.addSingleton(IThumbnailApi, thumbnailApi);
     container.addSingleton(IUserSyncApi, userSyncApi);
-
-    checkForUpdates();
-
-    let currentUser = await userApi.getCurrentUser();
-    Object.assign(globalCurrentUser, currentUser);
 
     if (state.account_link)
     {
         await tauriImport.setAccountLink(state.account_link);
     }
 
-    if (currentUser.syncToken && currentUser.syncUrl)
-    {
-        const tauriRequestApi = new TauriServerRequestApi(currentUser.syncUrl);
-        let init = await tauriRequestApi.login(currentUser.syncToken);
-        if (init)
-        {
-            container.addSingleton(IServerRequestApi, tauriRequestApi);
-        }
-    }
+    await tauriImport.initImportListeners();
 }
 
 async function checkForUpdates() : Promise<void> { 
@@ -171,5 +194,26 @@ async function checkForUpdates() : Promise<void> {
     catch
     {
         toast.error("Failed to check for updates");
+    }
+}
+
+async function loginWeb(token : string, requestApi : IServerRequestApi): Promise<User|null> {
+    try {
+        await requestApi.request<void>("/logout", HttpMethod.POST);
+    } catch (e) {
+        console.warn("Logout failed ", e);
+    }
+
+    try {
+        await requestApi.request<void>("/login/token", HttpMethod.POST, {
+            token: token
+        });
+
+        const userApi = new WebUserApi(requestApi);
+        return await userApi.getCurrentUser();
+    }
+    catch (e) {
+        console.warn("Token login failed ", e);
+        return null;
     }
 }

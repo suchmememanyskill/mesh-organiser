@@ -4,6 +4,7 @@ use crate::service_error::ServiceError;
 use crate::app_state::AppState;
 use crate::export_service::export_to_temp_folder;
 use crate::slicer_service::open_custom_slicer;
+use std::path::PathBuf;
 use std::process::Command;
 
 impl Slicer {
@@ -28,9 +29,9 @@ impl Slicer {
         }
     }
 
-    pub async fn open(&self, models: Vec<Model>, app_state: &AppState) -> Result<(), ServiceError> {
+    pub async fn open(&self, paths: Vec<PathBuf>, app_state: &AppState) -> Result<(), ServiceError> {
         if let Slicer::Custom = self {
-            return open_custom_slicer(models, app_state).await;
+            return open_custom_slicer(paths, app_state).await;
         }
 
         if !self.is_installed() {
@@ -38,9 +39,7 @@ impl Slicer {
                 "Slicer not installed",
             )));
         }
-
-        let (_, paths) = export_to_temp_folder(models, app_state, true, "open").await?;
-
+        
         println!("Opening in slicer: {:?}", paths);
 
         if paths.len() == 0 {

@@ -53,9 +53,12 @@ pub async fn add_model(
     thumbnail_service::generate_thumbnails(&blobs, &state.app_state, false, &mut import_state)
         .await?;
 
-    if open_in_slicer && models.len() > 0 {
+    let models_len = models.len();
+    let (_, paths) = export_service::export_to_temp_folder(models, &state.app_state, true, "open").await?;
+
+    if open_in_slicer && models_len > 0 {
         if let Some(slicer) = &state.get_configuration().slicer {
-            slicer.open(models, &state.app_state).await?;
+            slicer.open(paths, &state.app_state).await?;
         }
     }
 

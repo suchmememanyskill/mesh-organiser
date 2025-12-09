@@ -85,11 +85,6 @@
         await updateSidebarState();
     }
 
-    async function openCustomCss()
-    {
-        await localApi?.openCustomCss();
-    }
-
     onMount(async () => {
         max_parallelism = await localApi?.getMaxParallelism() ?? 128;
 

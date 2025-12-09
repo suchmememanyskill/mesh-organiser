@@ -17,6 +17,8 @@ pub enum ApplicationError {
     DatabaseError(#[from] db::DbError),
     #[error("Service error")]
     ServiceError(#[from] service::ServiceError),
+    #[error("Web request error")]
+    WebRequestError(#[from] tauri_plugin_http::reqwest::Error),
 }
 
 impl Serialize for ApplicationError {
@@ -57,6 +59,11 @@ impl Serialize for ApplicationError {
             }
             ApplicationError::DatabaseError(inner) => {
                 state.serialize_field("error_type", "DatabaseError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            }
+            ApplicationError::WebRequestError(inner) => {
+                state.serialize_field("error_type", "WebRequestError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }

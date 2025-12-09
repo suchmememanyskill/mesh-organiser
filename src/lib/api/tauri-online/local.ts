@@ -5,17 +5,24 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { join } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 
-export class LocalApi implements ILocalApi {
+// TODO: Split this off into chunks. We don't need the data picker, appdatadir or max parallelism here!
+export class OnlineLocalApi implements ILocalApi {
     appDataDir : string;
     maxParallelism : number;
+    private baseUrl: string;
+    private userId: number;
+    private userHash: string;
 
-    constructor(appDataDir: string, maxParallelism: number) {
+    constructor(appDataDir: string, maxParallelism: number, baseUrl: string, userId: number, userHash: string) {
         this.appDataDir = appDataDir;
         this.maxParallelism = maxParallelism;
+        this.baseUrl = baseUrl;
+        this.userId = userId;
+        this.userHash = userHash;
     }
 
     async openInFolder(models: Model[]): Promise<void> {
-        await invoke("open_in_folder", { modelIds: models.map(m => m.id) });
+        await invoke("download_files_and_open_in_folder", { sha256s: models.map(m => m.blob.sha256), baseUrl: this.baseUrl, userId: this.userId, userHash: this.userHash });
     }
 
     async getAppDataDir(): Promise<string> {

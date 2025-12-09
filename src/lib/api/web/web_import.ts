@@ -6,7 +6,7 @@ import type { IWebImportApi } from "../shared/web_import_api";
 
 const CONCURRENT_FILES = 4;
 
-async function runGeneratorWithLimit(
+export async function runGeneratorWithLimit(
     gen: Generator<Promise<void>>,
 ): Promise<void> {
     let active = 0;
@@ -36,8 +36,23 @@ async function runGeneratorWithLimit(
     });
 }
 
+export function handleResponse(data: number[]) {
+    if (importState.imported_models.length === 0) {
+        importState.imported_models.push({
+            group_id: null,
+            group_name: null,
+            model_ids: []
+        })
+    }
+
+    importState.imported_models[0].model_ids.push(...data);
+    importState.imported_models_count += data.length;
+    importState.model_count += (data.length - 1);
+    importState.finished_thumbnails_count += data.length;
+}
+
 export class WebImportApi implements IWebImportApi {
-    private requestApi : IServerRequestApi;
+    protected requestApi : IServerRequestApi;
 
     constructor(requestApi : IServerRequestApi) {
         this.requestApi = requestApi;
@@ -47,21 +62,6 @@ export class WebImportApi implements IWebImportApi {
         resetImportState();
         importState.status = ImportStatus.ProcessingModels;
         importState.model_count = files.length;
-
-        function handleResponse(data: number[]) {
-            if (importState.imported_models.length === 0) {
-                importState.imported_models.push({
-                    group_id: null,
-                    group_name: null,
-                    model_ids: []
-                })
-            }
-
-            importState.imported_models[0].model_ids.push(...data);
-            importState.imported_models_count += data.length;
-            importState.model_count += (data.length - 1);
-            importState.finished_thumbnails_count += data.length;
-        }
 
         function* filePromises(files : File[], requestApi : IServerRequestApi) : Generator<Promise<void>> {
             for (const file of files) {

@@ -422,7 +422,7 @@
         {#if model.labels.length > 0}
             <div class="flex flex-row flex-wrap gap-2 mt-2">
                 {#each model.labels as label}
-                    <LabelBadge label={label!} />
+                    <LabelBadge label={label!} allowClick={true} />
                 {/each}
             </div>
         {/if}

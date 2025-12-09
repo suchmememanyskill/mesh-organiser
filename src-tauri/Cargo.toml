@@ -48,7 +48,8 @@ async_zip = { version = "0.0.17", features = ["full"] }
 db = { path = "../db" }
 service = { path = "../service" }
 serde_html_form = "0"
-tauri-plugin-http = "2"
+tauri-plugin-http = { version = "2", features = [ "multipart" ] }
+content_disposition = "0.4.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0"
