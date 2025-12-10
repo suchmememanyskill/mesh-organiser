@@ -1,5 +1,5 @@
 use itertools::join;
-use serde::de;
+use sqlx::Row;
 
 use crate::{DbError, db_context::DbContext, model::Blob, util::time_now};
 
@@ -20,6 +20,34 @@ pub async fn get_blobs(db: &DbContext) -> Result<Vec<Blob>, DbError> {
             size: row.blob_size,
             added: row.blob_added,
             disk_path: row.blob_path,
+        });
+    }
+
+    Ok(blobs)
+}
+
+pub async fn get_blobs_via_ids(db: &DbContext, ids: Vec<i64>) -> Result<Vec<Blob>, DbError> {
+    if ids.len() == 0 {
+        return Ok(Vec::new());
+    }
+
+    let query = format!(
+        "SELECT blob_id, blob_sha256, blob_filetype, blob_size, blob_added, blob_path FROM blobs WHERE blob_id IN ({})",
+        join(ids.iter(), ",")
+    );
+
+    let rows = sqlx::query(&query).fetch_all(db).await?;
+
+    let mut blobs = Vec::with_capacity(rows.len());
+
+    for row in rows {
+        blobs.push(Blob {
+            id: row.get("blob_id"),
+            sha256: row.get("blob_sha256"),
+            filetype: row.get("blob_filetype"),
+            size: row.get("blob_size"),
+            added: row.get("blob_added"),
+            disk_path: row.get("blob_path"),
         });
     }
 

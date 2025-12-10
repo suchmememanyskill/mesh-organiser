@@ -293,6 +293,20 @@ pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, 
     Ok(())
 }
 
+pub async fn edit_label_global_id(db: &DbContext, user: &User, label_id: i64, unique_global_id: &str) -> Result<(), DbError>
+{
+    sqlx::query!(
+        "UPDATE labels SET label_unique_global_id = ? WHERE label_id = ? AND label_user_id = ?",
+        unique_global_id,
+        label_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn delete_label(db: &DbContext, user: &User, label_id: i64) -> Result<(), DbError>
 {
     sqlx::query!(

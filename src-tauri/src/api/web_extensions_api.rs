@@ -1,11 +1,11 @@
-use std::{path::{self, PathBuf}, sync::Arc};
+use std::{char::MAX, panic, path::{self, PathBuf}, sync::Arc};
 
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use service::{export_service::{ensure_unique_file_full_filename, get_temp_dir}, import_service::{self, DirectoryScanModel, is_any_supported_extension}, import_state::{ImportState, ImportStatus}};
 use tauri::{AppHandle, State, http::header::CONTENT_DISPOSITION, ipc::Response};
 use tauri_plugin_http::reqwest::{self, cookie::Jar};
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::{fs::File, io::AsyncWriteExt, task::JoinSet};
 
 use crate::{error::ApplicationError, tauri_app_state::TauriAppState, tauri_import_state};
 
@@ -143,6 +143,19 @@ async fn logout(
     Ok(())
 }
 
+const MAX_CONCURRENT_UPLOADS: usize = 4;
+
+async fn get_ids(
+    response: reqwest::Response,
+) -> Result<Vec<i64>, ApplicationError> {
+    if response.status().is_success() {
+        let model_ids: Vec<i64> = response.json().await?;
+        Ok(model_ids)
+    } else {
+        Err(ApplicationError::InternalError("Failed to upload model".into()))
+    }
+}
+
 async fn process_uploads(
     jar: Arc<Jar>,
     base_url: &str,
@@ -161,9 +174,11 @@ async fn process_uploads(
         .unwrap();
 
     let url = format!("{}/api/v1/models", base_url);
+    let mut futures = JoinSet::new();
 
-    // TODO: Multithreaded uploads
-    for path in paths {
+    let mut results = Vec::new();
+
+    for path in &mut *paths {
         let mut form = reqwest::multipart::Form::new();
 
         if let Some(source_url) = &import_state.origin_url {
@@ -172,23 +187,58 @@ async fn process_uploads(
 
         form = form.file("file", &path.path).await?;
 
-        let response = client.post(&url)
-            .multipart(form)
-            .send()
-            .await?;
-
-        let model_ids: Vec<i64> = match response.status().is_success() {
-            true => response.json().await?,
-            false => {
-                return Err(ApplicationError::InternalError("Failed to upload model".into()));
-            }
-        };
-        
-        for model_id in &model_ids {
-            import_state.add_model_id_to_current_set(*model_id);
+        {
+            let path = PathBuf::from(&path.path);
+            let client = client.clone();
+            let url = url.clone();
+            futures.spawn(async move {
+                (
+                    path,
+                    client.post(&url)
+                    .multipart(form)
+                    .send()
+                    .await
+                )
+            });
         }
 
-        import_state.update_total_model_count(import_state.model_count + model_ids.len() - 1);
+        if futures.len() >= MAX_CONCURRENT_UPLOADS {
+            if let Some(res) = futures.join_next().await {
+                match res {
+                    Err(err) if err.is_panic() => panic::resume_unwind(err.into_panic()),
+                    Err(err) => return Err(ApplicationError::InternalError(format!("Upload task failed: {}", err))),
+                    Ok(response) => {
+                        let path = response.0;
+                        let response = response.1?;
+                        let ids = get_ids(response).await?;
+                    
+                        for model_id in &ids {
+                            import_state.add_model_id_to_current_set(*model_id);
+                        }
+
+                        import_state.update_total_model_count(import_state.model_count + ids.len() - 1);
+
+                        results.push((path, ids));
+                    }
+                }
+            }
+        }
+    }
+
+    for response in futures.join_all().await {
+        let path = response.0;
+        let response = response.1?;
+        let ids = get_ids(response).await?;
+        results.push((path, ids));
+    }
+
+    for result in results {
+        let path = result.0;
+        let model_ids = result.1;
+
+        // Not super efficient, fix later
+        let path = paths.iter_mut().find(|p| p.path == path).unwrap();
+
         path.model_ids = Some(model_ids);
     }
 

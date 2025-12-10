@@ -135,6 +135,19 @@ pub async fn edit_resource(db: &DbContext, user: &User, resource_id: i64, name: 
     Ok(())
 }
 
+pub async fn edit_resource_global_id(db: &DbContext, user: &User, resource_id: i64, unique_global_id: &str) -> Result<(), DbError> {
+    sqlx::query!(
+        "UPDATE resources SET resource_unique_global_id = ? WHERE resource_id = ? AND resource_user_id = ?",
+        unique_global_id,
+        resource_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn set_last_updated_on_resource(db: &DbContext, user: &User, resource_id: i64, timestamp: &str) -> Result<(), DbError> {
     sqlx::query!(
         "UPDATE resources SET resource_last_modified = ? WHERE resource_id = ? AND resource_user_id = ?",

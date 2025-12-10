@@ -156,6 +156,7 @@ mod put {
     #[derive(Deserialize)]
     pub struct PutGroupParams {
         pub group_name: String,
+        pub timestamp: Option<String>,
     }
 
     pub async fn edit_group(
@@ -171,7 +172,7 @@ mod put {
             &user,
             group_id,
             &params.group_name,
-            None,
+            params.timestamp.as_deref(),
         )
         .await?;
 

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use db::{blob_db, model::User, model_db};
 use service::export_service;
 use tauri::{State, ipc::Response};
@@ -45,4 +47,15 @@ pub async fn get_blob_bytes(
     let bytes = export_service::get_bytes_from_blob(&blob, &state.app_state).await?;
 
     Ok(Response::new(bytes))
+}
+
+#[tauri::command]
+pub async fn blobs_to_path(
+    blob_ids: Vec<i64>,
+    state: State<'_, TauriAppState>,
+) -> Result<Vec<PathBuf>, ApplicationError> {
+    let blobs = blob_db::get_blobs_via_ids(&state.app_state.db, blob_ids).await?;
+    let paths = blobs.into_iter().map(|b| export_service::get_model_path_for_blob(&b, &state.app_state)).collect();
+
+    Ok(paths)
 }

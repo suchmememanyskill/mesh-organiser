@@ -57,7 +57,7 @@ export const IGroupApi = Symbol('IGroupApi');
 export interface IGroupApi {
     getGroups(model_ids: number[]|null, group_ids: number[]|null, label_ids: number[]|null, order_by: GroupOrderBy, text_search: string|null, page: number, page_size: number, include_ungrouped_models: boolean) : Promise<Group[]>;
     addGroup(name: string) : Promise<GroupMeta>;
-    editGroup(group : GroupMeta) : Promise<void>;
+    editGroup(group : GroupMeta, editTimestamp?: boolean, editGlobalId?: boolean) : Promise<void>;
     deleteGroup(group : GroupMeta) : Promise<void>;
     addModelsToGroup(group : GroupMeta, models : Model[]) : Promise<void>;
     removeModelsFromGroup(models : Model[]) : Promise<void>;

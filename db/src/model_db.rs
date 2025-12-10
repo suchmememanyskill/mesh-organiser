@@ -219,6 +219,20 @@ pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: 
     Ok(())
 }
 
+pub async fn edit_model_global_id(db: &DbContext, user: &User, id: i64, unique_global_id: &str) -> Result<(), DbError>
+{
+    sqlx::query!(
+        "UPDATE models SET model_unique_global_id = ? WHERE model_id = ? AND model_user_id = ?",
+        unique_global_id,
+        id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn delete_model(db: &DbContext, user: &User, id: i64) -> Result<(), DbError>
 {
     sqlx::query!(

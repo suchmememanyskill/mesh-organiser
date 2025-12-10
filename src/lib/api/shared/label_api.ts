@@ -50,7 +50,7 @@ export const ILabelApi = Symbol('ILabelApi');
 export interface ILabelApi {
     getLabels(includeUngroupedModels : boolean) : Promise<Label[]>;
     addLabel(name : string, color : string) : Promise<LabelMeta>;
-    editLabel(label : LabelMeta) : Promise<void>;
+    editLabel(label : LabelMeta, editTimestamp?: boolean, editGlobalId?: boolean) : Promise<void>;
     deleteLabel(label : LabelMeta) : Promise<void>;
     setLabelsOnModel(Labels : LabelMeta[], model : Model) : Promise<void>;
     addLabelToModels(label : LabelMeta, models : Model[]) : Promise<void>;

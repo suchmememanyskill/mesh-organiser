@@ -712,6 +712,7 @@ pub fn run() {
             api::expand_paths,
             api::get_file_bytes,
             api::upload_models_to_remote_server,
+            api::blobs_to_path,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

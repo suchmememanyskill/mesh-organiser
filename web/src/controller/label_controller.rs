@@ -23,6 +23,7 @@ pub fn router() -> Router<WebAppState> {
             .route("/labels", post(post::add_label))
             .route("/labels/{label_id}", put(put::edit_label))
             .route("/labels/{label_id}", delete(delete::delete_label))
+            .route("/labels/{label_id}/global_id", put(put::edit_label_global_id))
             .route("/labels/{label_id}/models", post(post::set_label_on_models))
             .route(
                 "/labels/{label_id}/models",
@@ -181,12 +182,15 @@ mod post {
 }
 
 mod put {
+    use crate::controller::EditGlobalId;
+
     use super::*;
 
     #[derive(Deserialize)]
     pub struct PutLabelParams {
         pub label_name: String,
         pub label_color: i64,
+        pub timestamp: Option<String>,
     }
 
     pub async fn edit_label(
@@ -202,7 +206,26 @@ mod put {
             label_id,
             &params.label_name,
             params.label_color,
-            None,
+            params.timestamp.as_deref(),
+        )
+        .await?;
+
+        Ok(StatusCode::NO_CONTENT.into_response())
+    }
+
+    pub async fn edit_label_global_id(
+        auth_session: AuthSession,
+        Path(label_id): Path<i64>,
+        State(app_state): State<WebAppState>,
+        Json(params): Json<EditGlobalId>,
+    ) -> Result<Response, ApplicationError> {
+        let user = auth_session.user.unwrap().to_user();
+
+        label_db::edit_label_global_id(
+            &app_state.app_state.db,
+            &user,
+            label_id,
+            &params.new_unique_global_id,
         )
         .await?;
 

@@ -39,7 +39,7 @@ export const IResourceApi = Symbol('IResourceApi');
 export interface IResourceApi {
     getResources() : Promise<ResourceMeta[]>;
     addResource(name : string) : Promise<ResourceMeta>;
-    editResource(resource : ResourceMeta) : Promise<void>;
+    editResource(resource : ResourceMeta, editTimestamp?: boolean, editGlobalId?: boolean) : Promise<void>;
     deleteResource(resource : ResourceMeta) : Promise<void>;
     setResourceOnGroup(resource : ResourceMeta|null, group_id : number) : Promise<void>;
     getGroupsForResource(resource : ResourceMeta) : Promise<Group[]>;

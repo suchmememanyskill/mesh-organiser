@@ -240,6 +240,19 @@ pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_name:
     Ok(())
 }
 
+pub async fn edit_group_global_id(db: &DbContext, user : &User, group_id: i64, unique_global_id: &str) -> Result<(), DbError> {
+    sqlx::query!(
+        "UPDATE models_group SET group_unique_global_id = ? WHERE group_id = ? AND group_user_id = ?",
+        unique_global_id,
+        group_id,
+        user.id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn delete_group(db: &DbContext, user : &User, group_id: i64) -> Result<(), DbError> {
     let hex = get_unique_id_from_group_id(db, group_id).await?;
 
