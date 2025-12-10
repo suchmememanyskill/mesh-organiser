@@ -1,3 +1,4 @@
+import { dateToString } from "$lib/utils";
 import { stringColorToNumber, type ILabelApi, type Label, type LabelMeta } from "../shared/label_api";
 import type { Model } from "../shared/model_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
@@ -27,10 +28,18 @@ export class WebLabelApi implements ILabelApi {
         return parseRawLabelMeta(await this.requestApi.request<RawLabelMeta>("/labels", HttpMethod.POST, data));
     }
 
-    async editLabel(label: LabelMeta): Promise<void> {
-        let data = {
+    async editLabel(label: LabelMeta, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any = {
             label_name: label.name,
             label_color: stringColorToNumber(label.color)
+        }
+
+        if (editTimestamp) {
+            data.label_timestamp = dateToString(label.lastModified);
+        }
+
+        if (editGlobalId) {
+            data.label_global_id = label.uniqueGlobalId;
         }
 
         await this.requestApi.request<void>(`/labels/${label.id}`, HttpMethod.PUT, data);

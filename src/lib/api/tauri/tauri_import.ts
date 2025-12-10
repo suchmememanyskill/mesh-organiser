@@ -33,7 +33,7 @@ export interface AccountLinkEmit {
     link_token: string;
 }
 
-async function downloadFile(url : string) : Promise<DownloadResult>
+export async function downloadFile(url : string) : Promise<DownloadResult>
 {
     return await invoke("download_file", { url: url });
 }

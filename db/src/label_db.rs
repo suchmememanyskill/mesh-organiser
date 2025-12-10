@@ -5,7 +5,7 @@ use crate::{DbError, db_context::DbContext, model::{Label, LabelMeta, User}, mod
 
 
 pub async fn get_labels_min(db: &DbContext) -> Result<Vec<LabelMeta>, DbError> {
-    let rows = sqlx::query!("SELECT label_id, label_name, label_color, label_unique_global_id FROM labels")
+    let rows = sqlx::query!("SELECT label_id, label_name, label_color, label_unique_global_id, label_last_modified FROM labels")
         .fetch_all(db)
         .await?;
 
@@ -17,6 +17,7 @@ pub async fn get_labels_min(db: &DbContext) -> Result<Vec<LabelMeta>, DbError> {
             name: row.label_name,
             color: row.label_color,
             unique_global_id: row.label_unique_global_id,
+            last_modified: row.label_last_modified,
         });
     }
     
@@ -50,6 +51,7 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
             parent_labels.label_name as parent_label_name,
             parent_labels.label_color as parent_label_color,
             parent_labels.label_unique_global_id as parent_label_unique_global_id,
+            parent_labels.label_last_modified as parent_label_last_modified,
             (SELECT COUNT(*) FROM models_labels WHERE models_labels.label_id = parent_labels.label_id) as parent_label_model_count,
             (SELECT COUNT(DISTINCT group_id) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id INNER JOIN models_group ON models.model_group_id = models_group.group_id WHERE models_labels.label_id = parent_labels.label_id) as parent_label_group_count,
             (SELECT COUNT(*) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id WHERE models_labels.label_id = parent_labels.label_id AND models.model_group_id IS NULL) as parent_label_ungrouped_count,
@@ -75,6 +77,7 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
         let parent_label_name: String = row.get("parent_label_name");
         let parent_label_color: i64 = row.get("parent_label_color");
         let parent_label_unique_global_id: String = row.get("parent_label_unique_global_id");
+        let parent_label_last_modified: String = row.get("parent_label_last_modified");
 
         let parent_label_model_count: i64 = row.get("parent_label_model_count");
         let parent_label_group_count: i64 = row.get("parent_label_group_count");
@@ -89,7 +92,8 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
                 id: parent_label_id, 
                 name: parent_label_name, 
                 color: parent_label_color, 
-                unique_global_id: parent_label_unique_global_id
+                unique_global_id: parent_label_unique_global_id,
+                last_modified: parent_label_last_modified,
             },
             children: Vec::new(),
             effective_labels: Vec::new(),
@@ -111,6 +115,7 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
                 name: child_label_name.unwrap(),
                 color: child_label_color.unwrap(),
                 unique_global_id: "".into(),
+                last_modified: "".into(),
             });
             
             has_parents.push(child_id);

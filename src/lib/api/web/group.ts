@@ -1,3 +1,4 @@
+import { dateToString } from "$lib/utils";
 import type { Group, GroupMeta, GroupOrderBy, IGroupApi } from "../shared/group_api";
 import type { Model } from "../shared/model_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
@@ -36,9 +37,17 @@ export class WebGroupApi implements IGroupApi {
         return parseRawGroupMeta(response);
     }
     
-    async editGroup(group: GroupMeta): Promise<void> {
-        let data = {
+    async editGroup(group: GroupMeta, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any = {
             group_name: group.name
+        }
+
+        if (editTimestamp) {
+            data.group_timestamp = dateToString(group.lastModified);
+        }
+
+        if (editGlobalId) {
+            data.group_global_id = group.uniqueGlobalId;
         }
 
         await this.requestApi.request<void>(`/groups/${group.id}`, HttpMethod.PUT, data);

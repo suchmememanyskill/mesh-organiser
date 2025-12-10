@@ -23,7 +23,6 @@ pub fn router() -> Router<WebAppState> {
             .route("/resources", post(post::add_resource))
             .route("/resources/{resource_id}", put(put::edit_resource))
             .route("/resources/{resource_id}", delete(delete::delete_resource))
-            .route("/resources/{resource_id}/global_id", put(put::edit_resource_global_id))
             .route(
                 "/resources/{resource_id}/groups",
                 get(get::get_groups_for_resource),
@@ -102,7 +101,8 @@ mod put {
     pub struct PutResourceParams {
         pub resource_name: String,
         pub resource_flags: ResourceFlags,
-        pub timestamp: Option<String>,
+        pub resource_timestamp: Option<String>,
+        pub resource_global_id: Option<String>,
     }
 
     pub async fn edit_resource(
@@ -118,27 +118,19 @@ mod put {
             resource_id,
             &params.resource_name,
             params.resource_flags,
-            params.timestamp.as_deref(),
+            params.resource_timestamp.as_deref(),
         )
         .await?;
 
-        Ok(StatusCode::NO_CONTENT.into_response())
-    }
-
-    pub async fn edit_resource_global_id(
-        auth_session: AuthSession,
-        Path(resource_id): Path<i64>,
-        State(app_state): State<WebAppState>,
-        Json(params): Json<EditGlobalId>,
-    ) -> Result<Response, ApplicationError> {
-        let user = auth_session.user.unwrap().to_user();
-        resource_db::edit_resource_global_id(
-            &app_state.app_state.db,
-            &user,
-            resource_id,
-            &params.new_unique_global_id,
-        )
-        .await?;
+        if let Some(new_global_id) = params.resource_global_id {
+            resource_db::edit_resource_global_id(
+                &app_state.app_state.db,
+                &user,
+                resource_id,
+                &new_global_id,
+            )
+            .await?;
+        }
 
         Ok(StatusCode::NO_CONTENT.into_response())
     }

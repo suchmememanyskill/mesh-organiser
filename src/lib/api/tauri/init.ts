@@ -61,6 +61,8 @@ import { WebImportApi } from "../web/web_import";
 import { initTauriOnlineAccountApi } from "../tauri-online/init";
 import { ServerRequestApi } from "../web/request";
 import { fetch } from "@tauri-apps/plugin-http";
+import { SyncApi } from "../tauri-sync/sync";
+import { ISyncApi } from "../shared/sync_api";
 
 interface InitialState
 {
@@ -150,6 +152,10 @@ export async function initTauriLocalApis() : Promise<void> {
             {
                 await initTauriOnlineAccountApi(user, currentUser.syncUrl, appDataDirPath);
                 return;
+            }
+            else {
+                const syncApi = new SyncApi(tauriRequestApi, user, currentUser.syncUrl);
+                container.addSingleton(ISyncApi, syncApi);
             }
         }
     }

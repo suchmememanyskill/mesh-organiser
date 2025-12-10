@@ -4,6 +4,7 @@ import { type Model } from "../shared/model_api";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
 import { parseRawModel, type RawModel } from "./model";
 import { parseRawResourceMeta, type RawResourceMeta } from "./resource";
+import { dateToString } from "$lib/utils";
 
 export interface RawGroupMeta {
     id: number;
@@ -11,6 +12,7 @@ export interface RawGroupMeta {
     created: string;
     last_modified: string;
     resource_id: number|null;
+    unique_global_id: string;
 }
 
 export function parseRawGroupMeta(raw: RawGroupMeta): GroupMeta {
@@ -19,6 +21,7 @@ export function parseRawGroupMeta(raw: RawGroupMeta): GroupMeta {
         raw.name,
         raw.created,
         raw.last_modified,
+        raw.unique_global_id
     );
 }
 
@@ -62,8 +65,21 @@ export class GroupApi implements IGroupApi {
         return parseRawGroupMeta(group);
     }
 
-    async editGroup(group: GroupMeta): Promise<void> {
-        return await invoke("edit_group", { groupId: group.id, groupName: group.name });
+    async editGroup(group: GroupMeta, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any = { 
+            groupId: group.id, 
+            groupName: group.name 
+        }
+        
+        if (editTimestamp) {
+            data.groupTimestamp = dateToString(group.lastModified);
+        }
+
+        if (editGlobalId) {
+            data.groupGlobalId = group.uniqueGlobalId;
+        }
+
+        return await invoke("edit_group", data);
     }
 
     async deleteGroup(group: GroupMeta): Promise<void> {

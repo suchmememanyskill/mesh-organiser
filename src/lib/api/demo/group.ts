@@ -143,7 +143,8 @@ export class DemoGroupApi implements IGroupApi {
                         model.id * -1,
                         model.name,
                         model.added.toISOString(),
-                        model.lastModified.toISOString()
+                        model.lastModified.toISOString(),
+                        ""
                     ),
                     [model],
                     labels,
@@ -207,7 +208,8 @@ export class DemoGroupApi implements IGroupApi {
             maxId + 1,
             name,
             new Date().toISOString(),
-            new Date().toISOString()
+            new Date().toISOString(),
+            ""
         );
         
         mockGroups.set(newGroup.id, newGroup);

@@ -44,6 +44,8 @@ pub async fn edit_resource(
     resource_id: i64,
     resource_name: &str,
     resource_flags: ResourceFlags,
+    resource_timestamp: Option<&str>,
+    resource_global_id: Option<&str>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
     resource_db::edit_resource(
@@ -52,9 +54,19 @@ pub async fn edit_resource(
         resource_id,
         resource_name,
         resource_flags,
-        None,
+        resource_timestamp,
     )
     .await?;
+
+    if let Some(global_id) = resource_global_id {
+        resource_db::edit_resource_global_id(
+            &state.app_state.db,
+            &state.get_current_user(),
+            resource_id,
+            global_id,
+        )
+        .await?;
+    }
 
     Ok(())
 }

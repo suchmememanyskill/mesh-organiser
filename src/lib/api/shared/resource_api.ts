@@ -9,10 +9,10 @@ export interface ResourceMeta {
     name: string;
     flags: ResourceFlags;
     created: Date;
-    //unique_global_id: string;
+    uniqueGlobalId: string;
 }
 
-export function createResourceMetaInstance(id: number, name: string, flags: string[], created: string/*, unique_global_id: string*/): ResourceMeta {
+export function createResourceMetaInstance(id: number, name: string, flags: string[], created: string, uniqueGlobalId: string): ResourceMeta {
     const resourceFlags: ResourceFlags = {
         completed: false,
     };
@@ -29,8 +29,8 @@ export function createResourceMetaInstance(id: number, name: string, flags: stri
         id,
         name,
         flags: resourceFlags,
-        created: new Date(created)
-        //unique_global_id
+        created: new Date(created),
+        uniqueGlobalId: uniqueGlobalId
     };
 }
 

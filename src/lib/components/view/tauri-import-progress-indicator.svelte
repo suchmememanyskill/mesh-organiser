@@ -36,11 +36,11 @@
         }
         else if (importState.status == ImportStatus.ProcessingModels || importState.status == ImportStatus.FinishedModels)
         {
-            return Math.round((importState.imported_models_count / importState.model_count) * 50);
+            return Math.round((importState.imported_models_count / importState.model_count) * 100);
         }
         else 
         {
-            return 50 + Math.round((importState.finished_thumbnails_count / importState.model_count) * 50);
+            return Math.round((importState.finished_thumbnails_count / importState.model_count) * 100);
         }
     });
 </script>

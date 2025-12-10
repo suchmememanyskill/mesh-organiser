@@ -1,3 +1,4 @@
+import { dateToString } from "$lib/utils";
 import type { Group } from "../shared/group_api";
 import type { IResourceApi, ResourceMeta } from "../shared/resource_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
@@ -25,10 +26,18 @@ export class WebResourceApi implements IResourceApi {
         return parseRawResourceMeta(resource);
     }
 
-    async editResource(resource: ResourceMeta): Promise<void> {
-        let data = {
+    async editResource(resource: ResourceMeta, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any = {
             resource_name: resource.name,
             resource_flags: convertResourceFlagsToRaw(resource.flags)
+        }
+
+        if (editTimestamp) {
+            data.resource_timestamp = dateToString(resource.created);
+        }
+
+        if (editGlobalId) {
+            data.resource_global_id = resource.uniqueGlobalId;
         }
 
         await this.requestApi.request<void>(`/resources/${resource.id}`, HttpMethod.PUT, data);

@@ -37,7 +37,6 @@ pub fn router() -> Router<WebAppState> {
             .route("/models/disk_usage", get(get::get_model_disk_space_usage))
             .route("/models/{model_id}", put(put::edit_model))
             .route("/models/{model_id}", delete(delete::delete_model))
-            .route("/models/{model_id}/global_id", put(put::edit_model_global_id))
             .route_layer(login_required!(Backend))
             .route("/shares/{share_id}/models", get(get::get_share_models)),
     )
@@ -168,8 +167,6 @@ mod get {
 }
 
 mod put {
-    use crate::controller::EditGlobalId;
-
     use super::*;
 
     #[derive(Deserialize)]
@@ -178,7 +175,8 @@ mod put {
         pub model_url: Option<String>,
         pub model_description: Option<String>,
         pub model_flags: Option<ModelFlags>,
-        pub timestamp: Option<String>,
+        pub model_timestamp: Option<String>,
+        pub model_global_id: Option<String>,
     }
 
     pub async fn edit_model(
@@ -196,27 +194,19 @@ mod put {
             params.model_url.as_deref(),
             params.model_description.as_deref(),
             params.model_flags.unwrap_or(ModelFlags::empty()),
-            params.timestamp.as_deref(),
+            params.model_timestamp.as_deref(),
         )
         .await?;
 
-        Ok(StatusCode::NO_CONTENT.into_response())
-    }
-
-    pub async fn edit_model_global_id(
-        auth_session: AuthSession,
-        Path(model_id): Path<i64>,
-        State(app_state): State<WebAppState>,
-        Json(params) : Json<EditGlobalId>,
-    ) -> Result<Response, ApplicationError> {
-        let user = auth_session.user.unwrap().to_user();
-        model_db::edit_model_global_id(
-            &app_state.app_state.db,
-            &user,
-            model_id,
-            &params.new_unique_global_id,
-        )
-        .await?;
+        if let Some(new_global_id) = params.model_global_id {
+            model_db::edit_model_global_id(
+                &app_state.app_state.db,
+                &user,
+                model_id,
+                &new_global_id,
+            )
+            .await?;
+        }
 
         Ok(StatusCode::NO_CONTENT.into_response())
     }

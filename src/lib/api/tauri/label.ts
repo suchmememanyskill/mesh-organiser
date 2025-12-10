@@ -1,11 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { createLabelInstance, createLabelMetaInstance, type Label, type LabelMeta, stringColorToNumber, type ILabelApi } from "../shared/label_api";
 import type { Model } from "../shared/model_api";
+import { dateToString } from "$lib/utils";
 
 export interface RawLabelMeta {
     id: number;
     name: string;
     color: number;
+    unique_global_id: string;
+    last_modified: string;
 }
 
 export function parseRawLabelMeta(raw: RawLabelMeta): LabelMeta {
@@ -13,6 +16,8 @@ export function parseRawLabelMeta(raw: RawLabelMeta): LabelMeta {
         raw.id,
         raw.name,
         raw.color,
+        raw.last_modified,
+        raw.unique_global_id
     );
 }
 
@@ -56,8 +61,18 @@ export class LabelApi implements ILabelApi {
         return parseRawLabelMeta(label);
     }
     
-    async editLabel(label: LabelMeta): Promise<void> {
-        return await invoke("edit_label", { labelId: label.id, labelName: label.name, labelColor: stringColorToNumber(label.color) });
+    async editLabel(label: LabelMeta, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any  = { labelId: label.id, labelName: label.name, labelColor: stringColorToNumber(label.color) };
+
+        if (editTimestamp) {
+            data.labelTimestamp = dateToString(label.lastModified);
+        }
+
+        if (editGlobalId) {
+            data.labelGlobalId = label.uniqueGlobalId;
+        }
+
+        return await invoke("edit_label", );
     }
 
     async deleteLabel(label: LabelMeta): Promise<void> {

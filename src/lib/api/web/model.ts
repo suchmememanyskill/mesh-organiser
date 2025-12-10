@@ -1,3 +1,4 @@
+import { dateToString } from "$lib/utils";
 import type { IModelApi, Model, ModelFlags, ModelOrderBy } from "../shared/model_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
 import { convertModelFlagsToRaw, parseRawModel, type RawModel } from "../tauri/model";
@@ -25,13 +26,21 @@ export class WebModelApi implements IModelApi {
         return response.map(rawModel => parseRawModel(rawModel));
     }
     
-    async editModel(model: Model): Promise<void> {
-        let data = {
+    async editModel(model: Model, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any = {
             model_name: model.name,
             model_url: model.link,
             model_description: model.description,
             model_flags: convertModelFlagsToRaw(model.flags)
         };
+
+        if (editTimestamp) {
+            data.model_timestamp = dateToString(model.lastModified);
+        }
+
+        if (editGlobalId) {
+            data.model_global_id = model.uniqueGlobalId;
+        }
 
         await this.requestApi.request<void>(`/models/${model.id}`, HttpMethod.PUT, data);
     }

@@ -190,6 +190,7 @@ mockModelDataList.forEach((data, index) => {
         null,
         [],
         flags,
+        ""
     );
     
     mockModels.set(model.id, model);
@@ -202,7 +203,8 @@ const primitivesGroup = createGroupMetaInstance(
     1,
     "primitives",
     new Date('2024-01-15').toISOString(),
-    new Date('2024-01-15').toISOString()
+    new Date('2024-01-15').toISOString(),
+    ""
 );
 mockGroups.set(primitivesGroup.id, primitivesGroup);
 
@@ -212,7 +214,9 @@ export const mockLabels: Map<number, LabelMeta> = new Map();
 const benchmarkingLabel = createLabelMetaInstance(
     1,
     "benchmarking models",
-    0x3b82f6 // blue color
+    0x3b82f6, // blue color
+    new Date().toISOString(),
+    ""
 );
 mockLabels.set(benchmarkingLabel.id, benchmarkingLabel);
 

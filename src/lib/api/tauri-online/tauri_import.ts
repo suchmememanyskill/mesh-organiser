@@ -18,7 +18,7 @@ interface DirectoryScanModel {
     model_ids?: number[];
 }
 
-interface UploadResult {
+export interface UploadResult {
     import_state: ImportState;
     uploaded_models: DirectoryScanModel[];
 }
@@ -50,6 +50,7 @@ function fakeModels(modelIds: number[]) : Model[] {
             favorite: false,
             printed: false,
         },
+        uniqueGlobalId: "",
     }));
 }
 

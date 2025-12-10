@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use db::{blob_db, model::User, model_db};
+use serde::Serialize;
 use service::export_service;
 use tauri::{State, ipc::Response};
 
@@ -49,13 +50,19 @@ pub async fn get_blob_bytes(
     Ok(Response::new(bytes))
 }
 
+#[derive(Serialize)]
+pub struct BlobPath {
+    blob_id: i64,
+    blob_path: PathBuf
+}
+
 #[tauri::command]
 pub async fn blobs_to_path(
     blob_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
-) -> Result<Vec<PathBuf>, ApplicationError> {
+) -> Result<Vec<BlobPath>, ApplicationError> {
     let blobs = blob_db::get_blobs_via_ids(&state.app_state.db, blob_ids).await?;
-    let paths = blobs.into_iter().map(|b| export_service::get_model_path_for_blob(&b, &state.app_state)).collect();
+    let paths = blobs.into_iter().map(|b| BlobPath { blob_id: b.id, blob_path: export_service::get_model_path_for_blob(&b, &state.app_state) }).collect();
 
     Ok(paths)
 }

@@ -7,16 +7,16 @@ export interface GroupMeta {
     name: string;
     created: Date;
     lastModified: Date;
-    //unique_global_id: string;
+    uniqueGlobalId: string;
 }
 
-export function createGroupMetaInstance(id: number, name: string, created: string, lastModified: string, /*, unique_global_id: string*/): GroupMeta {
+export function createGroupMetaInstance(id: number, name: string, created: string, lastModified: string, uniqueGlobalId: string): GroupMeta {
     return {
         id,
         name,
         created: new Date(created),
         lastModified: new Date(lastModified),
-        //unique_global_id
+        uniqueGlobalId: uniqueGlobalId
     };
 }
 

@@ -106,6 +106,8 @@ pub async fn edit_model(
     model_url: Option<&str>,
     model_description: Option<&str>,
     model_flags: Option<ModelFlags>,
+    model_timestamp: Option<&str>,
+    model_global_id: Option<&str>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
     db::model_db::edit_model(
@@ -116,9 +118,19 @@ pub async fn edit_model(
         model_url,
         model_description,
         model_flags.unwrap_or(ModelFlags::empty()),
-        None,
+        model_timestamp,
     )
     .await?;
+
+    if let Some(global_id) = model_global_id {
+        db::model_db::edit_model_global_id(
+            &state.app_state.db,
+            &state.get_current_user(),
+            model_id,
+            global_id,
+        )
+        .await?;
+    }
 
     Ok(())
 }

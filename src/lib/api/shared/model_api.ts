@@ -40,9 +40,10 @@ export interface Model {
     group: GroupMeta|null;
     labels: LabelMeta[];
     flags: ModelFlags;
+    uniqueGlobalId: string;
 }
 
-export function createModelInstance(id: number, name: string, blob: Blob, link: string|null, description: string|null, added: string, last_modified: string, group: GroupMeta|null, labels: LabelMeta[], flags: string[]): Model {
+export function createModelInstance(id: number, name: string, blob: Blob, link: string|null, description: string|null, added: string, last_modified: string, group: GroupMeta|null, labels: LabelMeta[], flags: string[], unqiueGlobalId: string): Model {
     return {
         id,
         name,
@@ -53,7 +54,8 @@ export function createModelInstance(id: number, name: string, blob: Blob, link: 
         lastModified: new Date(last_modified),
         group,
         labels,
-        flags: stringArrayToModelFlags(flags)
+        flags: stringArrayToModelFlags(flags),
+        uniqueGlobalId: unqiueGlobalId,
     };
 }
 

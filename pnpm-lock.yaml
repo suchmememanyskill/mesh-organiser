@@ -21,7 +21,7 @@ importers:
         specifier: ~2.4.4
         version: 2.4.4
       '@tauri-apps/plugin-http':
-        specifier: ~2
+        specifier: ~2.5.4
         version: 2.5.4
       '@tauri-apps/plugin-opener':
         specifier: ^2.5.2

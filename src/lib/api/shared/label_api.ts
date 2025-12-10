@@ -4,13 +4,17 @@ export interface LabelMeta {
     id: number;
     name: string;
     color: string;
+    lastModified: Date;
+    uniqueGlobalId: string;
 }
 
-export function createLabelMetaInstance(id: number, name: string, color: number): LabelMeta {
+export function createLabelMetaInstance(id: number, name: string, color: number, lastModified: string, uniqueGlobalId: string): LabelMeta {
     return {
         id,
         name,
-        color: `#${color.toString(16).padStart(6, '0')}`
+        color: `#${color.toString(16).padStart(6, '0')}`,
+        lastModified: new Date(lastModified),
+        uniqueGlobalId
     };
 }
 

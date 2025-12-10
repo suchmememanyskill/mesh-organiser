@@ -37,6 +37,8 @@
     import DemoMode from "./view/demo-mode.svelte";
     import Share2 from "@lucide/svelte/icons/share-2";
     import { IShareApi } from "$lib/api/shared/share_api";
+    import { ISyncApi } from "$lib/api/shared/sync_api";
+    import SyncProgressIndicator from "./view/sync-progress-indicator.svelte";
 
     const shareApi = getContainer().optional<IShareApi>(IShareApi);
 
@@ -150,6 +152,7 @@
 
     const sidebar = Sidebar.useSidebar();
     const hostApi = getContainer().optional<IHostApi>(IHostApi);
+    const syncApi = getContainer().optional<ISyncApi>(ISyncApi);
     let isDemo = $state(false);
 
     onMount(async () => {
@@ -293,6 +296,9 @@
         </Sidebar.Group>
     </Sidebar.Content>
     <Sidebar.Footer>
+        {#if syncApi}
+            <SyncProgressIndicator />
+        {/if}
         {#if isDemo && sidebar.open} 
             <DemoMode />
         {/if}

@@ -3,6 +3,7 @@ import { createModelInstance, type Model, type IModelApi, type ModelFlags, type 
 import { parseRawBlob, type RawBlob } from "./blob";
 import { parseRawGroupMeta, type RawGroupMeta } from "./group";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
+import { dateToString } from "$lib/utils";
 
 export function convertModelFlagsToRaw(flags : ModelFlags|null) : string[]|null
 {
@@ -40,6 +41,7 @@ export interface RawModel {
     group: RawGroupMeta|null;
     labels: RawLabelMeta[];
     flags: string[];
+    unique_global_id: string;
 }
 
 export function parseRawModel(raw: RawModel): Model {
@@ -53,7 +55,8 @@ export function parseRawModel(raw: RawModel): Model {
         raw.last_modified,
         raw.group ? parseRawGroupMeta(raw.group) : null,
         raw.labels.map(label => parseRawLabelMeta(label)),
-        raw.flags
+        raw.flags,
+        raw.unique_global_id
     );
 }
 
@@ -73,8 +76,18 @@ export class ModelApi implements IModelApi {
         return models.map(model => parseRawModel(model));
     }
 
-    async editModel(model: Model): Promise<void> {
-        await invoke("edit_model", { modelId: model.id, modelName: model.name, modelUrl: model.link, modelDescription: model.description, modelFlags: convertModelFlagsToRaw(model.flags) });
+    async editModel(model: Model, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any = { modelId: model.id, modelName: model.name, modelUrl: model.link, modelDescription: model.description, modelFlags: convertModelFlagsToRaw(model.flags) };
+
+        if (editTimestamp) {
+            data.modelTimestamp = dateToString(model.lastModified);
+        }
+
+        if (editGlobalId) {
+            data.modelGlobalId = model.uniqueGlobalId;
+        }
+
+        await invoke("edit_model", data);
     }
 
     async deleteModel(model: Model): Promise<void> {

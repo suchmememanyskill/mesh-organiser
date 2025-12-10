@@ -113,3 +113,32 @@ export function nameCollectionOfModels(models: Model[]): string {
 export function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export function dateToString(date: Date): string {
+    let isoString = date.toISOString();
+    if (isoString.includes('.')) {
+      return isoString.split('.')[0] + 'Z';
+    }
+    
+    return isoString;
+}
+
+export function timeSinceDate(date: Date): string {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+        return `${days} day${days === 1 ? '' : 's'} ago`;
+    }
+    else if (hours > 0) {
+        return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    }
+    else if (minutes > 0) {
+        return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    }
+    else {
+        return `${seconds} second${seconds === 1 ? '' : 's'} ago`;
+    }
+}

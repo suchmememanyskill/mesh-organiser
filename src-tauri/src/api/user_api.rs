@@ -71,6 +71,22 @@ pub async fn edit_user(
 }
 
 #[tauri::command]
+pub async fn set_last_sync_time(
+    user_id: i64,
+    user_last_sync: &str,
+    state: State<'_, TauriAppState>,
+) -> Result<(), ApplicationError> {
+    user_db::edit_user_last_sync_time(
+        &state.app_state.db,
+        user_id,
+        user_last_sync,
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_sync_state(
     user_sync_token: String,
     user_sync_url: String,

@@ -1,7 +1,7 @@
 use std::{str::FromStr, time::Instant};
 
 use db::{
-    group_db::GroupOrderBy,
+    group_db::{self, GroupOrderBy},
     model::{ModelGroup, ModelGroupMeta, User},
     random_hex_32, time_now,
 };
@@ -22,10 +22,10 @@ pub async fn get_groups(
     state: State<'_, TauriAppState>,
 ) -> Result<Vec<ModelGroup>, ApplicationError> {
     let instant = Instant::now();
-    let groups = db::group_db::get_groups(
+    let groups = group_db::get_groups(
         &state.app_state.db,
         &state.get_current_user(),
-        db::group_db::GroupFilterOptions {
+        group_db::GroupFilterOptions {
             model_ids,
             group_ids,
             label_ids,
@@ -48,7 +48,7 @@ pub async fn ungroup(
     group_id: i64,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    db::group_db::delete_group(&state.app_state.db, &state.get_current_user(), group_id).await?;
+    group_db::delete_group(&state.app_state.db, &state.get_current_user(), group_id).await?;
 
     Ok(())
 }
@@ -58,7 +58,7 @@ pub async fn add_group(
     group_name: &str,
     state: State<'_, TauriAppState>,
 ) -> Result<ModelGroupMeta, ApplicationError> {
-    let id = db::group_db::add_empty_group(
+    let id = group_db::add_empty_group(
         &state.app_state.db,
         &state.get_current_user(),
         group_name,
@@ -82,7 +82,7 @@ pub async fn add_models_to_group(
     model_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    db::group_db::set_group_id_on_models(
+    group_db::set_group_id_on_models(
         &state.app_state.db,
         &state.get_current_user(),
         Some(group_id),
@@ -99,7 +99,7 @@ pub async fn remove_models_from_group(
     model_ids: Vec<i64>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    db::group_db::set_group_id_on_models(
+    group_db::set_group_id_on_models(
         &state.app_state.db,
         &state.get_current_user(),
         None,
@@ -115,16 +115,28 @@ pub async fn remove_models_from_group(
 pub async fn edit_group(
     group_id: i64,
     group_name: &str,
+    group_timestamp: Option<&str>,
+    group_global_id: Option<&str>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    db::group_db::edit_group(
+    group_db::edit_group(
         &state.app_state.db,
         &state.get_current_user(),
         group_id,
         group_name,
-        None,
+        group_timestamp,
     )
     .await?;
+
+    if let Some(global_id) = group_global_id {
+        group_db::edit_group_global_id(
+            &state.app_state.db,
+            &state.get_current_user(),
+            group_id,
+            global_id,
+        )
+        .await?;
+    }
 
     Ok(())
 }
@@ -134,7 +146,7 @@ pub async fn get_group_count(
     include_ungrouped_models: Option<bool>,
     state: State<'_, TauriAppState>,
 ) -> Result<usize, ApplicationError> {
-    let count = db::group_db::get_group_count(
+    let count = group_db::get_group_count(
         &state.app_state.db,
         &state.get_current_user(),
         include_ungrouped_models.unwrap_or(false),

@@ -60,7 +60,9 @@ export class DemoLabelApi implements ILabelApi {
         const newLabel = createLabelMetaInstance(
             maxId + 1,
             name,
-            stringColorToNumber(color)
+            stringColorToNumber(color),
+            new Date().toISOString(),
+            "",
         );
         
         mockLabels.set(newLabel.id, newLabel);

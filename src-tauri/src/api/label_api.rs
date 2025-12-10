@@ -1,7 +1,7 @@
 use db::{
     label_db,
     model::{Label, LabelMeta},
-    random_hex_32,
+    random_hex_32, time_now,
 };
 use tauri::State;
 
@@ -41,6 +41,7 @@ pub async fn add_label(
         id: id,
         name: label_name.to_string(),
         color: label_color,
+        last_modified: time_now(),
         unique_global_id: random_hex_32(),
     })
 }
@@ -119,6 +120,8 @@ pub async fn edit_label(
     label_id: i64,
     label_name: &str,
     label_color: i64,
+    label_timestamp: Option<&str>,
+    label_global_id: Option<&str>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
     label_db::edit_label(
@@ -127,9 +130,19 @@ pub async fn edit_label(
         label_id,
         label_name,
         label_color,
-        None,
+        label_timestamp,
     )
     .await?;
+
+    if let Some(global_id) = label_global_id {
+        label_db::edit_label_global_id(
+            &state.app_state.db,
+            &state.get_current_user(),
+            label_id,
+            global_id,
+        )
+        .await?;
+    }
 
     Ok(())
 }

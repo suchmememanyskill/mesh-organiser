@@ -7,6 +7,7 @@ pub struct LabelMeta {
     pub name: String,
     pub color: i64,
     pub unique_global_id: String,
+    pub last_modified: String,
 }
 
 pub fn convert_label_meta_list_to_map(labels: Vec<LabelMeta>) -> IndexMap<i64, LabelMeta> {
@@ -20,6 +21,7 @@ pub fn convert_label_meta_list_to_map(labels: Vec<LabelMeta>) -> IndexMap<i64, L
                 name: label.name,
                 color: label.color,
                 unique_global_id: label.unique_global_id,
+                last_modified: label.last_modified,
             },
         );
     }

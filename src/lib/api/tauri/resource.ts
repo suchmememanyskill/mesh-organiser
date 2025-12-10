@@ -2,12 +2,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { createResourceMetaInstance, type ResourceMeta, type IResourceApi, type ResourceFlags } from "../shared/resource_api";
 import type { Group } from "../shared/group_api";
 import { parseRawGroup, type RawGroup } from "./group";
+import { dateToString } from "$lib/utils";
 
 export interface RawResourceMeta {
     id : number;
     name : string;
     flags : string[];
     created: string;
+    unique_global_id: string;
 }
 
 export function parseRawResourceMeta(raw: RawResourceMeta) : ResourceMeta {
@@ -16,6 +18,7 @@ export function parseRawResourceMeta(raw: RawResourceMeta) : ResourceMeta {
         raw.name,
         raw.flags,
         raw.created,
+        raw.unique_global_id,
     );
 }
 
@@ -42,8 +45,18 @@ export class ResourceApi implements IResourceApi {
         return parseRawResourceMeta(resource);
     }
     
-    async editResource(resource: ResourceMeta): Promise<void> {
-        return await invoke("edit_resource", { resourceId: resource.id, resourceName: resource.name, resourceFlags: convertResourceFlagsToRaw(resource.flags) });
+    async editResource(resource: ResourceMeta, editTimestamp?: boolean, editGlobalId?: boolean): Promise<void> {
+        let data : any = { resourceId: resource.id, resourceName: resource.name, resourceFlags: convertResourceFlagsToRaw(resource.flags) };
+
+        if (editTimestamp) {
+            data.resourceTimestamp = dateToString(resource.created);
+        }
+
+        if (editGlobalId) {
+            data.resourceGlobalId = resource.uniqueGlobalId;
+        }
+
+        return await invoke("edit_resource", data);
     }
     
     async deleteResource(resource: ResourceMeta): Promise<void> {

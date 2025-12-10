@@ -156,7 +156,8 @@ mod put {
     #[derive(Deserialize)]
     pub struct PutGroupParams {
         pub group_name: String,
-        pub timestamp: Option<String>,
+        pub group_timestamp: Option<String>,
+        pub group_global_id: Option<String>,
     }
 
     pub async fn edit_group(
@@ -172,9 +173,19 @@ mod put {
             &user,
             group_id,
             &params.group_name,
-            params.timestamp.as_deref(),
+            params.group_timestamp.as_deref(),
         )
         .await?;
+
+        if let Some(new_global_id) = params.group_global_id {
+            group_db::edit_group_global_id(
+                &app_state.app_state.db,
+                &user,
+                group_id,
+                &new_global_id,
+            )
+            .await?;
+        }
 
         Ok(StatusCode::NO_CONTENT.into_response())
     }
