@@ -185,6 +185,7 @@ export class TauriImportApi implements ITauriImportApi {
     };
 
     async handleFolderWatchEvent(event: WatchEvent) : Promise<void> {
+        console.log("Folder watch event:", event);
         let paths = event.paths.filter(p => {
             let lower = p.toLowerCase();
 
@@ -195,11 +196,10 @@ export class TauriImportApi implements ITauriImportApi {
             return;
         }
 
-        if (!Object.hasOwn(event.type as any, "create")) {
+        if (!((Object.hasOwn(event.type as any, "create") && (event.type as any).create.kind === "any") || (Object.hasOwn(event.type as any, "modify") && (event.type as any).modify.kind === "any"))) {
             return;
         }
 
-        console.log(event);
         console.log("Detected new files in Downloads folder to import:", paths);
         let importPromise = this.startImportProcess(paths, {
             direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
