@@ -130,8 +130,8 @@ export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IG
         }
 
         // If we get here, we're in some kind of in progress sync state. Now to figure out which!
-        syncState.toDownload.slice(syncState.toDownload.indexOf(relatedDownload), 1);
-        syncState.toUpload.slice(syncState.toUpload.indexOf(upload), 1);
+        syncState.toDownload.splice(syncState.toDownload.indexOf(relatedDownload), 1);
+        syncState.toUpload.splice(syncState.toUpload.indexOf(upload), 1);
 
         if (upload.lastModified.getTime() > relatedDownload.lastModified.getTime()) {
             // If the local model is newer, it's likely that the server download got cancelled mid-way through

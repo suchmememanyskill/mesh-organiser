@@ -39,6 +39,7 @@
     import { IShareApi } from "$lib/api/shared/share_api";
     import { ISyncApi } from "$lib/api/shared/sync_api";
     import SyncProgressIndicator from "./view/sync-progress-indicator.svelte";
+    import { globalSyncState, SyncStage } from "$lib/sync.svelte";
 
     const shareApi = getContainer().optional<IShareApi>(IShareApi);
 
@@ -64,12 +65,6 @@
 
     const main_group_entries = $derived.by(() => {
         let base = [
-        {
-            title: "Import",
-            icon: FolderInput,
-            url: "/import",
-            count: 0,
-        },
         {
             title: "Models",
             icon: Box,
@@ -100,6 +95,15 @@
             url: "/resource",
             count: sidebarState.projectCount,
         }];
+
+        if (globalSyncState.stage == SyncStage.Idle) {
+            base.splice(0, 0, {
+                title: "Import",
+                icon: FolderInput,
+                url: "/import",
+                count: 0,
+            });
+        }
     
         if (shareApi) {
             base.push(        {
