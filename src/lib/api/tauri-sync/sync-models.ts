@@ -3,7 +3,7 @@ import { globalSyncState, resetSyncState, SyncStage, SyncStep } from "$lib/sync.
 import { invoke } from "@tauri-apps/api/core";
 import { getContainer } from "../dependency_injection";
 import { IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
-import type { UploadResult } from "../tauri-online/tauri_import";
+import type { UploadResult, DirectoryScanModel } from "../tauri-online/tauri_import";
 import { importState } from "$lib/import.svelte";
 import { ImportStatus, ITauriImportApi } from "../shared/tauri_import_api";
 import type { IGroupApi } from "../shared/group_api";
@@ -17,6 +17,16 @@ interface BlobPath {
     blob_path: string;
 }
 
+async function finalizeSingleModelUpload(paths: BlobPath[], upload: DirectoryScanModel, serverModelApi : IModelApi, serverGroupApi : IGroupApi, toUpload : Model[]) : Promise<void> {
+    let blobId = paths.find(x => x.blob_path === upload.path)!.blob_id;
+    let model = toUpload.find(x => x.blob.id === blobId)!;
+
+    model.id = upload.model_ids![0];
+    await serverGroupApi.removeModelsFromGroup([model]);
+    await serverModelApi.editModel(model, true, true);
+    globalSyncState.processedItems += 1;
+}
+
 async function stepUpload(toUpload: Model[], serverModelApi : IModelApi, serverGroupApi : IGroupApi) : Promise<void> {
     globalSyncState.step = SyncStep.Upload;
     globalSyncState.processableItems = toUpload.length;
@@ -24,18 +34,15 @@ async function stepUpload(toUpload: Model[], serverModelApi : IModelApi, serverG
 
     let paths = await invoke<BlobPath[]>("blobs_to_path", { blobIds: toUpload.map(x => x.blob.id)})
     let uploads = await invoke<UploadResult>("upload_models_to_remote_server", { paths: paths.map(x => x.blob_path ), recursive: false, openInSlicer: false, sourceUrl: null})
+    importState.status = ImportStatus.Idle;
 
-    for (const upload of uploads.uploaded_models) {
-        globalSyncState.processedItems += 1;
-        let blobId = paths.find(x => x.blob_path === upload.path)!.blob_id;
-        let model = toUpload.find(x => x.blob.id === blobId)!;
-
-        model.id = upload.model_ids![0];
-        await serverGroupApi.removeModelsFromGroup([model]);
-        await serverModelApi.editModel(model, true, true);
+    function* finalizeUploadPromises(paths: BlobPath[], uploads: UploadResult, serverModelApi : IModelApi, serverGroupApi : IGroupApi, toUpload : Model[]) {
+        for (const upload of uploads.uploaded_models) {
+            yield finalizeSingleModelUpload(paths, upload, serverModelApi, serverGroupApi, toUpload);
+        }
     }
 
-    importState.status = ImportStatus.Idle;
+    await runGeneratorWithLimit(finalizeUploadPromises(paths, uploads, serverModelApi, serverGroupApi, toUpload), 16);
 }
 
 async function downloadSingleModel(serverModel: Model, serverBlobApi: IBlobApi, localModelApi : IModelApi, localImportApi : ITauriImportApi) : Promise<void> {
@@ -43,14 +50,14 @@ async function downloadSingleModel(serverModel: Model, serverBlobApi: IBlobApi, 
     let download = await downloadFile(downloadUrl);
 
     // TODO: This isn't great
-    await localImportApi.startImportProcess([download.path], {
+    let localImportState = await localImportApi.startImportProcess([download.path], {
         delete_after_import: true,
         recursive: false,
         direct_open_in_slicer: false,
         import_as_path: false,
     });
 
-    let id = importState.imported_models[0].model_ids[0];
+    let id = localImportState.imported_models[0].model_ids[0];
     serverModel.id = id;
     await localModelApi.editModel(serverModel, true, true);
     globalSyncState.processedItems += 1;
@@ -68,55 +75,39 @@ async function stepDownload(toDownload: Model[], serverBlobApi: IBlobApi, localM
         }
     }
 
-    await runGeneratorWithLimit(downloadPromises(toDownload, serverBlobApi, localModelApi, localImportApi));
+    await runGeneratorWithLimit(downloadPromises(toDownload, serverBlobApi, localModelApi, localImportApi), 8);
 }
 
-async function stepSyncToServer(syncToServer: ResourceSet<Model>[], serverModelApi : IModelApi) : Promise<void> {
+async function syncSingleModelToServer(syncToServer: ResourceSet<Model>, serverModelApi : IModelApi, isServerToLocal : boolean) : Promise<void> {
+    let serverModel = isServerToLocal ? syncToServer.local : syncToServer.server;
+    let localModel = isServerToLocal ? syncToServer.server : syncToServer.local;
+
+    localModel.id = serverModel.id;
+    await serverModelApi.editModel(localModel, true, serverModel.uniqueGlobalId !== localModel.uniqueGlobalId);
+    globalSyncState.processedItems += 1;
+}
+
+async function stepSyncToRemote(syncToServer: ResourceSet<Model>[], serverModelApi : IModelApi, isServerToLocal : boolean) : Promise<void> {
     globalSyncState.step = SyncStep.UpdateMetadata;
     globalSyncState.processableItems = syncToServer.length;
     globalSyncState.processedItems = 0;
 
-    for (const modelSet of syncToServer) {
-        let serverModel = modelSet.server;
-        let localModel = modelSet.local;
-
-        localModel.id = serverModel.id;
-        await serverModelApi.editModel(localModel, true, serverModel.uniqueGlobalId !== localModel.uniqueGlobalId);
-        globalSyncState.processedItems += 1;
+    function* syncToServerPromises(syncToServer: ResourceSet<Model>[], serverModelApi : IModelApi, isServerToLocal : boolean) {
+        for (const modelSet of syncToServer) {
+            yield syncSingleModelToServer(modelSet, serverModelApi, isServerToLocal);
+        }
     }
+
+    await runGeneratorWithLimit(syncToServerPromises(syncToServer, serverModelApi, isServerToLocal), 16);
 }
 
-async function stepSyncToLocal(syncToLocal: ResourceSet<Model>[], localModelApi : IModelApi) : Promise<void> {
-    globalSyncState.step = SyncStep.UpdateMetadata;
-    globalSyncState.processableItems = syncToLocal.length;
-    globalSyncState.processedItems = 0;
-
-    for (const modelSet of syncToLocal) {
-        let serverModel = modelSet.server;
-        let localModel = modelSet.local;
-
-        serverModel.id = localModel.id;
-        await localModelApi.editModel(serverModel, true, serverModel.uniqueGlobalId !== localModel.uniqueGlobalId);
-        globalSyncState.processedItems += 1;
-    }
-}
-
-async function stepDeleteFromServer(toDeleteServer: Model[], serverModelApi : IModelApi) : Promise<void> {
+async function stepDeleteFromRemote(toDelete: Model[], remoteApi : IModelApi) : Promise<void> {
     globalSyncState.step = SyncStep.Delete;
-    globalSyncState.processableItems = toDeleteServer.length;
+    globalSyncState.processableItems = toDelete.length;
     globalSyncState.processedItems = 0;
 
-    serverModelApi.deleteModels(toDeleteServer);
-    globalSyncState.processedItems = toDeleteServer.length;
-}
-
-async function stepDeleteFromLocal(toDeleteLocal: Model[], localModelApi : IModelApi) : Promise<void> {
-    globalSyncState.step = SyncStep.Delete;
-    globalSyncState.processableItems = toDeleteLocal.length;
-    globalSyncState.processedItems = 0;
-
-    await localModelApi.deleteModels(toDeleteLocal);
-    globalSyncState.processedItems = toDeleteLocal.length;
+    remoteApi.deleteModels(toDelete);
+    globalSyncState.processedItems = toDelete.length;
 }
 
 export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IGroupApi, serverBlobApi : IBlobApi) : Promise<void> {
@@ -167,18 +158,18 @@ export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IG
     }
 
     if (syncState.syncToServer.length > 0) {
-        await stepSyncToServer(syncState.syncToServer, serverModelApi);
+        await stepSyncToRemote(syncState.syncToServer, serverModelApi, false);
     }
 
     if (syncState.syncToLocal.length > 0) {
-        await stepSyncToLocal(syncState.syncToLocal, localModelApi);
+        await stepSyncToRemote(syncState.syncToLocal, localModelApi, true);
     }
 
     if (syncState.toDeleteServer.length > 0) {
-        await stepDeleteFromServer(syncState.toDeleteServer, serverModelApi);
+        await stepDeleteFromRemote(syncState.toDeleteServer, serverModelApi);
     }
 
     if (syncState.toDeleteLocal.length > 0) {
-        await stepDeleteFromLocal(syncState.toDeleteLocal, localModelApi);
+        await stepDeleteFromRemote(syncState.toDeleteLocal, localModelApi);
     }
 }

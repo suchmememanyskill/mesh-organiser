@@ -11,7 +11,7 @@ import type { Model } from "../shared/model_api";
 import { FileType } from "../shared/blob_api";
 import { wait } from "$lib/utils";
 
-interface DirectoryScanModel {
+export interface DirectoryScanModel {
     path: string;
     group_set: number | null;
     group_name: string|null;
@@ -64,10 +64,11 @@ export class TauriWebImportApi extends TauriImportApi {
         this.groupApi = groupApi;
     }
 
-    public async startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<void> {
+    public async startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<ImportState> {
         let recursive = settings.recursive ?? globalImportSettings.recursive;
         let directOpenInSlicer = settings.direct_open_in_slicer ?? false;
         let sourceUrl = settings.source_url;
+        let importStateClone = { ...importState };
 
         resetImportState();
         let models = await uploadModels(paths, recursive, sourceUrl ?? null, directOpenInSlicer);
@@ -110,8 +111,11 @@ export class TauriWebImportApi extends TauriImportApi {
             });
         }
 
+        importStateClone.imported_models = importedModelsSet;
         importState.imported_models = importedModelsSet;
         await updateSidebarState();
         importState.status = ImportStatus.Finished;
+        importStateClone.status = ImportStatus.Finished;
+        return importStateClone;
     }
 }

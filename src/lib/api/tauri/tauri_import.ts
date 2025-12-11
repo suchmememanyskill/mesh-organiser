@@ -1,4 +1,4 @@
-import { getFileFromUrl, globalImportSettings, importState, navigateToImportPage, resetImportState } from "$lib/import.svelte";
+import { defaultImportState, getFileFromUrl, globalImportSettings, importState, navigateToImportPage, resetImportState } from "$lib/import.svelte";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { ImportStatus, type ImportModelSettings, type ImportState, type ITauriImportApi } from "../shared/tauri_import_api";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -54,7 +54,7 @@ export class TauriImportApi implements ITauriImportApi {
     eventListeners : UnlistenFn[] = [];
     complete : ((value: unknown) => void)[] = [];
 
-    public async startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<void>
+    public async startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<ImportState>
     {
         let delete_after_import = settings.delete_after_import ?? globalImportSettings.delete_after_import;
         let recursive = settings.recursive ?? globalImportSettings.recursive;
@@ -67,11 +67,12 @@ export class TauriImportApi implements ITauriImportApi {
         }
 
         if (!paths || paths.length === 0) {
-            return;
+            return defaultImportState();
         }
 
         resetImportState();
-
+        let localImportState = defaultImportState();
+        
         for (let i = 0; i < paths.length; i++) {
             try 
             {
@@ -90,23 +91,30 @@ export class TauriImportApi implements ITauriImportApi {
                 importState.recursive = importResult.recursive;
                 importState.delete_after_import = importResult.delete_after_import;
 
+                localImportState.imported_models.push(...importResult.imported_models);
+                localImportState.origin_url = importResult.origin_url;
+                localImportState.failure_reason = importResult.failure_reason;
+                localImportState.recursive = importResult.recursive;
+                localImportState.delete_after_import = importResult.delete_after_import;
+
                 if (importResult.status === ImportStatus.Failure) {
-                    importState.status = ImportStatus.Failure;
-                    return;
+                    importState.status = localImportState.status = ImportStatus.Failure;
+                    return localImportState;
                 }
             }
             catch (reason : any) 
             {
-                importState.status = ImportStatus.Failure;
-                importState.failure_reason = `${reason.error_message} - ${reason.error_inner_message}`;
+                importState.status = localImportState.status = ImportStatus.Failure;
+                importState.failure_reason = localImportState.failure_reason = `${reason.error_message} - ${reason.error_inner_message}`;
                 console.error("Failed to import model:", reason);
-                return;
+                return localImportState;
             }
         }
 
         await updateSidebarState();
         console.log("Finished importing models:", importState);
-        importState.status = ImportStatus.Finished;
+        importState.status = localImportState.status = ImportStatus.Finished;
+        return localImportState;
     };
 
     public async setAccountLink(accountLink : AccountLinkEmit) : Promise<void>

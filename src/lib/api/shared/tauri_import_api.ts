@@ -40,7 +40,7 @@ export interface ImportModelSettings
 export const ITauriImportApi = Symbol('ITauriImportApi');
 
 export interface ITauriImportApi {
-    startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<void>;
+    startImportProcess(paths: string[], settings: ImportModelSettings) : Promise<ImportState>;
     openFolderForImporting() : Promise<void>;
     openFilesForImporting() : Promise<void>;
 }

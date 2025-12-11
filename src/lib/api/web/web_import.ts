@@ -8,12 +8,13 @@ const CONCURRENT_FILES = 4;
 
 export async function runGeneratorWithLimit(
     gen: Generator<Promise<void>>,
+    limit: number = CONCURRENT_FILES
 ): Promise<void> {
     let active = 0;
 
     return new Promise((resolve, reject) => {
         const launchNext = () => {
-            while (active < CONCURRENT_FILES) {
+            while (active < limit) {
                 const { value: task, done } = gen.next();
 
                 if (done) {
