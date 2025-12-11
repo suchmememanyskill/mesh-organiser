@@ -21,7 +21,7 @@ export async function initWebShareApi() : Promise<boolean> {
     resetContainer();
 
     const container = getContainer();
-    const requestApi = new ServerRequestApi();
+    const requestApi = new ServerRequestApi(document.location.origin, fetch);
     const shareApi = new LimitedWebShareApi(requestApi);
 
     container.addSingleton(IServerRequestApi, requestApi);

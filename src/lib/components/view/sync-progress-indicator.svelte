@@ -10,7 +10,11 @@
     import RefreshCw from "@lucide/svelte/icons/refresh-cw";
     import { onDestroy } from "svelte";
 
-    let lastSync = $state("");
+    function updateLastSync() : string {
+        return currentUser.lastSync ? `Last synced ${timeSinceDate(currentUser.lastSync)}` : "Never synced";
+    }
+
+    let lastSync = $state(updateLastSync());
 
     const stage = $derived.by(() => {
         switch (globalSyncState.stage) {
@@ -50,7 +54,7 @@
     }
 
     let tickTimer = setInterval(() => {
-        lastSync = currentUser.lastSync ? `Last synced ${timeSinceDate(currentUser.lastSync)}` : "Never synced";
+        lastSync = updateLastSync();
     }, 1000);
 
     let progress = $derived.by(() => {

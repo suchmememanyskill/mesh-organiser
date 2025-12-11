@@ -275,6 +275,7 @@
 
         let share = await shareApi.createShare(nameCollectionOfModels(models));
         await shareApi.setModelsOnShare(share, models);
+        await updateSidebarState();
     }
 </script>
 
