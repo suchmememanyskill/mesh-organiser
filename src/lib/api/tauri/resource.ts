@@ -51,7 +51,7 @@ export class ResourceApi implements IResourceApi {
         let data : any = { resourceId: resource.id, resourceName: resource.name, resourceFlags: convertResourceFlagsToRaw(resource.flags) };
 
         if (editTimestamp) {
-            data.resourceTimestamp = dateToString(resource.created);
+            data.resourceTimestamp = dateToString(resource.lastModified);
         }
 
         if (editGlobalId) {

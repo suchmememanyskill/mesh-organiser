@@ -69,7 +69,7 @@ async function deleteFromRemote(toDelete : ResourceMeta[], remoteApi : IResource
 export async function syncResources(serverGroupApi : IGroupApi, serverResourceApi : IResourceApi) : Promise<void> {
     let lastSynced = currentUser.lastSync ?? new Date("2000");
     resetSyncState();
-    globalSyncState.stage = SyncStage.Groups;
+    globalSyncState.stage = SyncStage.Resources;
     const localGroupApi = getContainer().require<IGroupApi>(IGroupApi);
     const localResourceApi = getContainer().require<IResourceApi>(IResourceApi);
 

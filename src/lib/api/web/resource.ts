@@ -33,7 +33,7 @@ export class WebResourceApi implements IResourceApi {
         }
 
         if (editTimestamp) {
-            data.resource_timestamp = dateToString(resource.created);
+            data.resource_timestamp = dateToString(resource.lastModified);
         }
 
         if (editGlobalId) {

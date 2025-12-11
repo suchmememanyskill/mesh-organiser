@@ -45,7 +45,7 @@ export function parseRawLabel(raw: RawLabel): Label {
     );
 }
 
-interface RawLabelKeyword {
+export interface RawLabelKeyword {
     id: number;
     name: string;
 }
@@ -72,7 +72,7 @@ export class LabelApi implements ILabelApi {
             data.labelGlobalId = label.uniqueGlobalId;
         }
 
-        return await invoke("edit_label", );
+        return await invoke("edit_label", data);
     }
 
     async deleteLabel(label: LabelMeta): Promise<void> {

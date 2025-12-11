@@ -14,6 +14,8 @@ import { updateSidebarState } from "$lib/sidebar_data.svelte";
 import { syncGroups } from "./sync-groups";
 import { WebResourceApi } from "../web/resource";
 import { syncResources } from "./sync-resources";
+import { syncLabels } from "./sync-labels";
+import { WebLabelApi } from "../web/label";
 
 export class SyncApi implements ISyncApi {
     private requestApi : IServerRequestApi;
@@ -29,12 +31,14 @@ export class SyncApi implements ISyncApi {
     async syncData() : Promise<void> {
         const serverModelApi = new WebModelApi(this.requestApi);
         const serverGroupApi = new WebGroupApi(this.requestApi);
+        const serverLabelApi = new WebLabelApi(this.requestApi);
         const serverBlobApi = new WebBlobApi(this.requestApi, this.onlineUser, this.hostUrl);
         const serverResourceApi = new WebResourceApi(this.requestApi);
 
         try {
             await syncModels(serverModelApi, serverGroupApi, serverBlobApi);
             await syncGroups(serverModelApi, serverGroupApi);
+            await syncLabels(serverModelApi, serverLabelApi);
             await syncResources(serverGroupApi, serverResourceApi);
         }
         catch (e) {

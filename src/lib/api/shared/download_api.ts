@@ -32,6 +32,7 @@ export class DefaultDownloadApi implements IDownloadApi {
     }
 
     async downloadModelsAsZip(models: Model[]): Promise<void> {
+        const textEncoder = new TextEncoder();
         let promises = models.map(m => this.blobApi.getBlobBytes(m.blob));
 
         let allData = await Promise.all(promises);
@@ -43,6 +44,14 @@ export class DefaultDownloadApi implements IDownloadApi {
             const data = allData[i];
             
             files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype)] = data;
+
+            if (model.link) {
+                files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype) + ".link"] = textEncoder.encode(model.link);
+            }
+
+            if (model.description) {
+                files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype) + ".description"] = textEncoder.encode(model.description);
+            }
         }
 
         const zipped = zipSync(files);

@@ -45,9 +45,11 @@
         <div class="grid gap-4">
             <div class="grid gap-2">
                 <div class="grid grid-cols-4 items-center gap-4">
-                    <Label for="name">Name</Label>
+                    <Label for="name" >Name</Label>
                     <Input
                         id="name"
+                        autocomplete="off"
+                        aria-autocomplete="none"
                         bind:value={newLabelName}
                         class="col-span-3 h-8"
                     />

@@ -1,7 +1,5 @@
 use db::{
-    label_db,
-    model::{Label, LabelMeta},
-    random_hex_32, time_now,
+    label_db, label_keyword_db, model::{Label, LabelKeyword, LabelMeta}, random_hex_32, time_now
 };
 use tauri::State;
 
@@ -231,7 +229,7 @@ pub async fn set_keywords_on_label(
     keywords: Vec<String>,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    db::label_keyword_db::set_keywords_for_label(
+    label_keyword_db::set_keywords_for_label(
         &state.app_state.db,
         &state.get_current_user(),
         label_id,
@@ -248,8 +246,8 @@ pub async fn set_keywords_on_label(
 pub async fn get_keywords_for_label(
     label_id: i64,
     state: State<'_, TauriAppState>,
-) -> Result<Vec<db::model::LabelKeyword>, ApplicationError> {
-    let keywords = db::label_keyword_db::get_keywords_for_label(
+) -> Result<Vec<LabelKeyword>, ApplicationError> {
+    let keywords = label_keyword_db::get_keywords_for_label(
         &state.app_state.db,
         &state.get_current_user(),
         label_id,

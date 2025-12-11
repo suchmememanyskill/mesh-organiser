@@ -57,7 +57,8 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
             (SELECT COUNT(*) FROM models_labels INNER JOIN models ON models_labels.model_id = models.model_id WHERE models_labels.label_id = parent_labels.label_id AND models.model_group_id IS NULL) as parent_label_ungrouped_count,
             child_labels.label_id as child_label_id, 
             child_labels.label_name as child_label_name, 
-            child_labels.label_color as child_label_color
+            child_labels.label_color as child_label_color,
+            child_labels.label_unique_global_id as child_label_unique_global_id
           FROM labels as parent_labels
           LEFT JOIN labels_labels ON parent_labels.label_id = labels_labels.parent_label_id
           LEFT JOIN labels as child_labels ON labels_labels.child_label_id = child_labels.label_id
@@ -86,6 +87,7 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
         let child_label_id: Option<i64> = row.get("child_label_id");
         let child_label_name: Option<String> = row.get("child_label_name");
         let child_label_color: Option<i64> = row.get("child_label_color");
+        let child_label_unique_global_id: Option<String> = row.get("child_label_unique_global_id");
 
         let entry = label_map.entry(parent_label_id).or_insert(Label {
             meta: LabelMeta { 
@@ -114,7 +116,7 @@ pub async fn get_labels(db: &DbContext, user: &User, include_ungrouped_models : 
                 id: child_id,
                 name: child_label_name.unwrap(),
                 color: child_label_color.unwrap(),
-                unique_global_id: "".into(),
+                unique_global_id: child_label_unique_global_id.unwrap(),
                 last_modified: "".into(),
             });
             

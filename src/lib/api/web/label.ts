@@ -2,7 +2,7 @@ import { dateToString } from "$lib/utils";
 import { stringColorToNumber, type ILabelApi, type Label, type LabelMeta } from "../shared/label_api";
 import type { Model } from "../shared/model_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
-import { parseRawLabel, parseRawLabelMeta, type RawLabel, type RawLabelMeta } from "../tauri/label";
+import { parseRawLabel, parseRawLabelMeta, type RawLabel, type RawLabelKeyword, type RawLabelMeta } from "../tauri/label";
 
 export class WebLabelApi implements ILabelApi {
     private requestApi : IServerRequestApi;
@@ -82,7 +82,7 @@ export class WebLabelApi implements ILabelApi {
     }
 
     async getKeywordsForLabel(label: LabelMeta): Promise<string[]> {
-        return await this.requestApi.request<string[]>(`/labels/${label.id}/keywords`, HttpMethod.GET);
+        return (await this.requestApi.request<RawLabelKeyword[]>(`/labels/${label.id}/keywords`, HttpMethod.GET)).map(kw => kw.name);
     }
 
     async setChildrenOnLabel(label: LabelMeta, children: LabelMeta[]): Promise<void> {

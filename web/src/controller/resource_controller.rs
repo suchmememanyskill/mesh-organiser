@@ -86,6 +86,7 @@ mod post {
             flags: ResourceFlags::empty(),
             created: time_now(),
             unique_global_id: random_hex_32(),
+            last_modified: time_now(),
         };
 
         Ok(Json(resource_meta).into_response())
