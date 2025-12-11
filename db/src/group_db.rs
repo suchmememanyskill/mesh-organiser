@@ -27,6 +27,7 @@ pub struct GroupFilterOptions
     pub page : u32,
     pub page_size : u32,
     pub include_ungrouped_models : bool,
+    pub allow_incomplete_groups : bool,
 }
 
 // TODO: This is insanely inefficient
@@ -93,7 +94,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
     let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models);
 
     // It's possible we don't have the entire group here. Re-fetching groups
-    if filtered_on_labels || filtered_on_text || filtered_on_models {
+    if (filtered_on_labels || filtered_on_text || filtered_on_models) && !options.allow_incomplete_groups {
         let group_ids : Vec<i64> = groups.iter().filter(|f| f.meta.id >= 0).map(|f| f.meta.id).collect();
         let fake_models : Vec<ModelGroup> = groups.into_iter().filter(|f| f.meta.id < 0).collect();
 

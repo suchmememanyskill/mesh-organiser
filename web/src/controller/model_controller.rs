@@ -114,6 +114,7 @@ mod get {
             false => share.model_ids.into_iter().filter(|x| params.model_ids.contains(x)).collect(),
         };
 
+        params.group_ids = vec![];
         params.label_ids = vec![];
         
         get_models_inner(&app_state, &User { 
