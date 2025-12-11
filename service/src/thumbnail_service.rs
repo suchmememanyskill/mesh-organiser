@@ -8,8 +8,8 @@ use vek::{Vec2, Vec3};
 
 use crate::{AppState, ServiceError, export_service::{get_image_path_for_blob, get_model_path_for_blob}, import_state::{ImportState, ImportStatus}};
 
-const IMAGE_WIDTH: usize = 256;
-const IMAGE_HEIGHT: usize = 256;
+const IMAGE_WIDTH: usize = 400;
+const IMAGE_HEIGHT: usize = 400;
 const IMAGE_SIZE: Vec2<usize> = Vec2::new(IMAGE_WIDTH, IMAGE_HEIGHT);
 
 fn render(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, rotation: Vec3<f32>) -> Result<(), ServiceError> {
