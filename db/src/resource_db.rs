@@ -2,7 +2,7 @@ use crate::{DbError, db_context::DbContext, group_db::{self, GroupFilterOptions,
 
 pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<ResourceMeta>, DbError> {
     let rows = sqlx::query!(
-        "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id
+        "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id, resources.resource_last_modified
             FROM resources
             WHERE resources.resource_user_id = ?
             ORDER BY resources.resource_name ASC",
@@ -21,6 +21,7 @@ pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<ResourceMe
                 .unwrap_or(ResourceFlags::empty()),
             created: row.resource_created,
             unique_global_id: row.resource_unique_global_id,
+            last_modified: row.resource_last_modified,
         });
     }
 
@@ -49,7 +50,7 @@ pub async fn get_groups_for_resource(db: &DbContext, user: &User, resource_id: i
 
 pub async fn get_resource_meta_by_id(db: &DbContext, user: &User, id: i64) -> Result<Option<ResourceMeta>, DbError> {
     let row = sqlx::query!(
-        "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id
+        "SELECT resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id, resources.resource_last_modified
             FROM resources
             WHERE resources.resource_id = ? AND resources.resource_user_id = ?",
         id,
@@ -66,6 +67,7 @@ pub async fn get_resource_meta_by_id(db: &DbContext, user: &User, id: i64) -> Re
                 .unwrap_or(ResourceFlags::empty()),
             created: row.resource_created,
             unique_global_id: row.resource_unique_global_id,
+            last_modified: row.resource_last_modified,
         })),
         Err(DbError::RowNotFound) => Ok(None),
         Err(e) => Err(e),

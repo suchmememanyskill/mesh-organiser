@@ -10,6 +10,7 @@ export interface RawResourceMeta {
     flags : string[];
     created: string;
     unique_global_id: string;
+    last_modified: string;
 }
 
 export function parseRawResourceMeta(raw: RawResourceMeta) : ResourceMeta {
@@ -18,6 +19,7 @@ export function parseRawResourceMeta(raw: RawResourceMeta) : ResourceMeta {
         raw.name,
         raw.flags,
         raw.created,
+        raw.last_modified,
         raw.unique_global_id,
     );
 }

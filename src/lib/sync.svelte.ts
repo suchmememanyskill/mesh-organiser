@@ -8,10 +8,10 @@ export enum SyncStage {
 
 export enum SyncStep {
     Init,
-    UploadNewModels,
-    DownloadNewModels,
+    Upload,
+    Download,
     UpdateMetadata,
-    DeleteModels,
+    Delete,
 }
 
 export interface SyncState {

@@ -11,6 +11,9 @@ import { WebModelApi } from "../web/model";
 import { syncModels } from "./sync-models";
 import { toast } from "svelte-sonner";
 import { updateSidebarState } from "$lib/sidebar_data.svelte";
+import { syncGroups } from "./sync-groups";
+import { WebResourceApi } from "../web/resource";
+import { syncResources } from "./sync-resources";
 
 export class SyncApi implements ISyncApi {
     private requestApi : IServerRequestApi;
@@ -27,9 +30,12 @@ export class SyncApi implements ISyncApi {
         const serverModelApi = new WebModelApi(this.requestApi);
         const serverGroupApi = new WebGroupApi(this.requestApi);
         const serverBlobApi = new WebBlobApi(this.requestApi, this.onlineUser, this.hostUrl);
+        const serverResourceApi = new WebResourceApi(this.requestApi);
 
         try {
             await syncModels(serverModelApi, serverGroupApi, serverBlobApi);
+            await syncGroups(serverModelApi, serverGroupApi);
+            await syncResources(serverGroupApi, serverResourceApi);
         }
         catch (e) {
             console.error("Error during sync:", e);

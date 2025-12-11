@@ -29,13 +29,13 @@
 
     let step = $derived.by(() => {
         switch (globalSyncState.step) {
-            case SyncStep.UploadNewModels:
+            case SyncStep.Upload:
                 return `Uploading new ${stage}`;
-            case SyncStep.DownloadNewModels:
+            case SyncStep.Download:
                 return `Downloading new ${stage}`;
             case SyncStep.UpdateMetadata:
                 return `Updating metadata for ${stage}`;
-            case SyncStep.DeleteModels:
+            case SyncStep.Delete:
                 return `Deleting ${stage}`;
             default:
                 return "";

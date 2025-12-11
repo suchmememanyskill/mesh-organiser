@@ -1,4 +1,4 @@
-interface DiffableItem {
+export interface DiffableItem {
     uniqueGlobalId: string;
     lastModified: Date;
 }
@@ -28,7 +28,20 @@ export function defaultSyncResult<T>() : SyncResult<T> {
     };
 }
 
-export function computeDifferences<T extends DiffableItem>(serverItems : T[], localItems: T[], lastSynced : Date) : SyncResult<T> {
+interface Function<T> {
+    (item: T): DiffableItem;
+}
+
+export function forceApplyFieldToObject<T>(objects: T[], fieldExtractor: Function<T>) : (T & DiffableItem)[] {
+    return objects.map(obj => {
+        return {
+            ...obj,
+            ...fieldExtractor(obj)
+        };
+    })
+}
+
+export function computeDifferences<T extends DiffableItem>(localItems: T[], serverItems : T[], lastSynced : Date) : SyncResult<T> {
     let result = defaultSyncResult<T>();
 
     for (const localItem of localItems) {

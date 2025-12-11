@@ -45,6 +45,7 @@ pub struct ResourceMeta {
     pub name: String,
     pub flags: ResourceFlags,
     pub created: String,
+    pub last_modified: String,
     pub unique_global_id: String,
 }
 

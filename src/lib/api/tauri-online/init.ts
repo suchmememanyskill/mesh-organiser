@@ -1,4 +1,5 @@
 import { currentUser } from "$lib/configuration.svelte";
+import { contain } from "three/src/extras/TextureUtils.js";
 import { getContainer } from "../dependency_injection";
 import { IBlobApi } from "../shared/blob_api";
 import { IDiskUsageInfoApi } from "../shared/disk_usage_info_api";
@@ -19,12 +20,14 @@ import { WebGroupApi } from "../web/group";
 import { WebLabelApi } from "../web/label";
 import { WebModelApi } from "../web/model";
 import { WebResourceApi } from "../web/resource";
+import { WebShareApi } from "../web/share";
 import { WebThreemfApi } from "../web/threemf";
 import { WebUserApi } from "../web/user";
 import { WebUserAdminApi } from "../web/user_admin";
 import { OnlineLocalApi } from "./local";
 import { OnlineSlicerApi } from "./slicer";
 import { TauriWebImportApi } from "./tauri_import";
+import { IShareApi } from "../shared/share_api";
 
 export async function initTauriOnlineAccountApi(user : User, hostUrl : string, appDataDir : string) : Promise<void> {
     const container = getContainer();
@@ -42,6 +45,7 @@ export async function initTauriOnlineAccountApi(user : User, hostUrl : string, a
     const localApi = new OnlineLocalApi(appDataDir, 128, hostUrl, user.id, user.syncUrl!);
     const slicerApi = new OnlineSlicerApi(hostUrl, user.id, user.syncUrl!);
     const tauriImportApi = new TauriWebImportApi(requestApi, group);
+    const shareApi = new WebShareApi(requestApi);
 
     await tauriImportApi.initImportListeners();
 
@@ -58,4 +62,5 @@ export async function initTauriOnlineAccountApi(user : User, hostUrl : string, a
     container.addSingleton(ILocalApi, localApi);
     container.addSingleton(ISlicerApi, slicerApi);
     container.addSingleton(ITauriImportApi, tauriImportApi);
+    container.addSingleton(IShareApi, shareApi);
 }
