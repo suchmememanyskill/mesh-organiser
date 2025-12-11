@@ -32,11 +32,13 @@
     import CurrentUserEditCard from "$lib/components/view/current-user-edit-card.svelte";
     import { Textarea } from "$lib/components/ui/textarea/index.js";
     import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
+    import { ITauriImportApi } from "$lib/api/shared/tauri_import_api";
 
     const thumbnailApi = getContainer().optional<IThumbnailApi>(IThumbnailApi);
     const localApi = getContainer().optional<ILocalApi>(ILocalApi);
     const userAdminApi = getContainer().optional<IAdminUserApi>(IAdminUserApi);
     const settingsApi = getContainer().optional<ISettingsApi>(ISettingsApi);
+    const tauriImportApi = getContainer().optional<ITauriImportApi>(ITauriImportApi);
     let sections = $state<SettingSection[]>(settingsApi ? settingsApi.availableSections() : Object.values(SettingSection).map(x => x as SettingSection)); 
     let max_parallelism = $state(128);
     let thumbnail_regen_button_enabled = $state(true);
@@ -293,7 +295,10 @@
                 <CheckboxWithLabel bind:value={configuration.export_metadata} label="Export metadata to .json when opening in folder" />
                 <CheckboxWithLabel bind:value={configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
                 <CheckboxWithLabel bind:value={configuration.allow_importing_gcode} label="Allow importing gcode files" />
-
+                <CheckboxWithLabel bind:value={
+                    () => configuration.watch_downloads_folder,
+                    (val) => { configuration.watch_downloads_folder = val; if (tauriImportApi) { (tauriImportApi as any).initImportListeners(); } }
+                } label="Watch Downloads folder for new models to import" />
 
                 <div class="flex flex-col space-y-1.5 p-4 border rounded-md border-destructive">
                     <CheckboxWithLabel bind:value={

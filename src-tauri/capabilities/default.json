@@ -16,6 +16,10 @@
     "core:webview:allow-set-webview-zoom",
     "os:allow-platform",
     {
+      "identifier": "fs:allow-watch",
+      "allow": ["$DOWNLOAD", "$DOWNLOAD/*.stl", "$DOWNLOAD/*.3mf", "$DOWNLOAD/*.obj", "$DOWNLOAD/*.step", "$DOWNLOAD/*.gcode"]
+    },
+    {
       "identifier": "http:default",
       "allow": [{"url": "https://*"}, {"url": "http://*:3000"}]
     }

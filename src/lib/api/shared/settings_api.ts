@@ -50,6 +50,7 @@ export interface Configuration {
     custom_css : string;
     default_enabled_import_as_path : boolean;
     thumbnail_rotation : [number, number, number];
+    watch_downloads_folder: boolean;
 }
 
 export function convertOrderOptionModelsToEnum(orderOption : OrderOptionModels) : ModelOrderBy {
@@ -140,6 +141,7 @@ export function configurationDefault() : Configuration
         custom_css : "",
         default_enabled_import_as_path : false,
         thumbnail_rotation : [35, 30, 0],
+        watch_downloads_folder: false,
     }
 }
 

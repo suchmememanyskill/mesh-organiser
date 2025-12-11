@@ -52,6 +52,7 @@ pub struct StoredConfiguration {
     pub custom_css : Option<String>,
     pub default_enabled_import_as_path: Option<bool>,
     pub thumbnail_rotation: Option<[i16; 3]>,
+    pub watch_downloads_folder: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -100,6 +101,7 @@ pub struct Configuration {
     pub custom_css : String,
     pub default_enabled_import_as_path: bool,
     pub thumbnail_rotation: [i16; 3],
+    pub watch_downloads_folder: bool,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -226,6 +228,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         thumbnail_rotation: configuration
             .thumbnail_rotation
             .unwrap_or(default.thumbnail_rotation),
+        watch_downloads_folder: configuration
+            .watch_downloads_folder
+            .unwrap_or(default.watch_downloads_folder),
     }
 }
 
@@ -286,6 +291,7 @@ impl Default for Configuration {
             custom_css : String::new(),
             default_enabled_import_as_path: false,
             thumbnail_rotation: [35, 30, 0],
+            watch_downloads_folder: false,
         }
     }
 }

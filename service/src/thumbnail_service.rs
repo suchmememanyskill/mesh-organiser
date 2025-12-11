@@ -1,6 +1,6 @@
 use std::{panic, path::PathBuf};
 
-use db::{blob_db, model::{self, Blob, Model}};
+use db::{blob_db, model::Blob};
 use image::imageops::FilterType::Triangle;
 use libmeshthumbnail::{extract_image, parse_model, render};
 use tokio::task::JoinSet;

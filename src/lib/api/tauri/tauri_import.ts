@@ -8,6 +8,7 @@ import { updateSidebarState } from "$lib/sidebar_data.svelte";
 import { configuration } from "$lib/configuration.svelte";
 import { open } from "@tauri-apps/plugin-dialog";
 import { accountLinkData } from "$lib/account_link_data.svelte";
+import { BaseDirectory, watch, type WatchEvent } from "@tauri-apps/plugin-fs";
 
 interface DeepLinkEmit
 {
@@ -174,11 +175,59 @@ export class TauriImportApi implements ITauriImportApi {
         this.eventListeners.push(await listen<DownloadFinishedEvent>('download-finished', async (event) => await this.handleBuiltInBrowserDownloadFinished(event.payload)));
         this.eventListeners.push(await listen("tauri://drag-drop", async (event) => await this.handleDragDropEvent(event)));
         this.eventListeners.push(await listen<AccountLinkEmit>('account-link', async (event) => await this.setAccountLink(event.payload)));
-
+        if (configuration.watch_downloads_folder) {
+            this.eventListeners.push(await this.folderWatch());
+        }
+    
         globalImportSettings.delete_after_import = configuration.default_enabled_delete_after_import;
         globalImportSettings.recursive = configuration.default_enabled_recursive_import;
         globalImportSettings.import_as_path = configuration.default_enabled_import_as_path;
     };
+
+    async handleFolderWatchEvent(event: WatchEvent) : Promise<void> {
+        let paths = event.paths.filter(p => {
+            let lower = p.toLowerCase();
+
+            return lower.endsWith(".stl") || lower.endsWith(".obj") || lower.endsWith(".3mf") || lower.endsWith(".gcode") || lower.endsWith(".step");
+        });
+
+        if (paths.length <= 0) {
+            return;
+        }
+
+        if (!Object.hasOwn(event.type as any, "create")) {
+            return;
+        }
+
+        console.log(event);
+        console.log("Detected new files in Downloads folder to import:", paths);
+        let importPromise = this.startImportProcess(paths, {
+            direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
+            delete_after_import: false,
+            recursive: false,
+            import_as_path: false,
+        });
+
+        toast.promise(importPromise, {
+            loading: `Importing ${paths.length} new file(s) from Downloads folder...`,
+            success: `Imported ${paths.length} new file(s) from Downloads folder.`,
+            error: `Failed to import new file(s) from Downloads folder.`,
+        });
+
+        navigateToImportPage();
+
+        await importPromise;
+    }
+
+    async folderWatch() : Promise<UnlistenFn> {
+        return await watch(
+            "",
+            (event) => this.handleFolderWatchEvent(event),
+            {
+                baseDir: BaseDirectory.Download,
+            }
+        )
+    }
 
     async focusWindow() : Promise<void>
     {
@@ -195,6 +244,7 @@ export class TauriImportApi implements ITauriImportApi {
             source_url: source_uri ?? undefined,
             direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
             delete_after_import: true,
+            recursive: false,
             import_as_path: false,
         });
         navigateToImportPage();
@@ -242,6 +292,7 @@ export class TauriImportApi implements ITauriImportApi {
             source_url: event.url,
             direct_open_in_slicer: configuration.open_slicer_on_remote_model_import,
             delete_after_import: true,
+            recursive: false,
             import_as_path: false,
         });
         navigateToImportPage();
