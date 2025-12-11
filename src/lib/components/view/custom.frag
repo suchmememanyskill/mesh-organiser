@@ -13,15 +13,15 @@ void main()
     vec3 viewDir = normalize(cameraPosition - pos);
     vec3 lightDir = normalize(viewDir); 
 
-    // Compute lighting
-    float diffuse = max(dot(normal, lightDir), 0.0);
+    // Compute diffuse lighting - use absolute value to handle both front and back faces
+    float diffuse = max(abs(dot(normal, lightDir)), 0.1); // Add ambient minimum
 
     // Soft rim light effect
-    float rim = pow(1.0 - max(dot(viewDir, normal), 0.0), 3.0);
+    float rim = pow(1.0 - abs(dot(viewDir, normal)), 3.0);
 
     // Merge colors
     vec3 baseColor = surfaceColor.xyz;
-    vec3 shadedColor = baseColor * diffuse + rim * 0.2;
+    vec3 shadedColor = baseColor * diffuse + vec3(rim * 0.2);
     
     gl_FragColor = vec4(shadedColor, 1.0);
 }

@@ -51,6 +51,7 @@ pub struct StoredConfiguration {
     pub last_user_id: Option<i64>,
     pub custom_css : Option<String>,
     pub default_enabled_import_as_path: Option<bool>,
+    pub thumbnail_rotation: Option<[i16; 3]>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -98,6 +99,7 @@ pub struct Configuration {
     pub last_user_id: i64,
     pub custom_css : String,
     pub default_enabled_import_as_path: bool,
+    pub thumbnail_rotation: [i16; 3],
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -221,6 +223,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         default_enabled_import_as_path: configuration
             .default_enabled_import_as_path
             .unwrap_or(default.default_enabled_import_as_path),
+        thumbnail_rotation: configuration
+            .thumbnail_rotation
+            .unwrap_or(default.thumbnail_rotation),
     }
 }
 
@@ -280,6 +285,7 @@ impl Default for Configuration {
             last_user_id: 1,
             custom_css : String::new(),
             default_enabled_import_as_path: false,
+            thumbnail_rotation: [35, 30, 0],
         }
     }
 }

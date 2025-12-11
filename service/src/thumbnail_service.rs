@@ -8,12 +8,11 @@ use vek::{Vec2, Vec3};
 
 use crate::{AppState, ServiceError, export_service::{get_image_path_for_blob, get_model_path_for_blob}, import_state::{ImportState, ImportStatus}};
 
-const IMAGE_WIDTH: usize = 512;
-const IMAGE_HEIGHT: usize = 512;
-const FIXED_ANGLE: Vec3<f32> = Vec3::new(35.0, 30.0, 0.0);
+const IMAGE_WIDTH: usize = 256;
+const IMAGE_HEIGHT: usize = 256;
 const IMAGE_SIZE: Vec2<usize> = Vec2::new(IMAGE_WIDTH, IMAGE_HEIGHT);
 
-fn render(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>) -> Result<(), ServiceError> {
+fn render(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, rotation: Vec3<f32>) -> Result<(), ServiceError> {
     let mesh = match parse_model::handle_parse(model_path) {
         Ok(Some(mesh)) => mesh,
         Ok(None) => {
@@ -33,7 +32,7 @@ fn render(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>) -> Result
     let thumbnail = render::render(
         &mesh, 
         IMAGE_SIZE, 
-        FIXED_ANGLE, // TODO: Maybe make configurable?
+        rotation,
         color, 
         1.0);
 
@@ -42,7 +41,7 @@ fn render(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>) -> Result
     Ok(())
 }
 
-fn process(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, fallback_3mf_thumbnail : bool, prefer_3mf_thumbnail : bool, prefer_gcode_thumbnail : bool) -> Result<(), ServiceError> {
+fn process(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, rotation: Vec3<f32>, fallback_3mf_thumbnail : bool, prefer_3mf_thumbnail : bool, prefer_gcode_thumbnail : bool) -> Result<(), ServiceError> {
     let filename = model_path.to_string_lossy().to_lowercase();
 
     let extension = match filename {
@@ -70,7 +69,7 @@ fn process(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, fallback
             }
         }
 
-    if render(model_path, image_path, color).is_ok() {
+    if render(model_path, image_path, color, rotation).is_ok() {
         return Ok(());
     }
 
@@ -110,6 +109,12 @@ pub async fn generate_thumbnails(
     let prefer_3mf_thumbnail = app_state.get_configuration().prefer_3mf_thumbnail;
     let prefer_gcode_thumbnail = app_state.get_configuration().prefer_gcode_thumbnail;
     let max_concurrent = app_state.get_configuration().core_parallelism;
+    let rotation_setting = app_state.get_configuration().thumbnail_rotation;
+    let rotation = Vec3::new(
+        rotation_setting[0] as f32,
+        rotation_setting[1] as f32,
+        rotation_setting[2] as f32,
+    );
 
     let color = app_state
         .get_configuration()
@@ -145,9 +150,10 @@ pub async fn generate_thumbnails(
 
     for (model_path, image_path) in paths {
         let color = color.clone();
+        let rotation = rotation.clone();
         futures.spawn_blocking(move || {
             // Ignore errors for now
-            let _ = process(&model_path, &image_path, color, fallback_3mf_thumbnail, prefer_3mf_thumbnail, prefer_gcode_thumbnail);
+            let _ = process(&model_path, &image_path, color, rotation, fallback_3mf_thumbnail, prefer_3mf_thumbnail, prefer_gcode_thumbnail);
         });
         active += 1;
 

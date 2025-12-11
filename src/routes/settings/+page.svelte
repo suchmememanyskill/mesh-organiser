@@ -158,6 +158,36 @@
                         >
                     </div>
                 </div>
+
+                <div class="flex flex-col space-y-1.5">
+                    <Label for="color">Thumbnail model rotation</Label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="flex flex-col space gap-2">
+                            <Label>X (degrees)</Label>
+                            <Input
+                                type="number"
+                                min={-360}
+                                max="360"
+                                bind:value={configuration.thumbnail_rotation[0]} />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <Label>Y (degrees)</Label>
+                            <Input
+                                type="number"
+                                min={-360}
+                                max="360"
+                                bind:value={configuration.thumbnail_rotation[1]} />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <Label>Z (degrees)</Label>
+                            <Input
+                                type="number"
+                                min={-360}
+                                max="360"
+                                bind:value={configuration.thumbnail_rotation[2]} />
+                        </div>
+                    </div>
+                </div>
             </CardContent>
             <CardFooter class="flex flex-col gap-2">
                 <div>
@@ -166,6 +196,9 @@
                 </div>
                 <div>
                     Note: Images may not update in the application until the application is restarted.
+                </div>
+                <div>
+                    Note: X rotation moves the camera side to side (with +X moving right), Y rotation moves the camera up and down (with +Y moving up), Z rotation spins the camera (with +Z spinning clockwise).
                 </div>
             </CardFooter>
         </Card>

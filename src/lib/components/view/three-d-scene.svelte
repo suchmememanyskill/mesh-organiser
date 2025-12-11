@@ -17,7 +17,15 @@
     let position_z = $derived(radius * 1.5);
 
     let shaderUniforms = $derived({
-        surfaceColor: { value: new Vector4(...new Color($state.snapshot(configuration.thumbnail_color)).toArray(), 1.0) }
+        surfaceColor: { 
+            value: (() => {
+                // Three.js converts colors to linear space, but CPU shader works in sRGB
+                // Convert linear to sRGB to match CPU shader behavior
+                const linearColor = new Color($state.snapshot(configuration.thumbnail_color)).toArray();
+                const srgbColor = linearColor.map(c => Math.pow(c, 1.0/2.2));
+                return new Vector4(...srgbColor, 1.0);
+            })()
+        }
     });
 
     onDestroy(() => {
