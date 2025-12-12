@@ -50,26 +50,31 @@
             "name": "Thingiverse",
             "url": "https://www.thingiverse.com/",
             "icon": null,
+            "class": "",
         },
         {
             "name": "MyMiniFactory",
             "url": "https://www.myminifactory.com/search#/?{\"designType\":\"free-only\"}",
             "icon": null,
+            "class": "",
         },
         {
             "name": "Printables",
             "url": "https://www.printables.com/",
             "icon": Flame,
+            "class": "col-span-2",
         },
         {
             "name": "Makerworld",
             "url": "https://www.makerworld.com/",
             "icon": null,
+            "class": "",
         },
         {
             "name": "Nexprint",
             "url": "https://nexprint.com/",
             "icon": null,
+            "class": "",
         }
     ]
 
@@ -192,7 +197,7 @@
                     </CardHeader>
                     <CardContent class="grid grid-cols-2 gap-4">
                         {#each model_sites as site}
-                            <AsyncButton onclick={() => internalBrowserApi?.openInternalBrowser(site.url) ?? Promise.resolve()}>
+                            <AsyncButton onclick={() => internalBrowserApi?.openInternalBrowser(site.url) ?? Promise.resolve()} class={site.class}>
                                 {#if site.icon}
                                     <site.icon />
                                 {/if}
