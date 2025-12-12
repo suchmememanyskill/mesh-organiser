@@ -62,6 +62,11 @@
             "name": "Makerworld",
             "url": "https://www.makerworld.com/",
             "icon": null,
+        },
+        {
+            "name": "Nexprint",
+            "url": "https://nexprint.com/",
+            "icon": null,
         }
     ]
 
