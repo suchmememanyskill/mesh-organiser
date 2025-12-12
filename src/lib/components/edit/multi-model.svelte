@@ -273,7 +273,7 @@
     No models to display
 {:else}
     <Card class={props.class}>
-        <CardHeader class="flex flex-row gap-2 space-y-0">
+        <CardHeader class="flex flex-row gap-2 space-y-0 h-15">
             <CardTitle class="my-auto h-fit">{countWriter("model", models)}</CardTitle>
             <div class="grow"></div>
             {#if shareApi}

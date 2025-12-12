@@ -236,7 +236,7 @@
 {:else}
     <Card class={props.class}>
         <CardHeader class="relative flex flex-col gap-2 space-y-0">
-            <div class="flex flex-row gap-2">
+            <div class="flex flex-row gap-2 h-9">
                 <Badge class="h-fit my-auto text-sm {fileTypeToColor(model.blob.filetype)}">{fileTypeToDisplayName(model.blob.filetype)}</Badge>
 
                 <div class="grow"></div>
