@@ -11,6 +11,7 @@
 
     let newLabelName = $state("New label");
     let newLabelColor = $state(generateRandomColor());
+    let open = $state(false);
 
     async function setRandomColor() 
     {
@@ -32,13 +33,18 @@
         props.onsubmit(newLabelName, newLabelColor);
         newLabelName = "New label";
         newLabelColor = generateRandomColor();
+
+        if (props.closeAfterCreation ?? false)
+        {
+            open = false;
+        }
     }
 
-    const props : { children : any, class?: ClassValue, onsubmit: Function } = $props();
+    const props : { children : any, class?: ClassValue, onsubmit: Function, closeAfterCreation?: boolean } = $props();
 </script>
 
-<Popover.Root onOpenChange={x => { if (x) { setRandomColor(); } }}>
-    <Popover.Trigger>
+<Popover.Root bind:open={open} onOpenChange={x => { if (x) { setRandomColor(); } }}>
+    <Popover.Trigger class={props.class}>
         {@render props.children?.()}
     </Popover.Trigger>
     <Popover.Content class="w-80">

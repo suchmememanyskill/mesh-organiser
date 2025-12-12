@@ -92,7 +92,7 @@
             console.log("Setting config", edited_configuration);
             await updateConfiguration(edited_configuration);
         },
-        700,
+        400,
     );
 
     $effect(() => {

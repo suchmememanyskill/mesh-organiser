@@ -68,15 +68,6 @@
         saveLabelDebounced(snapshot);
     }
 
-    async function addLabel(newLabelName: string, newLabelColor: string) 
-    {
-        let newLabel = await labelApi.addLabel(newLabelName, newLabelColor);
-        tracked_label.children.push(newLabel);
-        let label = $state.snapshot(tracked_label);
-        await labelApi.setChildrenOnLabel(label.meta, label.children);
-        await updateSidebarState();
-    }
-
     async function refreshLabels(label : LabelClass)
     {
         keywords = await labelApi.getKeywordsForLabel(label.meta);
@@ -107,9 +98,6 @@
             <EditListPopover title="Edit keywords" description="When an imported model's name contains any previously defined keywords, the associated label will automatically be added to the model." bind:value={keywords} onEdit={updateKeywords}>
                 <Button size="sm">Keywords {keywords.length > 0 ? `(${keywords.length})` : ''}</Button>
             </EditListPopover>
-            <AddLabelPopover onsubmit={addLabel}>
-                <Button size="sm">Add sub-label</Button>
-            </AddLabelPopover>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                     <Ellipsis />
@@ -145,10 +133,7 @@
             </div>
             <div class="flex flex-col space-y-1.5">
                 <Label>Sub-labels</Label>
-                <LabelSelect placeholder="Add sub-labels" availableLabels={availableLabels} bind:value={
-                    // TODO: does this work?
-                    () => tracked_label.children,
-                    (val) => { tracked_label.children = val; onUpdateLabel(); console.log(tracked_label.children) }} />
+                <LabelSelect placeholder="Add sub-labels" availableLabels={availableLabels} onchange={onUpdateLabel} bind:value={tracked_label.children} />
             </div>
         </div>
     </CardContent>
