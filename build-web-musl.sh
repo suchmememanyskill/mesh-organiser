@@ -8,7 +8,7 @@ case "$TARGETPLATFORM" in
     "linux/arm64")
         export RUST_TARGET=aarch64-unknown-linux-musl
         if [ ! -d "/opt/aarch64-linux-musl-cross" ]; then
-            wget https://musl.cc/aarch64-linux-musl-cross.tgz
+            wget https://meshorganiserdemo.suchmeme.nl/aarch64-linux-musl-cross.tgz
             tar -xzf aarch64-linux-musl-cross.tgz -C /opt
             rm aarch64-linux-musl-cross.tgz
         fi
