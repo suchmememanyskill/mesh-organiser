@@ -2,7 +2,7 @@ use std::{cmp::Reverse, u32};
 use itertools::{Itertools, join};
 use indexmap::IndexMap;
 use sqlx::Row;
-use crate::{DbError, PaginatedResponse, db_context::DbContext, model::{Model, ModelFlags, ModelGroup, ModelGroupMeta, User}, model_db::{self, ModelFilterOptions}, util::time_now};
+use crate::{DbError, PaginatedResponse, db_context::DbContext, model::{Model, ModelFlags, ModelGroup, ModelGroupMeta, ResourceMeta, User}, model_db::{self, ModelFilterOptions}, resource_db, util::time_now};
 use strum::EnumString;
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -31,7 +31,7 @@ pub struct GroupFilterOptions
 }
 
 // TODO: This is insanely inefficient
-fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : bool) -> Vec<ModelGroup>
+fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : bool, group_resource_map : &IndexMap<i64, ResourceMeta>) -> Vec<ModelGroup>
 {
     let mut index_map: IndexMap<i64, ModelGroup> = IndexMap::new();
 
@@ -56,7 +56,15 @@ fn convert_model_list_to_groups(models : Vec<Model>, include_ungrouped_models : 
             }
         };
 
-        let group = index_map.entry(group_meta.id).or_insert(ModelGroup::from_meta(group_meta));
+        let group = index_map.entry(group_meta.id).or_insert({
+            let mut meta = ModelGroup::from_meta(group_meta);
+
+            if let Some(resource_meta) = group_resource_map.get(&meta.meta.id) {
+                meta.resource = Some(resource_meta.clone());
+            }
+
+            meta
+        });
         // TODO: Figure out a better way to do this
         group.flags |= unsafe { ModelFlags::from_bits(model.flags.bits()).unwrap_unchecked() };
 
@@ -81,6 +89,8 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
     let filtered_on_text = options.text_search.is_some();
     let filtered_on_models = options.model_ids.is_some();
 
+    let group_resource_map = resource_db::get_group_id_to_resource_map(db, user).await?;
+
     let models = model_db::get_models(db, user, ModelFilterOptions {
         model_ids: options.model_ids,
         group_ids: options.group_ids,
@@ -91,7 +101,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
         ..Default::default()
     }).await?;
 
-    let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models);
+    let mut groups = convert_model_list_to_groups(models.items, options.include_ungrouped_models, &group_resource_map);
 
     // It's possible we don't have the entire group here. Re-fetching groups
     if (filtered_on_labels || filtered_on_text || filtered_on_models) && !options.allow_incomplete_groups {
@@ -107,7 +117,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
 
         // TODO: Make option to split off non-complete groups into their own groups
 
-        groups = convert_model_list_to_groups(models.items, false);
+        groups = convert_model_list_to_groups(models.items, false, &group_resource_map);
         groups.extend(fake_models);
     }
 
@@ -310,6 +320,8 @@ pub async fn get_group_count(db: &DbContext, user : &User, include_ungrouped_mod
 }
 
 pub async fn get_group_via_id(db: &DbContext, user : &User, group_id: i64) -> Result<Option<ModelGroup>, DbError> {
+    let group_resource_map = resource_db::get_group_id_to_resource_map(db, user).await?;
+
     let models = model_db::get_models(db, user, ModelFilterOptions {
         group_ids: Some(vec![group_id]),
         page: 1,
@@ -317,7 +329,7 @@ pub async fn get_group_via_id(db: &DbContext, user : &User, group_id: i64) -> Re
         ..Default::default()
     }).await?;
 
-    let mut groups = convert_model_list_to_groups(models.items, false);
+    let mut groups = convert_model_list_to_groups(models.items, false, &group_resource_map);
 
     if groups.is_empty() {
         return Ok(None);

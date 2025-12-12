@@ -17,6 +17,10 @@ export class WebSettingsApi implements ISettingsApi {
             }
         }
 
+        if (parsedConfig.slicer === null || parsedConfig.slicer === undefined) {
+            parsedConfig.slicer = "OrcaSlicer";
+        }
+
         return parsedConfig;
     }
 

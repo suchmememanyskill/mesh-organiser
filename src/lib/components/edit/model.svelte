@@ -45,12 +45,13 @@
     import Download from "@lucide/svelte/icons/download";
     import { toast } from "svelte-sonner";
     import { untrack } from "svelte";
-    import { IThreemfApi } from "$lib/api/shared/threemf_api";
+    import { extractThreemfModels, IThreemfApi } from "$lib/api/shared/threemf_api";
     import { FileType } from "$lib/api/shared/blob_api";
     import PackageOpen from "@lucide/svelte/icons/package-open";
     import { createShare, IShareApi } from "$lib/api/shared/share_api";
     import Share2 from "@lucide/svelte/icons/share-2";
     import OpenInSlicerButton from "../view/open-in-slicer-button.svelte";
+    import Pin from "@lucide/svelte/icons/pin";
     
     interface Function {
         (): void;
@@ -64,6 +65,7 @@
     let editMode = $state(props.initialEditMode ?? false);
     let group = $derived(model.group);
     let availableLabels = $derived(sidebarState.labels.map(l => l.meta));
+    let doNotAutoRotateModel = $state(false);
 
     const modelApi = getContainer().require<IModelApi>(IModelApi);
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
@@ -201,32 +203,6 @@
         
         goto("/group/" + newGroup.id);
     }
-
-    async function extractThreemfModels()
-    {
-        if (!threemfApi) {
-            return;
-        }
-
-        let promise = threemfApi.extractThreemfModels(model);
-
-        toast.promise(
-            promise,
-            {
-                loading: `Extracting models from '${model.name}'...`,
-                success: (newGroup) => {
-                    return `Imported '${newGroup.name}''`;
-                },
-            }
-        );
-
-        let newGroup = await promise;
-        await groupApi.addModelsToGroup(newGroup, [model]);
-        model.group = newGroup;
-        await updateSidebarState();
-
-        goto("/group/" + newGroup.id);
-    }
 </script>
 
 {#if deleted.deleted}
@@ -240,6 +216,10 @@
                 <Badge class="h-fit my-auto text-sm {fileTypeToColor(model.blob.filetype)}">{fileTypeToDisplayName(model.blob.filetype)}</Badge>
 
                 <div class="grow"></div>
+
+                 <Toggle size="sm" class={isModelPreviewable(model) && load3dPreview ? "" : "hidden"} bind:pressed={doNotAutoRotateModel}>
+                    <Pin />
+                </Toggle>               
 
                 {#if !configurationMeta.applicationReadOnly}
                     {#if shareApi}
@@ -277,10 +257,7 @@
                     </DropdownMenu.Root>
                 {/if}
 
-                <Toggle size="sm" class={isModelPreviewable(model) ? "" : "hidden"} bind:pressed={
-                    () => load3dPreview,
-                    (val) => load3dPreview = val
-                }>
+                <Toggle size="sm" class={isModelPreviewable(model) ? "" : "hidden"} bind:pressed={load3dPreview}>
                     <Box />
                 </Toggle>
                 
@@ -309,7 +286,7 @@
                                 <Edit /> Disable edit mode
                             </DropdownMenu.Item>
                             {#if model.blob.filetype == FileType.THREEMF && threemfApi}
-                                <DropdownMenu.Item onclick={extractThreemfModels}>
+                                <DropdownMenu.Item onclick={async () => extractThreemfModels(model, threemfApi, groupApi)}>
                                     <PackageOpen /> Extract models from 3MF
                                 </DropdownMenu.Item>
                             {/if}
@@ -332,7 +309,7 @@
 
             <div class="aspect-square h-full max-h-[512px]">
                 {#if load3dPreview}
-                    <ThreeCanvas model={model} class="h-full" />
+                    <ThreeCanvas model={model} class="h-full" autoRotate={!doNotAutoRotateModel} />
                 {:else}
                     <ModelImg model={model} class="h-full flex flex-row justify-center" />
                 {/if}

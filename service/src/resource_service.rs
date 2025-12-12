@@ -11,16 +11,16 @@ pub async fn open_resource_folder(
     let path = app_state.get_resources_dir();
     let resource_path = path.join(format!("{}_{}", resource.id, user.id));
 
-    if !path.exists() {
+    if !resource_path.exists() {
         let old_resource_path = path.join(resource.id.to_string());
         if old_resource_path.exists() {
             std::fs::rename(&old_resource_path, &resource_path)?;
         } else {
-            std::fs::create_dir_all(&path)?;
+            std::fs::create_dir_all(&resource_path)?;
         }
     }
 
-    open_folder_in_explorer(&path);
+    open_folder_in_explorer(&resource_path);
 
     Ok(())
 }

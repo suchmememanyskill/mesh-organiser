@@ -9,7 +9,7 @@
     import fragmentShader from './custom.frag?raw';
     const { renderer } = useThrelte();
 
-    const props: { geometry: BufferGeometry|null; } = $props();
+    const props: { geometry: BufferGeometry|null; autoRotate?: boolean } = $props();
 
     let radius = $derived(props.geometry?.boundingSphere?.radius ?? 1);
     let position_x = $derived(radius * 1.5);
@@ -48,7 +48,7 @@
     >
         <OrbitControls
             enableDamping={true}
-            autoRotate={true}
+            autoRotate={props.autoRotate ?? true}
         >
         </OrbitControls>
     </T.PerspectiveCamera>

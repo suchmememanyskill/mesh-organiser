@@ -16,7 +16,7 @@
     import { untrack } from "svelte";
     import Spinner from "./spinner.svelte";
 
-    const props: { model: Model; class?: ClassValue } = $props();
+    const props: { model: Model; class?: ClassValue, autoRotate?: boolean } = $props();
     let geometry: BufferGeometry | null = $state.raw(null);
     let lastLoadId = -1;
 
@@ -118,7 +118,7 @@
 <div class={props.class}>
     {#if geometry}
         <Canvas>
-            <ThreeScene {geometry} />
+            <ThreeScene {geometry} autoRotate={props.autoRotate} />
         </Canvas>
     {:else}
         <div

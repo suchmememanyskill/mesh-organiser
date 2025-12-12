@@ -54,14 +54,8 @@ export async function createShare(models : Model[], shareApi : IShareApi|null) :
     if (sameShare) {
         share = sameShare;
     } else {
-        try {
-            share = await shareApi.createShare(nameCollectionOfModels(models));
-            await shareApi.setModelsOnShare(share, models);
-        } catch (e) {
-            toast.error("Failed to create share: " + (e instanceof Error ? e.message : String(e)));
-            return;
-        }
-
+        share = await shareApi.createShare(nameCollectionOfModels(models));
+        await shareApi.setModelsOnShare(share, models);
         await updateSidebarState();
     }
     

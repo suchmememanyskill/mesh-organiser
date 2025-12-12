@@ -4,6 +4,7 @@ use bitflags::bitflags;
 use crate::model::ModelGroup;
 
 bitflags! {
+    #[derive(Clone, Copy)]
     pub struct ResourceFlags: u32 {
         const Completed  = 0b00000001;
     }
@@ -39,7 +40,7 @@ impl<'de> Deserialize<'de> for ResourceFlags {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct ResourceMeta {
     pub id: i64,
     pub name: String,

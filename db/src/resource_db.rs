@@ -1,3 +1,5 @@
+use indexmap::IndexMap;
+
 use crate::{DbError, db_context::DbContext, group_db::{self, GroupFilterOptions, GroupOrderBy}, model::{ModelGroup, Resource, ResourceFlags, ResourceMeta, User}, random_hex_32, time_now};
 
 pub async fn get_resources(db: &DbContext, user: &User) -> Result<Vec<ResourceMeta>, DbError> {
@@ -46,6 +48,34 @@ pub async fn get_groups_for_resource(db: &DbContext, user: &User, resource_id: i
     }).await?;
 
     Ok(groups.items)
+}
+
+pub async fn get_group_id_to_resource_map(db : &DbContext, user: &User) -> Result<IndexMap<i64, ResourceMeta>, DbError> {
+    let rows = sqlx::query!(
+        "SELECT models_group.group_id, resources.resource_id, resources.resource_name, resources.resource_flags, resources.resource_created, resources.resource_unique_global_id, resources.resource_last_modified
+            FROM models_group
+            INNER JOIN resources ON models_group.group_resource_id = resources.resource_id
+            WHERE resources.resource_user_id = ?",
+            user.id
+    )
+    .fetch_all(db)
+    .await?;
+
+    let mut map: IndexMap<i64, ResourceMeta> = IndexMap::new();
+
+    for row in rows {
+        map.insert(row.group_id, ResourceMeta {
+            id: row.resource_id,
+            name: row.resource_name,
+            flags: ResourceFlags::from_bits(row.resource_flags as u32)
+                .unwrap_or(ResourceFlags::empty()),
+            created: row.resource_created,
+            unique_global_id: row.resource_unique_global_id,
+            last_modified: row.resource_last_modified,
+        });
+    }
+
+    Ok(map)
 }
 
 pub async fn get_resource_meta_by_id(db: &DbContext, user: &User, id: i64) -> Result<Option<ResourceMeta>, DbError> {
