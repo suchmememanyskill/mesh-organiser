@@ -64,10 +64,6 @@
         props.onDelete && props.onDelete();
         await updateSidebarState();
     }
-
-    async function openShare() {
-        await goto("/share/" + props.share.id);
-    }
         
     onMount(async () => {
         link = await shareApi.getShareLink(props.share);
@@ -113,7 +109,7 @@
                     value={link}
                 />
                 <AsyncButton onclick={copyToClipboard}>Copy</AsyncButton>
-                <Button onclick={openShare}>Open</Button>
+                <a href="{link}" target="_blank" class="{buttonVariants({ variant: "default" })}">Open</a>
             </div>
         </div>
     </CardContent>

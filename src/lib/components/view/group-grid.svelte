@@ -268,7 +268,7 @@
             loadedGroups.splice(groupIndex, 1);
             deletedGroup.models.reverse().forEach(m => {
                 let newGroup : Group = {
-                    meta: createGroupMetaInstance(m.id * -1, m.name, m.added.toISOString(), m.lastModified.toISOString()),
+                    meta: createGroupMetaInstance(m.id * -1, m.name, m.added.toISOString(), m.lastModified.toISOString(), ""),
                     models: [m],
                     labels: m.labels,
                     flags: m.flags,

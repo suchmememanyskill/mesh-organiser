@@ -144,6 +144,12 @@
             await localApi.openInFolder(group.models);
         }
     }
+
+    async function deleteResource(resource: ResourceMeta) {
+        props.resources.splice(props.resources.indexOf(resource!), 1); 
+        selected = null;
+        await updateSidebarState();
+    }
 </script>
 
 <div class="flex flex-row h-full">
@@ -195,7 +201,7 @@
     </div> 
     <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
         {#if !!selected }
-            <EditResource resource={selected} onDelete={_ => {props.resources.slice(props.resources.indexOf(selected!), 1); selected = null; }} />
+            <EditResource resource={selected} onDelete={_ => deleteResource(selected!) } />
 
             {#each groups as group (group.meta.id)}
                 <div class="grid grid-cols-1 gap-2 border rounded-lg pt-1">

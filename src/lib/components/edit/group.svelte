@@ -53,9 +53,10 @@
     let link_disabled = $derived(links.length > 1);
     let resource = $derived(tracked_group.resource);
     let availableResources = $state<ResourceMeta[]>([]);
-    let groupApi = getContainer().require<IGroupApi>(IGroupApi);
-    let modelApi = getContainer().require<IModelApi>(IModelApi);
-    let resourceApi = getContainer().require<IResourceApi>(IResourceApi);
+    const groupApi = getContainer().require<IGroupApi>(IGroupApi);
+    const modelApi = getContainer().require<IModelApi>(IModelApi);
+    const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
+    const resourceFolderApi = getContainer().optional<IResourceFolderApi>(IResourceFolderApi);
 
     async function onUngroup() {
         await groupApi.deleteGroup(tracked_group.meta);
@@ -212,7 +213,7 @@
                 } />
                 {#if resource}
                     <Button class="h-full" onclick={openResourceInFolder}><NotebookText /> Open project</Button>
-                {:else}
+                {:else if resourceFolderApi}
                     <Button class="h-full" onclick={onNewResource}><NotebookPen /> Create project</Button>
                 {/if}
             </div>
