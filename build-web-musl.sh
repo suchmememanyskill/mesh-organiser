@@ -7,6 +7,14 @@ case "$TARGETPLATFORM" in
         ;;
     "linux/arm64")
         export RUST_TARGET=aarch64-unknown-linux-musl
+        if [ ! -d "/opt/aarch64-linux-musl-cross" ]; then
+            wget https://musl.cc/aarch64-linux-musl-cross.tgz
+            tar -xzf aarch64-linux-musl-cross.tgz -C /opt
+            rm aarch64-linux-musl-cross.tgz
+        fi
+        export PATH="/opt/aarch64-linux-musl-cross/bin:$PATH"
+        export CC_aarch64_unknown_linux_musl=aarch64-linux-musl-gcc
+        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc
         ;;
     *)
         echo "Unsupported platform: $TARGETPLATFORM"

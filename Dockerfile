@@ -1,8 +1,9 @@
-FROM rust:1.91.0-slim AS build
+FROM --platform=$BUILDPLATFORM rust:1.91.0-slim AS build
 WORKDIR /source
 COPY . .
 ARG VITE_APP_VERSION
 ARG TARGETPLATFORM
+ARG BUILDPLATFORM
 RUN apt update && apt install -y wget xz-utils nodejs libfontconfig1-dev libssl-dev openssl musl-tools build-essential
 RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.shrc" SHELL="$(which sh)" sh -
 RUN chmod +x ./build-web-musl.sh && ./build-web-musl.sh
