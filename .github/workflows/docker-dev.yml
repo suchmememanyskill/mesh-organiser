@@ -29,5 +29,4 @@ jobs:
     - name: Build the docker image
       run: |
         export VITE_APP_VERSION=$(git describe --tags || "Unknown")
-        docker build . --build-arg VITE_APP_VERSION="$VITE_APP_VERSION" --tag ghcr.io/suchmememanyskill/mesh-organiser:dev
-        docker push ghcr.io/suchmememanyskill/mesh-organiser:dev
+        docker buildx build --build-arg VITE_APP_VERSION="$VITE_APP_VERSION" --platform linux/amd64,linux/arm64 -t ghcr.io/suchmememanyskill/mesh-organiser:dev --push .
