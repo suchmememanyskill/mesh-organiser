@@ -60,7 +60,7 @@ export async function initWebShareApi() : Promise<boolean> {
     container.addSingleton(ISlicerApi, slicerApi);
     container.addSingleton(IResourceApi, resourceApi);
 
-    configurationMeta.allowEdits = false;
+    configurationMeta.applicationReadOnly = true;
     configuration.group_split_view = "split-left-right";
     configuration.show_multiselect_checkboxes = true;
     configuration.only_show_single_image_in_groups = true;

@@ -44,7 +44,7 @@ export class DefaultDownloadApi implements IDownloadApi {
             const data = allData[i];
             
             files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype)] = data;
-
+            /*
             if (model.link) {
                 files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype) + ".link"] = textEncoder.encode(model.link);
             }
@@ -52,6 +52,7 @@ export class DefaultDownloadApi implements IDownloadApi {
             if (model.description) {
                 files[this.makeStringSafeFilename(model.name) + fileTypeToPlainFileExtension(model.blob.filetype) + ".description"] = textEncoder.encode(model.description);
             }
+            */
         }
 
         const zipped = zipSync(files);

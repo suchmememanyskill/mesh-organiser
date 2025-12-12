@@ -54,14 +54,7 @@ export class WebShareApi implements IShareApi {
         };
         
         let rawShare = await this.requestApi.request<RawShare>(`/shares`, HttpMethod.POST, data);
-        let share = parseRawShare(rawShare);
-
-        let link = await this.getShareLink(share);
-        await navigator.clipboard.writeText(link);
-
-        toast.success("Share created successfully. Link has been copied to your clipboard.");
-
-        return share;
+        return parseRawShare(rawShare);
     }
 
     async addModelsToShare(share: Share, models: Model[]): Promise<void> {

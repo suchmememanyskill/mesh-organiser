@@ -27,6 +27,7 @@
     import { IModelApi } from "$lib/api/shared/model_api";
     import { IResourceFolderApi } from "$lib/api/shared/resource_folder_api";
     import { onMount } from "svelte";
+    import { configurationMeta } from "$lib/configuration.svelte";
 
     interface Function {
         (): void;
@@ -134,7 +135,7 @@
             </div>
             
             <div class="absolute right-0 top-5 mr-8">
-                {#if editMode}
+                {#if editMode && !configurationMeta.applicationReadOnly}
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger>
                             <Ellipsis />
@@ -145,13 +146,13 @@
                             </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
-                {:else}
+                {:else if !configurationMeta.applicationReadOnly}
                     <Button size="sm" class="widthhack" variant="ghost" onclick={() => editMode = true}><Edit /></Button>
                 {/if}
             </div>
         </CardHeader>
         <CardContent class="text-sm">
-            {#if editMode}
+            {#if editMode && !configurationMeta.applicationReadOnly}
                 {@render EditContent()}
             {:else}
                 {@render ViewContent()}
@@ -161,9 +162,11 @@
 {/if}
 
 {#snippet ViewContent()}
-    <div class="grid grid-cols-2 gap-4">
-        <LinkButton link={link} visible={!(link_disabled || link === null)} withFallback={true} />
-        <Button disabled={!resource} onclick={openResourceInFolder}><NotebookText /> Open project</Button>
+    <div class="flex flex-row gap-4">
+        <LinkButton class="grow" link={link} visible={!(link_disabled || link === null)} withFallback={true} />
+        {#if resourceFolderApi}
+            <Button class="grow" disabled={!resource} onclick={openResourceInFolder}><NotebookText /> Open project</Button>
+        {/if}
     </div>
 {/snippet}
 

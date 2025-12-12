@@ -30,7 +30,7 @@
     import LinkButton from "$lib/components/view/link-button.svelte";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import ThreeCanvas from "$lib/components/view/three-d-canvas.svelte";
-    import { configuration } from "$lib/configuration.svelte";
+    import { configuration, configurationMeta } from "$lib/configuration.svelte";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
     import { debounce, fileTypeToColor, fileTypeToDisplayName, isModelPreviewable, loadModelAutomatically, nameCollectionOfModels, toReadableSize } from "$lib/utils";
     import Box from "@lucide/svelte/icons/box";
@@ -48,7 +48,7 @@
     import { IThreemfApi } from "$lib/api/shared/threemf_api";
     import { FileType } from "$lib/api/shared/blob_api";
     import PackageOpen from "@lucide/svelte/icons/package-open";
-    import { IShareApi } from "$lib/api/shared/share_api";
+    import { createShare, IShareApi } from "$lib/api/shared/share_api";
     import Share2 from "@lucide/svelte/icons/share-2";
     import OpenInSlicerButton from "../view/open-in-slicer-button.svelte";
     
@@ -227,17 +227,6 @@
 
         goto("/group/" + newGroup.id);
     }
-
-    async function createShare()
-    {
-        if (!shareApi) {
-            return;
-        }
-
-        let share = await shareApi.createShare(nameCollectionOfModels([model]));
-        await shareApi.setModelsOnShare(share, [model]);
-        await updateSidebarState();
-    }
 </script>
 
 {#if deleted.deleted}
@@ -246,47 +235,47 @@
     </div>
 {:else}
     <Card class={props.class}>
-        <CardHeader class="relative space-y-0">
-            <div class="aspect-square h-full max-h-[512px]">
-                {#if load3dPreview}
-                    <ThreeCanvas model={model} class="h-full" />
-                {:else}
-                    <ModelImg model={model} class="h-full flex flex-row justify-center" />
-                {/if}
-            </div>
-
-            <div class="absolute left-7 h-9 m-0 flex flex-row">
+        <CardHeader class="relative flex flex-col gap-2 space-y-0">
+            <div class="flex flex-row gap-2">
                 <Badge class="h-fit my-auto text-sm {fileTypeToColor(model.blob.filetype)}">{fileTypeToDisplayName(model.blob.filetype)}</Badge>
-            </div>
 
-            <div class="absolute right-0 mr-6 flex flex-row gap-2 h-9">
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger>
-                        {#snippet child({ props })}
-                            <Button {...props} class="h-full widthhack" variant="ghost"> 
-                                <ListCheck />
-                            </Button>
-                        {/snippet}
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content class="w-56">
-                        <DropdownMenu.Group>
-                            <DropdownMenu.Label>Properties</DropdownMenu.Label>
-                            <DropdownMenu.Separator />
-                            <DropdownMenu.CheckboxItem bind:checked={
-                                () => model.flags.printed,
-                                (val) => { model.flags.printed = val; onUpdateModel();}
-                            }>
-                                Printed
-                            </DropdownMenu.CheckboxItem>
-                            <DropdownMenu.CheckboxItem bind:checked={
-                                () => model.flags.favorite,
-                                (val) => { model.flags.favorite = val; onUpdateModel(); }
-                            }>
-                                Favorite
-                            </DropdownMenu.CheckboxItem>
-                        </DropdownMenu.Group>
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
+                <div class="grow"></div>
+
+                {#if !configurationMeta.applicationReadOnly}
+                    {#if shareApi}
+                        <Button class="h-full widthhack" onclick={() => createShare([model], shareApi)} variant="ghost"> 
+                            <Share2 />
+                        </Button>  
+                    {/if}                  
+
+                    <DropdownMenu.Root>
+                        <DropdownMenu.Trigger>
+                            {#snippet child({ props })}
+                                <Button {...props} class="h-full widthhack" variant="ghost"> 
+                                    <ListCheck />
+                                </Button>
+                            {/snippet}
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content class="w-56">
+                            <DropdownMenu.Group>
+                                <DropdownMenu.Label>Properties</DropdownMenu.Label>
+                                <DropdownMenu.Separator />
+                                <DropdownMenu.CheckboxItem bind:checked={
+                                    () => model.flags.printed,
+                                    (val) => { model.flags.printed = val; onUpdateModel();}
+                                }>
+                                    Printed
+                                </DropdownMenu.CheckboxItem>
+                                <DropdownMenu.CheckboxItem bind:checked={
+                                    () => model.flags.favorite,
+                                    (val) => { model.flags.favorite = val; onUpdateModel(); }
+                                }>
+                                    Favorite
+                                </DropdownMenu.CheckboxItem>
+                            </DropdownMenu.Group>
+                        </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                {/if}
 
                 <Toggle size="sm" class={isModelPreviewable(model) ? "" : "hidden"} bind:pressed={
                     () => load3dPreview,
@@ -308,8 +297,6 @@
                     <LinkButton link={model.link} class="h-full widthhack" variant="ghost" withText={false} withFallback={true}  />
                 {/if}
 
-                
-
                 {#if editMode}
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger>
@@ -326,11 +313,6 @@
                                     <PackageOpen /> Extract models from 3MF
                                 </DropdownMenu.Item>
                             {/if}
-                            {#if shareApi}
-                                <DropdownMenu.Item onclick={createShare}>
-                                    <Share2 /> Create share for model
-                                </DropdownMenu.Item>
-                            {/if}
                             <DropdownMenu.Item onclick={createGroup} disabled={!!group}>
                                 <GroupIcon /> Create new group with model
                             </DropdownMenu.Item>
@@ -343,9 +325,25 @@
                             </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
-                {:else}
+                {:else if !configurationMeta.applicationReadOnly}
                     <Button size="sm" variant="ghost" class="h-full aspect-square widthhack" onclick={() => editMode = true}><Edit /></Button>
                 {/if}
+            </div>
+
+            <div class="aspect-square h-full max-h-[512px]">
+                {#if load3dPreview}
+                    <ThreeCanvas model={model} class="h-full" />
+                {:else}
+                    <ModelImg model={model} class="h-full flex flex-row justify-center" />
+                {/if}
+            </div>
+
+            <div class="absolute left-7 h-9 m-0 flex flex-row">
+                
+            </div>
+
+            <div class="absolute right-0 mr-6 flex flex-row gap-2 h-9">
+                
             </div>
         </CardHeader>
         <CardContent class="text-sm pt-4">

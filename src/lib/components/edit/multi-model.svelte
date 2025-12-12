@@ -40,8 +40,9 @@
     import { IDownloadApi } from "$lib/api/shared/download_api";
     import Download from "@lucide/svelte/icons/download";
     import OpenInSlicerButton from "../view/open-in-slicer-button.svelte";
-    import { IShareApi } from "$lib/api/shared/share_api";
+    import { createShare, IShareApi } from "$lib/api/shared/share_api";
     import Share2 from "@lucide/svelte/icons/share-2";
+    import { configurationMeta } from "$lib/configuration.svelte";
 
     interface Function {
         (): void;
@@ -266,17 +267,6 @@
         await updateSidebarState();
         props.onDelete?.();
     }
-
-    async function createShare()
-    {
-        if (!shareApi) {
-            return;
-        }
-
-        let share = await shareApi.createShare(nameCollectionOfModels(models));
-        await shareApi.setModelsOnShare(share, models);
-        await updateSidebarState();
-    }
 </script>
 
 {#if models.length <= 0}
@@ -286,22 +276,24 @@
         <CardHeader class="relative">
             <CardTitle class="mr-10">{countWriter("model", models)}</CardTitle>
             <div class="absolute right-0 top-5 mr-8">
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger>
-                        <Ellipsis />
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content side="right" align="start">
-                        {#if shareApi}
-                            <DropdownMenu.Item onclick={createShare}>
-                                <Share2 /> Create share for models
+                {#if !configurationMeta.applicationReadOnly}
+                    <DropdownMenu.Root>
+                        <DropdownMenu.Trigger>
+                            <Ellipsis />
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content side="right" align="start">
+                            {#if shareApi}
+                                <DropdownMenu.Item onclick={() => createShare(models, shareApi)}>
+                                    <Share2 /> Create share for models
+                                </DropdownMenu.Item>
+                                <DropdownMenu.Separator />
+                            {/if}
+                            <DropdownMenu.Item onclick={onDelete}>
+                                <Trash2 /> Delete selected models
                             </DropdownMenu.Item>
-                            <DropdownMenu.Separator />
-                        {/if}
-                        <DropdownMenu.Item onclick={onDelete}>
-                            <Trash2 /> Delete selected models
-                        </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
+                        </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                {/if}
             </div>
         </CardHeader>
         <CardContent class="flex flex-col gap-8">
@@ -320,50 +312,52 @@
                     <OpenInSlicerButton models={models} class="flex-grow" />
                 </div>
             </div>
-            <div class="flex flex-col gap-4">
-                <Label>Add/Remove labels</Label>
-                
-                <LabelSelect availableLabels={availableLabels} bind:value={
-                    () => appliedLabels,
-                    (val) => updateLabels(val)
-                } />
-            </div>
-            <div class="flex flex-col gap-4">
-                <Label>Set/Unset group</Label>
-                <div class="grid grid-cols-2 gap-4">
-                    <Button onclick={onNewGroup} class="flex-grow"
-                        ><Group /> New group</Button
-                    >
-                    <Button
-                        onclick={onRemoveGroup}
-                        class="flex-grow"
-                        disabled={allModelGroups.length <= 0}><Ungroup /> Remove from group</Button
-                    >
+            {#if !configurationMeta.applicationReadOnly}
+                <div class="flex flex-col gap-4">
+                    <Label>Add/Remove labels</Label>
+                    
+                    <LabelSelect availableLabels={availableLabels} bind:value={
+                        () => appliedLabels,
+                        (val) => updateLabels(val)
+                    } />
                 </div>
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger disabled={availableGroups.length <= 0} class="{buttonVariants({ variant: "default" })} flex-grow">
-                        <Component /> Add selected to group
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content side="bottom" align="start" class="w-[var(--bits-dropdown-menu-anchor-width)]">
-                        {#each availableGroups as group}
-                            <DropdownMenu.Item onclick={() => onAddModelsToGroup(group)}>
-                                <Boxes class="mr-2" /> {group.name}
-                            </DropdownMenu.Item>
-                        {/each}
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
-            </div>
-            <div class="flex flex-col gap-4">
-                <Label>Properties</Label>
-                <CheckboxWithLabel class="ml-1" label="Printed" bind:value={
-                    () => printed,
-                    (val) => setPrintedFlagOnAllModels(val)
-                } />
-                <CheckboxWithLabel class="ml-1" label="Favorite" bind:value={
-                    () => favorited,
-                    (val) => setFavoriteFlagOnAllModels(val)
-                } />
-            </div>
+                <div class="flex flex-col gap-4">
+                    <Label>Set/Unset group</Label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <Button onclick={onNewGroup} class="flex-grow"
+                            ><Group /> New group</Button
+                        >
+                        <Button
+                            onclick={onRemoveGroup}
+                            class="flex-grow"
+                            disabled={allModelGroups.length <= 0}><Ungroup /> Remove from group</Button
+                        >
+                    </div>
+                    <DropdownMenu.Root>
+                        <DropdownMenu.Trigger disabled={availableGroups.length <= 0} class="{buttonVariants({ variant: "default" })} flex-grow">
+                            <Component /> Add selected to group
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content side="bottom" align="start" class="w-[var(--bits-dropdown-menu-anchor-width)]">
+                            {#each availableGroups as group}
+                                <DropdownMenu.Item onclick={() => onAddModelsToGroup(group)}>
+                                    <Boxes class="mr-2" /> {group.name}
+                                </DropdownMenu.Item>
+                            {/each}
+                        </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <Label>Properties</Label>
+                    <CheckboxWithLabel class="ml-1" label="Printed" bind:value={
+                        () => printed,
+                        (val) => setPrintedFlagOnAllModels(val)
+                    } />
+                    <CheckboxWithLabel class="ml-1" label="Favorite" bind:value={
+                        () => favorited,
+                        (val) => setFavoriteFlagOnAllModels(val)
+                    } />
+                </div>
+            {/if}
         </CardContent>
     </Card>
 {/if}

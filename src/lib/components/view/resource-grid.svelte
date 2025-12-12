@@ -19,6 +19,11 @@
     import { ISlicerApi } from "$lib/api/shared/slicer_api";
     import { ILocalApi } from "$lib/api/shared/local_api";
     import { configuration } from "$lib/configuration.svelte";
+    import OpenInSlicerButton from "./open-in-slicer-button.svelte";
+    import { IDownloadApi } from "$lib/api/shared/download_api";
+    import { toast } from "svelte-sonner";
+    import { countWriter } from "$lib/utils";
+    import Download from "@lucide/svelte/icons/download";
 
     const props: { resources: ResourceMeta[] } = $props();
     let selected = $state.raw<ResourceMeta|null>(null);
@@ -26,6 +31,8 @@
     let newName = $state<string>("");
 
     const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
+    const localApi = getContainer().optional<ILocalApi>(ILocalApi);
+    const downloadApi = getContainer().optional<IDownloadApi>(IDownloadApi);
 
     let scrollContainer : HTMLElement;
 
@@ -138,11 +145,42 @@
     }
 
     async function onOpenInFolder(group : Group) {
-        let localApi = getContainer().optional<ILocalApi>(ILocalApi);
-
         if (localApi){
             await localApi.openInFolder(group.models);
         }
+    }
+
+    // TODO: Split these functions off as these are identical to other implementations
+    async function onDownloadModel(group : Group)
+    {
+        if (!downloadApi) {
+            return;
+        }
+
+        let promise;
+        let models = group.models;
+
+        if (models.length <= 0) {
+            return;
+        } 
+        else if (models.length === 1) {
+            promise = downloadApi.downloadModel(models[0]);
+        } 
+        else {
+            promise = downloadApi.downloadModelsAsZip(models);
+        }
+
+        toast.promise(
+            promise,
+            {
+                loading: `Downloading ${countWriter("model", models)}...`,
+                success: (_) => {
+                    return `Downloaded ${countWriter("model", models)}`;
+                },
+            }
+        );
+
+        await promise;
     }
 
     async function deleteResource(resource: ResourceMeta) {
@@ -210,8 +248,13 @@
                         Open group
                     </a>
                     <div class="grid grid-cols-2 gap-4 mb-4 mx-3 mt-2">
-                        <AsyncButton onclick={() => onOpenInFolder(group)}><FolderOpen /> Open in folder</AsyncButton>
-                        <AsyncButton onclick={() => onOpenInSlicer(group)}><Slice /> Open in slicer</AsyncButton>
+                        {#if localApi}
+                            <AsyncButton class="flex-grow" onclick={() => onOpenInFolder(group)}><FolderOpen /> Open in folder</AsyncButton>
+                        {:else if downloadApi}
+                            <AsyncButton class="flex-grow" onclick={() => onDownloadModel(group)}><Download /> Download model</AsyncButton>
+                        {/if}
+                        
+                        <OpenInSlicerButton models={group.models} class="flex-grow" />
                     </div>
                 </div>
             {/each}
