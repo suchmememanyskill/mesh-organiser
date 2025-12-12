@@ -6,7 +6,7 @@ interface Fetch {
 }
 
 export class ServerRequestApi implements IServerRequestApi {
-    private baseUrl : string;
+    public baseUrl : string;
     private fetch : Fetch;
 
     constructor(baseUrl : string, fetchImpl: Fetch) {

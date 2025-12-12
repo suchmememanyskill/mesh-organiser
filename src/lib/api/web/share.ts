@@ -92,6 +92,6 @@ export class WebShareApi implements IShareApi {
     }
 
     async getShareLink(share: Share): Promise<string> {
-        return `${window.location.origin}/share/${share.id}`
+        return `${this.requestApi.baseUrl}/share/${share.id}`
     }
 }

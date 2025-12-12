@@ -63,6 +63,8 @@ import { ServerRequestApi } from "../web/request";
 import { fetch } from "@tauri-apps/plugin-http";
 import { SyncApi } from "../tauri-sync/sync";
 import { ISyncApi } from "../shared/sync_api";
+import { TauriProxyShareApi } from "../tauri-online/local-proxy-share";
+import { IShareApi } from "../shared/share_api";
 
 interface InitialState
 {
@@ -154,8 +156,11 @@ export async function initTauriLocalApis() : Promise<void> {
                 return;
             }
             else {
-                const syncApi = new SyncApi(tauriRequestApi, user, currentUser.syncUrl);
-                container.addSingleton(ISyncApi, syncApi);
+                const remoteModelApi = new WebModelApi(tauriRequestApi);
+                const remoteShareApi = new TauriProxyShareApi(tauriRequestApi, remoteModelApi, model);
+                const remoteSyncApi = new SyncApi(tauriRequestApi, user, currentUser.syncUrl);
+                container.addSingleton(ISyncApi, remoteSyncApi);
+                container.addSingleton(IShareApi, remoteShareApi);
             }
         }
     }

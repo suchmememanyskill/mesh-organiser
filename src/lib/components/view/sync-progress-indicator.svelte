@@ -86,9 +86,11 @@
             <Button class="w-full px-0 expanded-text-parent" onclick={onSyncClick}><RefreshCw /><span class="expanded-text">Sync now</span></Button>
         {/if}
     </Card.Header>
-    <Card.Content class="pb-2 pt-0 px-1 expanded-text-parent">
-        <p class="w-full text-center expanded-text">{progress}</p>
-    </Card.Content>
+    {#if progress}
+        <Card.Content class="pb-2 pt-0 px-1 expanded-text-parent">
+            <p class="w-full text-center expanded-text">{progress}</p>
+        </Card.Content>
+    {/if}
 </Card.Root>
 
 <style>
