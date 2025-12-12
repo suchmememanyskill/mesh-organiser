@@ -32,11 +32,14 @@
     import { PredefinedModelStreamManager } from "$lib/api/shared/model_api";
     import Spinner from "$lib/components/view/spinner.svelte";
     import { IWebImportApi } from "$lib/api/shared/web_import_api";
+    import { IHostApi, isCurrentPlatformDesktop } from "$lib/api/shared/host_api";
 
     const groupApi = getContainer().require<IGroupApi>(IGroupApi);
     const tauriImportApi = getContainer().optional<ITauriImportApi>(ITauriImportApi);
     const webImportApi = getContainer().optional<IWebImportApi>(IWebImportApi);
     const internalBrowserApi = getContainer().optional<IInternalBrowserApi>(IInternalBrowserApi);
+    const hostApi = getContainer().optional<IHostApi>(IHostApi);
+    let isDesktop = $state(false);
 
     let importedGroups = $state<Group[]>([]);
     let importedModels = $derived(importedGroups.map(g => g.models).flat());
@@ -93,6 +96,12 @@
 
     onMount(setDefaultImportSettings);
     onDestroy(setDefaultImportSettings);
+
+    onMount(async () => {
+        if (hostApi) {
+            isDesktop = await isCurrentPlatformDesktop(hostApi);
+        }
+    })
 
     $effect(() => {
         if (importState.status != ImportStatus.Finished) {
@@ -179,7 +188,7 @@
                 <Card>
                     <CardHeader>
                         <CardTitle>Open model website</CardTitle>
-                        <CardDescription>Browse external repositories in a new window.<br />Downloads are redirected to this application.</CardDescription>
+                        <CardDescription>Browse external repositories in a new window.{#if isDesktop}<br />Downloads are redirected to this application.{/if}</CardDescription>
                     </CardHeader>
                     <CardContent class="grid grid-cols-2 gap-4">
                         {#each model_sites as site}
