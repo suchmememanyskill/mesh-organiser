@@ -273,28 +273,28 @@
     No models to display
 {:else}
     <Card class={props.class}>
-        <CardHeader class="relative">
-            <CardTitle class="mr-10">{countWriter("model", models)}</CardTitle>
-            <div class="absolute right-0 top-5 mr-8">
-                {#if !configurationMeta.applicationReadOnly}
-                    <DropdownMenu.Root>
-                        <DropdownMenu.Trigger>
+        <CardHeader class="flex flex-row gap-2 space-y-0">
+            <CardTitle class="my-auto h-fit">{countWriter("model", models)}</CardTitle>
+            <div class="grow"></div>
+            {#if shareApi}
+                <Button class="h-full widthhack" variant="ghost" onclick={() => createShare(models, shareApi)}>
+                    <Share2 />
+                </Button>
+            {/if}
+            {#if !configurationMeta.applicationReadOnly}
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                        <div class="{buttonVariants({ variant: "ghost"})} widthhack h-full">
                             <Ellipsis />
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content side="right" align="start">
-                            {#if shareApi}
-                                <DropdownMenu.Item onclick={() => createShare(models, shareApi)}>
-                                    <Share2 /> Create share for models
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Separator />
-                            {/if}
-                            <DropdownMenu.Item onclick={onDelete}>
-                                <Trash2 /> Delete selected models
-                            </DropdownMenu.Item>
-                        </DropdownMenu.Content>
-                    </DropdownMenu.Root>
-                {/if}
-            </div>
+                        </div>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content side="right" align="start">
+                        <DropdownMenu.Item onclick={onDelete}>
+                            <Trash2 /> Delete selected models
+                        </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+            {/if}
         </CardHeader>
         <CardContent class="flex flex-col gap-8">
             <div class="flex flex-col gap-4">
