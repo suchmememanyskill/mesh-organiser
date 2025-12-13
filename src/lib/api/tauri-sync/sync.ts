@@ -16,6 +16,7 @@ import { WebResourceApi } from "../web/resource";
 import { syncResources } from "./sync-resources";
 import { syncLabels } from "./sync-labels";
 import { WebLabelApi } from "../web/label";
+import { resetImportState } from "$lib/import.svelte";
 
 export class SyncApi implements ISyncApi {
     private requestApi : IServerRequestApi;
@@ -43,9 +44,10 @@ export class SyncApi implements ISyncApi {
         }
         catch (e) {
             console.error("Error during sync:", e);
-            toast.error("An error occurred during sync. Please check your connection and try again.");
+            //toast.error("An error occurred during sync. Please check your connection and try again.");
             resetSyncState();
-            return;
+            resetImportState();
+            throw e;
         }
         
         currentUser.lastSync = new Date();

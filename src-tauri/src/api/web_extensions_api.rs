@@ -143,15 +143,22 @@ async fn logout(
     Ok(())
 }
 
-const MAX_CONCURRENT_UPLOADS: usize = 4;
+const MAX_CONCURRENT_UPLOADS: usize = 6;
 
 async fn get_ids(
     response: reqwest::Response,
 ) -> Result<Vec<i64>, ApplicationError> {
     if response.status().is_success() {
         let model_ids: Vec<i64> = response.json().await?;
+
+        if model_ids.len() == 0 {
+            println!("Upload returned no model IDs");
+            return Err(ApplicationError::InternalError("No model IDs returned after upload".into()));
+        }
+
         Ok(model_ids)
     } else {
+        println!("Upload failed with status: {} and response '{}'", response.status(), response.text().await.unwrap_or_default());
         Err(ApplicationError::InternalError("Failed to upload model".into()))
     }
 }
@@ -183,6 +190,10 @@ async fn process_uploads(
 
         if let Some(source_url) = &import_state.origin_url {
             form = form.text("source_url", source_url.clone());
+        }
+
+        if (!path.path.exists()) {
+            println!("Warning: Path {} does not exist, skipping upload", path.path.display());
         }
 
         form = form.file("file", &path.path).await?;

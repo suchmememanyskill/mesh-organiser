@@ -120,6 +120,7 @@ export class TauriImportApi implements ITauriImportApi {
 
     public async setAccountLink(accountLink : AccountLinkEmit) : Promise<void>
     {
+        await this.focusWindow();
         accountLinkData.baseUrl = accountLink.base_url;
         accountLinkData.userName = accountLink.user_name;
         accountLinkData.linkToken = accountLink.link_token;
