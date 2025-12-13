@@ -11,10 +11,15 @@ export async function runGeneratorWithLimit(
     limit: number = CONCURRENT_FILES
 ): Promise<void> {
     let active = 0;
+    let failed = false;
 
     return new Promise((resolve, reject) => {
         const launchNext = () => {
             while (active < limit) {
+                if (failed) {
+                    return;
+                }
+
                 const { value: task, done } = gen.next();
 
                 if (done) {
@@ -25,7 +30,10 @@ export async function runGeneratorWithLimit(
                 active++;
 
                 task
-                    .catch(reject)
+                    .catch(err => {
+                        failed = true;
+                        reject(err);
+                    })
                     .finally(() => {
                         active--;
                         launchNext();

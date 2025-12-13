@@ -42,7 +42,7 @@ async function stepUpload(toUpload: Model[], serverModelApi : IModelApi, serverG
         }
     }
 
-    await runGeneratorWithLimit(finalizeUploadPromises(paths, uploads, serverModelApi, serverGroupApi, toUpload), 8);
+    await runGeneratorWithLimit(finalizeUploadPromises(paths, uploads, serverModelApi, serverGroupApi, toUpload), 4);
 }
 
 async function downloadSingleModel(serverModel: Model, serverBlobApi: IBlobApi, localModelApi : IModelApi, localImportApi : ITauriImportApi) : Promise<void> {
@@ -75,7 +75,7 @@ async function stepDownload(toDownload: Model[], serverBlobApi: IBlobApi, localM
         }
     }
 
-    await runGeneratorWithLimit(downloadPromises(toDownload, serverBlobApi, localModelApi, localImportApi), 8);
+    await runGeneratorWithLimit(downloadPromises(toDownload, serverBlobApi, localModelApi, localImportApi), 4);
 }
 
 async function syncSingleModelToServer(syncToServer: ResourceSet<Model>, serverModelApi : IModelApi, isServerToLocal : boolean) : Promise<void> {
@@ -98,7 +98,7 @@ async function stepSyncToRemote(syncToServer: ResourceSet<Model>[], serverModelA
         }
     }
 
-    await runGeneratorWithLimit(syncToServerPromises(syncToServer, serverModelApi, isServerToLocal), 8);
+    await runGeneratorWithLimit(syncToServerPromises(syncToServer, serverModelApi, isServerToLocal), 4);
 }
 
 async function stepDeleteFromRemote(toDelete: Model[], remoteApi : IModelApi) : Promise<void> {

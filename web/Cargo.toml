@@ -22,7 +22,7 @@ tower = "0"
 tower-http = { version = "0", features = ["fs", "compression-gzip"] }
 tower-sessions = { version = "0", default-features = false, features = ["signed"] }
 tower-sessions-sqlx-store = { version = "0", features = ["sqlite"] }
-async_zip = { version = "0.0.17", features = ["full"] }
+async_zip = { version = "0.0.18", features = ["full"] }
 openssl = { version = "0.10", features = ["vendored"] }
 htmlescape = "0"
 
