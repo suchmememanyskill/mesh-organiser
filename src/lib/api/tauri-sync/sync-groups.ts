@@ -4,21 +4,43 @@ import { getContainer } from "../dependency_injection";
 import { GroupOrderBy, IGroupApi, type Group } from "../shared/group_api";
 import { IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
 import { ITauriImportApi } from "../shared/tauri_import_api";
+import { runGeneratorWithLimit } from "../web/web_import";
 import { computeDifferences, forceApplyFieldToObject, type DiffableItem, type ResourceSet } from "./algorhitm";
+
+async function finalizeSingleGroupUpload(group: Group, remoteApi : IGroupApi, remoteModels : Model[]) : Promise<void> {
+    let relatedModels = remoteModels.filter(x => group.models.some(y => y.uniqueGlobalId === x.uniqueGlobalId));
+    let newGroup = await remoteApi.addGroup(group.meta.name);
+    group.meta.id = newGroup.id;
+    await remoteApi.addModelsToGroup(group.meta, relatedModels);
+    await remoteApi.editGroup(group.meta, true, true);
+    globalSyncState.processedItems += 1;
+}
 
 async function stepUploadToRemote(toUpload: Group[], remoteApi : IGroupApi, remoteModels : Model[], isDownload : boolean) : Promise<void> {
     globalSyncState.step = isDownload ? SyncStep.Download : SyncStep.Upload;
     globalSyncState.processableItems = toUpload.length;
     globalSyncState.processedItems = 0;
 
-    for (const group of toUpload) {
-        let relatedModels = remoteModels.filter(x => group.models.some(y => y.uniqueGlobalId === x.uniqueGlobalId));
-        let newGroup = await remoteApi.addGroup(group.meta.name);
-        group.meta.id = newGroup.id;
-        await remoteApi.addModelsToGroup(group.meta, relatedModels);
-        await remoteApi.editGroup(group.meta, true, true);
-        globalSyncState.processedItems += 1;
+    function* finalizeUploadPromises(toUpload: Group[], remoteApi : IGroupApi, remoteModels : Model[]) {
+        for (const group of toUpload) {
+            yield finalizeSingleGroupUpload(group, remoteApi, remoteModels);
+        }
     }
+
+    await runGeneratorWithLimit(finalizeUploadPromises(toUpload, remoteApi, remoteModels), 4);
+}
+
+async function finalizeSyncToRemote(groupSet: ResourceSet<Group>, remoteApi : IGroupApi, remoteModels : Model[], isServerToLocal : boolean) : Promise<void> {
+    let remoteGroup = isServerToLocal ? groupSet.local : groupSet.server;
+    let localGroup = isServerToLocal ? groupSet.server : groupSet.local;
+
+    let relatedModels = remoteModels.filter(x => localGroup.models.some(y => y.uniqueGlobalId === x.uniqueGlobalId));
+
+    await remoteApi.removeModelsFromGroup(remoteGroup.models);
+    await remoteApi.addModelsToGroup(remoteGroup.meta, relatedModels);
+    localGroup.meta.id = remoteGroup.meta.id;
+    await remoteApi.editGroup(localGroup.meta, true, remoteGroup.meta.uniqueGlobalId !== localGroup.meta.uniqueGlobalId);
+    globalSyncState.processedItems += 1; 
 }
 
 async function stepSyncToRemote(toSync: ResourceSet<Group>[], remoteApi : IGroupApi, remoteModels : Model[], isServerToLocal : boolean) : Promise<void> {
@@ -26,18 +48,13 @@ async function stepSyncToRemote(toSync: ResourceSet<Group>[], remoteApi : IGroup
     globalSyncState.processableItems = toSync.length;
     globalSyncState.processedItems = 0;
 
-    for (const groupSet of toSync) {
-        let remoteGroup = isServerToLocal ? groupSet.local : groupSet.server;
-        let localGroup = isServerToLocal ? groupSet.server : groupSet.local;
-
-        let relatedModels = remoteModels.filter(x => localGroup.models.some(y => y.uniqueGlobalId === x.uniqueGlobalId));
-
-        await remoteApi.removeModelsFromGroup(remoteGroup.models);
-        await remoteApi.addModelsToGroup(remoteGroup.meta, relatedModels);
-        localGroup.meta.id = remoteGroup.meta.id;
-        await remoteApi.editGroup(localGroup.meta, true, remoteGroup.meta.uniqueGlobalId !== localGroup.meta.uniqueGlobalId);
-        globalSyncState.processedItems += 1;
+    function* finalizeSyncPromises(toSync: ResourceSet<Group>[], remoteApi : IGroupApi, remoteModels : Model[], isServerToLocal : boolean) {
+        for (const groupSet of toSync) {
+            yield finalizeSyncToRemote(groupSet, remoteApi, remoteModels, isServerToLocal);
+        }
     }
+
+    await runGeneratorWithLimit(finalizeSyncPromises(toSync, remoteApi, remoteModels, isServerToLocal), 4);
 }
 
 async function deleteFromRemote(toDelete: Group[], localApi : IGroupApi) : Promise<void> {

@@ -6,7 +6,7 @@ import { IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
 import type { UploadResult, DirectoryScanModel } from "../tauri-online/tauri_import";
 import { importState } from "$lib/import.svelte";
 import { ImportStatus, ITauriImportApi } from "../shared/tauri_import_api";
-import type { IGroupApi } from "../shared/group_api";
+import { IGroupApi } from "../shared/group_api";
 import type { IBlobApi } from "../shared/blob_api";
 import { downloadFile } from "../tauri/tauri_import";
 import { computeDifferences, type ResourceSet } from "./algorhitm";
@@ -42,7 +42,7 @@ async function stepUpload(toUpload: Model[], serverModelApi : IModelApi, serverG
         }
     }
 
-    await runGeneratorWithLimit(finalizeUploadPromises(paths, uploads, serverModelApi, serverGroupApi, toUpload), 16);
+    await runGeneratorWithLimit(finalizeUploadPromises(paths, uploads, serverModelApi, serverGroupApi, toUpload), 8);
 }
 
 async function downloadSingleModel(serverModel: Model, serverBlobApi: IBlobApi, localModelApi : IModelApi, localImportApi : ITauriImportApi) : Promise<void> {
@@ -98,7 +98,7 @@ async function stepSyncToRemote(syncToServer: ResourceSet<Model>[], serverModelA
         }
     }
 
-    await runGeneratorWithLimit(syncToServerPromises(syncToServer, serverModelApi, isServerToLocal), 16);
+    await runGeneratorWithLimit(syncToServerPromises(syncToServer, serverModelApi, isServerToLocal), 8);
 }
 
 async function stepDeleteFromRemote(toDelete: Model[], remoteApi : IModelApi) : Promise<void> {
@@ -115,12 +115,15 @@ export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IG
     resetSyncState();
     globalSyncState.stage = SyncStage.Models;
     const localModelApi = getContainer().require<IModelApi>(IModelApi);
+    const localGroupApi = getContainer().require<IGroupApi>(IGroupApi);
     const localImportApi = getContainer().require<ITauriImportApi>(ITauriImportApi);
 
     let serverModels = await serverModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
     let localModels = await localModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
 
     let syncState = computeDifferences(localModels, serverModels, lastSynced);
+    let removeGroupFromModelsLocal = [];
+    let removeGroupFromModelsServer = [];
 
     for (const upload of Array.from(syncState.toUpload)) {
         let relatedDownload = syncState.toDownload.find(serverModel => serverModel.blob.sha256 === upload.blob.sha256);
@@ -139,6 +142,7 @@ export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IG
                 local: upload,
                 server: relatedDownload
             });
+            removeGroupFromModelsLocal.push(upload);
         }
         else {
             // If the server model is newer, it's likely that the local upload got cancelled mid-way through
@@ -146,6 +150,7 @@ export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IG
                 local: upload,
                 server: relatedDownload
             });
+            removeGroupFromModelsServer.push(relatedDownload);
         }
     }
 
@@ -155,6 +160,14 @@ export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IG
 
     if (syncState.toDownload.length > 0) {
         await stepDownload(syncState.toDownload, serverBlobApi, localModelApi, localImportApi);
+    }
+
+    if (removeGroupFromModelsLocal.length > 0) {
+        await localGroupApi.removeModelsFromGroup(removeGroupFromModelsLocal);
+    }
+
+    if (removeGroupFromModelsServer.length > 0) {
+        await serverGroupApi.removeModelsFromGroup(removeGroupFromModelsServer);
     }
 
     if (syncState.syncToServer.length > 0) {

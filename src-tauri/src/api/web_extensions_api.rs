@@ -143,7 +143,7 @@ async fn logout(
     Ok(())
 }
 
-const MAX_CONCURRENT_UPLOADS: usize = 6;
+const MAX_CONCURRENT_UPLOADS: usize = 4;
 
 async fn get_ids(
     response: reqwest::Response,
