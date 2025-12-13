@@ -4,7 +4,7 @@ import { dateToString } from "$lib/utils";
 import { invoke } from "@tauri-apps/api/core";
 import type { IServerRequestApi } from "../shared/server_request_api";
 import type { ISyncApi } from "../shared/sync_api";
-import type { User } from "../shared/user_api";
+import { ISwitchUserApi, type User } from "../shared/user_api";
 import { WebBlobApi } from "../web/blob";
 import { WebGroupApi } from "../web/group";
 import { WebModelApi } from "../web/model";
@@ -17,6 +17,7 @@ import { syncResources } from "./sync-resources";
 import { syncLabels } from "./sync-labels";
 import { WebLabelApi } from "../web/label";
 import { resetImportState } from "$lib/import.svelte";
+import { getContainer } from "../dependency_injection";
 
 export class SyncApi implements ISyncApi {
     private requestApi : IServerRequestApi;
@@ -35,6 +36,7 @@ export class SyncApi implements ISyncApi {
         const serverLabelApi = new WebLabelApi(this.requestApi);
         const serverBlobApi = new WebBlobApi(this.requestApi, this.onlineUser, this.hostUrl);
         const serverResourceApi = new WebResourceApi(this.requestApi);
+        const switchUserApi = getContainer().optional<ISwitchUserApi>(ISwitchUserApi);
 
         try {
             await syncModels(serverModelApi, serverGroupApi, serverBlobApi);
@@ -56,6 +58,10 @@ export class SyncApi implements ISyncApi {
             userId: currentUser.id,
             userLastSync: dateToString(currentUser.lastSync)
         })
+        
+        if (switchUserApi) {
+            await switchUserApi.switchUser(currentUser);
+        }
 
         await updateSidebarState();
         resetSyncState();
