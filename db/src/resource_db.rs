@@ -168,6 +168,10 @@ pub async fn edit_resource(db: &DbContext, user: &User, resource_id: i64, name: 
 }
 
 pub async fn edit_resource_global_id(db: &DbContext, user: &User, resource_id: i64, unique_global_id: &str) -> Result<(), DbError> {
+    if unique_global_id.len() != 32 {
+        return Err(DbError::InvalidArgument("Unique Global ID must be 32 characters long".to_string()));
+    }
+    
     sqlx::query!(
         "UPDATE resources SET resource_unique_global_id = ? WHERE resource_id = ? AND resource_user_id = ?",
         unique_global_id,

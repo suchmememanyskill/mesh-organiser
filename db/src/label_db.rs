@@ -302,6 +302,10 @@ pub async fn edit_label(db: &DbContext, user: &User, label_id: i64, name: &str, 
 
 pub async fn edit_label_global_id(db: &DbContext, user: &User, label_id: i64, unique_global_id: &str) -> Result<(), DbError>
 {
+    if unique_global_id.len() != 32 {
+        return Err(DbError::InvalidArgument("Unique Global ID must be 32 characters long".to_string()));
+    }
+
     sqlx::query!(
         "UPDATE labels SET label_unique_global_id = ? WHERE label_id = ? AND label_user_id = ?",
         unique_global_id,

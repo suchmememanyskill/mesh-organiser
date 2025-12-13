@@ -221,6 +221,10 @@ pub async fn edit_model(db: &DbContext, user: &User, id: i64, name: &str, link: 
 
 pub async fn edit_model_global_id(db: &DbContext, user: &User, id: i64, unique_global_id: &str) -> Result<(), DbError>
 {
+    if unique_global_id.len() != 32 {
+        return Err(DbError::InvalidArgument("Unique Global ID must be 32 characters long".to_string()));
+    }
+
     sqlx::query!(
         "UPDATE models SET model_unique_global_id = ? WHERE model_id = ? AND model_user_id = ?",
         unique_global_id,

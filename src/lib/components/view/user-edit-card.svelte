@@ -112,11 +112,13 @@
         users = [...users, createdUser];
         newUser = createFakeUser();
         
-        try {
-            await navigator.clipboard.writeText(`Email: ${createdUser.email}\nPassword: ${password}`);
-            toast.success(`User '${createdUser.username}' created. Login details have been copied to your clipboard.`, { duration: 10000 });
-        } catch (e) {
-            console.error("Failed to copy password to clipboard", e);
+        if (!isDesktop) {
+            try {
+                await navigator.clipboard.writeText(`Email: ${createdUser.email}\nPassword: ${password}`);
+                toast.success(`User '${createdUser.username}' created. Login details have been copied to your clipboard.`, { duration: 10000 });
+            } catch (e) {
+                console.error("Failed to copy password to clipboard", e);
+            }
         }
 
         password = "";

@@ -2,7 +2,7 @@ use std::{cmp::Reverse, u32};
 use itertools::{Itertools, join};
 use indexmap::IndexMap;
 use sqlx::Row;
-use crate::{DbError, PaginatedResponse, db_context::DbContext, model::{Model, ModelFlags, ModelGroup, ModelGroupMeta, ResourceMeta, User}, model_db::{self, ModelFilterOptions}, resource_db, util::time_now};
+use crate::{DbError, PaginatedResponse, db_context::DbContext, model::{Model, ModelFlags, ModelGroup, ModelGroupMeta, ResourceMeta, User}, model_db::{self, ModelFilterOptions}, random_hex_32, resource_db, util::time_now};
 use strum::EnumString;
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -220,12 +220,15 @@ pub async fn set_group_id_on_models(
 pub async fn add_empty_group(db: &DbContext, user : &User, group_name: &str, update_timestamp : Option<&str>) -> Result<i64, DbError> {
     let now = time_now();
     let timestamp = update_timestamp.unwrap_or(&now);
+    let unique_global_id = random_hex_32();
+    
     let result = sqlx::query!(
-        "INSERT INTO models_group (group_name, group_created, group_user_id, group_last_modified) VALUES (?, ?, ?, ?)",
+        "INSERT INTO models_group (group_name, group_created, group_user_id, group_last_modified, group_unique_global_id) VALUES (?, ?, ?, ?, ?)",
         group_name,
         now,
         user.id,
-        timestamp
+        timestamp,
+        unique_global_id
     )
     .execute(db)
     .await?;
@@ -252,6 +255,10 @@ pub async fn edit_group(db: &DbContext, user : &User, group_id: i64, group_name:
 }
 
 pub async fn edit_group_global_id(db: &DbContext, user : &User, group_id: i64, unique_global_id: &str) -> Result<(), DbError> {
+    if unique_global_id.len() != 32 {
+        return Err(DbError::InvalidArgument("Unique Global ID must be 32 characters long".to_string()));
+    }
+
     sqlx::query!(
         "UPDATE models_group SET group_unique_global_id = ? WHERE group_id = ? AND group_user_id = ?",
         unique_global_id,
@@ -265,8 +272,6 @@ pub async fn edit_group_global_id(db: &DbContext, user : &User, group_id: i64, u
 }
 
 pub async fn delete_group(db: &DbContext, user : &User, group_id: i64) -> Result<(), DbError> {
-    let hex = get_unique_id_from_group_id(db, group_id).await?;
-
     sqlx::query!(
         "DELETE FROM models_group WHERE group_id = ? AND group_user_id = ?",
         group_id,
