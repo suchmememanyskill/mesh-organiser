@@ -192,7 +192,7 @@ async fn process_uploads(
             form = form.text("source_url", source_url.clone());
         }
 
-        if (!path.path.exists()) {
+        if !path.path.exists() {
             println!("Warning: Path {} does not exist, skipping upload", path.path.display());
         }
 

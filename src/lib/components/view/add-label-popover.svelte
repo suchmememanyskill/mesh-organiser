@@ -54,8 +54,6 @@
                     <Label for="name" >Name</Label>
                     <Input
                         id="name"
-                        autocomplete="off"
-                        aria-autocomplete="none"
                         bind:value={newLabelName}
                         class="col-span-3 h-8"
                     />
