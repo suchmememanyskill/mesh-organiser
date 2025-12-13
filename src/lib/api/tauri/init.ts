@@ -65,6 +65,7 @@ import { SyncApi } from "../tauri-sync/sync";
 import { ISyncApi } from "../shared/sync_api";
 import { TauriProxyShareApi } from "../tauri-online/local-proxy-share";
 import { IShareApi } from "../shared/share_api";
+import { TauriSidebarStateApi } from "./sidebar_state";
 
 interface InitialState
 {
@@ -94,7 +95,7 @@ export async function initTauriLocalApis() : Promise<void> {
     const resource = new ResourceApi();
     const settings = new SettingsApi();
     const tauriImport = new TauriImportApi();
-    const sidebarApi = new DefaultSidebarStateApi();
+    const sidebarApi = new TauriSidebarStateApi();
     const hostApi = new HostApi();
     const diskUsageInfoApi = new DiskUsageInfoApi();
     const slicerApi = new SlicerApi();
