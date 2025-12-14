@@ -327,6 +327,9 @@ mod post {
                 file.write(&chunk).await?;
             }
 
+            file.flush().await?;
+            file.sync_all().await?;
+
             paths.push(file_path);
         }
 
