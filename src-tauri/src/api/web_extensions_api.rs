@@ -182,8 +182,9 @@ async fn get_ids(
 
         Ok(model_ids)
     } else {
-        println!("Upload failed with status: {} and response '{}'", response.status(), response.text().await.unwrap_or_default());
-        Err(ApplicationError::InternalError("Failed to upload model".into()))
+        let err = format!("Upload failed with status: {} and response '{}'", response.status(), response.text().await.unwrap_or_default());
+        println!("{}", err);
+        Err(ApplicationError::InternalError(err))
     }
 }
 

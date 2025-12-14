@@ -70,6 +70,8 @@ impl Serialize for ApplicationError {
 
 impl IntoResponse for ApplicationError {
     fn into_response(self) -> axum::response::Response {
+        let json = serde_json::to_string(&self).unwrap_or("Failed to serialize error".to_string());
+        println!("[Error] {}", json);
         (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(self)).into_response()
     }
 }
