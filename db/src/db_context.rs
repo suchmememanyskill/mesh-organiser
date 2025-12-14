@@ -1,6 +1,8 @@
 use sqlx;
+use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{Pool, Sqlite, migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use std::path::PathBuf;
+use std::time::Duration;
 
 pub type DbContext = Pool<Sqlite>;
 
@@ -16,8 +18,13 @@ pub async fn setup_db(sqlite_path : &PathBuf, sqlite_backup_dir : &PathBuf) -> D
             .expect("failed to create database");
     };
 
+    let connection_option = SqliteConnectOptions::new()
+        .filename(sqlite_path)
+        .busy_timeout(Duration::from_secs(15));
+
     let db = SqlitePoolOptions::new()
-        .connect(sqlite_path.to_str().unwrap())
+        .max_connections(5)
+        .connect_with(connection_option)
         .await
         .unwrap();
 
