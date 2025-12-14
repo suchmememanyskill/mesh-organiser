@@ -341,6 +341,7 @@ mod post {
         let mut import_state = ImportState::new_with_emitter(None, false, true, false, user.clone(), Box::new(WebImportStateEmitter {}));
 
         for path in paths {
+            println!("Importing file: {}", path.to_string_lossy());
             import_state = ImportState::new_with_emitter(link.clone(), false, true, false, user.clone(), Box::new(WebImportStateEmitter {}));
             import_state = import_service::import_path(
                 &path.to_string_lossy(),
