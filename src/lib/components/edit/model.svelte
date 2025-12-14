@@ -155,7 +155,7 @@
             await onUpdateModel();
         }
 
-        await localApi.openInFolder([model]);
+        await localApi.openInFolder([model], false);
     }
 
     async function onDownloadModel()

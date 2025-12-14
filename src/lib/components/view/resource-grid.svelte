@@ -24,6 +24,7 @@
     import { toast } from "svelte-sonner";
     import { countWriter } from "$lib/utils";
     import Download from "@lucide/svelte/icons/download";
+    import ExportModelsButton from "./export-models-button.svelte";
 
     const props: { resources: ResourceMeta[] } = $props();
     let selected = $state.raw<ResourceMeta|null>(null);
@@ -121,33 +122,6 @@
         props.resources.push(newResource);
         selected = newResource;
         await updateSidebarState();
-    }
-
-    /*
-    let destroyStateChangeListener: UnlistenFn | null = null;
-
-    onMount(async () => {
-        destroyStateChangeListener = await listen<void>("state-change", (_) => {
-            if (selected)
-            {
-                selected = props.resources.find(r => r.id === selected!.id) || null;
-            }
-        });
-    });
-    */
-
-    async function onOpenInSlicer(group : Group) {
-        let slicerApi = getContainer().optional<ISlicerApi>(ISlicerApi);
-
-        if (slicerApi){
-            await slicerApi.openInSlicer(group.models);
-        }
-    }
-
-    async function onOpenInFolder(group : Group) {
-        if (localApi){
-            await localApi.openInFolder(group.models);
-        }
     }
 
     // TODO: Split these functions off as these are identical to other implementations
@@ -249,7 +223,7 @@
                     </a>
                     <div class="grid grid-cols-2 gap-4 mb-4 mx-3 mt-2">
                         {#if localApi}
-                            <AsyncButton class="flex-grow" onclick={() => onOpenInFolder(group)}><FolderOpen /> Open in folder</AsyncButton>
+                            <ExportModelsButton models={group.models} class="flex-grow" />
                         {:else if downloadApi}
                             <AsyncButton class="flex-grow" onclick={() => onDownloadModel(group)}><Download /> Download model</AsyncButton>
                         {/if}

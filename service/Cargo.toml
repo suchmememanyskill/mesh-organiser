@@ -25,6 +25,7 @@ image = { version = "0", features = ["png", "jpeg"] }
 libmeshthumbnail = { git = "https://github.com/suchmememanyskill/mesh-thumbnail", branch = "software" }
 vek = "0"
 content_disposition = "0.4.0"
+futures = "0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0"

@@ -1,11 +1,13 @@
 use std::{char::MAX, panic, path::{self, PathBuf}, sync::Arc};
 
+use async_zip::{Compression, ZipEntryBuilder, tokio::write::ZipFileWriter};
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use service::{export_service::{ensure_unique_file_full_filename, get_temp_dir}, import_service::{self, DirectoryScanModel, is_any_supported_extension}, import_state::{ImportState, ImportStatus}};
 use tauri::{AppHandle, State, http::header::CONTENT_DISPOSITION, ipc::Response};
 use tauri_plugin_http::reqwest::{self, cookie::Jar};
-use tokio::{fs::File, io::AsyncWriteExt, task::JoinSet};
+use tokio::{fs::File, io::{AsyncWriteExt, BufWriter}, task::JoinSet};
+use tokio_util::compat::{FuturesAsyncWriteCompatExt, TokioAsyncReadCompatExt};
 
 use crate::{error::ApplicationError, tauri_app_state::TauriAppState, tauri_import_state};
 
@@ -71,8 +73,30 @@ pub async fn download_files_and_open_in_folder(
     base_url: &str,
     user_id: i64,
     user_hash: &str,
+    as_zip: bool,
 ) -> Result<(), ApplicationError> {
-    let (temp_dir, _) = download_files_to_temp_dir(sha256s, base_url, user_id, user_hash).await?;
+    let (temp_dir, model_paths) = download_files_to_temp_dir(sha256s, base_url, user_id, user_hash).await?;
+
+    // TODO: This is really really inefficient and slow
+    if as_zip {
+        let zip_path = temp_dir.join("export.zip");
+        let mut file = File::create(&zip_path).await?;
+        let mut writer = ZipFileWriter::with_tokio(&mut file);
+
+        for model_path in model_paths {
+            let file_name = model_path.file_name().unwrap().to_string_lossy().to_string();
+            let builder = ZipEntryBuilder::new(file_name.into(), Compression::Deflate);
+            let mut stream_writer = writer.write_entry_stream(builder).await?;
+            
+            let mut model_file = File::open(&model_path).await?.compat();
+            futures::io::copy(&mut model_file, &mut stream_writer).await?;
+            stream_writer.close().await?;
+            drop(model_file);
+            let _ = std::fs::remove_file(&model_path);
+        }
+
+        writer.close().await?;
+    }
 
     service::open_folder_in_explorer(&temp_dir);
 

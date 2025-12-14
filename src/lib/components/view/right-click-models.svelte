@@ -51,7 +51,7 @@
         let localApi = getContainer().optional<ILocalApi>(ILocalApi);
 
         if (localApi){
-            await localApi.openInFolder(props.models);
+            await localApi.openInFolder(props.models, false);
         }
     }
 

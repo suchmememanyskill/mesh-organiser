@@ -1,3 +1,4 @@
+use async_zip::error::ZipError;
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 use thiserror::Error;
 
@@ -19,6 +20,8 @@ pub enum ApplicationError {
     ServiceError(#[from] service::ServiceError),
     #[error("Web request error")]
     WebRequestError(#[from] tauri_plugin_http::reqwest::Error),
+    #[error("Zip operation error")]
+    AsyncZipOperationError(#[from] ZipError),
 }
 
 impl Serialize for ApplicationError {
@@ -64,6 +67,11 @@ impl Serialize for ApplicationError {
             }
             ApplicationError::WebRequestError(inner) => {
                 state.serialize_field("error_type", "WebRequestError")?;
+                state.serialize_field("error_message", &self.to_string())?;
+                state.serialize_field("error_inner_message", &inner.to_string())?;
+            }
+            ApplicationError::AsyncZipOperationError(inner) => {
+                state.serialize_field("error_type", "AsyncZipOperationError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }

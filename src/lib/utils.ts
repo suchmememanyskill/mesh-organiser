@@ -107,7 +107,13 @@ export function nameCollectionOfModels(models: Model[]): string {
         return models[0].group!.name
     }
 
-    return models.map(x => x.name).join("+")
+    let str = models.slice(0, 5).map(x => x.name).join("+");
+
+    if (models.length > 5) {
+        str += `+${models.length - 5} more...`;
+    }
+
+    return str;
 }
 
 export function wait(ms: number): Promise<void> {

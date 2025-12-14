@@ -1,14 +1,18 @@
 use crate::ASYNC_MULT;
 use crate::util::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
 use crate::service_error::ServiceError;
+use async_zip::{Compression, ZipEntryBuilder};
 use async_zip::tokio::read::seek::ZipFileReader;
+use async_zip::tokio::write::ZipFileWriter;
 use db::blob_db;
 use db::model::{Blob, Model};
 use chrono::Utc;
+use futures::AsyncWriteExt;
+use itertools::Itertools;
 use tokio::fs::File;
-use tokio::io::BufReader;
+use tokio::io::{BufReader, BufWriter};
 use tokio::task::JoinSet;
-use tokio_util::compat::FuturesAsyncReadCompatExt;
+use tokio_util::compat::{FuturesAsyncReadCompatExt, FuturesAsyncWriteCompatExt, TokioAsyncReadCompatExt};
 use std::panic;
 use std::path::PathBuf;
 use std::collections::HashSet;
@@ -101,6 +105,75 @@ pub async fn export_to_temp_folder(
     paths.extend(futures.join_all().await.into_iter().filter(|r| r.is_ok()).map(|r| r.unwrap()));
 
     Ok((temp_dir, paths))
+}
+
+fn name_collection_of_models(models : &[Model]) -> String {
+    let set : Vec<i64> = models.iter().map(|m| m.group.as_ref().map(|g| g.id).unwrap_or(-1)).unique().collect();
+
+    if set.len() == 1 && set[0] > 0 {
+        return cleanse_evil_from_name(&models[0].group.as_ref().unwrap().name);
+    }
+
+    cleanse_evil_from_name(&format!("{}{}", models.iter().take(5).map(|m| &m.name).join("+"), if models.len() > 5 { format!("+{} more...", models.len() - 5) } else { "".to_string() }))
+}
+
+pub struct ExportZipResult {
+    pub temp_dir: PathBuf,
+    pub zip_path: PathBuf,
+}
+
+pub async fn export_zip_to_temp_folder(
+    models: Vec<Model>,
+    app_state: &AppState,
+) -> Result<ExportZipResult, ServiceError> {
+    let configuration = app_state.get_configuration();
+    let temp_dir = get_temp_dir("export_zip");
+
+    let filename = format!("{}.zip", name_collection_of_models(&models));
+    let filepath = temp_dir.join(filename);
+
+    let mut file = File::create(&filepath).await?;
+    let mut writer = ZipFileWriter::with_tokio(&mut file);
+
+    // TODO: Better way to handle metadata
+    if configuration.export_metadata {
+        let mut buffer: Vec<u8> = Vec::new();
+        serde_json::to_writer_pretty(&mut buffer, &models)?;
+        let builder = ZipEntryBuilder::new("metadata.json".into(), Compression::Deflate);
+        writer.write_entry_whole(builder, &buffer).await?;
+    }
+
+    for model in models {
+        let cleansed_name = cleanse_evil_from_name(&model.name);
+        let extension = convert_zip_to_extension(&model.blob.filetype);
+        let builder = ZipEntryBuilder::new(format!("{}.{}", cleansed_name, extension).into(), Compression::Deflate);
+        let mut stream_writer = writer.write_entry_stream(builder).await?;
+
+        // TODO: Find a way to reuse this
+        let src_file_path = get_model_path_for_blob(&model.blob, app_state);
+        let model_file = File::open(src_file_path).await?;
+
+        if is_zipped_file_extension(&model.blob.filetype) {
+            let mut buffered_reader = BufReader::new(model_file);
+            let mut zip = ZipFileReader::with_tokio(&mut buffered_reader).await?;
+            let mut file = zip.reader_with_entry(0).await?;
+            
+            futures::io::copy(&mut file, &mut stream_writer).await?;
+        } else {
+            let mut model_file = model_file.compat();
+            futures::io::copy(&mut model_file, &mut stream_writer).await?;
+        }
+
+        stream_writer.close().await?; 
+        println!("Added model {} to zip", model.name);
+    }
+    
+    writer.close().await?;
+
+    Ok(ExportZipResult {
+        temp_dir,
+        zip_path: filepath,
+    })
 }
 
 pub async fn get_bytes_from_model(

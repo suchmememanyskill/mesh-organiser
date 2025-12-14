@@ -3117,6 +3117,7 @@ name = "mesh-organiser"
 version = "1.7.0"
 dependencies = [
  "arboard",
+ "async_zip",
  "base64 0.22.1",
  "bitflags 2.10.0",
  "chrono",
@@ -5281,6 +5282,7 @@ dependencies = [
  "chrono",
  "content_disposition",
  "db",
+ "futures",
  "image",
  "indexmap 2.12.1",
  "itertools",

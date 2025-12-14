@@ -21,8 +21,8 @@ export class OnlineLocalApi implements ILocalApi {
         this.userHash = userHash;
     }
 
-    async openInFolder(models: Model[]): Promise<void> {
-        await invoke("download_files_and_open_in_folder", { sha256s: models.map(m => m.blob.sha256), baseUrl: this.baseUrl, userId: this.userId, userHash: this.userHash });
+    async openInFolder(models: Model[], asZip: boolean): Promise<void> {
+        await invoke("download_files_and_open_in_folder", { sha256s: models.map(m => m.blob.sha256), baseUrl: this.baseUrl, userId: this.userId, userHash: this.userHash, asZip: asZip });
     }
 
     async getAppDataDir(): Promise<string> {

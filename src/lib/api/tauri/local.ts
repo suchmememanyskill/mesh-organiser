@@ -14,8 +14,8 @@ export class LocalApi implements ILocalApi {
         this.maxParallelism = maxParallelism;
     }
 
-    async openInFolder(models: Model[]): Promise<void> {
-        await invoke("open_in_folder", { modelIds: models.map(m => m.id) });
+    async openInFolder(models: Model[], asZip: boolean): Promise<void> {
+        await invoke("open_in_folder", { modelIds: models.map(m => m.id), asZip: asZip  });
     }
 
     async getAppDataDir(): Promise<string> {

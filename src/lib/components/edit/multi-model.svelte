@@ -43,6 +43,7 @@
     import { createShare, IShareApi } from "$lib/api/shared/share_api";
     import Share2 from "@lucide/svelte/icons/share-2";
     import { configurationMeta } from "$lib/configuration.svelte";
+    import ExportModelsButton from "../view/export-models-button.svelte";
 
     interface Function {
         (): void;
@@ -185,14 +186,6 @@
         }
     }
 
-    async function onOpenInFolder() {
-        if (!localApi){
-            return;
-        }
-
-        await localApi.openInFolder(models);
-    }
-
     async function onDownloadModels() {
         if (!downloadApi) {
             return;
@@ -301,9 +294,7 @@
                 <Label>Open</Label>
                 <div class="grid grid-cols-2 gap-4">
                     {#if localApi}
-                        <AsyncButton class="flex-grow" onclick={onOpenInFolder}
-                            ><FolderOpen /> Open in folder</AsyncButton
-                        >
+                        <ExportModelsButton models={models} class="flex-grow" />
                     {:else if downloadApi}
                         <AsyncButton class="flex-grow" onclick={onDownloadModels}
                             ><Download /> Download {models.length > 1 ? "models" : "model"}</AsyncButton

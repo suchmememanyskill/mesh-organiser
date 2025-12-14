@@ -144,15 +144,22 @@ async fn download_file(
 #[tauri::command]
 async fn open_in_folder(
     model_ids: Vec<i64>,
+    as_zip: bool,
     state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
     let models =
         model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids)
             .await?;
 
-    let (temp_dir, _) =
-        service::export_service::export_to_temp_folder(models, &state.app_state, false, "export")
+    let temp_dir = match as_zip {
+        true => export_service::export_zip_to_temp_folder(models, &state.app_state).await?.temp_dir,
+        false => {
+            let (temp_dir, _) = export_service::export_to_temp_folder(models, &state.app_state, false, "export")
             .await?;
+
+            temp_dir
+        },
+    };
 
     service::open_folder_in_explorer(&temp_dir);
 
