@@ -1,6 +1,10 @@
 import { type Blob, IBlobApi } from "../shared/blob_api";
 
 export class DemoBlobApi implements IBlobApi {
+    getBlobsDownloadUrl(blobs: Blob[]): Promise<string> {
+        throw new Error("Cannot send multiple files to slicer in demo mode.");
+    }
+    
     getBlobDownloadUrl(blob: Blob): Promise<string> {
         return (blob as any)._modelUrl || "";
     }

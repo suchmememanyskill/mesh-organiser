@@ -17,6 +17,12 @@ export class WebBlobApi implements IBlobApi {
         return this.hostUrl + `/api/v1/blobs/${blob.sha256}/download?user_hash=${this.user.syncUrl}&user_id=${this.user.id}`;
     }
 
+    async getBlobsDownloadUrl(blobs: Blob[]): Promise<string> {
+        let data = blobs.map(b => b.sha256);
+        let zipDir = await this.requestApi.request<string>("/blobs/download", HttpMethod.POST, data);
+        return this.hostUrl + `/api/v1/blobs/download/${zipDir}`;
+    }
+
     async getBlobBytes(blob: Blob): Promise<Uint8Array> {
         return await this.requestApi.requestBinary("/blobs/" + blob.sha256 + "/bytes", HttpMethod.GET);
     }

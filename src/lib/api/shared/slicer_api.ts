@@ -41,25 +41,32 @@ export class DefaultSlicerApi implements ISlicerApi {
     }
 
     async openInSlicer(models: Model[]): Promise<void> {
+        let modelUrl;
+
+        console.log(models);
+
         if (models.length === 0) {
             return;
         }
-
-        for (const model of models) {
-            let modelUrl = await this.blobApi.getBlobDownloadUrl(model.blob);
-            let deepLink = slicerNameToDeepLink(configuration.slicer ?? "OrcaSlicer");
-
-            if (deepLink === null) {
-                return;
-            }
-
-            deepLink += encodeURIComponent(modelUrl);
-
-            const link = document.createElement("a");
-            link.href = deepLink;
-            link.click();
-            link.remove();
+        else if (models.length === 1) {
+            modelUrl = await this.blobApi.getBlobDownloadUrl(models[0].blob);
         }
+        else if (models.length > 1) {
+            modelUrl = await this.blobApi.getBlobsDownloadUrl(models.map(m => m.blob));
+        }
+
+        let deepLink = slicerNameToDeepLink(configuration.slicer ?? "OrcaSlicer");
+
+        if (deepLink === null) {
+            return;
+        }
+
+        deepLink += encodeURIComponent(modelUrl!);
+
+        const link = document.createElement("a");
+        link.href = deepLink;
+        link.click();
+        link.remove();
     }
 
     async availableSlicers(): Promise<SlicerEntry[]> {

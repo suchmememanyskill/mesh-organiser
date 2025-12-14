@@ -27,6 +27,10 @@ export class BlobApi implements IBlobApi {
         this.appDataDir = appDataDir;
     }
     
+    getBlobsDownloadUrl(blobs: Blob[]): Promise<string> {
+        throw new Error("Method not implemented.");
+    }
+    
     getBlobDownloadUrl(blob: Blob): Promise<string> {
         throw new Error("Method not implemented.");
     }
