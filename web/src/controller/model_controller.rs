@@ -328,7 +328,6 @@ mod post {
             }
 
             file.flush().await?;
-            file.sync_all().await?;
 
             paths.push(file_path);
         }
