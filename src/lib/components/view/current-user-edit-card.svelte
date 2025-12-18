@@ -36,6 +36,7 @@
 
     let diskUsage = $state<DiskUsageInfo|null>(null);
     let password = $state<string>("");
+    let password2 = $state<string>("");
     let isDesktop = $state<boolean>(false);
 
     const saveUserDebounced = debounce(async (editedUser : User) => {
@@ -77,6 +78,11 @@
 
         if (newPassword.length < 6) {
             toast.error("Password must be at least 6 characters long");
+            return;
+        }
+
+        if (newPassword !== $state.snapshot(password2)) {
+            toast.error("Passwords do not match");
             return;
         }
 
@@ -148,34 +154,40 @@
                 bind:value={currentUser.username} />
         </div>
         {#if !isDesktop}
-        <div class="flex flex-col gap-3">
-            <Label for="email">Email</Label>
+            <div class="flex flex-col gap-3">
+                <Label for="email">Email</Label>
 
-            <Input
-                id="email"
-                type="email"
-                oninput={onUpdateUser}
-                bind:value={currentUser.email} />
-        </div>
-        
-        <Separator class="my-2" />
+                <Input
+                    id="email"
+                    type="email"
+                    oninput={onUpdateUser}
+                    bind:value={currentUser.email} />
+            </div>
+            
+            <Separator class="my-2" />
 
-        <div class="flex flex-col gap-3">
-            <Label for="password">Password</Label>
+            <div class="flex flex-col gap-3">
+                <Label for="password">New password</Label>
 
-            <div class="flex flex-row gap-2">
                 <Input
                     id="password"
                     type="password"
                     bind:value={password} />
 
-                <AsyncButton onclick={changePassword}>Change password</AsyncButton>
+                <Label for="password">Verify new password</Label>
+
+                <Input
+                    id="password2"
+                    type="password"
+                    bind:value={password2} />
+
+                <AsyncButton class="mt-2" onclick={changePassword}>Change password</AsyncButton>
             </div>
-        </div>
-        
-        {#if userTokenApi}
-            <Button class="w-full" variant="destructive" onclick={resetDesktopInstances}>Reset linked desktop instances</Button>
-        {/if}
+            
+            {#if userTokenApi}
+                <Separator class="my-2" />
+                <Button class="w-full" variant="destructive" onclick={resetDesktopInstances}>Reset linked desktop instances</Button>
+            {/if}
         {:else}
             {#if currentUser.syncToken}
                 <Button class="w-full" variant="destructive" onclick={clearSyncState}>Clear sync state</Button>

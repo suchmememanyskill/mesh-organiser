@@ -125,6 +125,8 @@ impl App {
             }
         };
 
+        println!("Password for local account for this session: {}", local_pass);
+
         user_db::edit_user_password(&web_app_state.app_state.db, 1, &local_pass).await?;
         user_db::scramble_validity_token(&web_app_state.app_state.db, 1).await?;
         group_db::delete_dead_groups(&web_app_state.app_state.db).await?;
@@ -201,6 +203,8 @@ impl App {
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
             .await
             .unwrap();
+
+        println!("Server running on port {}", port);
 
         // Ensure we use a shutdown signal to abort the deletion task.
         axum::serve(listener, app.into_make_service())
