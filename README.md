@@ -6,7 +6,7 @@ Competes with your downloads folder for storing 3d models.
 
 ## Install
 
-Download for:
+Download desktop edition for:
 - [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_x64_en-US.msi) (.msi)
 - Macos
     - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_aarch64.dmg)
@@ -15,6 +15,8 @@ Download for:
     - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_amd64.deb) (.deb)
     - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser-1.9.0-1.x86_64.rpm) (.rpm)
     - Note: Only slicers installed via flatpak are supported
+
+See the [Web folder](./web/README.md) for server (Mesh Organiser as website) installation instructions.
 
 See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases) tab for more downloads and release notes
 
