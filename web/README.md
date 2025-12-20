@@ -34,11 +34,11 @@ DATA=/path/to/storage/folder
 
 Create a folder on your host with a `compose.yml` file and `.env` file, containing the contents above. Inside your .env file, change the `LOCAL_ACCOUNT_PASSWORD` variable to anything else (if you need ideas, run `openssl rand -hex 64`). Change the `DATA` variable a path on your host where the data of mesh organiser will live.
 
-Mesh organiser web makes use of a local account as entrypoint for server admins. It is important you do not use the default local account for model organisation. Use the local account only to create and/or manage other accounts in the settings. If you want to give access to user management to other accounts, under the user edit menu you'll find an `Admin user` flag 
+Mesh organiser web makes use of a local account as entrypoint for server admins. It is important you do not use the default local account for model organisation. Use the local account only to create and/or manage other accounts in the settings. If you want to give access to user management to other accounts, under the user edit menu you will find an `Admin user` flag.
 
 If you leave LOCAL_ACCOUNT_PASSWORD commented out, the password will randomise each session of the local user. Check your docker compose logs for the password this session. If you prefer the password to stay permanent, uncomment LOCAL_ACCOUNT_PASSWORD (this will start using the value defined in your .env file).
 
-After you started the mesh organiser web server (with for example `docker compose up -d`), navigate to where the server is hosted in a web browser. You'll be greeted with a login screen. Log in with the following credentials:
+After you started the mesh organiser web server (with for example `docker compose up -d`), navigate to where the server is hosted in a web browser. You will be greeted with a login screen. Log in with the following credentials:
 - Username: `local@noemail.com`
 - Password: (password you either got from the docker compose logs or defined in your .env file)
 
