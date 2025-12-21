@@ -1,10 +1,10 @@
-import { FileType } from '$lib/model';
 import { BufferGeometry, Mesh, ObjectLoader, Group, Matrix4 } from 'three';
-import { mergeGeometries, mergeVertices, toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeGeometries, toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { ThreeMFLoader } from "threejs-webworker-3mf-loader";    
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { fromByteArray, toByteArray } from "base64-js";
+import { FileType } from '$lib/api/shared/blob_api';
 
 
 function convertGeometry(group: Group): BufferGeometry {
@@ -30,22 +30,23 @@ function convertGeometry(group: Group): BufferGeometry {
     return merge;
 }
 
-async function load(address : string, fileType : FileType) : Promise<BufferGeometry | null> {
+export function loadModel(buffer : Uint8Array, fileType : FileType) : BufferGeometry | null {
     let localResult;
 
     if (fileType === FileType.STL) {
         let loader = new STLLoader();
-        localResult = await loader.loadAsync(address);
+        localResult = loader.parse((buffer as any).buffer);
     }
     else if (fileType === FileType.THREEMF) {
         let loader = new ThreeMFLoader();
-        let result = await loader.loadAsync(address);
+        let result = loader.parse((buffer as any).buffer);
 
         localResult = convertGeometry(result);
     }
     else if (fileType === FileType.OBJ) {
         let loader = new OBJLoader();
-        let result = await loader.loadAsync(address);
+        // This is slow!
+        let result = loader.parse(atob(fromByteArray(buffer)));
 
         localResult = convertGeometry(result);
     }
@@ -64,10 +65,10 @@ async function load(address : string, fileType : FileType) : Promise<BufferGeome
 }
 
 self.onmessage = async (e) => {
-    const { address, fileType } = e.data;
+    const { buffer, fileType } = e.data;
 
     try {
-        let geometry = await load(address, fileType);
+        let geometry = loadModel(buffer, fileType);
 
         if (geometry) {
             const position = geometry.attributes.position.array.buffer;

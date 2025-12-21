@@ -1,0 +1,66 @@
+import { currentUser } from "$lib/configuration.svelte";
+import { contain } from "three/src/extras/TextureUtils.js";
+import { getContainer } from "../dependency_injection";
+import { IBlobApi } from "../shared/blob_api";
+import { IDiskUsageInfoApi } from "../shared/disk_usage_info_api";
+import { IGroupApi } from "../shared/group_api";
+import { ILabelApi } from "../shared/label_api";
+import { ILocalApi } from "../shared/local_api";
+import { IModelApi } from "../shared/model_api";
+import { IResourceApi } from "../shared/resource_api";
+import { IServerRequestApi } from "../shared/server_request_api";
+import { DefaultSidebarStateApi, ISidebarStateApi } from "../shared/sidebar_state_api";
+import { ISlicerApi } from "../shared/slicer_api";
+import { ITauriImportApi } from "../shared/tauri_import_api";
+import { IThreemfApi } from "../shared/threemf_api";
+import { IUserApi, IUserManageSelfApi, type User } from "../shared/user_api";
+import { WebBlobApi } from "../web/blob";
+import { WebDiskUsageInfoApi } from "../web/disk_usage_info";
+import { WebGroupApi } from "../web/group";
+import { WebLabelApi } from "../web/label";
+import { WebModelApi } from "../web/model";
+import { WebResourceApi } from "../web/resource";
+import { WebShareApi } from "../web/share";
+import { WebThreemfApi } from "../web/threemf";
+import { WebUserApi } from "../web/user";
+import { WebUserAdminApi } from "../web/user_admin";
+import { OnlineLocalApi } from "./local";
+import { OnlineSlicerApi } from "./slicer";
+import { TauriWebImportApi } from "./tauri_import";
+import { IShareApi } from "../shared/share_api";
+
+export async function initTauriOnlineAccountApi(user : User, hostUrl : string, appDataDir : string) : Promise<void> {
+    const container = getContainer();
+    const requestApi = container.require<IServerRequestApi>(IServerRequestApi);
+    const userApi = new WebUserApi(requestApi);
+    const blob = new WebBlobApi(requestApi, currentUser, hostUrl);
+    const diskUsageInfo = new WebDiskUsageInfoApi(requestApi);
+    const group = new WebGroupApi(requestApi);
+    const label = new WebLabelApi(requestApi);
+    const model = new WebModelApi(requestApi);
+    const resource = new WebResourceApi(requestApi);
+    const sidebarApi = new DefaultSidebarStateApi();
+    const threemf = new WebThreemfApi(requestApi);
+    const userAdmin = new WebUserAdminApi(requestApi, currentUser);
+    const localApi = new OnlineLocalApi(appDataDir, 128, hostUrl, user.id, user.syncUrl!);
+    const slicerApi = new OnlineSlicerApi(hostUrl, user.id, user.syncUrl!);
+    const tauriImportApi = new TauriWebImportApi(requestApi, group);
+    const shareApi = new WebShareApi(requestApi);
+
+    await tauriImportApi.initImportListeners();
+
+    container.addSingleton(IUserApi, userApi);
+    container.addSingleton(IBlobApi, blob);
+    container.addSingleton(IDiskUsageInfoApi, diskUsageInfo);
+    container.addSingleton(IGroupApi, group);
+    container.addSingleton(ILabelApi, label);
+    container.addSingleton(IModelApi, model);
+    container.addSingleton(IResourceApi, resource);
+    container.addSingleton(ISidebarStateApi, sidebarApi);
+    container.addSingleton(IThreemfApi, threemf);
+    container.addSingleton(IUserManageSelfApi, userAdmin);
+    container.addSingleton(ILocalApi, localApi);
+    container.addSingleton(ISlicerApi, slicerApi);
+    container.addSingleton(ITauriImportApi, tauriImportApi);
+    container.addSingleton(IShareApi, shareApi);
+}

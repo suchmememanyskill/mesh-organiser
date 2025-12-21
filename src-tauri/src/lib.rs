@@ -1,42 +1,50 @@
+use crate::tauri_app_state::AccountLinkEmit;
+use crate::tauri_app_state::InitialState;
+use crate::tauri_app_state::TauriAppState;
+use crate::tauri_import_state::import_state_new_tauri;
+use arboard::Clipboard;
+use base64::prelude::*;
+use db::group_db;
+use db::model::Blob;
+use db::{
+    label_db,
+    model::{ModelFlags, Resource, ResourceFlags, User},
+    model_db,
+};
+use db::{model::ModelGroupMeta, user_db};
+use db::{random_hex_32, time_now};
+use error::ApplicationError;
+use serde::{Deserialize, Serialize};
+use service::AppState;
+use service::Configuration;
+use service::StoredConfiguration;
+use service::ThreemfMetadata;
+use service::export_service;
+use service::export_service::get_temp_dir;
+use service::import_state::ImportState;
+use service::stored_to_configuration;
+use service::{download_file_service, import_service, slicer_service::Slicer};
+use service::{threemf_service, thumbnail_service};
+use std::fs::File;
+use std::io::prelude::*;
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
     thread,
 };
-
-use arboard::Clipboard;
-use base64::prelude::*;
-use configuration::Configuration;
-use db::{
-    model::ModelFlags,
-    resource::{Resource, ResourceFlags},
-};
-use error::ApplicationError;
-use serde::Serialize;
-use service::{
-    app_state::{AppState, InitialState, read_configuration},
-    download_file_service, import_service,
-    slicer_service::Slicer,
-};
-use std::fs::File;
-use std::io::prelude::*;
 use strum::IntoEnumIterator;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri::{
     WebviewUrl, WebviewWindowBuilder,
-    async_runtime::block_on,
     menu::{MenuBuilder, SubmenuBuilder},
     webview::{DownloadEvent, PageLoadEvent},
 };
 use urlencoding::decode;
 
-use crate::service::import_state::{ImportState, ImportStatus};
-mod configuration;
-mod db;
+mod api;
 mod error;
-mod service;
-mod util;
-mod web_server;
+mod tauri_app_state;
+mod tauri_import_state;
 
 #[derive(Serialize, Clone)]
 struct DeepLinkEmit {
@@ -45,104 +53,20 @@ struct DeepLinkEmit {
 }
 
 #[tauri::command]
-async fn add_model(
-    path: &str,
-    recursive: bool,
-    delete_imported: bool,
-    origin_url: Option<String>,
-    open_in_slicer: bool,
-    state: State<'_, AppState>,
-    app_handle: AppHandle,
-) -> Result<ImportState, ApplicationError> {
-    let path_clone = String::from(path);
-    let state_clone = state.real_clone();
-    let handle_clone = app_handle.clone();
-    let mut import_state = ImportState::new(origin_url, recursive, delete_imported);
-
-    import_state = tauri::async_runtime::spawn_blocking(move || {
-        let lock = state_clone.import_mutex.lock().unwrap();
-        import_service::import_path(&path_clone, &state_clone, &handle_clone, &mut import_state)?;
-
-        Result::<ImportState, ApplicationError>::Ok(import_state)
-    })
-    .await
-    .unwrap()?;
-
-    let model_ids: Vec<i64> = import_state
-        .imported_models
-        .iter()
-        .flat_map(|f| f.model_ids.clone())
-        .collect();
-    let models = db::model::get_models_by_id(model_ids, &state.db).await;
-    service::thumbnail_service::generate_thumbnails(
-        &models,
-        &state,
-        &app_handle,
-        false,
-        &mut import_state,
-    )
-    .await?;
-
-    if open_in_slicer && models.len() > 0 {
-        if let Some(slicer) = &state.get_configuration().slicer {
-            slicer.open(models, &state)?;
-        }
-    }
-
-    import_state.status = ImportStatus::Finished;
-    Ok(import_state)
-}
-
-#[tauri::command]
-async fn get_models(state: State<'_, AppState>) -> Result<Vec<db::model::Model>, ApplicationError> {
-    let models = db::model::get_models(&state.db).await;
-
-    Ok(models)
-}
-
-#[tauri::command]
-async fn edit_model(
-    model_id: i64,
-    model_name: &str,
-    model_url: Option<&str>,
-    model_description: Option<&str>,
-    model_flags: ModelFlags,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::model::edit_model(
-        model_id,
-        model_name,
-        model_url,
-        model_description,
-        model_flags,
-        &state.db,
-    )
-    .await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_labels(state: State<'_, AppState>) -> Result<Vec<db::label::Label>, ApplicationError> {
-    let labels = db::label::get_labels(&state.db).await;
-
-    Ok(labels)
-}
-
-#[tauri::command]
 async fn get_configuration(
-    state: State<'_, AppState>,
-) -> Result<configuration::Configuration, ApplicationError> {
+    state: State<'_, TauriAppState>,
+) -> Result<Configuration, ApplicationError> {
     Ok(state.get_configuration())
 }
 
 #[tauri::command]
 async fn set_configuration(
     configuration: Configuration,
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
     app_handle: AppHandle,
 ) -> Result<(), ApplicationError> {
-    let deep_link_state_changed = state.write_configuration(&configuration);
+    let mut configuration = configuration;
+    let deep_link_state_changed = state.write_configuration(&mut configuration);
 
     if deep_link_state_changed {
         state.configure_deep_links(&app_handle);
@@ -173,152 +97,13 @@ async fn get_slicers() -> Result<Vec<SlicerEntry>, ApplicationError> {
 
 #[tauri::command]
 async fn update_images(
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
     app_handle: AppHandle,
     overwrite: bool,
 ) -> Result<(), ApplicationError> {
-    service::thumbnail_service::generate_all_thumbnails(&state, &app_handle, overwrite).await?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn delete_model(model_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
-
-    if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from(
-            "Failed to find model to delete",
-        )));
-    }
-
-    let model = &model[0];
-
-    db::model::delete_model(model_id, &state.db).await;
-
-    let model_path =
-        PathBuf::from(state.get_model_dir()).join(format!("{}.{}", model.sha256, model.filetype));
-    let image_path = PathBuf::from(state.get_image_dir()).join(format!("{}.png", model.sha256));
-
-    if model_path.exists() {
-        std::fs::remove_file(model_path)?;
-    }
-
-    if image_path.exists() {
-        std::fs::remove_file(image_path)?;
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn add_label(
-    label_name: &str,
-    label_color: i64,
-    state: State<'_, AppState>,
-) -> Result<i64, ApplicationError> {
-    let id = db::label::create_label(label_name, label_color, &state.db).await;
-
-    Ok(id)
-}
-
-#[tauri::command]
-async fn add_group(group_name: &str, state: State<'_, AppState>) -> Result<i64, ApplicationError> {
-    let id = db::model_group::add_empty_group(group_name, &state.db).await;
-
-    Ok(id)
-}
-
-#[tauri::command]
-async fn add_models_to_group(
-    group_id: i64,
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::model_group::set_group_id_on_models(Some(group_id), model_ids, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_models_from_group(
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::model_group::set_group_id_on_models(None, model_ids, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn ungroup(group_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    db::model_group::remove_group(group_id, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn edit_group(
-    group_id: i64,
-    group_name: &str,
-    group_resource_id: Option<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::model_group::edit_group(group_id, group_name, group_resource_id, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_labels_on_model(
-    label_ids: Vec<i64>,
-    model_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::remove_labels_from_model(model_id, &state.db).await;
-    db::label::add_labels_on_model(label_ids, model_id, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_label_on_models(
-    label_id: i64,
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::remove_label_from_models(label_id, model_ids.clone(), &state.db).await;
-    db::label::add_label_on_models(label_id, model_ids, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_label_from_models(
-    label_id: i64,
-    model_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::remove_label_from_models(label_id, model_ids, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn edit_label(
-    label_id: i64,
-    label_name: &str,
-    label_color: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::edit_label(label_id, label_name, label_color, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn delete_label(label_id: i64, state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    db::label::delete_label(label_id, &state.db).await;
+    let _lock = state.app_state.import_mutex.lock().await;
+    let import_state = &mut import_state_new_tauri(None, false, false, false, &state, &app_handle);
+    thumbnail_service::generate_all_thumbnails(&state.app_state, overwrite, import_state).await?;
 
     Ok(())
 }
@@ -326,19 +111,24 @@ async fn delete_label(label_id: i64, state: State<'_, AppState>) -> Result<(), A
 #[tauri::command]
 async fn open_in_slicer(
     model_ids: Vec<i64>,
-    state: State<'_, AppState>,
+    state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    let models = db::model::get_models_by_id(model_ids, &state.db).await;
+    let models =
+        model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids)
+            .await?;
 
     if let Some(slicer) = &state.get_configuration().slicer {
-        slicer.open(models, &state)?;
+        let (_, paths) = export_service::export_to_temp_folder(models, &state.app_state, true, "open").await?;
+        slicer.open(paths, &state.app_state).await?;
     }
 
     Ok(())
 }
 
 #[tauri::command]
-async fn get_initial_state(state: State<'_, AppState>) -> Result<InitialState, ApplicationError> {
+async fn get_initial_state(
+    state: State<'_, TauriAppState>,
+) -> Result<InitialState, ApplicationError> {
     Ok(state.initial_state.clone())
 }
 
@@ -354,72 +144,92 @@ async fn download_file(
 #[tauri::command]
 async fn open_in_folder(
     model_ids: Vec<i64>,
-    state: State<'_, AppState>,
+    as_zip: bool,
+    state: State<'_, TauriAppState>,
 ) -> Result<(), ApplicationError> {
-    let models = db::model::get_models_by_id(model_ids, &state.db).await;
+    let models =
+        model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids)
+            .await?;
 
-    let (temp_dir, _) =
-        service::export_service::export_to_temp_folder(models, &state, false, "export").unwrap();
+    let temp_dir = match as_zip {
+        true => export_service::export_zip_to_temp_folder(models, &state.app_state).await?.temp_dir,
+        false => {
+            let (temp_dir, _) = export_service::export_to_temp_folder(models, &state.app_state, false, "export")
+            .await?;
 
-    crate::util::open_folder_in_explorer(temp_dir.to_str().unwrap());
+            temp_dir
+        },
+    };
+
+    service::open_folder_in_explorer(&temp_dir);
 
     Ok(())
 }
 
 #[tauri::command]
-async fn remove_dead_groups(state: State<'_, AppState>) -> Result<(), ApplicationError> {
-    db::model_group::remove_dead_groups(&state.db).await;
+async fn get_theemf_metadata(
+    model_id: i64,
+    state: State<'_, TauriAppState>,
+) -> Result<ThreemfMetadata, ApplicationError> {
+    let model = model_db::get_models_via_ids(
+        &state.app_state.db,
+        &state.get_current_user(),
+        vec![model_id],
+    )
+    .await?;
 
-    Ok(())
+    let metadata = threemf_service::extract_metadata(&model[0], &state.app_state).await?;
+
+    Ok(metadata)
 }
 
 #[tauri::command]
-async fn compute_model_folder_size(state: State<'_, AppState>) -> Result<u64, ApplicationError> {
-    let size = util::get_folder_size(&state.get_model_dir());
+async fn extract_threemf_models(
+    model_id: i64,
+    state: State<'_, TauriAppState>,
+) -> Result<ModelGroupMeta, ApplicationError> {
+    let model = model_db::get_models_via_ids(
+        &state.app_state.db,
+        &state.get_current_user(),
+        vec![model_id],
+    )
+    .await?;
+
+    let mut import_state =
+        threemf_service::extract_models(&model[0], &state.get_current_user(), &state.app_state)
+            .await?;
+
+    let model_ids: Vec<i64> = import_state
+        .imported_models
+        .iter()
+        .flat_map(|f| f.model_ids.clone())
+        .collect();
+
+    let models =
+        model_db::get_models_via_ids(&state.app_state.db, &state.get_current_user(), model_ids)
+            .await?;
+    let blobs: Vec<&Blob> = models.iter().map(|m| &m.blob).collect();
+
+    thumbnail_service::generate_thumbnails(&blobs, &state.app_state, false, &mut import_state)
+        .await?;
+
+    Ok(ModelGroupMeta {
+        id: import_state.imported_models[0].group_id.unwrap(),
+        name: import_state.imported_models[0].group_name.clone().unwrap(),
+        created: time_now(),
+        last_modified: time_now(),
+        resource_id: None,
+        unique_global_id: random_hex_32(),
+    })
+}
+
+#[tauri::command]
+async fn compute_model_folder_size(
+    state: State<'_, TauriAppState>,
+) -> Result<u64, ApplicationError> {
+    let size = service::get_folder_size(&state.get_model_dir());
 
     Ok(size)
-}
-
-#[tauri::command]
-async fn get_model_as_base64(
-    model_id: i64,
-    state: State<'_, AppState>,
-) -> Result<String, ApplicationError> {
-    let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
-
-    if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from(
-            "Failed to find model to delete",
-        )));
-    }
-
-    let model = &model[0];
-
-    let bytes = service::export_service::get_bytes_from_model(model, &state).unwrap();
-    let base64 = BASE64_STANDARD.encode(bytes);
-
-    Ok(base64)
-}
-
-#[tauri::command]
-async fn get_model_bytes(
-    model_id: i64,
-    state: State<'_, AppState>,
-) -> Result<Vec<u8>, ApplicationError> {
-    let model = db::model::get_models_by_id(vec![model_id], &state.db).await;
-
-    if model.len() <= 0 {
-        return Err(ApplicationError::InternalError(String::from(
-            "Failed to find model to delete",
-        )));
-    }
-
-    let model = &model[0];
-
-
-    let bytes = service::export_service::get_bytes_from_model(model, &state).unwrap();
-
-    Ok(bytes)
 }
 
 #[derive(Serialize, Clone)]
@@ -549,13 +359,22 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
         }
     })
     .on_download(|f, event| {
-        if let DownloadEvent::Requested { url, destination } = &event {
+        if let DownloadEvent::Requested {
+            url,
+            destination: _,
+        } = &event
+        {
             println!("Download started: {:?}", url);
             let _ = f.app_handle().emit("download-started", url).unwrap();
             let _ = f.window().set_title("Downloading model...");
         }
 
-        if let DownloadEvent::Finished { url, path, success } = event {
+        if let DownloadEvent::Finished {
+            url: _,
+            path,
+            success,
+        } = event
+        {
             if path.is_some() && success {
                 let path = path.unwrap();
                 let handle = f.app_handle();
@@ -580,130 +399,6 @@ async fn new_window_with_url(url: &str, app_handle: AppHandle) -> Result<(), App
     .build()?;
 
     Ok(())
-}
-
-#[tauri::command]
-async fn add_childs_to_label(
-    parent_label_id: i64,
-    child_label_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::add_childs_to_label(parent_label_id, child_label_ids, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_childs_from_label(
-    parent_label_id: i64,
-    child_label_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::remove_childs_from_label(parent_label_id, child_label_ids, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_childs_on_label(
-    parent_label_id: i64,
-    child_label_ids: Vec<i64>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label::remove_all_childs_from_label(parent_label_id, &state.db).await;
-    db::label::add_childs_to_label(parent_label_id, child_label_ids, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_resources(state: State<'_, AppState>) -> Result<Vec<Resource>, ApplicationError> {
-    let resources = db::resource::get_resources(&state.db).await;
-
-    Ok(resources)
-}
-
-#[tauri::command]
-async fn add_resource(
-    resource_name: &str,
-    state: State<'_, AppState>,
-) -> Result<i64, ApplicationError> {
-    let id = db::resource::add_resource(resource_name, &state.db).await;
-
-    Ok(id)
-}
-
-#[tauri::command]
-async fn edit_resource(
-    resource_id: i64,
-    resource_name: &str,
-    resource_flags: ResourceFlags,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::resource::edit_resource(resource_id, resource_name, resource_flags, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn remove_resource(
-    resource_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    let resource = db::resource::get_resource_by_id(resource_id, &state.db).await;
-
-    if resource.is_none() {
-        return Err(ApplicationError::InternalError(String::from(
-            "Resource not found",
-        )));
-    }
-
-    let resource = resource.unwrap();
-
-    service::resource_service::delete_resource_folder(&resource, &state).await?;
-    db::resource::delete_resource(resource.id, &state.db).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn open_resource_folder(
-    resource_id: i64,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    let resource = db::resource::get_resource_by_id(resource_id, &state.db).await;
-
-    if resource.is_none() {
-        return Err(ApplicationError::InternalError(String::from(
-            "Resource not found",
-        )));
-    }
-
-    let resource = resource.unwrap();
-
-    service::resource_service::open_resource_folder(&resource, &state).await?;
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_keywords_on_label(
-    label_id: i64,
-    keywords: Vec<String>,
-    state: State<'_, AppState>,
-) -> Result<(), ApplicationError> {
-    db::label_keywords::set_keywords_for_label(&state.db, label_id, keywords).await;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_keywords_for_label(
-    label_id: i64,
-    state: State<'_, AppState>,
-) -> Result<Vec<db::label_keywords::LabelKeyword>, ApplicationError> {
-    let keywords = db::label_keywords::get_keywords_for_label(&state.db, label_id).await;
-
-    Ok(keywords)
 }
 
 fn extract_deep_link(data: &str) -> Option<String> {
@@ -733,6 +428,26 @@ fn extract_deep_link(data: &str) -> Option<String> {
             let decode = decode(&encoded).unwrap();
 
             return Some(String::from(decode));
+        }
+    }
+
+    None
+}
+
+fn extract_account_link_via_deep_link(data: &str) -> Option<AccountLinkEmit> {
+    let possible_starts = vec![
+        "meshorganiser://link_account/?",
+        "meshorganiser://link_account?",
+    ];
+
+    for start in possible_starts {
+        if data.starts_with(start) {
+            let encoded = data[start.len()..].to_string();
+
+            match serde_html_form::from_str::<AccountLinkEmit>(&encoded) {
+                Ok(e) => return Some(e),
+                Err(_) => return None,
+            };
         }
     }
 
@@ -771,6 +486,24 @@ fn remove_temp_paths() -> Result<(), ApplicationError> {
     Ok(())
 }
 
+pub fn read_configuration(app_data_path: &str) -> Configuration {
+    let path = PathBuf::from(app_data_path);
+    let path = path.join("settings.json");
+
+    if !path.exists() {
+        return Configuration {
+            data_path: String::from(app_data_path),
+            ..Default::default()
+        };
+    }
+
+    let json = std::fs::read_to_string(path).expect("Failed to read configuration");
+
+    let stored_configuration: StoredConfiguration =
+        serde_json::from_str(&json).expect("Failed to parse configuration");
+    return stored_to_configuration(stored_configuration);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     thread::spawn(move || {
@@ -778,6 +511,7 @@ pub fn run() {
     });
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -787,11 +521,17 @@ pub fn run() {
             if argv.len() == 2
             {
                 let deep_link = extract_deep_link(&argv[1]);
+                let account_link = extract_account_link_via_deep_link(&argv[1]);
 
                 if let Some(deep_link) = deep_link
                 {
                     println!("Emitting deep link {:?}", deep_link);
                     _app.emit("deep-link", DeepLinkEmit { download_url: deep_link, source_url: None } ).unwrap();
+                }
+                else if let Some(account_link) = account_link
+                {
+                    println!("Emitting account link");
+                    _app.emit("account-link", account_link ).unwrap();
                 }
                 else
                 {
@@ -816,7 +556,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_shell::init())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
                 if window.label() == "main" {
@@ -860,7 +599,9 @@ pub fn run() {
 
                 let config = read_configuration(&app_data_path);
 
-                let db = db::db::setup_db(&config, &app_data_path).await;
+                let sqlite_path = PathBuf::from(&config.data_path).join("db.sqlite");
+                let sqlite_backup_dir = PathBuf::from(&config.data_path).join("backups");
+                let db = db::db_context::setup_db(&sqlite_path, &sqlite_backup_dir).await;
 
                 let mut initial_state = InitialState {
                     deep_link_url: None,
@@ -868,6 +609,7 @@ pub fn run() {
                         .unwrap_or(std::num::NonZeroUsize::new(6).unwrap())
                         .get(),
                     collapse_sidebar: config.collapse_sidebar,
+                    account_link: None,
                 };
 
                 let argv = std::env::args();
@@ -876,73 +618,109 @@ pub fn run() {
                 {
                     let arg = argv.skip(1).next().unwrap();
                     let deep_link = extract_deep_link(&arg);
+                    let account_link = extract_account_link_via_deep_link(&arg);
 
                     if let Some(deep_link) = deep_link
                     {
                         initial_state.deep_link_url = Some(deep_link);
                     }
+
+                    if let Some(account_link) = account_link
+                    {
+                        initial_state.account_link = Some(account_link);
+                    }
                 }
 
-                let state = AppState {
-                    db: Arc::new(db),
-                    configuration: Mutex::new(config),
+                let user = user_db::get_user_by_id(&db, config.last_user_id).await.ok().flatten().unwrap_or(User::default());
+
+                let state = TauriAppState {
+                    app_state: AppState {
+                        db: Arc::new(db),
+                        configuration: Mutex::new(config),
+                        import_mutex: Arc::new(tokio::sync::Mutex::new(())),
+                        app_data_path: app_data_path,
+                    },
                     initial_state: initial_state,
-                    app_data_path: app_data_path,
-                    import_mutex: Arc::new(Mutex::new(())),
+                    current_user: Arc::new(Mutex::new(user)),
                 };
+
+                {
+                    let app_state = state.app_state.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let _ = group_db::delete_dead_groups(&app_state.db).await;
+                        let _ = export_service::delete_dead_blobs(&app_state).await;
+                    });
+                }
 
                 state.configure_deep_links(&app.handle());
 
                 app.manage(state);
-
-                let handle = app.handle().clone();
-
-                thread::spawn(move || {
-                    web_server::init(handle).unwrap();
-                });               
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            add_model,
-            get_models,
-            get_labels,
-            edit_model,
-            delete_model,
-            add_label,
-            ungroup,
-            edit_group,
-            set_labels_on_model,
+            api::add_model,
+            api::get_models,
+            api::get_labels,
+            api::edit_model,
+            api::delete_model,
+            api::add_label,
+            api::ungroup,
+            api::edit_group,
+            api::set_labels_on_model,
             open_in_slicer,
             get_initial_state,
             download_file,
             open_in_folder,
-            set_label_on_models,
-            remove_label_from_models,
-            add_group,
-            add_models_to_group,
-            remove_models_from_group,
-            remove_dead_groups,
-            edit_label,
-            delete_label,
+            api::set_label_on_models,
+            api::remove_label_from_models,
+            api::add_group,
+            api::add_models_to_group,
+            api::remove_models_from_group,
+            api::delete_models,
+            api::edit_label,
+            api::delete_label,
+            api::set_sync_state,
+            api::unset_sync_state,
             update_images,
             get_slicers,
             set_configuration,
             get_configuration,
             compute_model_folder_size,
             new_window_with_url,
-            get_model_as_base64,
-            add_childs_to_label,
-            remove_childs_from_label,
-            set_childs_on_label,
-            get_resources,
-            add_resource,
-            edit_resource,
-            remove_resource,
-            open_resource_folder,
-            set_keywords_on_label,
-            get_keywords_for_label,
-            get_model_bytes,
+            api::add_childs_to_label,
+            api::remove_childs_from_label,
+            api::set_childs_on_label,
+            api::get_resources,
+            api::add_resource,
+            api::edit_resource,
+            api::remove_resource,
+            api::open_resource_folder,
+            api::set_keywords_on_label,
+            api::get_keywords_for_label,
+            api::get_model_bytes,
+            api::get_blob_bytes,
+            api::get_current_user,
+            api::set_current_user,
+            api::get_users,
+            api::add_user,
+            api::edit_user,
+            api::delete_user,
+            api::get_groups,
+            api::set_resource_on_group,
+            api::get_group_count,
+            api::get_model_count,
+            api::get_groups_for_resource,
+            api::get_model_disk_space_usage,
+            get_theemf_metadata,
+            extract_threemf_models,
+            api::download_files_and_open_in_folder,
+            api::download_files_and_open_in_slicer,
+            api::expand_paths,
+            api::get_file_bytes,
+            api::upload_models_to_remote_server,
+            api::blobs_to_path,
+            api::set_last_sync_time,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -951,8 +729,8 @@ pub fn run() {
         if let tauri::RunEvent::ExitRequested { .. } = e {
             // Close sqlite db
             tauri::async_runtime::block_on(async move {
-                let app_state = _app_handle.state::<AppState>();
-                app_state.db.close().await;
+                let app_state = _app_handle.state::<TauriAppState>();
+                app_state.app_state.db.close().await;
             });
         }
     });

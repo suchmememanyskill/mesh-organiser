@@ -9,14 +9,10 @@
     import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";
 
-    import type { Group } from "$lib/model";
-
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { ungroup, editGroup, openInSlicer, openInFolder, editModel, addResource, openResourceFolder } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
-    import { data, updateState } from "$lib/data.svelte";
     import Ungroup from "@lucide/svelte/icons/ungroup";
     import LinkButton from "$lib/components/view/link-button.svelte";
     import Button from "../ui/button/button.svelte";
@@ -24,39 +20,56 @@
     import NotebookText from "@lucide/svelte/icons/notebook-text";
     import NotebookPen from "@lucide/svelte/icons/notebook-pen";
     import Edit from "@lucide/svelte/icons/edit";
+    import { type Group, IGroupApi } from "$lib/api/shared/group_api";
+    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/resource_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { IModelApi } from "$lib/api/shared/model_api";
+    import { IResourceFolderApi } from "$lib/api/shared/resource_folder_api";
+    import { onMount } from "svelte";
+    import { configurationMeta } from "$lib/configuration.svelte";
 
-    const props: { group: Group; class?: ClassValue; settingsVertical?: boolean } = $props();
+    interface Function {
+        (): void;
+    }
+
+    const props: { group: Group; class?: ClassValue; settingsVertical?: boolean, onDelete?: Function } = $props();
     const tracked_group = $derived(props.group);
     let deleted = $state(false);
     let editMode = $state(!props.settingsVertical);
     
-    const relevant_group = $derived(data.grouped_entries.find(x => x.group.id === tracked_group.id));  
     const links = $derived.by(() => {
-        if (!relevant_group) 
+        if (!tracked_group) 
         {
             return [];
         }
 
-        return relevant_group.models
+        return tracked_group.models
             .map(x => x.link)
             .filter(x => x)
             .filter((value, index, self) => self.indexOf(value) === index);
     });
-    let link = $derived(links.length === 1 ? links[0]! : "");
+
+    let link = $derived(links.length === 1 ? links[0]! : null);
     let link_disabled = $derived(links.length > 1);
-    let resource = $derived(data.resources.find(r => r.id === tracked_group.resourceId));
+    let resource = $derived(tracked_group.resource);
+    let availableResources = $state<ResourceMeta[]>([]);
+    const groupApi = getContainer().require<IGroupApi>(IGroupApi);
+    const modelApi = getContainer().require<IModelApi>(IModelApi);
+    const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
+    const resourceFolderApi = getContainer().optional<IResourceFolderApi>(IResourceFolderApi);
 
     async function onUngroup() {
-        await ungroup($state.snapshot(tracked_group));
-        await updateState();
+        await groupApi.deleteGroup(tracked_group.meta);
+        await updateSidebarState();
+        props.onDelete?.();
         deleted = true;
     }
 
     const save_group_debounced = debounce(async (edited_group: Group) => {
         console.log("Saving Group");
         console.log(edited_group);
-        await editGroup(edited_group);
-        await updateState();
+        await groupApi.editGroup(edited_group.meta);
     }, 1000);
 
     function onUpdateGroup()
@@ -65,23 +78,19 @@
         save_group_debounced(snapshot);
     }
 
+    async function onUpdateResource()
+    {
+        await resourceApi.setResourceOnGroup(resource, tracked_group.meta.id);
+    }
+
     const save_link_on_models_debounced = debounce(async (group : Group, link : string) => {
         console.log("Saving Link on Models");
 
-        const relevant_group = $state.snapshot(data.grouped_entries).find(x => x.group.id === group.id);
-
-        if (!relevant_group)
+        for (const model of group.models)
         {
-            return;
+            model.link = link;
+            await modelApi.editModel(model);
         }
-
-        for (let i = 0; i < relevant_group.models.length; i++)
-        {
-            relevant_group.models[i].link = link;
-            await editModel(relevant_group.models[i]);
-        }
-
-        await updateState();
     }, 1000);
 
 
@@ -94,38 +103,39 @@
 
     async function onNewResource()
     {
-        let snapshot = $state.snapshot(tracked_group);   
-        let resource = await addResource(tracked_group.name);
-        snapshot.resourceId = resource.id;
-        await editGroup(snapshot);
-        await updateState();
+        let newResource = await resourceApi.addResource(tracked_group.meta.name);
+        tracked_group.resource = newResource;
+        await resourceApi.setResourceOnGroup(newResource, tracked_group.meta.id);
+        await updateSidebarState();
+        availableResources.push(newResource);
     }
 
     async function openResourceInFolder()
     {
-        if (resource) {
-            await openResourceFolder(resource);
+        let resourceFolderApi = getContainer().optional<IResourceFolderApi>(IResourceFolderApi);
+        if (resource && resourceFolderApi) {
+            await resourceFolderApi.openResourceFolder(resource);
         }
     }
+
+    onMount(async () => {
+        availableResources = await resourceApi.getResources();
+    });
 </script>
 
-{#if deleted}
-    <div class="flex justify-center items-center h-64">
-        <span class="text-2xl">Group Deleted</span>
-    </div>
-{:else}
+{#if !deleted}
     <Card class={props.class}>
         <CardHeader class="relative">
             <div class="{props.settingsVertical ? "grid grid-cols-1 mr-10" : "flex flex-row"} gap-2">
-                <CardTitle>Group '{tracked_group.name}'</CardTitle>
-                <p class="ml-2 text-xs font-thin my-auto">Created {tracked_group.createdAt.toLocaleDateString()}</p>
+                <CardTitle>Group '{tracked_group.meta.name}'</CardTitle>
+                <p class="ml-2 text-xs font-thin my-auto">Created {tracked_group.meta.created.toLocaleDateString()}</p>
                 {#if !!resource}
                     <p class="ml-2 text-xs font-thin my-auto">Part of project '{resource.name}'</p>
                 {/if}
             </div>
             
             <div class="absolute right-0 top-5 mr-8">
-                {#if editMode}
+                {#if editMode && !configurationMeta.applicationReadOnly}
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger>
                             <Ellipsis />
@@ -136,13 +146,13 @@
                             </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
-                {:else}
+                {:else if !configurationMeta.applicationReadOnly}
                     <Button size="sm" class="widthhack" variant="ghost" onclick={() => editMode = true}><Edit /></Button>
                 {/if}
             </div>
         </CardHeader>
         <CardContent class="text-sm">
-            {#if editMode}
+            {#if editMode && !configurationMeta.applicationReadOnly}
                 {@render EditContent()}
             {:else}
                 {@render ViewContent()}
@@ -152,9 +162,11 @@
 {/if}
 
 {#snippet ViewContent()}
-    <div class="grid grid-cols-2 gap-4">
-        <LinkButton link={link} visible={true} />
-        <Button disabled={!tracked_group.resourceId} onclick={openResourceInFolder}><NotebookText /> Open project</Button>
+    <div class="flex flex-row gap-4">
+        <LinkButton class="grow" link={link} visible={!(link_disabled || link === null)} withFallback={true} />
+        {#if resourceFolderApi}
+            <Button class="grow" disabled={!resource} onclick={openResourceInFolder}><NotebookText /> Open project</Button>
+        {/if}
     </div>
 {/snippet}
 
@@ -166,7 +178,7 @@
                 id="name"
                 placeholder="Name of the model"
                 oninput={onUpdateGroup}
-                bind:value={tracked_group.name}
+                bind:value={tracked_group.meta.name}
             />
         </div>
         <div class="flex flex-col space-y-1.5">
@@ -198,13 +210,13 @@
         <div class="flex flex-col space-y-1.5">
             <Label>Project</Label>
             <div class="flex flex-row gap-2">
-                <ResourceSelect clazz="truncate flex-grow" onchange={onUpdateGroup} availableResources={data.resources.filter(x => !x.flags.completed || x.id === tracked_group.resourceId)} bind:value={
-                    () => data.resources.find(r => r.id === tracked_group.resourceId) || null,
-                    (val) => tracked_group.resourceId = val?.id || null
+                <ResourceSelect clazz="truncate flex-grow" onchange={onUpdateResource} availableResources={availableResources} bind:value={
+                    () => availableResources.find(r => r.id === resource?.id) || null,
+                    (val) => tracked_group.resource = val
                 } />
-                {#if tracked_group.resourceId}
+                {#if resource}
                     <Button class="h-full" onclick={openResourceInFolder}><NotebookText /> Open project</Button>
-                {:else}
+                {:else if resourceFolderApi}
                     <Button class="h-full" onclick={onNewResource}><NotebookPen /> Create project</Button>
                 {/if}
             </div>

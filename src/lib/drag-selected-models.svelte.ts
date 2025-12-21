@@ -1,8 +1,9 @@
 import { toast } from "svelte-sonner";
-import type { LabelMin, Model } from "./model";
-import { setLabelOnModels } from "./tauri";
 import { countWriter } from "$lib/utils";
-import { data, updateState } from "$lib/data.svelte";
+import type { Model } from "./api/shared/model_api";
+import { ILabelApi, type LabelMeta } from "./api/shared/label_api";
+import { getContainer } from "./api/dependency_injection";
+import { sidebarState, updateSidebarState } from "./sidebar_data.svelte";
 
 export const state = $state({
     dragging_models : [] as Model[],
@@ -21,9 +22,10 @@ export function stopDragging() {
     console.log("Stopped dragging");
 }
 
-export async function addModelsToLabel(label: LabelMin) {
+export async function addModelsToLabel(label: LabelMeta) {
+    const labelApi = getContainer().require<ILabelApi>(ILabelApi);
     const models = $state.snapshot(state.dragging_models);
-    let promise = setLabelOnModels(models, label);
+    let promise = labelApi.addLabelToModels(label, models);
 
     toast.promise(
         promise,
@@ -36,14 +38,14 @@ export async function addModelsToLabel(label: LabelMin) {
     );
 
     await promise;
-    await updateState();
+    await updateSidebarState();
 }
 
 export async function addModelsToLabelId(label_id: number) {
-    let label = $state.snapshot(data.labels.find(l => l.label.id === label_id));
+    let label = $state.snapshot(sidebarState.labels.find(l => l.meta.id === label_id));
 
     if (label)
     {
-        await addModelsToLabel(label.label);
+        await addModelsToLabel(label.meta);
     }
 }

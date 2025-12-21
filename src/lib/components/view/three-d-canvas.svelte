@@ -1,61 +1,27 @@
 <script lang="ts">
-    import type { Group, Model, ModelWithGroup } from "$lib/model";
-    import { FileType } from "$lib/model";
     import type { ClassValue } from "svelte/elements";
 
     import { Canvas } from "@threlte/core";
-    import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
-    import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader.js";
-    import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-    import { toByteArray } from "base64-js";
-    import LoaderCircle from "@lucide/svelte/icons/loader-circle";
     import {
-        BufferGeometry,
-        Mesh,
-        ObjectLoader,
-        Group as GGroup,
-        Matrix4,
-        BufferGeometryLoader,
         BufferAttribute,
+        BufferGeometry
     } from "three";
-    import {
-        mergeGeometries,
-        toCreasedNormals,
-    } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { FileType, IBlobApi } from "$lib/api/shared/blob_api";
+    import type { Model } from "$lib/api/shared/model_api";
     import ThreeScene from "$lib/components/view/three-d-scene.svelte";
-    import { getModelAsBase64, getModelBytes } from "$lib/tauri";
+    import { configuration } from "$lib/configuration.svelte";
+    import { loadModel } from "$lib/workers/parseModelWorker";
     import { untrack } from "svelte";
-    import { c } from "$lib/data.svelte";
+    import Spinner from "./spinner.svelte";
 
-    const props: { model: Model; class?: ClassValue } = $props();
+    const props: { model: Model; class?: ClassValue, autoRotate?: boolean } = $props();
     let geometry: BufferGeometry | null = $state.raw(null);
     let lastLoadId = -1;
 
-    function convertGeometry(group: GGroup): BufferGeometry {
-        let geometries: BufferGeometry[] = [];
-        group.updateMatrixWorld(true);
-
-        group.traverse((object) => {
-            if (object instanceof Mesh) {
-                let mesh = object as Mesh;
-                let clone = mesh.geometry.clone();
-                clone.applyMatrix4(mesh.matrixWorld);
-                geometries.push(clone.index ? clone.toNonIndexed() : clone);
-            }
-        });
-
-        var merge = mergeGeometries(geometries, false);
-
-        geometries.forEach((geometry) => {
-            geometry.dispose();
-        });
-
-        return merge;
-    }
-
     async function loadUsingWorker(
-        address: string,
+        buffer: Uint8Array,
         fileType: FileType,
     ): Promise<BufferGeometry | null> {
         const worker = new Worker(
@@ -101,8 +67,11 @@
                 }
             };
 
-            let obj = { address, fileType };
-            worker.postMessage(obj);
+            let obj = { buffer, fileType };
+            console.log(obj);
+            console.log(buffer, buffer instanceof ArrayBuffer);
+            worker.postMessage(obj, [buffer.buffer]);
+            console.log(obj);
         });
     }
 
@@ -111,39 +80,17 @@
         geometry = null;
         localGeometry?.dispose();
         localGeometry = null;
+        let blobApi = getContainer().require<IBlobApi>(IBlobApi);
+        let bytes = await blobApi.getBlobBytes(model.blob);
 
         if (model.id !== props.model.id) {
             return;
         }
 
-        let address = "http://127.0.0.1:35615/models/" + model.id;
-        if (c.configuration.use_worker_for_model_parsing) {
-            localGeometry = await loadUsingWorker(address, model.filetype);
+        if (configuration.use_worker_for_model_parsing) {
+            localGeometry = await loadUsingWorker(bytes, model.blob.filetype);
         } else {
-            if (model.filetype === FileType.STL) {
-                let loader = new STLLoader();
-                localGeometry = await loader.loadAsync(address);
-            } else if (model.filetype === FileType.THREEMF) {
-                let loader = new ThreeMFLoader();
-                let result = await loader.loadAsync(address);
-
-                localGeometry = convertGeometry(result);
-            } else if (model.filetype === FileType.OBJ) {
-                let loader = new OBJLoader();
-                let result = await loader.loadAsync(address);
-
-                localGeometry = convertGeometry(result);
-            }
-
-            if (localGeometry) {
-                if (!localGeometry.attributes.normal) {
-                    localGeometry.computeVertexNormals();
-                }
-
-                localGeometry.computeBoundingSphere();
-                localGeometry.center();
-                localGeometry.rotateX(Math.PI / -2);
-            }
+            localGeometry = loadModel(bytes, model.blob.filetype);
         }
 
         if (model.id === props.model.id) {
@@ -171,31 +118,14 @@
 <div class={props.class}>
     {#if geometry}
         <Canvas>
-            <ThreeScene {geometry} />
+            <ThreeScene {geometry} autoRotate={props.autoRotate} />
         </Canvas>
     {:else}
         <div
             class="m-auto flex flex-col justify-center items-center gap-3 h-full"
         >
             <span class="text-xl">Loading model...</span>
-            <div class="animate">
-                <LoaderCircle class="h-10 w-10" />
-            </div>
+            <Spinner />
         </div>
     {/if}
 </div>
-
-<style>
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .animate {
-        animation: spin 1s linear infinite;
-    }
-</style>

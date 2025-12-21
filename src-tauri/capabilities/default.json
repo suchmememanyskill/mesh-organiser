@@ -11,27 +11,17 @@
     "dialog:allow-open",
     "dialog:allow-confirm",
     "deep-link:default",
-    "shell:allow-open",
-    "shell:default",
     "core:window:allow-set-focus",
     "core:window:allow-unminimize",
     "core:webview:allow-set-webview-zoom",
     "os:allow-platform",
     {
-      "identifier": "fs:allow-exists",
-      "allow": [{ "path": "$APPDATA/custom.css" }]
+      "identifier": "fs:allow-watch",
+      "allow": ["$DOWNLOAD", "$DOWNLOAD/*.stl", "$DOWNLOAD/*.3mf", "$DOWNLOAD/*.obj", "$DOWNLOAD/*.step", "$DOWNLOAD/*.gcode"]
     },
     {
-      "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "$APPDATA/custom.css" }]
-    },
-    {
-      "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "$APPDATA/custom.css" }]
-    },
-    {
-      "identifier": "opener:allow-open-path",
-      "allow": [{ "path": "$APPDATA/custom.css" }]
+      "identifier": "http:default",
+      "allow": [{"url": "https://*"}, {"url": "http://*:3000"}]
     }
   ]
 }

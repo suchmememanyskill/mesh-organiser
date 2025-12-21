@@ -1,11 +1,16 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { getVersion } from '@tauri-apps/api/app';
+    import { getContainer } from '$lib/api/dependency_injection';
+    import { IHostApi } from '$lib/api/shared/host_api';
 
     let version = $state("");
   
     onMount(async () => {
-        version = await getVersion();
+        let hostApi = getContainer().optional<IHostApi>(IHostApi);
+        if (hostApi) {
+            version = await hostApi.getVersion();
+        }
     });
 </script>
 

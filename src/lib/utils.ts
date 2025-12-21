@@ -1,12 +1,14 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { FileType, type Configuration, type Model, type ModelWithGroup } from "./model";
+import type { Configuration } from "./api/shared/settings_api";
+import type { Model } from "./api/shared/model_api";
+import { FileType } from "./api/shared/blob_api";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export const debounce = (callback: any, wait: number) => {
+export const debounce = (callback: any, timeMs: number) => {
     let timeoutId: any = null;
 
     return (...args: any[]) => {
@@ -14,7 +16,7 @@ export const debounce = (callback: any, wait: number) => {
 
         timeoutId = window.setTimeout(() => {
             callback.apply(null, args);
-        }, wait);
+        }, timeMs);
     };
 }
 
@@ -30,20 +32,16 @@ export function toReadableSize(size: number) {
     return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-export function instanceOfModelWithGroup(object: any): object is ModelWithGroup {
-    return 'group' in object;
-}
-
 export function countWriter(type: string, groups: any[]): string {
     return `${groups.length} ${type}${groups.length === 1 ? "" : "s"}`;
 }
 
 export function loadModelAutomatically(configuration: Configuration, model: Model): boolean {
-    let modelSizeInMb = model.size / 1024 / 1024;
+    let modelSizeInMb = model.blob.size / 1024 / 1024;
 
     let maxSize = 0;
 
-    switch (model.filetype) {
+    switch (model.blob.filetype) {
         case FileType.STL:
             maxSize = configuration.max_size_model_stl_preview;
             break;
@@ -59,16 +57,16 @@ export function loadModelAutomatically(configuration: Configuration, model: Mode
 }
 
 export function isModelPreviewable(model: Model): boolean {
-    return model.filetype === FileType.STL 
-        || model.filetype === FileType.OBJ 
-        || model.filetype === FileType.THREEMF;
+    return model.blob.filetype === FileType.STL 
+        || model.blob.filetype === FileType.OBJ 
+        || model.blob.filetype === FileType.THREEMF;
 }
 
 export function isModelSlicable(model: Model): boolean {
-    return model.filetype === FileType.STL 
-        || model.filetype === FileType.OBJ 
-        || model.filetype === FileType.THREEMF
-        || model.filetype === FileType.STEP;
+    return model.blob.filetype === FileType.STL 
+        || model.blob.filetype === FileType.OBJ 
+        || model.blob.filetype === FileType.THREEMF
+        || model.blob.filetype === FileType.STEP;
 }
 
 export function fileTypeToDisplayName(fileType: FileType): string {
@@ -100,5 +98,53 @@ export function fileTypeToColor(fileType: FileType): string {
             return "text-black bg-orange-400 hover:bg-orange-500";
         default:
             return "text-black bg-gray-300 hover:bg-gray-400";
+    }
+}
+
+export function nameCollectionOfModels(models: Model[]): string {
+    let set = new Set<number>(models.map(x => x.group?.id ?? -1));
+    if (set.size === 1 && !set.has(-1)) {
+        return models[0].group!.name
+    }
+
+    let str = models.slice(0, 5).map(x => x.name).join("+");
+
+    if (models.length > 5) {
+        str += `+${models.length - 5} more...`;
+    }
+
+    return str;
+}
+
+export function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function dateToString(date: Date): string {
+    let isoString = date.toISOString();
+    if (isoString.includes('.')) {
+      return isoString.split('.')[0] + 'Z';
+    }
+    
+    return isoString;
+}
+
+export function timeSinceDate(date: Date): string {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+        return `${days} day${days === 1 ? '' : 's'} ago`;
+    }
+    else if (hours > 0) {
+        return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    }
+    else if (minutes > 0) {
+        return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    }
+    else {
+        return `${seconds} second${seconds === 1 ? '' : 's'} ago`;
     }
 }

@@ -1,6 +1,12 @@
 <script lang="ts">
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { IModelApi, ModelStreamManager } from "$lib/api/shared/model_api";
     import ModelGrid from "$lib/components/view/model-grid.svelte";
-    import { data } from "$lib/data.svelte";
+
+    let modelApi = getContainer().require<IModelApi>(IModelApi)
 </script>
 
-<ModelGrid models={data.entries.filter(x => x.flags.printed)} />
+<ModelGrid modelStream={new ModelStreamManager(modelApi, null, null, null, {
+    favorite: false,
+    printed: true,
+})} />

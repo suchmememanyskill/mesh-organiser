@@ -30,6 +30,8 @@
 		type="file"
 		bind:files
 		bind:value
+		autocomplete="off"
+		aria-autocomplete="none"
 		{...restProps}
 	/>
 {:else}

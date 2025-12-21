@@ -9,36 +9,35 @@
     import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";
 
-    import type { Resource } from "$lib/model";
-
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editResource, deleteResource, openResourceFolder } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import Trash2 from "@lucide/svelte/icons/trash-2";
-    import { updateState } from "$lib/data.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { CheckboxWithLabel } from "$lib/components/ui/checkbox/index.js";
+    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/resource_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { IResourceFolderApi } from "$lib/api/shared/resource_folder_api";
 
     interface Function {
-        (resource: Resource): void;
+        (resource: ResourceMeta): void;
     }
 
-    const props: { resource: Resource; class?: ClassValue, ondelete? : Function } = $props();
+    const props: { resource: ResourceMeta; class?: ClassValue, onDelete? : Function } = $props();
     const trackedResource = $derived(props.resource);
+    const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
+    const resourceFolderApi = getContainer().optional<IResourceFolderApi>(IResourceFolderApi);
 
-    const saveResourceDebounced = debounce(async (editedResource: Resource) => {
+    const saveResourceDebounced = debounce(async (editedResource: ResourceMeta) => {
         console.log("Saving Resource");
-        await editResource(editedResource);
-        await updateState();
+        await resourceApi.editResource(editedResource);
     }, 1000);
 
     async function onDeleteResource()
     {
-        await deleteResource(trackedResource);
-        await updateState();
-        props.ondelete?.(trackedResource);
+        await resourceApi.deleteResource(trackedResource);
+        props.onDelete?.(trackedResource);
     }
     
     function onUpdateResource()
@@ -49,7 +48,10 @@
 
     function onOpenFolder()
     {
-        openResourceFolder(trackedResource);
+        if (resourceFolderApi)
+        {
+            resourceFolderApi.openResourceFolder(trackedResource);
+        }
     }
 </script>
 
@@ -57,7 +59,7 @@
     <CardHeader class="relative">
         <div class="grid grid-cols-1 gap-2">
             <CardTitle class="mr-10">Project '{trackedResource.name}'</CardTitle>
-            <p class="ml-2 text-xs font-thin">Created {trackedResource.createdAt.toLocaleDateString()}</p>
+            <p class="ml-2 text-xs font-thin">Created {trackedResource.created.toLocaleDateString()}</p>
         </div>
         
         <div class="absolute flex gap-5 right-0 top-5 mr-8">
@@ -84,9 +86,11 @@
                     bind:value={trackedResource.name}
                 />
             </div>
-            <Button class="flex flex-col space-y-1.5" variant="default" onclick={onOpenFolder}>
-                Open project folder
-            </Button>
+            {#if resourceFolderApi}
+                <Button class="flex flex-col space-y-1.5" variant="default" onclick={onOpenFolder}>
+                    Open project folder
+                </Button>
+            {/if}
 
             <CheckboxWithLabel
                 label="Completed"

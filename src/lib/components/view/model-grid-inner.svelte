@@ -1,34 +1,39 @@
 <script lang="ts">
-    import type { Model, SizeOptionModels } from "$lib/model";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import { onDestroy, onMount } from "svelte";
     import type { ClassValue } from "svelte/elements";
-    import { data } from "$lib/data.svelte";
     import RightClickModels from "$lib/components/view/right-click-models.svelte";
     import ModelTiny from "$lib/components/view/model-tiny.svelte";
     import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
     import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
-    import { c } from "$lib/data.svelte";
     import DragSelectedModels from "./drag-selected-models.svelte";
+    import type { Model } from "$lib/api/shared/model_api";
+    import type { SizeOptionModels } from "$lib/api/shared/settings_api";
+    import { configuration } from "$lib/configuration.svelte";
+
+    interface Function {
+        (): void;
+    }
 
     let {
         value = $bindable(),
         itemSize,
         availableModels,
         clazz = undefined,
+        endOfListReached = undefined
     } : { 
         value: Model[], 
         itemSize: SizeOptionModels,
         availableModels: Model[],
         clazz?: ClassValue,
+        endOfListReached?: Function
     } = $props();
 
-    let limit = $state(100);
     let scrollContainer : HTMLElement;
 
     const interval = setInterval(handleScroll, 1000);
-    const valueHashSet = $derived(new Set(value.map(x => x.id)));
-
+    const selectedSet = $derived(new Set(value.map(x => x.id)));
+/*
     let destroyStateChangeListener: UnlistenFn | null = null;
 
     onMount(async () => {
@@ -37,20 +42,21 @@
             console.log("Filtered out deleted models");
         });
     });
+*/
 
     onDestroy(async () => {
         clearInterval(interval);
 
-        if (destroyStateChangeListener) 
-            destroyStateChangeListener();
+        //if (destroyStateChangeListener) 
+        //    destroyStateChangeListener();
     });
 
     function handleScroll()
     {
-        if (scrollContainer && limit < availableModels.length) {
+        if (scrollContainer) {
             const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-            if (scrollTop + clientHeight >= scrollHeight) {
-                limit += 100;
+            if (Math.round(scrollTop + clientHeight + 10) >= scrollHeight) {
+                endOfListReached?.();
             }
         }
     }
@@ -149,10 +155,10 @@
 
 <div class="overflow-y-scroll {clazz}" bind:this={scrollContainer} onscroll={handleScroll}>
     <DragSelectedModels models={value} class="select-none">
-        <RightClickModels models={value} class={`flex flex-row justify-center content-start gap-2 flex-wrap outline-0 ${c.configuration.show_multiselect_checkboxes && itemSize.includes("Grid") ? "pt-[5px]" : ""}`}>
+        <RightClickModels models={value} class={`flex flex-row justify-center content-start gap-2 flex-wrap outline-0 ${configuration.show_multiselect_checkboxes && itemSize.includes("Grid") ? "pt-[5px]" : ""}`}>
             {#if itemSize.includes("List")}
-                {#each availableModels.slice(0, limit) as model (model.id)}
-                    {@const isSelected = valueHashSet.has(model.id)}
+                {#each availableModels as model (model.id)}
+                    {@const isSelected = selectedSet.has(model.id)}
                     <div class="w-full grid grid-cols-[auto,1fr] gap-2 items-center">
                         {@render ModelCheckbox(model, "", isSelected)}
                         <div oncontextmenu={(e) => onRightClick(model, e)} onclick={(e) => onClick(model, e)} onmousedown={(e) => earlyOnClick(model, e, isSelected)} class="min-w-0">
@@ -161,8 +167,8 @@
                     </div>
                 {/each}
             {:else}
-                {#each availableModels.slice(0, limit) as model (model.id)}
-                    {@const isSelected = valueHashSet.has(model.id)}
+                {#each availableModels as model (model.id)}
+                    {@const isSelected = selectedSet.has(model.id)}
                     <div class="relative group">
                         <div oncontextmenu={(e) => onRightClick(model, e)} onclick={(e) => onClick(model, e)} onmousedown={(e) => earlyOnClick(model, e, isSelected)}>
                             <ModelTiny {model} class="{sizeClasses} pointer-events-none select-none {isSelected ? "border-primary" : "" }" />
@@ -176,7 +182,7 @@
 </div>
 
 {#snippet ModelCheckbox(model : Model, clazz: ClassValue, isSelected : boolean) }
-    {#if c.configuration.show_multiselect_checkboxes}
+    {#if configuration.show_multiselect_checkboxes}
         <Checkbox class={clazz} bind:checked={
             () => isSelected,
             (val) => val ? value = [...value, model] : value = value.filter(x => x.id !== model.id)

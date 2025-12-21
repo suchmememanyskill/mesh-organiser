@@ -1,15 +1,11 @@
 <script lang="ts">
+    import type { ResourceMeta } from "$lib/api/shared/resource_api";
     import * as Select from "$lib/components/ui/select/index.js";
-    import type { LabelMin } from "$lib/model";
-    import LabelBadge from "$lib/components/view/label-badge.svelte";
-    import Tag from "@lucide/svelte/icons/tag";
-    import type { ClassValue } from "svelte/elements";
-    import { countWriter } from "$lib/utils";
-    import type { Resource } from "$lib/model";
     import NotebookText from "@lucide/svelte/icons/notebook-text";
+    import type { ClassValue } from "svelte/elements";
 
     let { value = $bindable(), availableResources = [], clazz = undefined, placeholder = "Select a project", onchange = () => {}} 
-    : { value: Resource|null, availableResources : Resource[], clazz? : ClassValue, placeholder? : string, onchange?: VoidFunction } = $props();
+    : { value: ResourceMeta|null, availableResources : ResourceMeta[], clazz? : ClassValue, placeholder? : string, onchange?: VoidFunction } = $props();
 </script>
 
 <Select.Root

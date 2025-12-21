@@ -1,0 +1,88 @@
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+on:
+  push:
+    branches:
+      - main
+      - api
+  workflow_dispatch: 
+
+jobs:
+  publish-site:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+    
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - name: "Build"
+      run: |
+        export VITE_API_PLATFORM=demo
+        export VITE_APP_VERSION=$(git describe --tags || "Unknown")
+        pnpm i
+        pnpm build
+
+    - name: "Fetch models and images"
+      run: |
+        cd build
+        mkdir mock_data
+        cd mock_data
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/3dbenchy.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/3dbenchy.stl.png"
+
+        curl -o "Calibration Cube.3mf" "https://meshorganiserdemo.suchmeme.nl/mock_data/Calibration%20Cube.3mf"
+        curl -o "Calibration Cube.3mf.png" "https://meshorganiserdemo.suchmeme.nl/mock_data/Calibration%20Cube.3mf.png"
+
+        curl -o "Embossed text.stl" "https://meshorganiserdemo.suchmeme.nl/mock_data/Embossed%20text.stl"
+        curl -o "Embossed text.stl.png" "https://meshorganiserdemo.suchmeme.nl/mock_data/Embossed%20text.stl.png"
+
+        curl -o "Temp Tower PLA.stl" "https://meshorganiserdemo.suchmeme.nl/mock_data/Temp%20Tower%20PLA.stl"
+        curl -o "Temp Tower PLA.stl.png" "https://meshorganiserdemo.suchmeme.nl/mock_data/Temp%20Tower%20PLA.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/beer_crate_AA.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/beer_crate_AA.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/boaty.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/boaty.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/eiffel_final.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/eiffel_final.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/ECC_0.4_Korper1_PLA0.2_12m19s.gcode"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/ECC_0.4_Korper1_PLA0.2_12m19s.gcode.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Cone.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Cone.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Cube.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Cube.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Cylinder.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Cylinder.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Disc.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Disc.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Sphere.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Sphere.stl.png"
+
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Torus.stl"
+        curl -O "https://meshorganiserdemo.suchmeme.nl/mock_data/Torus.stl.png"
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'build'
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

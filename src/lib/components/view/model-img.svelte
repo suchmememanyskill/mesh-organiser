@@ -1,11 +1,13 @@
 <script lang="ts">
-    import type { Model } from "$lib/model";
     import { onMount, untrack } from "svelte";
     import { appDataDir, join } from "@tauri-apps/api/path";
     import { convertFileSrc } from "@tauri-apps/api/core";
     import type { ClassValue } from "svelte/elements";
     import Boxes from "@lucide/svelte/icons/boxes";
-    import { c } from "$lib/data.svelte";
+    import type { Model } from "$lib/api/shared/model_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { type Blob, IBlobApi } from "$lib/api/shared/blob_api";
+    import { configuration } from "$lib/configuration.svelte";
 
     let img_src = $state("");
     let load_failed = $state(false);
@@ -13,17 +15,12 @@
 
     let props: { model: Model, class?: ClassValue } = $props();
 
-    async function update_image(model_sha256: string)
+    let blobApi = getContainer().require<IBlobApi>(IBlobApi);
+
+    async function update_image(blob: Blob)
     {
-        console.log("Loading image for model " + model_sha256);
-        const appDataDirPath = await appDataDir();
-        const filePath = await join(
-            appDataDirPath,
-            "images",
-            model_sha256 + ".png",
-        );
-        const assetUrl = convertFileSrc(filePath);
-        img_src = assetUrl;
+        //console.log("Loading image for model " + blob.sha256);
+        img_src = await blobApi.getBlobThumbnailUrl(blob);
         load_failed = false;
     }
 
@@ -35,14 +32,14 @@
         lastLoadId = $state.snapshot(props.model.id);
 
         untrack(() => {
-            update_image($state.snapshot(props.model.sha256));
+            update_image($state.snapshot(props.model.blob));
         });
     })
 </script>
 
 <div class={props.class}>
     {#if load_failed}
-        <Boxes class="w-full h-full" style={`color: ${c.configuration.thumbnail_color};`} />
+        <Boxes class="w-full h-full" style={`color: ${configuration.thumbnail_color};`} />
     {:else}
         <img src={img_src} onerror={() => load_failed = true} alt="Image of {props.model.name}" />
     {/if}

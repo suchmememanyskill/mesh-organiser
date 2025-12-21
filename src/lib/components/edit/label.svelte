@@ -10,26 +10,32 @@
     import { Input } from "$lib/components/ui/input";
     import { page } from '$app/state';
 
-    import type { Label as LLabel } from "$lib/model";
-
     import { debounce } from "$lib/utils";
     import type { ClassValue } from "svelte/elements";
-    import { editLabel, deleteLabel, setChildsOnLabel, createLabel, getKeywordsForLabel, setKeywordsOnLabel } from "$lib/tauri";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import Ellipsis from "@lucide/svelte/icons/ellipsis";
     import Trash2 from "@lucide/svelte/icons/trash-2";
-    import { data, updateState } from "$lib/data.svelte";
     import LabelSelect from "$lib/components/view/label-select.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
     import { goto } from "$app/navigation";
     import EditListPopover from "$lib/components/view/edit-list-popover.svelte";
     import { onMount } from "svelte";
+    import { ILabelApi, type Label as LabelClass, type LabelMeta } from "$lib/api/shared/label_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
 
-    const props: { label: LLabel; class?: ClassValue } = $props();
+    interface Function {
+        (): void;
+    }
+
+    const props: { label: LabelClass; class?: ClassValue, onDelete?: Function } = $props();
     const tracked_label = $derived(props.label);
     const parentId = $derived(page.url.searchParams.get("parentId"));
     let lastId = $state(-1);
+    let availableLabels = $derived(sidebarState.labels.map(l => l.meta).filter(l => l.id !== tracked_label.meta.id));
+
+    let labelApi = getContainer().require<ILabelApi>(ILabelApi);
 
     const thisLabelOnly = $derived.by(() => {
         return page.url.searchParams.get("thisLabelOnly") === "true";
@@ -37,17 +43,18 @@
 
     let keywords = $state<string[]>([]);
 
-    const saveLabelDebounced = debounce(async (edited_label: LLabel) => {
+    const saveLabelDebounced = debounce(async (edited_label: LabelClass) => {
         console.log("Saving Label");
-        await editLabel(edited_label);
-        await setChildsOnLabel(edited_label, edited_label.children);
-        await updateState();
+        await labelApi.editLabel(edited_label.meta);
+        await labelApi.setChildrenOnLabel(edited_label.meta, edited_label.children);
+        await updateSidebarState();
     }, 1000);
 
     async function onDeleteLabel()
     {
-        await deleteLabel(tracked_label);
-        await updateState();
+        await labelApi.deleteLabel(tracked_label.meta);
+        await updateSidebarState();
+        props.onDelete?.();
 
         if (parentId)
         {
@@ -61,33 +68,23 @@
         saveLabelDebounced(snapshot);
     }
 
-    async function addLabel(newLabelName: string, newLabelColor: string) 
+    async function refreshLabels(label : LabelClass)
     {
-        let snapshot = $state.snapshot(tracked_label);
-        let newLabel = await createLabel(newLabelName, newLabelColor);
-        snapshot.children.push(newLabel);
-        await setChildsOnLabel(snapshot, snapshot.children);
-        await updateState();
+        keywords = await labelApi.getKeywordsForLabel(label.meta);
     }
 
-    async function refreshLabels(label : LLabel)
-    {
-        keywords = (await getKeywordsForLabel(label)).map(x => x.name);
-    }
-
-    async function updateLabels()
+    async function updateKeywords()
     {
         let snapshot = $state.snapshot(keywords);
         console.log("Updating keywords: ", snapshot);
-        await setKeywordsOnLabel(tracked_label, snapshot);
-        await updateState();
+        await labelApi.setKeywordsOnLabel(tracked_label.meta, snapshot);
     }
 
     $effect(() => 
     {
-        if (lastId !== tracked_label.id) 
+        if (lastId !== tracked_label.meta.id) 
         {
-            lastId = tracked_label.id;
+            lastId = tracked_label.meta.id;
             refreshLabels(tracked_label);
         }
     });
@@ -96,14 +93,11 @@
 
 <Card class={props.class}>
     <CardHeader class="relative">
-        <CardTitle class="mr-10">{!thisLabelOnly && tracked_label.children.length > 0 ? "Grouped" : ""} Label '{tracked_label.name}'</CardTitle>
+        <CardTitle class="mr-10">{!thisLabelOnly && tracked_label.children.length > 0 ? "Grouped" : ""} Label '{tracked_label.meta.name}'</CardTitle>
         <div class="absolute flex gap-5 right-0 top-5 mr-8">
-            <EditListPopover title="Edit keywords" description="When an imported model's name contains any previously defined keywords, the associated label will automatically be added to the model." bind:value={keywords} onEdit={updateLabels}>
+            <EditListPopover title="Edit keywords" description="When an imported model's name contains any previously defined keywords, the associated label will automatically be added to the model." bind:value={keywords} onEdit={updateKeywords}>
                 <Button size="sm">Keywords {keywords.length > 0 ? `(${keywords.length})` : ''}</Button>
             </EditListPopover>
-            <AddLabelPopover onsubmit={addLabel}>
-                <Button size="sm">Add sub-label</Button>
-            </AddLabelPopover>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                     <Ellipsis />
@@ -124,7 +118,7 @@
                     id="name"
                     placeholder="Name of the label"
                     oninput={onUpdateLabel}
-                    bind:value={tracked_label.name}
+                    bind:value={tracked_label.meta.name}
                 />
             </div>
             <div class="flex flex-col space-y-1.5">
@@ -134,14 +128,12 @@
                     placeholder="Color of the label"
                     type="color"
                     oninput={onUpdateLabel}
-                    bind:value={tracked_label.color}
+                    bind:value={tracked_label.meta.color}
                 />
             </div>
             <div class="flex flex-col space-y-1.5">
                 <Label>Sub-labels</Label>
-                <LabelSelect placeholder="Add sub-labels" availableLabels={data.labels.map(x => x.label)} bind:value={
-                    () => tracked_label.children,
-                    (val) => { tracked_label.children = val; onUpdateLabel(); }} />
+                <LabelSelect placeholder="Add sub-labels" availableLabels={availableLabels} onchange={onUpdateLabel} bind:value={tracked_label.children} />
             </div>
         </div>
     </CardContent>

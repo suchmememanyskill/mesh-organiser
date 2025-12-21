@@ -1,53 +1,52 @@
 <script lang="ts">
-    import Sun from "@lucide/svelte/icons/sun";
-    import Moon from "@lucide/svelte/icons/moon";
-    import Plus from "@lucide/svelte/icons/plus";
-    import Tag from "@lucide/svelte/icons/tag";
-    import Tags from "@lucide/svelte/icons/tags";
-    import FolderInput from "@lucide/svelte/icons/folder-input";
-    import Boxes from "@lucide/svelte/icons/boxes";
-    import Box from "@lucide/svelte/icons/box";
-    import Settings from "@lucide/svelte/icons/settings";
-    import Star from "@lucide/svelte/icons/star";
-    import NotebookText from "@lucide/svelte/icons/notebook-text";
-    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-    import { Input } from "$lib/components/ui/input/index.js";
-    import { Label } from "$lib/components/ui/label/index.js";
-    import * as Popover from "$lib/components/ui/popover/index.js";
-    import CircleHelp from "@lucide/svelte/icons/circle-help";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+    import Box from "@lucide/svelte/icons/box";
+    import Boxes from "@lucide/svelte/icons/boxes";
+    import CircleHelp from "@lucide/svelte/icons/circle-help";
+    import FolderInput from "@lucide/svelte/icons/folder-input";
     import History from "@lucide/svelte/icons/history";
 
-    import { data, c, updateState } from "$lib/data.svelte";
+    import NotebookText from "@lucide/svelte/icons/notebook-text";
+    import Plus from "@lucide/svelte/icons/plus";
+    import Settings from "@lucide/svelte/icons/settings";
+    import Star from "@lucide/svelte/icons/star";
+    
+    import Tag from "@lucide/svelte/icons/tag";
+    import Tags from "@lucide/svelte/icons/tags";
 
-    import { resetMode, setMode } from "mode-watcher";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-    import { buttonVariants } from "$lib/components/ui/button/index.js";
-    import ImportProgressIndicator from "$lib/components/view/import-progress-indicator.svelte";
+    import ImportProgressIndicator from "$lib/components/view/tauri-import-progress-indicator.svelte";
 
-    import {
-        createLabel,
-        getAvailableSlicers,
-        getInitialState,
-    } from "$lib/tauri";
-    import Button from "./ui/button/button.svelte";
     import { page } from "$app/state";
-    import PanelLeft from "@lucide/svelte/icons/panel-left";
-    import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
-    import Slice from "@lucide/svelte/icons/slice";
-    import Check from "@lucide/svelte/icons/check";
-    import { onMount } from "svelte";
-    import { ImportStatus, type LabelMin, type SlicerEntry } from "$lib/model";
-    import { int, label } from "three/tsl";
-    import ChevronRight from "@lucide/svelte/icons/chevron-right";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { ILabelApi, type LabelMeta } from "$lib/api/shared/label_api";
+    import { ImportStatus } from "$lib/api/shared/tauri_import_api";
     import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
+    import { configuration } from "$lib/configuration.svelte";
     import { importState } from "$lib/import.svelte";
+    import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
+    import Check from "@lucide/svelte/icons/check";
+    import ChevronRight from "@lucide/svelte/icons/chevron-right";
+    import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
+    import PanelLeft from "@lucide/svelte/icons/panel-left";
+    import Slice from "@lucide/svelte/icons/slice";
+    import { onMount } from "svelte";
+    import NavUser from "./view/nav-user.svelte";
+    import { IHostApi, Platform } from "$lib/api/shared/host_api";
+    import DemoMode from "./view/demo-mode.svelte";
+    import Share2 from "@lucide/svelte/icons/share-2";
+    import { IShareApi } from "$lib/api/shared/share_api";
+    import { ISyncApi } from "$lib/api/shared/sync_api";
+    import SyncProgressIndicator from "./view/sync-progress-indicator.svelte";
+    import { globalSyncState, SyncStage } from "$lib/sync.svelte";
 
-    let slicers = $state([] as SlicerEntry[]);
+    const shareApi = getContainer().optional<IShareApi>(IShareApi);
 
     async function addLabel(newLabelName: string, newLabelColor: string) {
-        await createLabel(newLabelName, newLabelColor);
-        await updateState();
+        let labelApi = getContainer().require<ILabelApi>(ILabelApi);
+        await labelApi.addLabel(newLabelName, newLabelColor);
+        await updateSidebarState();
     }
 
     const current_url = $derived(page.url.pathname);
@@ -60,61 +59,63 @@
         }
 
         let labelId = parseInt(current_url.substring(7));
-        let label =
-            data.labels.find((l) => l.label.id === labelId)?.label ?? null;
+        let label = sidebarState.labels.find((l) => l.meta.id === labelId)?.meta ?? null;
         return label;
     });
 
-    const main_group_entries = $derived([
-        {
-            title: "Import",
-            icon: FolderInput,
-            url: "/import",
-            count: 0,
-        },
+    const main_group_entries = $derived.by(() => {
+        let base = [
         {
             title: "Models",
             icon: Box,
             url: "/model",
-            count: data.entries.length,
+            count: sidebarState.modelCount,
         },
         {
             title: "Groups",
             icon: Boxes,
             url: "/group",
-            count: data.grouped_entries.length,
+            count: sidebarState.groupCount,
         },
         {
             title: "Favorites",
             icon: Star,
             url: "/favorite",
-            count: data.entries.filter(x => x.flags.favorite).length
+            count: sidebarState.favoriteCount,
         },
         {
             title: "Print History",
             icon: History,
             url: "/printed",
-            count: data.entries.filter(x => x.flags.printed).length,
+            count: sidebarState.printHistoryCount,
         },
         {
             title: "Projects",
             icon: NotebookText,
             url: "/resource",
-            count: data.resources.length,
-        },
-        {
-            title: "Settings",
-            icon: Settings,
-            url: "/settings",
-            count: 0,
-        },
-        {
-            title: "About",
-            icon: CircleHelp,
-            url: "/about",
-            count: 0,
-        },
-    ]);
+            count: sidebarState.projectCount,
+        }];
+
+        if (globalSyncState.stage == SyncStage.Idle) {
+            base.splice(0, 0, {
+                title: "Import",
+                icon: FolderInput,
+                url: "/import",
+                count: 0,
+            });
+        }
+    
+        if (shareApi) {
+            base.push(        {
+                title: "Shares",
+                icon: Share2,
+                url: "/share",
+                count: sidebarState.shareCount,
+            });
+        }
+
+        return base;
+    });
 
     function cloneOnHover(event: MouseEvent) {
         if (sidebar.open || sidebar.isMobile) {
@@ -154,15 +155,18 @@
     }
 
     const sidebar = Sidebar.useSidebar();
+    const hostApi = getContainer().optional<IHostApi>(IHostApi);
+    const syncApi = getContainer().optional<ISyncApi>(ISyncApi);
+    let isDemo = $state(false);
 
     onMount(async () => {
-        let open = !(await getInitialState()).collapse_sidebar;
+        let open = !configuration.collapse_sidebar;
         sidebar.setOpen(open);
-        slicers = await getAvailableSlicers();
+        isDemo = (await hostApi?.getPlatform()) === Platform.DemoWebApp;
     });
 </script>
 
-<Sidebar.Root collapsible="icon">
+<Sidebar.Root collapsible="icon" class="z-30">
     <Sidebar.Header>
         <Sidebar.Menu>
             <Sidebar.MenuItem>
@@ -184,7 +188,7 @@
                                 <div class="flex flex-col gap-0.5 leading-none">
                                     <span class="font-semibold">Slicer</span>
                                     <span class=""
-                                        >{c.configuration.slicer ??
+                                        >{configuration.slicer ??
                                             "None"}</span
                                     >
                                 </div>
@@ -196,16 +200,16 @@
                         class="w-[var(--bits-dropdown-menu-anchor-width)]"
                         align="start"
                     >
-                        {#each slicers as slicer (slicer.slicer)}
+                        {#each sidebarState.availableSlicers as slicer (slicer.slicer)}
                             <DropdownMenu.Item
                                 class="data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-foreground"
                                 disabled={!slicer.installed}
                                 onSelect={() =>
-                                    (c.configuration.slicer = slicer.slicer)}
+                                    (configuration.slicer = slicer.slicer)}
                             >
                                 {slicer.slicer}
                                 {slicer.installed ? "" : "- Not installed"}
-                                {#if slicer.slicer === c.configuration.slicer}
+                                {#if slicer.slicer === configuration.slicer}
                                     <Check class="ml-auto" />
                                 {/if}
                             </DropdownMenu.Item>
@@ -223,7 +227,7 @@
                                 document
                                     .getElementById("Open/Close sidebar")
                                     ?.remove();
-                                c.configuration.collapse_sidebar =
+                                configuration.collapse_sidebar =
                                     !$state.snapshot(sidebar.open);
                             }}
                             {...props}
@@ -283,10 +287,10 @@
 
             <Sidebar.GroupContent>
                 <Sidebar.Menu>
-                    {#each data.labels as labelEntry (labelEntry.label.id)}
-                        {#if !labelEntry.label.hasParent}
+                    {#each sidebarState.labels as labelEntry (labelEntry.meta.id)}
+                        {#if !labelEntry.hasParent}
                             {@render LabelTree({
-                                label: labelEntry.label,
+                                label: labelEntry.meta,
                                 level: 1,
                             })}
                         {/if}
@@ -296,75 +300,55 @@
         </Sidebar.Group>
     </Sidebar.Content>
     <Sidebar.Footer>
+        {#if syncApi}
+            <SyncProgressIndicator />
+        {/if}
+        {#if isDemo && sidebar.open} 
+            <DemoMode />
+        {/if}
         {#if importState.status !== ImportStatus.Idle}
             <ImportProgressIndicator />
         {/if}
-        <DropdownMenu.Root>
-            <DropdownMenu.Trigger
-                class="{buttonVariants({
-                    variant: 'outline',
-                    size: 'icon',
-                })} w-full"
-            >
-                <Sun
-                    class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-                />
-                <Moon
-                    class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-                />
-                <span class="sr-only">Toggle theme</span>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
-                <DropdownMenu.Item onclick={() => setMode("light")}
-                    >Light</DropdownMenu.Item
-                >
-                <DropdownMenu.Item onclick={() => setMode("dark")}
-                    >Dark</DropdownMenu.Item
-                >
-                <DropdownMenu.Item onclick={() => resetMode()}
-                    >System</DropdownMenu.Item
-                >
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <NavUser />
     </Sidebar.Footer>
 </Sidebar.Root>
 
-{#snippet LabelTree({ label, level, parentId }: { label: LabelMin; level: number, parentId?: number })}
+{#snippet LabelTree({ label, level, parentId }: { label: LabelMeta; level: number, parentId?: number })}
     <!-- TODO: This find isn't great -->
-    {@const labelWithChildren = data.labels.find(
-        (l) => l.label.id === label.id,
+    {@const labelWithChildren = sidebarState.labels.find(
+        (l) => l.meta.id === label.id,
     )}
 
     {#if labelWithChildren}
-        {#if labelWithChildren.label.children.length <= 0 || level > 5}
-            <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.label.id}>
+        {#if labelWithChildren.children.length <= 0 || level > 5}
+            <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.meta.id}>
                 <Sidebar.MenuButton
-                    class={current_url === `/label/${labelWithChildren.label.id}`
+                    class={current_url === `/label/${labelWithChildren.meta.id}`
                         ? "border-l-2 border-secondary"
                         : ""}
                 >
                     {#snippet child({ props })}
                         <a
-                            href={"/label/" + labelWithChildren.label.id + (parentId ? `?parentId=${parentId}` : "")}
+                            href={"/label/" + labelWithChildren.meta.id + (parentId ? `?parentId=${parentId}` : "")}
                             onmouseenter={cloneOnHover}
                             onmouseleave={destroyOnLeave}
                             onclick={onClickScrollIntoView}
                             {...props}
                         >
                             <Tag
-                                style={`color: ${labelWithChildren.label.color};`}
+                                style={`color: ${labelWithChildren.meta.color};`}
                             />
                             <span class="mr-3"
-                                >{labelWithChildren.label.name}</span
+                                >{labelWithChildren.meta.name}</span
                             >
                         </a>
                     {/snippet}
                 </Sidebar.MenuButton>
                 <Sidebar.MenuBadge class="w-5 max-w-5 basis-5">
-                    {#if c.configuration.show_grouped_count_on_labels}
-                        {labelWithChildren.entries.length}
+                    {#if configuration.show_grouped_count_on_labels}
+                        {labelWithChildren.selfGroupCount}
                     {:else}
-                        {labelWithChildren.total}
+                        {labelWithChildren.selfModelCount}
                     {/if}
                 </Sidebar.MenuBadge>
             </Sidebar.MenuItem>
@@ -372,19 +356,19 @@
             <Collapsible.Root
                 class="group/collapsible [&[data-state=open]>li>a>svg.chevron:first-child]:rotate-90"
                 open={currentUrlChild != null &&
-                    labelWithChildren.label.effectiveLabels.some(
+                    labelWithChildren.effectiveLabels.some(
                         (c) => c.id === currentUrlChild.id,
                     )}
             >
-                <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.label.id}>
+                <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.meta.id}>
                     <Sidebar.MenuButton
-                        class={current_url === `/label/${labelWithChildren.label.id}` && !thisLabelOnly
+                        class={current_url === `/label/${labelWithChildren.meta.id}` && !thisLabelOnly
                             ? "border-l-2 border-secondary"
                             : ""}
                     >
                         {#snippet child({ props })}
                             <a
-                                href={"/label/" + labelWithChildren.label.id + (parentId ? `?parentId=${parentId}` : "")}
+                                href={"/label/" + labelWithChildren.meta.id + (parentId ? `?parentId=${parentId}` : "")}
                                 onmouseenter={cloneOnHover}
                                 onmouseleave={destroyOnLeave}
                                 onclick={onClickScrollIntoView}
@@ -399,27 +383,27 @@
 
                                 <Tags
                                     class="h-full w-full"
-                                    style={`color: ${labelWithChildren.label.color};`}
+                                    style={`color: ${labelWithChildren.meta.color};`}
                                 />
 
                                 <span class="mr-3"
-                                    >{labelWithChildren.label.name}</span
+                                    >{labelWithChildren.meta.name}</span
                                 >
                             </a>
                         {/snippet}
                     </Sidebar.MenuButton>
                     <Collapsible.Content>
                         <Sidebar.MenuSub>
-                            {#if labelWithChildren.entries.length > 0 }
-                                <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.label.id}>
+                            {#if labelWithChildren.selfModelCount > 0 }
+                                <Sidebar.MenuItem data-drag-type="label" data-drag-param={labelWithChildren.meta.id}>
                                     <Sidebar.MenuButton
-                                        class={current_url === `/label/${labelWithChildren.label.id}` && thisLabelOnly
+                                        class={current_url === `/label/${labelWithChildren.meta.id}` && thisLabelOnly
                                             ? "border-l-2 border-secondary"
                                             : ""}>
 
                                         {#snippet child({ props })}
                                             <a
-                                                href={"/label/" + labelWithChildren.label.id + "?thisLabelOnly=true"}
+                                                href={"/label/" + labelWithChildren.meta.id + "?thisLabelOnly=true"}
                                                 onmouseenter={cloneOnHover}
                                                 onmouseleave={destroyOnLeave}
                                                 onclick={onClickScrollIntoView}
@@ -427,11 +411,11 @@
                                             >
                                                 <Tag
                                                     class="h-full w-full"
-                                                    style={`color: ${labelWithChildren.label.color};`}
+                                                    style={`color: ${labelWithChildren.meta.color};`}
                                                 />
                 
                                                 <span class="mr-3"
-                                                    >{labelWithChildren.label.name}</span
+                                                    >{labelWithChildren.meta.name}</span
                                                 >
                                             </a>
                                         {/snippet}
@@ -439,20 +423,20 @@
                                 </Sidebar.MenuItem>
                             {/if}
 
-                            {#each labelWithChildren.label.children as childLabel (childLabel.id)}
+                            {#each labelWithChildren.children as childLabel (childLabel.id)}
                                 {@render LabelTree({
                                     label: childLabel,
                                     level: level + 1,
-                                    parentId: labelWithChildren.label.id,
+                                    parentId: labelWithChildren.meta.id,
                                 })}
                             {/each}
                         </Sidebar.MenuSub>
                     </Collapsible.Content>
                     <Sidebar.MenuBadge class="w-5 max-w-5 basis-5">
-                        {#if c.configuration.show_grouped_count_on_labels}
-                            {labelWithChildren.entries.length}
+                        {#if configuration.show_grouped_count_on_labels}
+                            {labelWithChildren.groupCount}
                         {:else}
-                            {labelWithChildren.total}
+                            {labelWithChildren.modelCount}
                         {/if}
                     </Sidebar.MenuBadge>
                 </Sidebar.MenuItem>

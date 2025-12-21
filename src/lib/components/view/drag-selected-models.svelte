@@ -1,9 +1,9 @@
 <script lang="ts">
-    import type { ModelWithGroup } from "$lib/model";
     import type { ClassValue } from "svelte/elements";
     import { state as dragState, startDragging, stopDragging } from "$lib/drag-selected-models.svelte";
+    import type { Model } from "$lib/api/shared/model_api";
 
-    const props: { children : any, models: ModelWithGroup[], class? : ClassValue } = $props();
+    const props: { children : any, models: Model[], class? : ClassValue } = $props();
     let clicked = $state.raw(false);
     let originX = $state.raw(0);
     let originY = $state.raw(0);

@@ -1,23 +1,25 @@
 <script lang="ts">
-    import { c } from "$lib/data.svelte";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { IInternalBrowserApi } from "$lib/api/shared/internal_browser_api";
     import { buttonVariants, Button, type ButtonVariant } from "$lib/components/ui/button/index.js";
-    import { newWindow } from "$lib/tauri";
+    import { configuration } from "$lib/configuration.svelte";
     import Link from "@lucide/svelte/icons/link";
     import type { ClassValue } from "svelte/elements";
 
     const props: { link: string|undefined|null, visible?: boolean, class? : ClassValue, variant? : ButtonVariant, withText? : boolean, withFallback?: boolean  } = $props();
+    let internalBrowserApi = getContainer().optional<IInternalBrowserApi>(IInternalBrowserApi);
 
     async function openLink() {
-        if (props.link)
+        if (props.link && internalBrowserApi)
         {
-            await newWindow(props.link);
+            await internalBrowserApi.openInternalBrowser(props.link);
         }
     }
 
 </script>
 
 {#if (props.visible ?? !!props.link)}
-    {#if c.configuration.open_links_in_external_browser}
+    {#if configuration.open_links_in_external_browser || !internalBrowserApi}
         <a href="{props.link}" target="_blank" class="{buttonVariants({ variant: props.variant ?? "default"})} {props.class}">
             <Link /> 
             {#if props.withText ?? true}

@@ -3,22 +3,37 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import GroupTinyList from "./group-tiny-list.svelte";
     import { AsyncButton, buttonVariants } from "$lib/components/ui/button";
-    import { c, data, updateState } from "$lib/data.svelte";
-    import type { GroupedEntry, Resource } from "$lib/model";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import EditResource from "$lib/components/edit/resource.svelte";
     import NotebookText from "@lucide/svelte/icons/notebook-text";
     import ClipboardCheck from "@lucide/svelte/icons/clipboard-check";
     import Button from "../ui/button/button.svelte";
-    import { addResource, openInFolder, openInSlicer } from "$lib/tauri";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import { onMount } from "svelte";
     import FolderOpen from "@lucide/svelte/icons/folder-open";
     import Slice from "@lucide/svelte/icons/slice";
+    import { IResourceApi, type ResourceMeta } from "$lib/api/shared/resource_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { type Group, IGroupApi } from "$lib/api/shared/group_api";
+    import { updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { ISlicerApi } from "$lib/api/shared/slicer_api";
+    import { ILocalApi } from "$lib/api/shared/local_api";
+    import { configuration } from "$lib/configuration.svelte";
+    import OpenInSlicerButton from "./open-in-slicer-button.svelte";
+    import { IDownloadApi } from "$lib/api/shared/download_api";
+    import { toast } from "svelte-sonner";
+    import { countWriter } from "$lib/utils";
+    import Download from "@lucide/svelte/icons/download";
+    import ExportModelsButton from "./export-models-button.svelte";
 
-    const props: { resources: Resource[] } = $props();
-    let selected = $state.raw<Resource|null>(null);
+    const props: { resources: ResourceMeta[] } = $props();
+    let selected = $state.raw<ResourceMeta|null>(null);
+    let groups = $state.raw<Group[]>([]);
     let newName = $state<string>("");
+
+    const resourceApi = getContainer().require<IResourceApi>(IResourceApi);
+    const localApi = getContainer().optional<ILocalApi>(ILocalApi);
+    const downloadApi = getContainer().optional<IDownloadApi>(IDownloadApi);
 
     let scrollContainer : HTMLElement;
 
@@ -71,13 +86,13 @@
                 switch (currentFilter.order) {
                     case "date-asc":
                         return (
-                            new Date(a.createdAt).getTime() -
-                            new Date(b.createdAt).getTime()
+                            new Date(a.created).getTime() -
+                            new Date(b.created).getTime()
                         );
                     case "date-desc":
                         return (
-                            new Date(b.createdAt).getTime() -
-                            new Date(a.createdAt).getTime()
+                            new Date(b.created).getTime() -
+                            new Date(a.created).getTime()
                         );
                     case "name-asc":
                         return a.name.localeCompare(b.name);
@@ -89,7 +104,7 @@
             });
     });
 
-    async function onClick(resource: Resource, event : any) {
+    async function onClick(resource: ResourceMeta, event : any) {
         selected = resource;
 
         setTimeout(() => {
@@ -98,36 +113,54 @@
                 block: 'center',
             });
         }, 30);
+
+        groups = await resourceApi.getGroupsForResource(resource);
     }
 
     async function onNewResource() {
-        const newResource = await addResource(newName);
-        await updateState();
-        newName = "";
-        selected = props.resources.find(r => r.id === newResource.id) || null;
+        const newResource = await resourceApi.addResource(newName);
+        props.resources.push(newResource);
+        selected = newResource;
+        await updateSidebarState();
     }
 
-    let destroyStateChangeListener: UnlistenFn | null = null;
+    // TODO: Split these functions off as these are identical to other implementations
+    async function onDownloadModel(group : Group)
+    {
+        if (!downloadApi) {
+            return;
+        }
 
-    onMount(async () => {
-        destroyStateChangeListener = await listen<void>("state-change", (_) => {
-            if (selected)
+        let promise;
+        let models = group.models;
+
+        if (models.length <= 0) {
+            return;
+        } 
+        else if (models.length === 1) {
+            promise = downloadApi.downloadModel(models[0]);
+        } 
+        else {
+            promise = downloadApi.downloadModelsAsZip(models);
+        }
+
+        toast.promise(
+            promise,
             {
-                selected = props.resources.find(r => r.id === selected!.id) || null;
+                loading: `Downloading ${countWriter("model", models)}...`,
+                success: (_) => {
+                    return `Downloaded ${countWriter("model", models)}`;
+                },
             }
-        });
-    });
+        );
 
-    async function onOpenInFolder(group : GroupedEntry) {
-        if (group) {
-            await openInFolder(group.models);
-        }
+        await promise;
     }
 
-    async function onOpenInSlicer(group : GroupedEntry) {
-        if (group) {
-            await openInSlicer(group.models);
-        }
+    async function deleteResource(resource: ResourceMeta) {
+        props.resources.splice(props.resources.indexOf(resource!), 1); 
+        selected = null;
+        await updateSidebarState();
     }
 </script>
 
@@ -165,12 +198,10 @@
 
                     <div class="my-auto flex-1 h-fit overflow-hidden">
                         <h2 class="truncate font-bold">{resource.name}</h2>
-                        {#if c.configuration.show_date_on_list_view}
-                            <p class="hidden-if-small text-xs font-thin ml-4">Created {resource.createdAt.toLocaleDateString()}</p>
+                        {#if configuration.show_date_on_list_view}
+                            <p class="hidden-if-small text-xs font-thin ml-4">Created {resource.created.toLocaleDateString()}</p>
                         {/if}
                     </div>
-
-                    <Badge class="h-fit my-auto">{resource.groups.length}</Badge>
                 </div>
             {/each}
         </div>
@@ -182,17 +213,22 @@
     </div> 
     <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto flex flex-col gap-4 hide-scrollbar">
         {#if !!selected }
-            <EditResource resource={selected} ondelete={_ => selected = null} />
+            <EditResource resource={selected} onDelete={_ => deleteResource(selected!) } />
 
-            {#each selected.groups as group (group.group.id)}
+            {#each groups as group (group.meta.id)}
                 <div class="grid grid-cols-1 gap-2 border rounded-lg pt-1">
                     <GroupTinyList group={group} class="w-full h-14 [&_.imglist]:w-[165px] border-none" />
-                    <a href="/group/{group.group.id}" class="mx-3 {buttonVariants({ variant: "default"})}">
+                    <a href="/group/{group.meta.id}" class="mx-3 {buttonVariants({ variant: "default"})}">
                         Open group
                     </a>
                     <div class="grid grid-cols-2 gap-4 mb-4 mx-3 mt-2">
-                        <AsyncButton onclick={() => onOpenInFolder(group)}><FolderOpen /> Open in folder</AsyncButton>
-                        <AsyncButton onclick={() => onOpenInSlicer(group)}><Slice /> Open in slicer</AsyncButton>
+                        {#if localApi}
+                            <ExportModelsButton models={group.models} class="flex-grow" />
+                        {:else if downloadApi}
+                            <AsyncButton class="flex-grow" onclick={() => onDownloadModel(group)}><Download /> Download model</AsyncButton>
+                        {/if}
+                        
+                        <OpenInSlicerButton models={group.models} class="flex-grow" />
                     </div>
                 </div>
             {/each}

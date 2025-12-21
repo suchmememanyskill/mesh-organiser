@@ -6,12 +6,12 @@
         CardContent,
     } from "$lib/components/ui/card";
 
-    import type { Model } from "$lib/model";
     import ModelImg from "$lib/components/view/model-img.svelte";
     import type { ClassValue } from "svelte/elements";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import PrinterCheck from "@lucide/svelte/icons/printer-check";
     import { flagsToGlyphObjects } from "$lib/glyph";
+    import type { Model } from "$lib/api/shared/model_api";
 
     const props: { model: Model, class?: ClassValue } = $props();
 </script>

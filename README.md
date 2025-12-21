@@ -1,6 +1,6 @@
 # Mesh Organiser
 
-Competes with your downloads folder for storing 3d models.
+Competes with your downloads folder for storing 3d models. Available both as a desktop app or as a web server.
 
 ![Preview image](./readme/app.png)
 
@@ -15,6 +15,8 @@ Download for:
     - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_amd64_linux.deb) (.deb)
     - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser-1.9.0-1.x86_64_linux.rpm) (.rpm)
     - Note: Only slicers installed via flatpak are supported
+
+See the [Web folder](./web/README.md) for server (Mesh Organiser as website) installation instructions.
 
 See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases) tab for more downloads and release notes
 
@@ -43,16 +45,6 @@ Note: To open 'Open in ...' links from these websites, you need to enable them i
 - Redirect 'Open in Bambu Studio' to app (see settings)
 - Ability to extract both model and thumbnail image (see settings)
 
-## Structure breakdown
-
-The app knows 4 layers of organisation:
-- Model: A singular 3d model of any kind
-- Group: A collection of 3d models with a strong relationship (like multiple parts of a bigger model)
-    - Groups their contents are not intended to be edited after creation. Use Labels for this goal.
-- Label: A collection of 3d models with a weak relationship (like multiple models/groups of the same type; like 'wall art' or 'puzzle')
-    - Labels thier contents can be edited at any time using the label dropdown menu on groups, models or a collection of models.
-- Project: A collection of groups needed to complete a project. Also offers a folder to store instructions (.pdf), or other misc files.
-
 ## Additional features
 
 - Compresses imported models to save disk space
@@ -64,6 +56,7 @@ The app knows 4 layers of organisation:
     - Request more via the [Issues tab](https://github.com/suchmememanyskill/mesh-organiser/issues)
 - Deduplicates imported models using a hash
     - Importing the same model twice will not duplicate it; it'll be registered as the same model
+- Syncing between the desktop and [server/web](./web/README.md) version
 
 ## Credits
 

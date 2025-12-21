@@ -1,38 +1,30 @@
 <script lang="ts">
     import ModelGrid from "$lib/components/view/model-grid.svelte";
     import GroupGrid from "$lib/components/view/group-grid.svelte";
-    import type { LabelEntry } from "$lib/model";
-    import { data } from "$lib/data.svelte";
     import { page } from '$app/state';
     import EditLabel from "$lib/components/edit/label.svelte"
+    import type { Label, LabelMeta } from "$lib/api/shared/label_api";
+    import { sidebarState } from "$lib/sidebar_data.svelte";
+    import { GroupStreamManager, IGroupApi } from "$lib/api/shared/group_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+
+    let groupApi = getContainer().require<IGroupApi>(IGroupApi);
 
     let thisLabelOnly = $derived.by(() => {
         return page.url.searchParams.get("thisLabelOnly") === "true";
     });
 
-    let labelEntry : LabelEntry|undefined = $derived.by(() => {
-        let slug = parseInt(page.params.slug);
-        return data.labels.find((label) => label.label.id === slug);
-    });
-
-    let entries = $derived.by(() => {
-        console.log(page.url.searchParams.get("onlyThisLabel"));
-        if (thisLabelOnly)
-        {
-            return labelEntry?.entries.filter((entry) => entry.labels.some((label) => label.id === labelEntry?.label.id));
-        }
-        else
-        {
-            return labelEntry?.entries;
-        }        
+    let label : Label|null = $derived.by(() => {
+        let slug = parseInt(page.params.slug!);
+        return sidebarState.labels.find((label) => label.meta.id === slug) ?? null;
     });
 </script>
 
-{#if entries && labelEntry}
+{#if label}
     <div class="w-full h-full flex flex-col">
-        <EditLabel class="my-3 mx-4" label={labelEntry.label} />
+        <EditLabel class="my-3 mx-4" label={label} onDelete={() => label = null} />
         <div class="overflow-hidden h-full">
-            <GroupGrid groups={entries} default_show_multiselect_all={true} />
+            <GroupGrid groupStream={new GroupStreamManager(groupApi, null, (thisLabelOnly ? [label.meta] : label.effectiveLabels).map(x => x.id), true)} />
         </div>
     </div>
 {:else}

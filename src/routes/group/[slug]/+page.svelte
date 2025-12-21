@@ -1,12 +1,13 @@
 <script lang="ts">
-    import { data } from "$lib/data.svelte";
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
-    import GroupPage from "$lib/components/view/group-page.svelte"
-
+    import { createGroupMetaInstance } from '$lib/api/shared/group_api';
+    import GroupPage from '$lib/components/view/group-page.svelte';
+    
     let group = $derived.by(() => {
-        let slug = parseInt(page.params.slug);
-        return data.grouped_entries.find((group) => group.group.id === slug);
+        let slug = parseInt(page.params.slug!);
+        return createGroupMetaInstance(slug, '', '', '');
     })
 </script>
 
-<GroupPage group={group} />
+<GroupPage group={group} onAllModelsDelete={() => goto("/group")} />

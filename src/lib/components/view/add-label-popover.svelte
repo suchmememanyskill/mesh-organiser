@@ -4,8 +4,6 @@
     import { Label } from "$lib/components/ui/label/index.js";
     import Button from "$lib/components/ui/button/button.svelte";
     import type { ClassValue } from "svelte/elements";
-    import { createLabel } from "$lib/tauri";
-    import { updateState } from "$lib/data.svelte";
 
     function generateRandomColor() {
         return "#" + Math.floor(Math.random() * 0xffffff).toString(16);
@@ -13,6 +11,7 @@
 
     let newLabelName = $state("New label");
     let newLabelColor = $state(generateRandomColor());
+    let open = $state(false);
 
     async function setRandomColor() 
     {
@@ -34,20 +33,25 @@
         props.onsubmit(newLabelName, newLabelColor);
         newLabelName = "New label";
         newLabelColor = generateRandomColor();
+
+        if (props.closeAfterCreation ?? false)
+        {
+            open = false;
+        }
     }
 
-    const props : { children : any, class?: ClassValue, onsubmit: Function } = $props();
+    const props : { children : any, class?: ClassValue, onsubmit: Function, closeAfterCreation?: boolean } = $props();
 </script>
 
-<Popover.Root onOpenChange={x => { if (x) { setRandomColor(); } }}>
-    <Popover.Trigger>
+<Popover.Root bind:open={open} onOpenChange={x => { if (x) { setRandomColor(); } }}>
+    <Popover.Trigger class={props.class}>
         {@render props.children?.()}
     </Popover.Trigger>
     <Popover.Content class="w-80">
         <div class="grid gap-4">
             <div class="grid gap-2">
                 <div class="grid grid-cols-4 items-center gap-4">
-                    <Label for="name">Name</Label>
+                    <Label for="name" >Name</Label>
                     <Input
                         id="name"
                         bind:value={newLabelName}

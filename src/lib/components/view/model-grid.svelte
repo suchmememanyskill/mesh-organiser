@@ -1,83 +1,133 @@
 <script lang="ts">
-    import { SizeOptionModelsAsList, type LabelMin, type Model, type OrderOptionModels } from "$lib/model";
-    import ModelTiny from "$lib/components/view/model-tiny.svelte";
-    import ModelTinyList from "$lib/components/view/model-tiny-list.svelte";
+    import type { IModelStreamManager, Model } from "$lib/api/shared/model_api";
+    import { convertOrderOptionModelsToEnum, type OrderOptionModels, SizeOptionModelsAsList } from "$lib/api/shared/settings_api";
     import ModelEdit from "$lib/components/edit/model.svelte";
     import MultiModelEdit from "$lib/components/edit/multi-model.svelte";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select/index.js";
-    import { onDestroy, onMount } from "svelte";
-    import { instanceOfModelWithGroup } from "$lib/utils";
-    import RightClickModels from "$lib/components/view/right-click-models.svelte";
-    import { c, data } from "$lib/data.svelte";
-    import LabelSelect from "$lib/components/view/label-select.svelte";
-    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import ModelGridInner from "$lib/components/view/model-grid-inner.svelte";
+    import { configuration } from "$lib/configuration.svelte";
+    import { IsMobile } from "$lib/hooks/is-mobile.svelte";
+    import { debounce } from "$lib/utils";
+    import { onMount, untrack } from "svelte";
+    import Button, { buttonVariants } from "../ui/button/button.svelte";
+    import Undo2 from "@lucide/svelte/icons/undo-2";
 
-    const props: { models: Model[], default_show_multiselect_all? : boolean, initialEditMode? : boolean } = $props();
+    interface Function {
+        (models : Model[]): void;
+    }
+
+    interface EmptyFunction {
+        (): void;
+    }
+
+    const props: { modelStream : IModelStreamManager, default_show_multiselect_all? : boolean, initialEditMode? : boolean, onRemoveGroupDelete?: boolean, onDelete?: Function, onEmpty?: EmptyFunction} = $props();
+    let loadedModels = $state<Model[]>([]);
+    let allModels = $state<Model[]>([]);
+    let allModelsWithFallback = $derived(allModels.length > 0 ? allModels : loadedModels);
     let selected = $state.raw<Model[]>([]);
-    let searchFilter = $state.raw<string>("");
+    let busyLoadingNext = $state.raw<boolean>(false);
+
+    const isMobile = new IsMobile();
+    const showLeftSide = $derived(!isMobile.current || (isMobile.current  && selected.length <= 0));
+    const showRightSide = $derived(!isMobile.current || (isMobile.current  && selected.length > 0));
+
+    async function fetchNextModelSet() {
+        if (busyLoadingNext)
+            return;
+
+        busyLoadingNext = true;
+        let newModels = await props.modelStream.fetch();
+        if (newModels.length > 0)
+        {
+            loadedModels.push(...newModels);
+            console.log(loadedModels);
+        }
+        busyLoadingNext = false;
+    }
+
+    async function resetModelSet() {
+        while (busyLoadingNext)
+        {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        loadedModels = [];
+        await fetchNextModelSet();
+    }
+
+    async function setNewSearchText(newText: string | null) {
+        props.modelStream.setSearchText(newText);
+        await resetModelSet();
+    }
+
+    let debouncedSetNewSearchText = debounce(setNewSearchText, 200);
 
     const readableOrders = {
-        "date-asc": "Date (Asc)",
-        "date-desc": "Date (Desc)",
+        "date-asc": "Added (Asc)",
+        "date-desc": "Added (Desc)",
         "name-asc": "Name (A->Z)",
         "name-desc": "Name (Z->A)",
         "size-asc": "Size (Asc)",
         "size-desc": "Size (Desc)",
+        "modified-asc": "Modified (Asc)",
+        "modified-desc": "Modified (Desc)",
     };
 
-    const readableOrder = $derived(readableOrders[c.configuration.order_option_models]);
+    const readableOrder = $derived(readableOrders[configuration.order_option_models]);
+    props.modelStream.setOrderBy(convertOrderOptionModelsToEnum(configuration.order_option_models));
 
-    const filteredCollection = $derived.by(() => {
-        let search_lower = searchFilter.toLowerCase();
+    function onSearchInput(e : Event)
+    {
+        const target = e.target as HTMLInputElement;
+        debouncedSetNewSearchText(target.value.trim().length === 0 ? null : target.value.trim());
+    }
 
-        return props.models
-            .filter(
-                (model) =>
-                    model.name
-                        .toLowerCase()
-                        .includes(search_lower) ||
-                    model.description
-                        ?.toLowerCase()
-                        .includes(search_lower) ||
-                    (instanceOfModelWithGroup(model) 
-                        && model.group?.name.toLowerCase()
-                            .includes(search_lower)),
-            )
-            .sort((a, b) => {
-                switch (c.configuration.order_option_models) {
-                    case "date-asc":
-                        return (
-                            new Date(a.added).getTime() -
-                            new Date(b.added).getTime()
-                        );
-                    case "date-desc":
-                        return (
-                            new Date(b.added).getTime() -
-                            new Date(a.added).getTime()
-                        );
-                    case "name-asc":
-                        return a.name.localeCompare(b.name);
-                    case "name-desc":
-                        return b.name.localeCompare(a.name);
-                    case "size-asc":
-                        return a.size - b.size;
-                    case "size-desc":
-                        return b.size - a.size;
-                    default:
-                        return 0;
-                }
-            });
+    function onDeleteSelected() 
+    {
+        onDelete(selected);
+        selected = [];
+    }
+
+    function onGroupDeleteSelected(models : Model[])
+    {
+        if (!props.onRemoveGroupDelete)
+        {
+            return;
+        }
+
+        onDelete(models.filter((m) => !!m.group));
+    }
+
+    function onDelete(models : Model[])
+    {
+        loadedModels = loadedModels.filter(m => !models.some(s => s.id === m.id));
+        props.onDelete?.(models);
+
+        if (loadedModels.length === 0)
+        {
+            props.onEmpty?.();
+        }
+    }
+
+    $effect(() => {
+        let a = props.modelStream;
+        console.log("Model stream changed, resetting model set");
+
+        untrack(async () => {
+            await resetModelSet();
+            allModels = await props.modelStream.getAll();
+        });
     });
 </script>
 
 <div class="flex flex-row h-full">
+    {#if showLeftSide}
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-5 justify-center px-5 py-3">
-            <Input bind:value={searchFilter} class="border-primary" placeholder="Search..." />
+            <Input oninput={onSearchInput} class="border-primary" placeholder="Search..." />
     
-            <Select.Root type="single" name="Sort" bind:value={c.configuration.order_option_models}>
+            <Select.Root type="single" name="Sort" onValueChange={x => {props.modelStream.setOrderBy(convertOrderOptionModelsToEnum(x as OrderOptionModels)); resetModelSet();}} bind:value={configuration.order_option_models}>
                 <Select.Trigger class="border-primary">
                     {readableOrder}
                 </Select.Trigger>
@@ -93,9 +143,9 @@
                 </Select.Content>
             </Select.Root>
     
-            <Select.Root type="single" name="Size" bind:value={c.configuration.size_option_models}>
+            <Select.Root type="single" name="Size" bind:value={configuration.size_option_models}>
                 <Select.Trigger class="border-primary">
-                    {c.configuration.size_option_models.replaceAll("_", " ")}
+                    {configuration.size_option_models.replaceAll("_", " ")}
                 </Select.Trigger>
                 <Select.Content>
                     <Select.Group>
@@ -110,21 +160,31 @@
             </Select.Root>
         </div>
 
-        <ModelGridInner bind:value={selected} itemSize={c.configuration.size_option_models} availableModels={filteredCollection} />
+        <ModelGridInner bind:value={selected} itemSize={configuration.size_option_models} availableModels={loadedModels} endOfListReached={fetchNextModelSet} />
     </div> 
-    <div class="w-[400px] min-w-[400px] relative mx-4 my-2 overflow-y-auto hide-scrollbar">
+    {/if}
+
+    {#if showRightSide}
+    <div class="{isMobile.current ? "w-full" : "w-[400px] min-w-[400px]"} relative mx-4 my-2 overflow-y-auto hide-scrollbar flex flex-col gap-4">
+        {#if isMobile.current}
+            <Button onclick={() => { selected = [] }}>
+                <Undo2 /> Close model preview
+            </Button>
+        {/if}
+        <!-- TODO: Implement ondelete for all of these-->
         {#if selected.length >= 2}
-            <MultiModelEdit models={selected} />
+            <MultiModelEdit models={selected} onDelete={onDeleteSelected} onGroupDelete={() => onGroupDeleteSelected(selected)} />
         {:else if selected.length === 1}
-            <ModelEdit initialEditMode={props.initialEditMode} model={selected[0]} />
-        {:else if filteredCollection.length === 1}
-            <ModelEdit initialEditMode={props.initialEditMode} model={filteredCollection[0]} />
+            <ModelEdit initialEditMode={props.initialEditMode} model={selected[0]} onDelete={onDeleteSelected} />
+        {:else if loadedModels.length === 1}
+            <ModelEdit initialEditMode={props.initialEditMode} model={loadedModels[0]} onDelete={() => { selected = [loadedModels[0]]; onDeleteSelected(); }} />
         {:else if props.default_show_multiselect_all }
-            <MultiModelEdit models={filteredCollection} />
+            <MultiModelEdit models={allModelsWithFallback} onDelete={() => { selected = [...allModelsWithFallback]; onDeleteSelected(); }} onGroupDelete={() => onGroupDeleteSelected(allModelsWithFallback)} />
         {:else}
             <div class="flex flex-col justify-center items-center h-full rounded-md border border-dashed">
                 <span class="text-xl">No model selected</span>
             </div>
         {/if}
     </div>
+    {/if}
 </div>

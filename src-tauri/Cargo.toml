@@ -18,12 +18,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = { version = "2", features = ["protocol-asset", "devtools"] }
 tauri-plugin-opener = "2"
-tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sqlx = { git = "https://github.com/suchmememanyskill/sqlx", features = ["sqlite", "runtime-tokio", "chrono"] }
 futures = "0"
 sha2 = "0"
 thiserror = "2"
@@ -32,7 +30,6 @@ zip = { version = "6"}
 tauri-plugin-dialog = "2"
 tauri-plugin-deep-link = "2"
 urlencoding = "2"
-reqwest = "0"
 regex = "1"
 strum = { version = "0", features = ["derive"] }
 tauri-plugin-updater = "2"
@@ -44,12 +41,15 @@ arboard = "3"
 base64 = "0"
 indexmap = "2"
 itertools = "0"
-tauri-plugin-fs = "2"
+tauri-plugin-fs = { version = "2", features= ["watch"] }
 rayon = "1"
 tauri-plugin-os = "2"
-actix-web = "4"
-actix-cors = "0"
-async_zip = { version = "0.0.17", features = ["full"] }
+db = { path = "../db" }
+service = { path = "../service" }
+serde_html_form = "0"
+tauri-plugin-http = { version = "2", features = [ "multipart" ] }
+content_disposition = "0.4.0"
+async_zip = { version = "0.0.18", features = ["full"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0"

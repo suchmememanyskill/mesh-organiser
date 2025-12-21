@@ -1,5 +1,5 @@
-import { exists, writeTextFile, readTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
-import cssText from "/src/themes/default.css?raw";
+import { configuration } from './configuration.svelte';
+import defaultCss from '../themes/default.css?raw';
 
 const availableThemes = {
     "default": "Default",
@@ -54,17 +54,13 @@ export async function setTheme(theme : string)
     if (theme === "custom")
     {
         console.log("Loading custom theme");
-        if (!await exists("custom.css", { baseDir: BaseDirectory.AppData }))
+
+        if (configuration.custom_css.length <= 0)
         {
-            console.log("Custom theme does not exist, creating default");
-            await writeTextFile('custom.css', cssText.replaceAll("[data-theme=\"default\"]", "[data-theme=\"custom\"]"), {
-                baseDir: BaseDirectory.AppData,
-            });
+            configuration.custom_css = defaultCss;
         }
 
-        let custom_css = await readTextFile('custom.css', {
-            baseDir: BaseDirectory.AppData,
-        });
+        let custom_css = configuration.custom_css.replaceAll("[data-theme=\"default\"]", "[data-theme=\"custom\"]");
 
         let style = document.createElement('style');
         style.textContent = custom_css;

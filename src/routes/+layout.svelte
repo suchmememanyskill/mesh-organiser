@@ -5,11 +5,9 @@
     import { ModeWatcher } from "mode-watcher";
     import { onMount } from "svelte";
     import { listen } from '@tauri-apps/api/event';
-    import { getInitialState, downloadFile, removeDeadGroups } from "$lib/tauri";
     import { Toaster } from "$lib/components/ui/sonner/index.js";
     import { toast } from "svelte-sonner";
     import { goto } from '$app/navigation';
-    import { updateState, initConfiguration, c, on_save_configuration } from '$lib/data.svelte';
     import { getCurrentWindow } from '@tauri-apps/api/window';
     import { check, type Update } from '@tauri-apps/plugin-updater';
     import { relaunch } from '@tauri-apps/plugin-process';
@@ -18,13 +16,23 @@
     import { getCurrentWebview } from "@tauri-apps/api/webview";
     import { debounce } from "$lib/utils";
     import { setTheme } from "$lib/theme";
-    import { handleDeepLink, initImportListeners } from "$lib/import.svelte";
-    import UpdatePopup from "$lib/components/view/update-popup.svelte";
+    import UpdatePopup from "$lib/components/view/tauri-update-popup.svelte";
     import DragSelectedModelsRoot from "$lib/components/view/drag-selected-models-root.svelte";
+    import { initApi } from "$lib/api/api";
+    import { configuration, configurationMeta, updateConfiguration } from "$lib/configuration.svelte";
+    import { updateSidebarState } from "$lib/sidebar_data.svelte";
+    import { updateState } from "$lib/update_data.svelte";
+    import Spinner from "$lib/components/view/spinner.svelte";
+    import { type Configuration } from "$lib/api/shared/settings_api";
+    import { getContainer } from "$lib/api/dependency_injection";
+    import { ISidebarStateApi } from "$lib/api/shared/sidebar_state_api";
+    import { IUserApi } from "$lib/api/shared/user_api";
+    import { accountLinkData } from "$lib/account_link_data.svelte";
+    import WebAccountLinkPopup from "$lib/components/view/web-account-link-popup.svelte";
 
     let { children } = $props();
-    let loaded_config = false;
-    let availableUpdate = $state<Update|null>(null);
+    let initializationDone = $state(false);
+    let hasSidebar = $state(true);
 
     interface Error
     {
@@ -34,96 +42,99 @@
     }
 
     onMount(async () => {
+        initializationDone = false;
         window.onerror = function (message, source, lineno, colno, error) {
             toast.error(`Error: ${message}`);
         };
 
         addEventListener("unhandledrejection", (event) => {
             let reason : Error = event.reason;
-            toast.error(reason.error_message, {
-                description: reason.error_inner_message
-            });
+            if (reason.error_message && reason.error_inner_message)
+            {
+                toast.error(reason.error_message, {
+                    description: reason.error_inner_message
+                });
+            }
+            else {
+                toast.error("An unknown error occurred.", {
+                    description: (reason as any).message
+                });
+            }
+
         });
 
-        await removeDeadGroups();
-        await initConfiguration();
-        await setTheme(c.configuration.theme);
+        await initApi();
+        configurationMeta.configurationLoaded = true;
+        await setTheme(configuration.theme);
 
-        await initImportListeners();
-        const state = await getInitialState();
-        console.log('initial state:', state);
-        if (state.deep_link_url)
-        {
-            await handleDeepLink({
-                download_url: state.deep_link_url,
-                source_url: null
-            });
-        }
+        let userApi = getContainer().optional<IUserApi>(IUserApi);
 
-        const webview = await getCurrentWebview();
-        webview.setZoom(c.configuration.zoom_level / 100);
-
-        const debounced_resize = debounce(() => {
-            const zoom_level = Math.round((window.outerWidth) / window.innerWidth * 100);
-            
-            if (zoom_level === c.configuration.zoom_level)
-            {
-                return;
-            }
-
-            c.configuration.zoom_level = zoom_level;
-        }, 100);
-
-        addEventListener("resize", debounced_resize);
-
-        await updateState();
-        loaded_config = true;
-
-        try 
-        {
-            const update = await check();
-            console.log(update);
-
-            if (update && update.version && update.version !== c.configuration.ignore_update && c.configuration.ignore_update !== "always")
-            {
-                availableUpdate = update;
+        if (userApi) {
+            if (!await userApi.isAuthenticated()) {
+                await goto("/login");
             }
         }
-        catch
-        {
-            toast.error("Failed to check for updates");
-        }
-    });
 
-    $effect(() => {
-        const modified_configuration = $state.snapshot(c.configuration);
-
-        if (!loaded_config) {
-            return;
+        if (getContainer().optional<ISidebarStateApi>(ISidebarStateApi) == null) {
+            hasSidebar = false;
         }
-        
-        on_save_configuration(modified_configuration);
+        else {
+            await updateSidebarState();
+        }
+
+        initializationDone = true;
     });
 
     const is_mobile = new IsMobile();
+
+    const onSaveConfiguration = debounce(
+        async (edited_configuration: Configuration) => {
+            console.log("Setting config", edited_configuration);
+            await updateConfiguration(edited_configuration);
+        },
+        400,
+    );
+
+    $effect(() => {
+        if (!initializationDone)
+            return;
+
+        const modified_configuration = $state.snapshot(configuration);
+
+        if (!configurationMeta.configurationLoaded) {
+            return;
+        }
+        
+        onSaveConfiguration(modified_configuration);
+    });
 </script>
 
 <ModeWatcher />
 <Toaster />
+{#if initializationDone}
 <DragSelectedModelsRoot class="w-full h-full">
     <Sidebar.Provider class="w-full h-full">
-        <AppSidebar />
+        {#if hasSidebar}
+            <AppSidebar />
+        {/if}
         <main class="h-full flex-1 flex flex-row" style="min-width: 0;">
-            {#if is_mobile.current}
-                <Sidebar.Trigger class="aspect-square absolute" />
+            {#if is_mobile.current && hasSidebar}
+                <Sidebar.Trigger class="aspect-square absolute z-10 h-10 w-10 bg-background" />
             {/if}
             <div class="flex-1 pl-2" style="min-width: 0;">
                 {@render children?.()}
             </div>
         </main>
-        {#if availableUpdate}
-            <UpdatePopup update={availableUpdate} onDismiss={() => availableUpdate = null} />
+        {#if updateState.update}
+            <UpdatePopup update={updateState.update} onDismiss={() => updateState.update = null} />
+        {/if}
+        {#if accountLinkData.showLinkUi}
+            <WebAccountLinkPopup data={accountLinkData} onDismiss={() => accountLinkData.showLinkUi = false} />
         {/if}
     </Sidebar.Provider>
 </DragSelectedModelsRoot>
-
+{:else}
+    <div class="w-full h-full flex justify-center items-center">
+        <Spinner />
+    </div>
+{/if}
