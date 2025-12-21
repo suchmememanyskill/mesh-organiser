@@ -1,19 +1,19 @@
 # Mesh Organiser
 
-Competes with your downloads folder for storing 3d models. Available both as a desktop app or as a web server.
+Competes with your downloads folder for storing 3d models. Available both as a desktop app or as a web server. [A web-based demo is available for testing](https://meshdemo.suchmeme.nl/)
 
 ![Preview image](./readme/app.png)
 
 ## Install
 
 Download for:
-- [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_x64_en-US_windows.msi) (.msi)
+- [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.0.0/Mesh.Organiser_2.0.0_x64_en-US.msi) (.msi)
 - Macos
-    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_aarch64_darwin.dmg)
-    - [x64/Intel based chips](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_x64_darwin.dmg)
+    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.0.0/Mesh.Organiser_2.0.0.dmg)
+    - [x64/Intel based chips](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.0.0/Mesh.Organiser_2.0.0_x64.dmg)
 - Linux
-    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser_1.9.0_amd64_linux.deb) (.deb)
-    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v1.9.0/Mesh.Organiser-1.9.0-1.x86_64_linux.rpm) (.rpm)
+    - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.0.0/Mesh.Organiser_2.0.0_amd64.deb) (.deb)
+    - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.0.0/Mesh.Organiser-2.0.0-1.x86_64.rpm) (.rpm)
     - Note: Only slicers installed via flatpak are supported
 
 See the [Web folder](./web/README.md) for server (Mesh Organiser as website) installation instructions.

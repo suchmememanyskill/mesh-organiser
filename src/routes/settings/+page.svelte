@@ -305,7 +305,7 @@
                         () => configuration.default_enabled_import_as_path,
                         (val) => { configuration.default_enabled_import_as_path = val; globalImportSettings.import_as_path = val; }
                     } label="Reuse files on disk, do not import into internal registry" />
-                    <p>Mesh Organiser makes use of an internal file registry to manage imported models. This way, if the original files were deleted or moved, the models within Mesh Organiser would stay valid. The models also get compressed this way. Enabling the toggle above instead uses the location on disk of the imported files, instead of the internal registry. Moving or deleting imported model files will cause issues when this feature is enabled!</p>
+                    <p>Mesh Organiser makes use of an internal file registry to manage imported models. This way, if the original files were deleted or moved, the models within Mesh Organiser would stay valid. The models also get compressed this way. Enabling the toggle above uses the location on disk of the imported files instead of the internal registry. Moving or deleting the model files you imported will cause issues when this feature is enabled!</p>
                 </div>
 
                 <div class="flex flex-col space-y-1.5">
