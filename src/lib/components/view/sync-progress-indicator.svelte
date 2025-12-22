@@ -11,7 +11,18 @@
     import { onDestroy } from "svelte";
 
     function updateLastSync() : string {
-        return currentUser.lastSync ? `Last synced ${timeSinceDate(currentUser.lastSync)}` : "Never synced";
+        if (!currentUser.lastSync) {
+            return "Never synced";
+        }
+
+        let lastSync = timeSinceDate(currentUser.lastSync);
+
+        // This is a bit of a hack: Todo: improve this
+        if (lastSync.includes("second")) {
+            return "Last synced just now";
+        }
+
+        return `Last synced ${timeSinceDate(currentUser.lastSync)}`
     }
 
     let lastSync = $state(updateLastSync());

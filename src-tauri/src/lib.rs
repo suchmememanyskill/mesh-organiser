@@ -575,6 +575,11 @@ pub fn run() {
                         .unwrap(),
                 );
 
+                if !std::fs::exists(&app_data_path).unwrap_or(false) {
+                    std::fs::create_dir_all(&app_data_path)
+                        .expect("failed to create app data dir");
+                }
+
                 let app_data_path_clone = String::from(&app_data_path);
 
                 std::panic::set_hook(Box::new(move |info| {
