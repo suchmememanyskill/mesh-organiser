@@ -6,8 +6,6 @@ use thiserror::Error;
 pub enum ApplicationError {
     #[error("Failed to open or read file")]
     FileSystemFault(#[from] std::io::Error),
-    #[error("Failed to read or write zip file")]
-    ZipError(#[from] zip::result::ZipError),
     #[error("Internal error")]
     InternalError(String),
     #[error("Failed to process JSON")]
@@ -37,11 +35,6 @@ impl Serialize for ApplicationError {
         match self {
             ApplicationError::FileSystemFault(inner) => {
                 state.serialize_field("error_type", "FileSystemFault")?;
-                state.serialize_field("error_message", &self.to_string())?;
-                state.serialize_field("error_inner_message", &inner.to_string())?;
-            }
-            ApplicationError::ZipError(inner) => {
-                state.serialize_field("error_type", "ZipError")?;
                 state.serialize_field("error_message", &self.to_string())?;
                 state.serialize_field("error_inner_message", &inner.to_string())?;
             }
