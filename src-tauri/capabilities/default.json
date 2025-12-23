@@ -21,7 +21,7 @@
     },
     {
       "identifier": "http:default",
-      "allow": [{"url": "https://*"}, {"url": "http://*:3000"}]
+      "allow": [{"url": "https://*"}, {"url": "http://*:3000"}, {"url": "http://*:35385"}]
     }
   ]
 }
