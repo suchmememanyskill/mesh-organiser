@@ -129,7 +129,14 @@ async fn open_in_slicer(
 async fn get_initial_state(
     state: State<'_, TauriAppState>,
 ) -> Result<InitialState, ApplicationError> {
-    Ok(state.initial_state.clone())
+    let mut initial_state = state.initial_state.lock().unwrap();
+
+    if initial_state.is_none() {
+        let config = state.get_configuration();
+        return Ok(InitialState::new(&config));
+    }
+
+    Ok(initial_state.take().unwrap())
 }
 
 #[tauri::command]
@@ -608,14 +615,7 @@ pub fn run() {
                 let sqlite_backup_dir = PathBuf::from(&config.data_path).join("backups");
                 let db = db::db_context::setup_db(&sqlite_path, &sqlite_backup_dir).await;
 
-                let mut initial_state = InitialState {
-                    deep_link_url: None,
-                    max_parallelism: std::thread::available_parallelism()
-                        .unwrap_or(std::num::NonZeroUsize::new(6).unwrap())
-                        .get(),
-                    collapse_sidebar: config.collapse_sidebar,
-                    account_link: None,
-                };
+                let mut initial_state = InitialState::new(&config);
 
                 let argv = std::env::args();
 
@@ -645,7 +645,7 @@ pub fn run() {
                         import_mutex: Arc::new(tokio::sync::Mutex::new(())),
                         app_data_path: app_data_path,
                     },
-                    initial_state: initial_state,
+                    initial_state: Mutex::new(Some(initial_state)),
                     current_user: Arc::new(Mutex::new(user)),
                 };
 

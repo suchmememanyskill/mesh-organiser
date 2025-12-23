@@ -24,9 +24,23 @@ pub struct InitialState {
     pub account_link: Option<AccountLinkEmit>,
 }
 
+impl InitialState {
+    pub fn new(
+        config: &Configuration,
+    ) -> InitialState {
+        InitialState {
+            deep_link_url: None,
+            max_parallelism: std::thread::available_parallelism()
+                .unwrap_or(std::num::NonZeroUsize::new(6).unwrap())
+                .get(),
+            collapse_sidebar: config.collapse_sidebar,
+            account_link: None,
+        }
+    }
+}
 pub struct TauriAppState {
     pub app_state: AppState,
-    pub initial_state: InitialState,
+    pub initial_state: Mutex<Option<InitialState>>,
     pub current_user: Arc<Mutex<User>>,
 }
 
