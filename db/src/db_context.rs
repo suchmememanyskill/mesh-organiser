@@ -30,6 +30,8 @@ pub async fn setup_db(sqlite_path : &PathBuf, sqlite_backup_dir : &PathBuf) -> D
 
     let migration_count = get_db_migration_count(&db).await;
 
+    hack_fix_duplicate_model_entries(&db, migration_count).await;
+
     sqlx::migrate!("./migrations").run(&db).await.unwrap();
     backup_db(sqlite_path, sqlite_backup_dir);
 
@@ -43,6 +45,18 @@ pub async fn setup_db(sqlite_path : &PathBuf, sqlite_backup_dir : &PathBuf) -> D
     }
 
     db
+}
+
+async fn hack_fix_duplicate_model_entries(db: &DbContext, migration_count : usize) {
+    // This is only an issue between migration 1 and 5
+    // See https://github.com/suchmememanyskill/mesh-organiser/issues/38 for more information
+    if migration_count <= 0 || migration_count > 5 {
+        return;
+    }
+
+    let _ = sqlx::query("DELETE FROM models WHERE model_id in (SELECT model_id FROM models GROUP BY model_sha256 HAVING COUNT(*) > 1)")
+        .execute(db)
+        .await;
 }
 
 async fn get_db_migration_count(db: &DbContext) -> usize {
