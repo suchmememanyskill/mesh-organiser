@@ -16,9 +16,11 @@ Download for:
     - [Fedora/RHEL](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.0.1/Mesh.Organiser-2.0.1-1.x86_64.rpm) (.rpm)
     - Note: Only slicers installed via flatpak are supported
 
-See the [Web folder](./web/README.md) for server (Mesh Organiser as website) installation instructions.
-
 See the [Releases](https://github.com/suchmememanyskill/mesh-organiser/releases) tab for more downloads and release notes
+
+## Install (Server)
+
+Mesh Organiser is also available to be hosted as a website by making use of a server running Docker. See the [Web folder](./web/README.md) for server installation instructions.
 
 ## Support/Donate
 
