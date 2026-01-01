@@ -5,6 +5,7 @@ export type SizeOptionModels = "Grid_Small" | "Grid_Medium" | "Grid_Large" | "Li
 export const SizeOptionModelsAsList = ["Grid_Small", "Grid_Medium", "Grid_Large", "List_Small", "List_Medium", "List_Large"] as SizeOptionModels[];
 export type OrderOptionModels = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "size-asc" | "size-desc" | "modified-asc" | "modified-desc";
 export type OrderOptionGroups = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "modified-asc" | "modified-desc";
+export type StartupPages = "" | "models" | "import" | "groups" | "favorites" | "print-history" | "projects";
 
 export interface Configuration {
     data_path: string;
@@ -51,6 +52,7 @@ export interface Configuration {
     default_enabled_import_as_path : boolean;
     thumbnail_rotation : [number, number, number];
     watch_downloads_folder: boolean;
+    startup_page: StartupPages;
 }
 
 export function convertOrderOptionModelsToEnum(orderOption : OrderOptionModels) : ModelOrderBy {
@@ -142,6 +144,7 @@ export function configurationDefault() : Configuration
         default_enabled_import_as_path : false,
         thumbnail_rotation : [35, 30, 0],
         watch_downloads_folder: false,
+        startup_page: "",
     }
 }
 

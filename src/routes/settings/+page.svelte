@@ -101,6 +101,15 @@
         "split-top-bottom": "Split top/bottom",
     };
 
+    let startPageOptions = {
+        "": "Default",
+        "import": "Import",
+        "models": "Models",
+        "groups": "Groups",
+        "favorites": "Favorites",
+        "print-history": "Print History",
+        "projects": "Projects",
+    };
 </script>
 
 <div class="w-full overflow-y-auto hide-scrollbar h-full">
@@ -387,7 +396,19 @@
                 <CheckboxWithLabel bind:value={configuration.focus_after_link_import} label="Focus window after importing from website" />
                 <CheckboxWithLabel bind:value={configuration.open_links_in_external_browser} label="Open links in external browser" />
                 {/if}
-                <CheckboxWithLabel bind:value={configuration.label_exported_model_as_printed} label="Label exported models as printed" />             
+                <CheckboxWithLabel bind:value={configuration.label_exported_model_as_printed} label="Label exported models as printed" />          
+                
+                <div class="flex flex-col space-y-1.5">
+                    <Label>Startup page</Label>
+                    <Select.Root type="single" bind:value={configuration.startup_page}>
+                        <Select.Trigger class="w-full">{ configuration.startup_page in startPageOptions ? startPageOptions[configuration.startup_page] : "Default"}</Select.Trigger>
+                        <Select.Content>
+                            {#each Object.entries(startPageOptions) as [key, value]}
+                                <Select.Item value={key}>{value}</Select.Item>
+                            {/each}
+                        </Select.Content>
+                    </Select.Root>                    
+                </div>
             </CardContent>
         </Card>
         {/if}

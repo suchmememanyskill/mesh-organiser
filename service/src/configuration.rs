@@ -53,6 +53,7 @@ pub struct StoredConfiguration {
     pub default_enabled_import_as_path: Option<bool>,
     pub thumbnail_rotation: Option<[i16; 3]>,
     pub watch_downloads_folder: Option<bool>,
+    pub startup_page: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -102,6 +103,7 @@ pub struct Configuration {
     pub default_enabled_import_as_path: bool,
     pub thumbnail_rotation: [i16; 3],
     pub watch_downloads_folder: bool,
+    pub startup_page: String,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -231,6 +233,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         watch_downloads_folder: configuration
             .watch_downloads_folder
             .unwrap_or(default.watch_downloads_folder),
+        startup_page: configuration
+            .startup_page
+            .unwrap_or(default.startup_page),
     }
 }
 
@@ -292,6 +297,7 @@ impl Default for Configuration {
             default_enabled_import_as_path: false,
             thumbnail_rotation: [35, 30, 0],
             watch_downloads_folder: false,
+            startup_page: String::from(""),
         }
     }
 }
