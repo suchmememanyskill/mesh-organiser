@@ -21,7 +21,7 @@ services:
     volumes:
       - ${DATA}:/cfg
     ports:
-      - 7834:3000
+      - 35385:3000
     restart: unless-stopped
 networks: {}
 ```
