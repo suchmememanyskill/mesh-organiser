@@ -18,11 +18,11 @@ import { IResourceFolderApi } from "../shared/resource_folder_api";
 import { IResourceApi } from "../shared/resource_api";
 import { ISettingsApi } from "../shared/settings_api";
 import { ITauriImportApi } from "../shared/tauri_import_api";
-import { configuration, currentUser, currentUser as globalCurrentUser } from "$lib/configuration.svelte";
+import { configuration, currentUser, currentUser as globalCurrentUser, panicState } from "$lib/configuration.svelte";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { debounce } from "$lib/utils";
-import { DefaultSidebarStateApi, ISidebarStateApi } from "../shared/sidebar_state_api";
+import { DefaultSidebarStateApi, EmptySidebarStateApi, ISidebarStateApi } from "../shared/sidebar_state_api";
 import { HostApi } from "./host";
 import { IHostApi } from "../shared/host_api";
 import { check } from "@tauri-apps/plugin-updater";
@@ -45,19 +45,6 @@ import { IUserSyncApi } from "../shared/user_sync_api";
 import { HttpMethod, IServerRequestApi } from "../shared/server_request_api";
 import { WebModelApi } from "../web/model";
 import { WebUserApi } from "../web/user";
-import { DefaultDownloadApi } from "../shared/download_api";
-import { WebBlobApi } from "../web/blob";
-import { WebDiskUsageInfoApi } from "../web/disk_usage_info";
-import { WebGroupApi } from "../web/group";
-import { WebHostApi } from "../web/host";
-import { WebBrowserApi } from "../web/internal_browser_api";
-import { WebLabelApi } from "../web/label";
-import { WebResourceApi } from "../web/resource";
-import { WebSettingsApi } from "../web/settings";
-import { WebShareApi } from "../web/share";
-import { WebThreemfApi } from "../web/threemf";
-import { WebUserAdminApi } from "../web/user_admin";
-import { WebImportApi } from "../web/web_import";
 import { initTauriOnlineAccountApi } from "../tauri-online/init";
 import { ServerRequestApi } from "../web/request";
 import { fetch } from "@tauri-apps/plugin-http";
@@ -143,6 +130,7 @@ export async function initTauriLocalApis() : Promise<void> {
 
     checkForUpdates();
 
+    panicState.inPanic = false;
     if (currentUser.syncToken && currentUser.syncUrl)
     {
         const tauriRequestApi = new ServerRequestApi(currentUser.syncUrl, fetch);
@@ -164,6 +152,29 @@ export async function initTauriLocalApis() : Promise<void> {
                 container.addSingleton(IShareApi, remoteShareApi);
             }
         }
+        else if (currentUser.permissions.onlineAccount) {
+            // Failed to login, but user needs online account access
+            panicState.inPanic = true;
+            panicState.message = `Failed to connect to online account at '${currentUser.syncUrl}'.\nPlease confirm network connectivity and check your sync settings.`;
+        }
+    }
+
+    container.addSingleton(ILocalApi, localApi);
+    container.addSingleton(IUserApi, userApi);
+    container.addSingleton(IAdminUserApi, userApi);
+    container.addSingleton(IUserManageSelfApi, userApi);
+    container.addSingleton(IUserSyncApi, userSyncApi);
+
+    if (state.account_link)
+    {
+        await tauriImport.setAccountLink(state.account_link);
+    }
+
+    if (panicState.inPanic)
+    {
+        let sidebarApi = new EmptySidebarStateApi();
+        container.addSingleton(ISidebarStateApi, sidebarApi);
+        return;
     }
     
     container.addSingleton(IBlobApi, blob);
@@ -176,18 +187,8 @@ export async function initTauriLocalApis() : Promise<void> {
     container.addSingleton(ISidebarStateApi, sidebarApi);
     container.addSingleton(IDiskUsageInfoApi, diskUsageInfoApi);
     container.addSingleton(ISlicerApi, slicerApi);
-    container.addSingleton(ILocalApi, localApi);
-    container.addSingleton(IUserApi, userApi);
     container.addSingleton(IThreemfApi, threemfApi);
-    container.addSingleton(IAdminUserApi, userApi);
-    container.addSingleton(IUserManageSelfApi, userApi);
     container.addSingleton(IThumbnailApi, thumbnailApi);
-    container.addSingleton(IUserSyncApi, userSyncApi);
-
-    if (state.account_link)
-    {
-        await tauriImport.setAccountLink(state.account_link);
-    }
 
     await tauriImport.initImportListeners();
 }

@@ -19,7 +19,7 @@
     import UpdatePopup from "$lib/components/view/tauri-update-popup.svelte";
     import DragSelectedModelsRoot from "$lib/components/view/drag-selected-models-root.svelte";
     import { initApi } from "$lib/api/api";
-    import { configuration, configurationMeta, updateConfiguration } from "$lib/configuration.svelte";
+    import { configuration, configurationMeta, panicState, updateConfiguration } from "$lib/configuration.svelte";
     import { updateSidebarState } from "$lib/sidebar_data.svelte";
     import { updateState } from "$lib/update_data.svelte";
     import Spinner from "$lib/components/view/spinner.svelte";
@@ -73,6 +73,10 @@
             if (!await userApi.isAuthenticated()) {
                 await goto("/login");
             }
+        }
+
+        if (panicState.inPanic) {
+            await goto("/panic");
         }
 
         if (getContainer().optional<ISidebarStateApi>(ISidebarStateApi) == null) {

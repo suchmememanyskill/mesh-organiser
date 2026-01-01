@@ -72,3 +72,9 @@ export class DefaultSidebarStateApi implements ISidebarStateApi {
         };
     }
 }
+
+export class EmptySidebarStateApi implements ISidebarStateApi {
+    async getSidebarState(): Promise<SidebarState> {
+        return defaultSidebarState();
+    }
+}

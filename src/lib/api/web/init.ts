@@ -17,7 +17,7 @@ import { WebImportApi } from "./web_import";
 import { DefaultSlicerApi, ISlicerApi } from "../shared/slicer_api";
 import { DefaultSidebarStateApi, ISidebarStateApi } from "../shared/sidebar_state_api";
 import { DefaultDownloadApi, IDownloadApi } from "../shared/download_api";
-import { configuration, currentUser as globalCurrentUser } from "$lib/configuration.svelte";
+import { configuration, currentUser as globalCurrentUser, panicState } from "$lib/configuration.svelte";
 import { IBlobApi } from "../shared/blob_api";
 import { IDiskUsageInfoApi } from "../shared/disk_usage_info_api";
 import { IGroupApi } from "../shared/group_api";
@@ -99,9 +99,18 @@ export async function initWebApi() : Promise<void> {
     container.addSingleton(IThreemfApi, threemf);
     container.addSingleton(IUserManageSelfApi, userAdmin);
     container.addSingleton(IShareApi, shareApi);
-    container.addSingleton(IUserTokenApi, user);
 
     if (currentUser.permissions.admin) {
         container.addSingleton(IAdminUserApi, userAdmin);
+    }
+
+    // Local user, shouldn't be used for anything other than account creation and recovery
+    if (currentUser.id === 1)
+    {
+        panicState.inPanic = true;
+        panicState.message = "Logged in as the local administrator user.\nThis account cannot be used for normal operation.\nPlease create a new user account in the settings and log in with that account.";
+    }
+    else {
+        container.addSingleton(IUserTokenApi, user);
     }
 }

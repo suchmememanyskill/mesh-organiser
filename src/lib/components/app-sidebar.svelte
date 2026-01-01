@@ -14,6 +14,7 @@
     
     import Tag from "@lucide/svelte/icons/tag";
     import Tags from "@lucide/svelte/icons/tags";
+    import Bomb from "@lucide/svelte/icons/bomb";
 
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import ImportProgressIndicator from "$lib/components/view/tauri-import-progress-indicator.svelte";
@@ -23,7 +24,7 @@
     import { ILabelApi, type LabelMeta } from "$lib/api/shared/label_api";
     import { ImportStatus } from "$lib/api/shared/tauri_import_api";
     import AddLabelPopover from "$lib/components/view/add-label-popover.svelte";
-    import { configuration } from "$lib/configuration.svelte";
+    import { configuration, panicState } from "$lib/configuration.svelte";
     import { importState } from "$lib/import.svelte";
     import { sidebarState, updateSidebarState } from "$lib/sidebar_data.svelte";
     import Check from "@lucide/svelte/icons/check";
@@ -112,6 +113,23 @@
                 url: "/share",
                 count: sidebarState.shareCount,
             });
+        }
+
+        if (panicState.inPanic) {
+            return [
+                {
+                    title: "Application Error",
+                    icon: Bomb,
+                    url: "/panic",
+                    count: 0,
+                },
+                {
+                    title: "Settings",
+                    icon: Settings,
+                    url: "/settings",
+                    count: 0,
+                }
+            ];
         }
 
         return base;
@@ -276,28 +294,30 @@
             </Sidebar.GroupContent>
         </Sidebar.Group>
 
-        <Sidebar.Group>
-            <Sidebar.GroupLabel>Labels</Sidebar.GroupLabel>
-            <AddLabelPopover onsubmit={addLabel}>
-                <Sidebar.GroupAction title="New label">
-                    <span class="sr-only">New label</span>
-                    <Plus />
-                </Sidebar.GroupAction>
-            </AddLabelPopover>
+        {#if !panicState.inPanic}
+            <Sidebar.Group>
+                <Sidebar.GroupLabel>Labels</Sidebar.GroupLabel>
+                <AddLabelPopover onsubmit={addLabel}>
+                    <Sidebar.GroupAction title="New label">
+                        <span class="sr-only">New label</span>
+                        <Plus />
+                    </Sidebar.GroupAction>
+                </AddLabelPopover>
 
-            <Sidebar.GroupContent>
-                <Sidebar.Menu>
-                    {#each sidebarState.labels as labelEntry (labelEntry.meta.id)}
-                        {#if !labelEntry.hasParent}
-                            {@render LabelTree({
-                                label: labelEntry.meta,
-                                level: 1,
-                            })}
-                        {/if}
-                    {/each}
-                </Sidebar.Menu>
-            </Sidebar.GroupContent>
-        </Sidebar.Group>
+                <Sidebar.GroupContent>
+                    <Sidebar.Menu>
+                        {#each sidebarState.labels as labelEntry (labelEntry.meta.id)}
+                            {#if !labelEntry.hasParent}
+                                {@render LabelTree({
+                                    label: labelEntry.meta,
+                                    level: 1,
+                                })}
+                            {/if}
+                        {/each}
+                    </Sidebar.Menu>
+                </Sidebar.GroupContent>
+            </Sidebar.Group>
+        {/if}
     </Sidebar.Content>
     <Sidebar.Footer>
         {#if syncApi}

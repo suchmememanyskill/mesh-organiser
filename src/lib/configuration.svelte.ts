@@ -22,7 +22,7 @@ export const currentUser = $state<User>({
   syncUrl: null,
   syncToken: null,
   lastSync: null,
-})
+});
 
 export async function updateConfiguration(config : Configuration) : Promise<void> {
     let settingsApi = getContainer().optional<ISettingsApi>(ISettingsApi);
@@ -34,6 +34,11 @@ export async function updateConfiguration(config : Configuration) : Promise<void
 
     await settingsApi.saveConfiguration(config);
 }
+
+export const panicState = $state({
+    inPanic: false,
+    message: "",
+});
 
 /*
 function rgbToHsl(r : number, g : number, b : number) : [number, number, number] {
