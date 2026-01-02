@@ -9,9 +9,6 @@ case "$TARGETPLATFORM" in
         ;;
     "linux/arm64")
         export RUST_TARGET=aarch64-unknown-linux-gnu
-        if [ ! -d "/opt/aarch64-linux-gnu-cross" ]; then
-            apt-get install -y gcc-aarch64-linux-gnu
-        fi
         export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
         export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
         ;;
