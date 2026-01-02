@@ -35,6 +35,7 @@ pub struct StoredConfiguration {
     pub max_size_model_3mf_preview: Option<u32>,
     pub max_size_model_stl_preview: Option<u32>,
     pub max_size_model_obj_preview: Option<u32>,
+    pub max_size_model_step_preview: Option<u32>,
     pub allow_importing_gcode: Option<bool>,
     pub only_show_single_image_in_groups: Option<bool>,
     pub custom_slicer_path: Option<String>,
@@ -104,6 +105,7 @@ pub struct Configuration {
     pub thumbnail_rotation: [i16; 3],
     pub watch_downloads_folder: bool,
     pub startup_page: String,
+    pub max_size_model_step_preview: u32,
 }
 
 pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configuration {
@@ -236,6 +238,9 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         startup_page: configuration
             .startup_page
             .unwrap_or(default.startup_page),
+        max_size_model_step_preview: configuration
+            .max_size_model_step_preview
+            .unwrap_or(default.max_size_model_step_preview),
     }
 }
 
@@ -279,6 +284,7 @@ impl Default for Configuration {
             max_size_model_3mf_preview: 15,
             max_size_model_stl_preview: 30,
             max_size_model_obj_preview: 30,
+            max_size_model_step_preview: 30,
             allow_importing_gcode: true,
             only_show_single_image_in_groups: true,
             custom_slicer_path: String::new(),

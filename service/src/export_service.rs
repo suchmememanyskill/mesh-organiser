@@ -1,5 +1,5 @@
 use crate::ASYNC_MULT;
-use crate::util::{cleanse_evil_from_name, convert_zip_to_extension, is_zipped_file_extension};
+use crate::util::cleanse_evil_from_name;
 use crate::service_error::ServiceError;
 use async_zip::{Compression, ZipEntryBuilder};
 use async_zip::tokio::read::seek::ZipFileReader;
@@ -145,15 +145,16 @@ pub async fn export_zip_to_temp_folder(
 
     for model in models {
         let cleansed_name = cleanse_evil_from_name(&model.name);
-        let extension = convert_zip_to_extension(&model.blob.filetype);
-        let builder = ZipEntryBuilder::new(format!("{}.{}", cleansed_name, extension).into(), Compression::Deflate);
+        let file_type = model.blob.to_file_type();
+        let uncompressed_file_type = file_type.from_zip();
+        let builder = ZipEntryBuilder::new(format!("{}.{}", cleansed_name, uncompressed_file_type.to_extension()).into(), Compression::Deflate);
         let mut stream_writer = writer.write_entry_stream(builder).await?;
 
         // TODO: Find a way to reuse this
         let src_file_path = get_model_path_for_blob(&model.blob, app_state);
         let model_file = File::open(src_file_path).await?;
 
-        if is_zipped_file_extension(&model.blob.filetype) {
+        if file_type.is_zipped() {
             let mut buffered_reader = BufReader::new(model_file);
             let mut zip = ZipFileReader::with_tokio(&mut buffered_reader).await?;
             let mut file = zip.reader_with_entry(0).await?;
@@ -191,7 +192,7 @@ pub async fn get_bytes_from_blob(
     let mut file = File::open(src_file_path).await?;
     let mut buffer = Vec::new();
 
-    if is_zipped_file_extension(&blob.filetype) {
+    if blob.to_file_type().is_zipped() {
         let mut buffered_reader = BufReader::new(file);
         let mut zip = ZipFileReader::with_tokio(&mut buffered_reader).await?;
         let file = zip.reader_with_entry(0).await?;
@@ -232,10 +233,11 @@ pub async fn get_path_from_model(
 ) -> Result<PathBuf, ServiceError> {
     let src_file_path = get_model_path_for_blob(&model.blob, app_state);
     let cleansed_name = cleanse_evil_from_name(&model.name);
-    let extension = convert_zip_to_extension(&model.blob.filetype);
-    let dst_file_path = ensure_unique_file(temp_dir, &cleansed_name, &extension);
+    let file_type = model.blob.to_file_type();
+    let uncompressed_file_type = file_type.from_zip();
+    let dst_file_path = ensure_unique_file(temp_dir, &cleansed_name, &uncompressed_file_type.to_extension());
 
-    if is_zipped_file_extension(&model.blob.filetype) {
+    if file_type.is_zipped() {
         let zip_file = File::open(src_file_path).await?;
         let mut buffered_reader = BufReader::new(zip_file);
         let mut zip = ZipFileReader::with_tokio(&mut buffered_reader).await?;

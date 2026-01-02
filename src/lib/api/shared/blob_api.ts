@@ -59,6 +59,7 @@ export const IBlobApi = Symbol('IBlobApi');
 
 export interface IBlobApi {
     getBlobBytes(blob : Blob) : Promise<Uint8Array>;
+    getConvertedBlobBytes(blob : Blob, target : FileType) : Promise<Uint8Array>;
     getBlobThumbnailUrl(blob : Blob) : Promise<string>;
     // TODO: Move this to model at some point as it also includes data from the model serverside
     getBlobDownloadUrl(blob : Blob) : Promise<string>;

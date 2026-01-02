@@ -13,7 +13,7 @@ use axum::{
 use axum_extra::extract::Query;
 use db::{model::{Blob, User}, model_db, user_db};
 use serde::Deserialize;
-use service::{cleanse_evil_from_name, convert_zip_to_extension, export_service::get_model_path_for_blob, is_zipped_file_extension};
+use service::{cleanse_evil_from_name, export_service::get_model_path_for_blob};
 use tokio::{fs::File, io::BufReader};
 use tokio_util::{compat::FuturesAsyncReadCompatExt, io::ReaderStream};
 use axum::Json;
@@ -35,6 +35,9 @@ pub fn router() -> Router<WebAppState> {
 }
 
 mod get {
+    use db::model::FileType;
+    use service::thumbnail_service;
+
     use super::*;
 
     #[derive(Deserialize)]
@@ -128,8 +131,8 @@ mod get {
             return StatusCode::NOT_FOUND.into_response();
         }
 
-        let filename = format!("{}.{}", cleanse_evil_from_name(&model.name).trim(), convert_zip_to_extension(&model.blob.filetype)).to_ascii_lowercase();
-        let mut response = get_blob_bytes_inner(&model.blob, &app_state)
+        let filename = format!("{}.{}", cleanse_evil_from_name(&model.name).trim(), model.blob.to_file_type().from_zip().to_extension()).to_ascii_lowercase();
+        let mut response = get_blob_bytes_inner(&model.blob, model.blob.to_file_type(), &app_state)
             .await;
 
         response.headers_mut().insert(
@@ -163,13 +166,19 @@ mod get {
 
         let model = &model[0];
 
-        get_blob_bytes_inner(&model.blob, &app_state)
+        get_blob_bytes_inner(&model.blob, model.blob.to_file_type(), &app_state)
             .await
+    }
+
+    #[derive(Deserialize)]
+    pub struct GetBlobBytesParams {
+        pub target_file_type: Option<String>,
     }
 
     pub async fn get_blob_bytes(
         auth_session: AuthSession,
         Path(sha256): Path<String>,
+        Query(params): Query<GetBlobBytesParams>,
         State(app_state): State<WebAppState>,
     ) -> Response {
         let user = auth_session.user.unwrap().to_user();
@@ -185,7 +194,9 @@ mod get {
             _ => return StatusCode::NOT_FOUND.into_response(),
         };
 
-        get_blob_bytes_inner(&blob, &app_state)
+        let file_type = params.target_file_type.map(|target| FileType::from_extension(&target)).unwrap_or(blob.to_file_type()); 
+
+        get_blob_bytes_inner(&blob, file_type, &app_state)
             .await
             .into_response()
     }
@@ -210,6 +221,7 @@ mod get {
 
     async fn get_blob_bytes_inner(
         blob: &Blob,
+        target: FileType,
         app_state: &WebAppState,
     ) -> Response {
         let src_file_path = get_model_path_for_blob(&blob, &app_state.app_state);
@@ -221,23 +233,41 @@ mod get {
 
         let buffered_reader = BufReader::new(file);
 
-        if is_zipped_file_extension(&blob.filetype) {
-            let archive = match ZipFileReader::with_tokio(buffered_reader).await {
-                Ok(a) => a,
+        if blob.to_file_type() == target {
+            if blob.to_file_type().is_zipped() {
+                let archive = match ZipFileReader::with_tokio(buffered_reader).await {
+                    Ok(a) => a,
+                    Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+                };
+                let file = match archive.into_entry(0).await {
+                    Ok(f) => f,
+                    Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+                };
+
+                let stream = ReaderStream::new(file.compat());
+
+                return Body::from_stream(stream).into_response();
+            } else {
+                let stream = ReaderStream::new(buffered_reader);
+
+                return Body::from_stream(stream).into_response();
+            }
+        }
+        else if blob.to_file_type().is_step() && target.is_stl() {
+            let model_bytes = match export_service::get_bytes_from_blob(blob, &app_state.app_state).await {
+                Ok(b) => b,
                 Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
             };
-            let file = match archive.into_entry(0).await {
-                Ok(f) => f,
+
+            let converted_bytes = match thumbnail_service::convert_step_to_stl(&model_bytes) {
+                Ok(b) => b,
                 Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
             };
 
-            let stream = ReaderStream::new(file.compat());
-
-            return Body::from_stream(stream).into_response();
-        } else {
-            let stream = ReaderStream::new(buffered_reader);
-
-            return Body::from_stream(stream).into_response();
+            return Response::new(Body::from(converted_bytes));
+        }
+        else {
+            return StatusCode::BAD_REQUEST.into_response();
         }
     }
 

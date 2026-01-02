@@ -3,13 +3,12 @@ use crate::ASYNC_MULT;
 use crate::configuration::Configuration;
 use crate::import_state::{ImportState, ImportStatus, ImportedModelsSet};
 use crate::util::{self, read_file_as_text};
-use crate::util::{convert_extension_to_zip, is_zippable_file_extension};
 use async_zip::ZipEntryBuilder;
 use async_zip::tokio::read;
 use async_zip::tokio::read::seek::ZipFileReader;
 use async_zip::tokio::write::ZipFileWriter;
 use db::{blob_db, label_db, label_keyword_db, model_db};
-use db::model::{Model, User};
+use db::model::{FileType, Model, User};
 use db::model_db::ModelFilterOptions;
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -458,6 +457,14 @@ async fn import_single_model<W>(
 where
     W: AsyncRead + Unpin,
 {
+    let file_type = FileType::from_extension(file_type);
+
+    if file_type.is_unsupported() {
+        return Err(ServiceError::InternalError(String::from(
+            "Unsupported filetype",
+        )));
+    }
+
     let mut file_contents: Vec<u8> = match file_size {
         0 => Vec::new(),
         val => Vec::with_capacity(val),
@@ -484,18 +491,18 @@ where
     if let Some(blob) = blob_id_optional {
         blob_id = blob.id;
     } else if let Some(permanent_disk_path) = permanent_disk_path {
-        blob_id = blob_db::add_blob(&app_state.db, &hash, file_type, file_size as i64, Some(permanent_disk_path.to_str().unwrap().to_string())).await?;
+        blob_id = blob_db::add_blob(&app_state.db, &hash, &file_type.to_extension(), file_size as i64, Some(permanent_disk_path.to_str().unwrap().to_string())).await?;
     } else {
-        let new_extension = convert_extension_to_zip(file_type);
+        let compressed_file_type = file_type.to_zip();
 
         let final_file_name =
-            PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, &new_extension));
+            PathBuf::from(app_state.get_model_dir()).join(format!("{}.{}", hash, &compressed_file_type.to_extension()));
 
         let mut file_handle = File::create(&final_file_name).await?;
 
-        if is_zippable_file_extension(file_type) {
+        if compressed_file_type.is_zipped() {
             let mut writer = ZipFileWriter::with_tokio(&mut file_handle);
-            let builder = ZipEntryBuilder::new(format!("{}.{}", name, file_type.to_lowercase()).into(), async_zip::Compression::Deflate);
+            let builder = ZipEntryBuilder::new(format!("{}.{}", name, file_type.to_extension()).into(), async_zip::Compression::Deflate);
 
             writer.write_entry_whole(builder, &file_contents).await?;
             writer.close().await?;
@@ -503,7 +510,7 @@ where
             file_handle.write_all(&file_contents).await?;
         }
 
-        blob_id = blob_db::add_blob(&app_state.db, &hash, &new_extension, file_size as i64, None).await?;
+        blob_id = blob_db::add_blob(&app_state.db, &hash, &compressed_file_type.to_extension(), file_size as i64, None).await?;
     }
 
     let id = model_db::add_model(

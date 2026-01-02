@@ -1,4 +1,4 @@
-import type { Blob, IBlobApi } from "../shared/blob_api";
+import { FileType, type Blob, type IBlobApi } from "../shared/blob_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
 import type { User } from "../shared/user_api";
 
@@ -29,5 +29,17 @@ export class WebBlobApi implements IBlobApi {
 
     async getBlobThumbnailUrl(blob: Blob): Promise<string> {
         return this.hostUrl + "/api/v1/blobs/" + blob.sha256 + "/thumb";
+    }
+
+    async getConvertedBlobBytes(blob: Blob, target: FileType): Promise<Uint8Array> {
+        if (blob.filetype === target) {
+            return this.getBlobBytes(blob);
+        }
+
+        if (blob.filetype === FileType.STEP && target === FileType.STL) {
+            return await this.requestApi.requestBinary("/blobs/" + blob.sha256 + "/bytes?target_file_type=stl", HttpMethod.GET);
+        }
+
+        throw new Error("Unsupported conversion");
     }
 }

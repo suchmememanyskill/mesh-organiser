@@ -22,7 +22,7 @@ urlencoding = "2"
 stl_io = "0"
 threemf = { git = "https://github.com/suchmememanyskill/3mf-rs", rev = "d78e731b2fcf127692380332ad2708aec65dee68" }
 image = { version = "0", features = ["png", "jpeg"] }
-libmeshthumbnail = { git = "https://github.com/suchmememanyskill/mesh-thumbnail", branch = "software" }
+libmeshthumbnail = { git = "https://github.com/suchmememanyskill/mesh-thumbnail", rev = "26b24bcb8ca243eb5e8ea3d179696bd29ad5e981", features = ["step"] }
 vek = "0"
 content_disposition = "0.4.0"
 futures = "0"

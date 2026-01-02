@@ -1,4 +1,4 @@
-import type { Blob, IBlobApi } from "../shared/blob_api";
+import type { Blob, FileType, IBlobApi } from "../shared/blob_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
 import type { Share } from "../shared/share_api";
 
@@ -9,6 +9,14 @@ export class WebShareBlobApi implements IBlobApi {
     constructor(requestApi : IServerRequestApi, share : Share) {
         this.requestApi = requestApi;
         this.share = share;
+    }
+
+    getConvertedBlobBytes(blob: Blob, target: FileType): Promise<Uint8Array> {
+        throw new Error("Method not implemented.");
+    }
+
+    getBlobsDownloadUrl(blobs: Blob[]): Promise<string> {
+        throw new Error("Cannot download multiple blobs from web share API");
     }
 
     async getBlobDownloadUrl(blob: Blob): Promise<string> {

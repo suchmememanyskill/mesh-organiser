@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use db::{blob_db, model::User, model_db};
 use serde::Serialize;
-use service::export_service;
+use service::{export_service, thumbnail_service};
 use tauri::{State, ipc::Response};
 
 use crate::{error::ApplicationError, tauri_app_state::TauriAppState};
@@ -10,6 +10,7 @@ use crate::{error::ApplicationError, tauri_app_state::TauriAppState};
 #[tauri::command]
 pub async fn get_model_bytes(
     model_id: i64,
+    convert_step_to_stl: bool,
     state: State<'_, TauriAppState>,
 ) -> Result<Response, ApplicationError> {
     let model = model_db::get_models_via_ids(
@@ -27,12 +28,13 @@ pub async fn get_model_bytes(
 
     let model = &model[0];
 
-    get_blob_bytes(model.blob.sha256.clone(), state).await
+    get_blob_bytes(model.blob.sha256.clone(), convert_step_to_stl, state).await
 }
 
 #[tauri::command]
 pub async fn get_blob_bytes(
     sha256: String,
+    convert_step_to_stl: bool,
     state: State<'_, TauriAppState>,
 ) -> Result<Response, ApplicationError> {
     let blob = match blob_db::get_blob_via_sha256(&state.app_state.db, &sha256).await? {
@@ -46,6 +48,19 @@ pub async fn get_blob_bytes(
 
     // Todo: This is not a streamed response. Less efficient than the streaming we did before!
     let bytes = export_service::get_bytes_from_blob(&blob, &state.app_state).await?;
+
+    if convert_step_to_stl && blob.to_file_type().is_step() {
+        let converted_bytes = match thumbnail_service::convert_step_to_stl(&bytes) {
+            Ok(b) => b,
+            Err(e) => {
+                return Err(ApplicationError::InternalError(format!(
+                    "Failed to convert STEP to STL: {}",
+                    e
+                )));
+            }
+        };
+        return Ok(Response::new(converted_bytes));
+    }
 
     Ok(Response::new(bytes))
 }

@@ -1,6 +1,10 @@
-import { type Blob, IBlobApi } from "../shared/blob_api";
+import { type Blob, FileType, IBlobApi } from "../shared/blob_api";
 
 export class DemoBlobApi implements IBlobApi {
+    getConvertedBlobBytes(blob: Blob, target: FileType): Promise<Uint8Array> {
+        throw new Error("Method not implemented.");
+    }
+    
     getBlobsDownloadUrl(blobs: Blob[]): Promise<string> {
         throw new Error("Cannot send multiple files to slicer in demo mode.");
     }

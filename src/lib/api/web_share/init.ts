@@ -65,6 +65,7 @@ export async function initWebShareApi() : Promise<boolean> {
     configuration.show_multiselect_checkboxes = true;
     configuration.only_show_single_image_in_groups = true;
     configuration.show_date_on_list_view = false;
+    configuration.max_size_model_step_preview = 0;
 
     return true;
 }

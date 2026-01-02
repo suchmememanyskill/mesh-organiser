@@ -51,6 +51,9 @@ export function loadModelAutomatically(configuration: Configuration, model: Mode
         case FileType.THREEMF:
             maxSize = configuration.max_size_model_3mf_preview;
             break;
+        case FileType.STEP:
+            maxSize = configuration.max_size_model_step_preview;
+            break;
     }
 
     return modelSizeInMb <= maxSize;
@@ -59,7 +62,8 @@ export function loadModelAutomatically(configuration: Configuration, model: Mode
 export function isModelPreviewable(model: Model): boolean {
     return model.blob.filetype === FileType.STL 
         || model.blob.filetype === FileType.OBJ 
-        || model.blob.filetype === FileType.THREEMF;
+        || model.blob.filetype === FileType.THREEMF
+        || model.blob.filetype === FileType.STEP;
 }
 
 export function isModelSlicable(model: Model): boolean {

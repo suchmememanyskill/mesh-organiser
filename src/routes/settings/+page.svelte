@@ -288,6 +288,22 @@
                         disabled={configuration.max_size_model_3mf_preview <= 0}
                         bind:value={configuration.max_size_model_3mf_preview} />
                 </div>
+
+                <div class="flex flex-col gap-3">
+                    <Label>Max filesize where STEP models are automatically loaded (in MB)</Label>
+
+                    <CheckboxWithLabel label = "Do not automatically load STEP models" class="ml-1"
+                        bind:value={
+                            () => configuration.max_size_model_step_preview <= 0,
+                            (val) => { configuration.max_size_model_step_preview = val ? 0 : configurationDefault().max_size_model_step_preview; }
+                        } />
+
+                    <Input
+                        type="number"
+                        min="0"
+                        disabled={configuration.max_size_model_step_preview <= 0}
+                        bind:value={configuration.max_size_model_step_preview} />
+                </div>
             </CardContent>
         </Card>
         {/if}

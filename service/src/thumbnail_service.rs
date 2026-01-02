@@ -1,12 +1,13 @@
 use std::{panic, path::PathBuf};
 
-use db::{blob_db, model::Blob};
+use db::{blob_db, model::{Blob, FileType}};
 use image::imageops::FilterType::Triangle;
 use libmeshthumbnail::{extract_image, parse_model, render};
 use tokio::task::JoinSet;
 use vek::{Vec2, Vec3};
 
 use crate::{AppState, ServiceError, export_service::{get_image_path_for_blob, get_model_path_for_blob}, import_state::{ImportState, ImportStatus}};
+pub use libmeshthumbnail::parse_model::{convert_step_path_to_stl, convert_step_to_stl};
 
 const IMAGE_WIDTH: usize = 400;
 const IMAGE_HEIGHT: usize = 400;
@@ -43,25 +44,17 @@ fn render(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, rotation:
 
 fn process(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, rotation: Vec3<f32>, fallback_3mf_thumbnail : bool, prefer_3mf_thumbnail : bool, prefer_gcode_thumbnail : bool) -> Result<(), ServiceError> {
     let filename = model_path.to_string_lossy().to_lowercase();
+    let extension = FileType::from_extension(&filename);
 
-    let extension = match filename {
-        f if f.ends_with(".stl") => "stl",
-        f if f.ends_with(".obj") => "obj",
-        f if f.ends_with(".gcode") => "gcode",
-        f if f.ends_with(".3mf") => "3mf",
-        f if f.ends_with(".stl.zip") => "stl.zip",
-        f if f.ends_with(".obj.zip") => "obj.zip",
-        f if f.ends_with(".gcode.zip") => "gcode.zip",
-        _ => {
-            return Err(ServiceError::InternalError(format!(
-                "Unsupported file extension for thumbnail generation: {:?}",
-                model_path
-            )));
-        }
-    };
+    if !extension.is_supported_by_thumbnail_gen() {
+        return Err(ServiceError::InternalError(format!(
+            "Unsupported file extension for thumbnail generation: {:?}",
+            model_path
+        )));
+    }
 
-    if (prefer_3mf_thumbnail && extension == "3mf")
-        || (prefer_gcode_thumbnail && (extension == "gcode" || extension == "gcode.zip")) {
+    if (prefer_3mf_thumbnail && extension.is_3mf())
+        || (prefer_gcode_thumbnail && extension.is_gcode()) {
             if let Ok(Some(mut image)) = extract_image::handle_extract_image(&model_path) {
                 image = image.resize_to_fill(IMAGE_WIDTH as u32, IMAGE_HEIGHT as u32, Triangle);
                 image.save(&image_path)?;
@@ -73,7 +66,7 @@ fn process(model_path: &PathBuf, image_path: &PathBuf, color: Vec3<u8>, rotation
         return Ok(());
     }
 
-    if fallback_3mf_thumbnail && !prefer_3mf_thumbnail && extension == "3mf" {
+    if fallback_3mf_thumbnail && !prefer_3mf_thumbnail && extension.is_3mf() {
         if let Ok(Some(mut image)) = extract_image::handle_extract_image(&model_path) {
             image = image.resize_to_fill(IMAGE_WIDTH as u32, IMAGE_HEIGHT as u32, Triangle);
             image.save(&image_path)?;

@@ -18,6 +18,7 @@
 
     const props: { model: Model; class?: ClassValue, autoRotate?: boolean } = $props();
     let geometry: BufferGeometry | null = $state.raw(null);
+    let loadFailed = $state(false);
     let lastLoadId = -1;
 
     async function loadUsingWorker(
@@ -81,16 +82,32 @@
         localGeometry?.dispose();
         localGeometry = null;
         let blobApi = getContainer().require<IBlobApi>(IBlobApi);
-        let bytes = await blobApi.getBlobBytes(model.blob);
+        let filetype = model.blob.filetype;
+        let bytes;
+
+        if (filetype === FileType.STEP) {
+            filetype = FileType.STL;
+            try {
+                bytes = await blobApi.getConvertedBlobBytes(model.blob, FileType.STL);
+            }
+            catch (e) {
+                console.error("Failed to convert STEP to STL:", e);
+                loadFailed = true;
+                return;
+            }
+        }
+        else {
+            bytes = await blobApi.getBlobBytes(model.blob);
+        }
 
         if (model.id !== props.model.id) {
             return;
         }
 
         if (configuration.use_worker_for_model_parsing) {
-            localGeometry = await loadUsingWorker(bytes, model.blob.filetype);
+            localGeometry = await loadUsingWorker(bytes, filetype);
         } else {
-            localGeometry = loadModel(bytes, model.blob.filetype);
+            localGeometry = loadModel(bytes, filetype);
         }
 
         if (model.id === props.model.id) {
@@ -110,7 +127,10 @@
         lastLoadId = snapshot.id;
 
         if (snapshot) {
-            untrack(() => load(snapshot));
+            untrack(() => {
+                loadFailed = false;
+                load(snapshot);
+            });
         }
     });
 </script>
@@ -120,6 +140,12 @@
         <Canvas>
             <ThreeScene {geometry} autoRotate={props.autoRotate} />
         </Canvas>
+    {:else if loadFailed}
+        <div
+            class="m-auto flex flex-col justify-center items-center gap-3 h-full"
+        >
+            <span class="text-xl">Failed to load model</span>
+        </div>
     {:else}
         <div
             class="m-auto flex flex-col justify-center items-center gap-3 h-full"
