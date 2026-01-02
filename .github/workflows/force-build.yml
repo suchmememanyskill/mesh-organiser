@@ -57,7 +57,9 @@ jobs:
       - name: install dependencies (macos only)
         if: matrix.name == 'macos-amd64' || matrix.name == 'macos-arm64'
         run: |
-          brew upgrade cmake || brew install cmake
+          brew uninstall cmake
+          brew install cmake@3.31
+          brew link --force cmake@3.31
 
       - name: install frontend dependencies
         run: pnpm install
