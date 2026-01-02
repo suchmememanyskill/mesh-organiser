@@ -4,6 +4,14 @@ set -e
 case "$TARGETPLATFORM" in
     "linux/amd64")
         export RUST_TARGET=x86_64-unknown-linux-musl
+        if [ ! -d "/opt/x86_64-linux-musl-native" ]; then
+            wget http://meshorganiserdemo.suchmeme.nl/x86_64-linux-musl-native.tgz
+            tar -xzf x86_64-linux-musl-native.tgz -C /opt
+            rm x86_64-linux-musl-native.tgz
+        fi
+        export PATH="/opt/x86_64-linux-musl-native/bin:$PATH"
+        export CC_x86_64_unknown_linux_musl=x86_64-linux-musl-gcc
+        export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc
         ;;
     "linux/arm64")
         export RUST_TARGET=aarch64-unknown-linux-musl
