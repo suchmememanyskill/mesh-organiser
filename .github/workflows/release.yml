@@ -58,8 +58,10 @@ jobs:
         if: matrix.name == 'macos-amd64' || matrix.name == 'macos-arm64'
         run: |
           brew uninstall cmake
-          brew install cmake@3.31
-          brew link --force cmake@3.31
+          brew tap-new $USER/local-cmake
+          brew tap homebrew/core --force
+          brew extract --version=3.31.1 cmake $USER/local-cmake
+          brew install $USER/local-cmake/cmake@3.31.1
 
       - name: install frontend dependencies
         run: pnpm install
