@@ -54,6 +54,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - name: install dependencies (macos only)
+        if: matrix.name == 'macos-amd64' || matrix.name == 'macos-arm64'
+        run: |
+          brew upgrade cmake || brew install cmake
+
       - name: install frontend dependencies
         run: pnpm install
 
