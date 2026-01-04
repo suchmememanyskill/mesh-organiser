@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::Serialize;
 
 #[derive(Serialize, Clone, PartialEq, Eq)]
@@ -32,6 +34,13 @@ impl Blob {
 }
 
 impl FileType {
+    pub fn from_pathbuf(path: &PathBuf) -> FileType {
+        match path.extension() {
+            Some(ext) => FileType::from_extension(&ext.to_string_lossy()),
+            None => FileType::Unknown
+        }
+    }
+
     pub fn from_extension(extension: &str) -> FileType {
         match extension.to_lowercase().as_str() {
             f if f.ends_with("stl") => FileType::Stl,
@@ -160,6 +169,17 @@ impl FileType {
             FileType::ZippedGcode => true,
             FileType::Step => true,
             FileType::ZippedStep => true,
+            FileType::Threemf => true,
+            _ => false
+        }
+    }
+
+    pub fn is_importable(&self) -> bool {
+        match self {
+            FileType::Stl => true,
+            FileType::Obj => true,
+            FileType::Gcode => true,
+            FileType::Step => true,
             FileType::Threemf => true,
             _ => false
         }

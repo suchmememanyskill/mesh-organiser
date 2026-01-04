@@ -18,7 +18,6 @@ pub struct StoredConfiguration {
     pub slicer: Option<Slicer>,
     pub focus_after_link_import: Option<bool>,
     pub thumbnail_color: Option<String>,
-    pub allow_importing_step: Option<bool>,
     pub size_option_models: Option<String>,
     pub size_option_groups: Option<String>,
     pub show_grouped_count_on_labels: Option<bool>,
@@ -36,7 +35,6 @@ pub struct StoredConfiguration {
     pub max_size_model_stl_preview: Option<u32>,
     pub max_size_model_obj_preview: Option<u32>,
     pub max_size_model_step_preview: Option<u32>,
-    pub allow_importing_gcode: Option<bool>,
     pub only_show_single_image_in_groups: Option<bool>,
     pub custom_slicer_path: Option<String>,
     pub elegoo_deep_link: Option<bool>,
@@ -69,7 +67,6 @@ pub struct Configuration {
     pub slicer: Option<Slicer>,
     pub focus_after_link_import: bool,
     pub thumbnail_color: String,
-    pub allow_importing_step: bool,
     pub size_option_models: String,
     pub size_option_groups: String,
     pub show_grouped_count_on_labels: bool,
@@ -86,7 +83,6 @@ pub struct Configuration {
     pub max_size_model_3mf_preview: u32,
     pub max_size_model_stl_preview: u32,
     pub max_size_model_obj_preview: u32,
-    pub allow_importing_gcode: bool,
     pub only_show_single_image_in_groups: bool,
     pub custom_slicer_path: String,
     pub elegoo_deep_link: bool,
@@ -140,9 +136,6 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         thumbnail_color: configuration
             .thumbnail_color
             .unwrap_or(default.thumbnail_color),
-        allow_importing_step: configuration
-            .allow_importing_step
-            .unwrap_or(default.allow_importing_step),
         size_option_models: configuration
             .size_option_models
             .unwrap_or(default.size_option_models),
@@ -189,9 +182,6 @@ pub fn stored_to_configuration(configuration: StoredConfiguration) -> Configurat
         max_size_model_obj_preview: configuration
             .max_size_model_obj_preview
             .unwrap_or(default.max_size_model_obj_preview),
-        allow_importing_gcode: configuration
-            .allow_importing_gcode
-            .unwrap_or(default.allow_importing_gcode),
         only_show_single_image_in_groups: configuration
             .only_show_single_image_in_groups
             .unwrap_or(default.only_show_single_image_in_groups),
@@ -267,7 +257,6 @@ impl Default for Configuration {
             slicer: installed_slicer,
             focus_after_link_import: true,
             thumbnail_color: String::from("#EEEEEE"),
-            allow_importing_step: true,
             size_option_models: String::from("Grid_Medium"),
             size_option_groups: String::from("Grid_Medium"),
             show_grouped_count_on_labels: true,
@@ -284,8 +273,7 @@ impl Default for Configuration {
             max_size_model_3mf_preview: 15,
             max_size_model_stl_preview: 30,
             max_size_model_obj_preview: 30,
-            max_size_model_step_preview: 30,
-            allow_importing_gcode: true,
+            max_size_model_step_preview: 10,
             only_show_single_image_in_groups: true,
             custom_slicer_path: String::new(),
             elegoo_deep_link: false,

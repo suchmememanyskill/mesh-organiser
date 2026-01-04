@@ -318,8 +318,6 @@
                 <CheckboxWithLabel bind:value={configuration.default_enabled_delete_after_import} label="Check 'Delete files after import' by default" />
 
                 <CheckboxWithLabel bind:value={configuration.export_metadata} label="Export metadata to .json when opening in folder" />
-                <CheckboxWithLabel bind:value={configuration.allow_importing_step} label="Allow importing step files (thumbnail generation will not work for .step files)" />
-                <CheckboxWithLabel bind:value={configuration.allow_importing_gcode} label="Allow importing gcode files" />
                 <CheckboxWithLabel bind:value={
                     () => configuration.watch_downloads_folder,
                     (val) => { configuration.watch_downloads_folder = val; if (tauriImportApi) { (tauriImportApi as any).initImportListeners(); } }

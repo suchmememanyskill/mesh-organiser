@@ -289,7 +289,6 @@ mod post {
     ) -> Result<Response, ApplicationError> {
         let user = auth_session.user.unwrap().to_user();
         let mut paths = vec![];
-        let config = app_state.get_configuration();
 
         let temp_dir = std::env::temp_dir().join(format!(
             "meshorganiser_import_action_{}_{}",
@@ -314,7 +313,7 @@ mod post {
 
             let file_path = temp_dir.join(cleanse_evil_from_name(&file_name));
 
-            if !(import_service::is_supported_extension(&file_path, &config) 
+            if !(import_service::is_supported_extension(&file_path) 
                 || file_path.extension().unwrap().to_str().unwrap().to_lowercase() == "zip") {
                 continue;
             }

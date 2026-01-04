@@ -62,16 +62,12 @@ After booting the server, in your data folder will be a config.json. This file a
     "data_path": "",
     // Color of generated thumbnails on your server. These thumbnails will be shared across all users, regardless of their own theme or preview settings.
     "thumbnail_color": "#EEEEEE",
-    // Allow/Disallow importing .step files. Note: File sync will break when this feature is disabled.
-    "allow_importing_step": true,
     // If a .3mf thumbnail failed to generate for whatever reason, fall back on the included thumbnail.
     "fallback_3mf_thumbnail": true,
     // If a .3mf contains a pre-generated thumbnail, use this image instead of generating an image of the model.
     "prefer_3mf_thumbnail": true,
     // Max amount of parralel processes this server spawns synchronously. 
     "core_parallelism": 4,
-    // Allow/Disallow importing .gcode files. Note: File sync will break when this feature is disabled.
-    "allow_importing_gcode": true,
     // If a .gcode file contains a pre-generated thumbnail, use it.
     "prefer_gcode_thumbnail": true,
     // Specify rotation of the generated thumbnails [X, Y, Z]. X rotation moves the camera side to side (with +X moving right), Y rotation moves the camera up and down (with +Y moving up), Z rotation spins the camera (with +Z spinning clockwise).

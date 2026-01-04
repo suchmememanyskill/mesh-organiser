@@ -3,7 +3,7 @@ use std::{char::MAX, panic, path::{self, PathBuf}, sync::Arc};
 use async_zip::{Compression, ZipEntryBuilder, tokio::write::ZipFileWriter};
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use service::{export_service::{ensure_unique_file_full_filename, get_temp_dir}, import_service::{self, DirectoryScanModel, is_any_supported_extension}, import_state::{ImportState, ImportStatus}};
+use service::{export_service::{ensure_unique_file_full_filename, get_temp_dir}, import_service::{self, DirectoryScanModel, is_supported_extension}, import_state::{ImportState, ImportStatus}};
 use tauri::{AppHandle, State, http::header::CONTENT_DISPOSITION, ipc::Response};
 use tauri_plugin_http::reqwest::{self, cookie::Jar};
 use tokio::{fs::File, io::{AsyncWriteExt, BufWriter}, task::JoinSet};
@@ -343,7 +343,7 @@ pub async fn get_file_bytes(
 ) -> Result<Response, ApplicationError> {
     let path = PathBuf::from(path);
 
-    if !(is_any_supported_extension(&path) || path.extension().map(|e| e.to_string_lossy().to_lowercase().ends_with("zip")).unwrap_or(false)) {
+    if !(is_supported_extension(&path) || path.extension().map(|e| e.to_string_lossy().to_lowercase().ends_with("zip")).unwrap_or(false)) {
         return Err(ApplicationError::InternalError("Unsupported file extension for getting bytes".into()));
     }
 

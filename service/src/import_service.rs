@@ -41,8 +41,7 @@ pub async fn import_path(
     import_state.status = ImportStatus::ProcessingModels;
     import_state.emit_all();
 
-    let configuration = app_state.get_configuration();
-    let model_count = get_model_count(path, &configuration, import_state.recursive, &import_state).await?;
+    let model_count = get_model_count(path, import_state.recursive, &import_state).await?;
     import_state.update_total_model_count(model_count);
 
     let import_state = Arc::new(Mutex::new(import_state));
@@ -71,7 +70,6 @@ pub async fn import_path(
 
 pub async fn get_model_count(
     path: &str,
-    configuration: &Configuration,
     recursive: bool,
     import_state: &ImportState,
 ) -> Result<usize, ServiceError> {
@@ -79,9 +77,9 @@ pub async fn get_model_count(
 
     if path_buff.is_dir() {
         if recursive {
-            get_model_count_from_dir_recursive(path, configuration)
+            get_model_count_from_dir_recursive(path)
         } else {
-            get_model_count_from_dir(path, configuration)
+            get_model_count_from_dir(path)
         }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
         if import_state.import_as_path {
@@ -89,8 +87,8 @@ pub async fn get_model_count(
                 "Cannot import a zip as path",
             )));
         }
-        get_model_count_from_zip(path, configuration).await
-    } else if is_supported_extension(&path_buff, &configuration) {
+        get_model_count_from_zip(path).await
+    } else if is_supported_extension(&path_buff) {
         Ok(1)
     } else {
         Err(ServiceError::InternalError(String::from(
@@ -122,7 +120,7 @@ pub async fn import_path_inner(
         }
     } else if path_buff.extension().is_some() && path_buff.extension().unwrap() == "zip" {
         import_models_from_zip(path, app_state, import_state, name.clone()).await?;
-    } else if is_supported_extension(&path_buff, &configuration) {
+    } else if is_supported_extension(&path_buff) {
         let extension = path_buff.extension().unwrap().to_str().unwrap();
         let size = path_buff.metadata()?.len() as usize;
         let mut import_state = import_state.lock().await;
@@ -259,7 +257,7 @@ async fn import_models_from_dir_recursive(
     if entries
         .iter()
         .filter(|f| f.path().is_file())
-        .any(|f| is_supported_extension(&f.path(), &configuration))
+        .any(|f| is_supported_extension(&f.path()))
     {
         let group_name = util::prettify_file_name(path, true);
 
@@ -275,7 +273,6 @@ async fn import_models_from_dir_recursive(
 }
 
 async fn import_models_from_dir_inner(
-    configuration: &Configuration,
     app_state: &AppState,
     path: PathBuf,
     import_state_mutex: Arc<Mutex<ImportState>>,
@@ -284,7 +281,7 @@ async fn import_models_from_dir_inner(
     delete_after_import: bool,
     import_as_path: bool,
 ) -> Result<(), ServiceError> {
-    if !is_supported_extension(&path, configuration) {
+    if !is_supported_extension(&path) {
         return Err(ServiceError::InternalError("Unsupported filetype".into()));
     }
 
@@ -351,7 +348,6 @@ async fn import_models_from_dir(
             Some(x) => x,
             None => continue,
         };
-        let configuration = configuration.clone();
         let app_state = app_state.clone();
         let import_state_mutex = Arc::clone(&import_state);
         let user = user.clone();
@@ -361,7 +357,7 @@ async fn import_models_from_dir(
         active += 1;
 
         futures.spawn(async move {
-            import_models_from_dir_inner(&configuration, &app_state, entry, import_state_mutex, &user, &origin_url, delete_after_import, import_as_path).await
+            import_models_from_dir_inner(&app_state, entry, import_state_mutex, &user, &origin_url, delete_after_import, import_as_path).await
         });
 
         if active >= max {
@@ -386,7 +382,6 @@ async fn import_models_from_zip(
     import_state: Arc<Mutex<ImportState>>,
     group_name: String,
 ) -> Result<(), ServiceError> {
-    let configuration = app_state.get_configuration();
     let mut import_state = import_state.lock().await;
     import_state.add_new_import_set(Some(group_name));
 
@@ -420,7 +415,7 @@ async fn import_models_from_zip(
                 link.replace(temp_str);
             }*/
 
-            if !is_supported_extension(&path, &configuration) {
+            if !is_supported_extension(&path) {
                 continue;
             }
 
@@ -526,52 +521,33 @@ where
     return Ok(id);
 }
 
-pub fn is_supported_extension(path: &PathBuf, configuration: &Configuration) -> bool {
-    match path.extension() {
-        Some(ext) => {
-            let lowercase = ext.to_str().unwrap().to_lowercase();
-            lowercase == "stl"
-                || lowercase == "obj"
-                || lowercase == "3mf"
-                || (configuration.allow_importing_gcode && lowercase == "gcode")
-                || (configuration.allow_importing_step && lowercase == "step")
-        }
-        None => false,
-    }
-}
-
-pub fn is_any_supported_extension(path: &PathBuf) -> bool {
-    is_supported_extension(path, &Configuration {
-        allow_importing_gcode: true,
-        allow_importing_step: true,
-        ..Default::default()
-    })
+pub fn is_supported_extension(path: &PathBuf) -> bool {
+    let file_type = FileType::from_pathbuf(path);
+    file_type.is_importable()
 }
 
 fn get_model_count_from_dir_recursive(
     path: &str,
-    configuration: &Configuration,
 ) -> Result<usize, ServiceError> {
     let entries: Vec<std::fs::DirEntry> = read_dir(path)?.map(|x| x.unwrap()).collect();
     let mut count = 0;
 
     for folder in entries.iter().filter(|f| f.path().is_dir()) {
         count +=
-            get_model_count_from_dir_recursive(folder.path().to_str().unwrap(), configuration)?;
+            get_model_count_from_dir_recursive(folder.path().to_str().unwrap())?;
     }
 
-    count += get_model_count_from_dir(path, configuration)?;
+    count += get_model_count_from_dir(path)?;
 
     Ok(count)
 }
 
 fn get_model_count_from_dir(
     path: &str,
-    configuration: &Configuration,
 ) -> Result<usize, ServiceError> {
     let size = read_dir(path)?
         .map(|f| f.unwrap().path())
-        .filter(|f| f.is_file() && is_supported_extension(&f, &configuration))
+        .filter(|f| f.is_file() && is_supported_extension(&f))
         .count();
 
     Ok(size)
@@ -579,7 +555,6 @@ fn get_model_count_from_dir(
 
 async fn get_model_count_from_zip(
     path: &str,
-    configuration: &Configuration,
 ) -> Result<usize, ServiceError> {
     let file = File::open(path).await?;
     let mut buffered_reader = BufReader::new(file);
@@ -589,7 +564,7 @@ async fn get_model_count_from_zip(
     for entry in zip.file().entries() {
         let path = PathBuf::from(entry.filename().as_str()?);
 
-        if is_supported_extension(&path, configuration)
+        if is_supported_extension(&path)
         {
             count += 1;
         }
@@ -627,7 +602,7 @@ async fn traverse_directory(path : &PathBuf, recursive : bool, set_id : u32) -> 
         if entry_path.is_dir() && recursive {
             let mut sub_models = Box::pin(traverse_directory(&entry_path, recursive, set_id + 1)).await?;
             models.append(&mut sub_models);
-        } else if entry_path.is_file() && is_any_supported_extension(&entry.path()) {
+        } else if entry_path.is_file() && is_supported_extension(&entry.path()) {
             models.push(DirectoryScanModel {
                 path: entry.path(),
                 group_set: Some(set_id),
