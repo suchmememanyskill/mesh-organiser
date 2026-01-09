@@ -48,7 +48,7 @@
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
-            <Select.GroupHeading>Sort options</Select.GroupHeading>
+            <Select.GroupHeading>Sort on</Select.GroupHeading>
             {#each Object.entries(filteredOrders) as order}
                 <Select.Item value={order[0]} label={order[1]}
                     >{order[1]}</Select.Item

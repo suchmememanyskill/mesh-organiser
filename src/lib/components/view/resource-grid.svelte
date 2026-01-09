@@ -167,7 +167,7 @@
 <div class="flex flex-row h-full">
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="grid grid-cols-2 gap-5 justify-center px-5 py-3">
-            <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search..." />
+            <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search" />
     
             <Select.Root type="single" name="Sort" bind:value={currentFilter.order}>
                 <Select.Trigger class="border-primary">

@@ -18,7 +18,7 @@
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
-            <Select.GroupHeading>File Types</Select.GroupHeading>
+            <Select.GroupHeading>File type filter</Select.GroupHeading>
             <Select.Item value={FileType.STL} label="Stl">Stl</Select.Item>
             <Select.Item value={FileType.OBJ} label="Obj">Obj</Select.Item>
             <Select.Item value={FileType.THREEMF} label={"3mf"}>3mf</Select.Item>

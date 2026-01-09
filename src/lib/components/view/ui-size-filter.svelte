@@ -24,7 +24,7 @@
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
-            <Select.GroupHeading>Size options</Select.GroupHeading>
+            <Select.GroupHeading>Model display</Select.GroupHeading>
             {#each SizeOptionModelsAsList as entry}
                 <Select.Item value={entry} label={entry.replaceAll("_", " ")}
                     >{entry.replaceAll("_", " ")}</Select.Item

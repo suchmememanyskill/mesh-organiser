@@ -306,7 +306,7 @@
     {#if showLeftSide}
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
         <div class="flex flex-row gap-3 justify-center px-5 py-3">
-            <Input oninput={onSearchInput} class="border-primary" placeholder="Search..." />
+            <Input oninput={onSearchInput} class="border-primary" placeholder="Search" />
 
             <FileTypeFilter bind:value={fileTypes} onchange={x => {props.groupStream.setFileTypes(x); resetGroupSet(); }} />
 
