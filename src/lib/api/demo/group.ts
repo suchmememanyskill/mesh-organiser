@@ -1,20 +1,18 @@
 import { mode } from "mode-watcher";
-import { createGroupInstance, createGroupMetaInstance, GroupOrderBy, type Group, type GroupMeta, type IGroupApi } from "../shared/group_api";
+import { createGroupInstance, createGroupMetaInstance, GroupOrderBy, type Group, type GroupFilter, type GroupMeta, type IGroupApi } from "../shared/group_api";
 import { type Model, stringArrayToModelFlags } from "../shared/model_api";
 import { mockGroups, mockModels, modelGroupMap, modelLabelsMap, mockLabels } from "./mock_data";
 
 export class DemoGroupApi implements IGroupApi {
-    async getGroups(
-        model_ids: number[] | null,
-        group_ids: number[] | null,
-        label_ids: number[] | null,
-        order_by: GroupOrderBy,
-        text_search: string | null,
-        page: number,
-        page_size: number,
-        include_ungrouped_models: boolean
-    ): Promise<Group[]> {
+    async getGroups(filter : GroupFilter, page: number, page_size: number): Promise<Group[]> {
         const groups: Group[] = [];
+        let model_ids = filter.modelIds;
+        let group_ids = filter.groupIds;
+        let label_ids = filter.labelIds;
+        let order_by = filter.orderBy;
+        let text_search = filter.textSearch;
+        let include_ungrouped_models = filter.includeUngroupedModels;
+        let file_types = filter.fileTypes;
 
         // Collect all groups that match the criteria
         const groupsToProcess = new Map<number, GroupMeta>();
@@ -166,6 +164,12 @@ export class DemoGroupApi implements IGroupApi {
                     m.name.toLowerCase().includes(searchLower) ||
                     (m.description?.toLowerCase().includes(searchLower) ?? false)
                 )
+            );
+        }
+
+        if (file_types) {
+            filteredGroups = filteredGroups.filter(g =>
+                g.models.some(m => file_types.includes(m.blob.filetype))
             );
         }
 

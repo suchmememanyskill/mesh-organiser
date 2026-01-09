@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createGroupInstance, createGroupMetaInstance, type Group, type GroupMeta, type GroupOrderBy, type IGroupApi } from "../shared/group_api";
+import { createGroupInstance, createGroupMetaInstance, type Group, type GroupFilter, type GroupMeta, type GroupOrderBy, type IGroupApi } from "../shared/group_api";
 import { type Model } from "../shared/model_api";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
 import { parseRawModel, type RawModel } from "./model";
@@ -45,16 +45,17 @@ export function parseRawGroup(raw: RawGroup): Group {
         
 
 export class GroupApi implements IGroupApi {
-    async getGroups(model_ids: number[]|null, group_ids: number[] | null, label_ids: number[] | null, order_by: GroupOrderBy, text_search: string | null, page: number, page_size: number, include_ungrouped_models: boolean): Promise<Group[]> {
+    async getGroups(filter : GroupFilter, page: number, page_size: number): Promise<Group[]> {
         let groups = await invoke<RawGroup[]>("get_groups", {
-            modelIds: model_ids,
-            groupIds: group_ids,
-            labelIds: label_ids,
-            orderBy: order_by,
-            textSearch: text_search,
+            modelIds: filter.modelIds,
+            groupIds: filter.groupIds,
+            labelIds: filter.labelIds,
+            orderBy: filter.orderBy,
+            textSearch: filter.textSearch,
             page: page,
             pageSize: page_size,
-            includeUngroupedModels: include_ungrouped_models,
+            includeUngroupedModels: filter.includeUngroupedModels,
+            fileTypes: filter.fileTypes,
         });
 
         return groups.map(group => parseRawGroup(group));

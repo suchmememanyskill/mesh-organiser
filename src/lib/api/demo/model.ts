@@ -1,18 +1,17 @@
-import { ModelOrderBy, type IModelApi, type Model, type ModelFlags } from "../shared/model_api";
+import { ModelOrderBy, type IModelApi, type Model, type ModelFilter, type ModelFlags } from "../shared/model_api";
 import { mockModels, modelGroupMap, modelLabelsMap, mockLabels } from "./mock_data";
 
 export class DemoModelApi implements IModelApi {
-    async getModels(
-        model_ids: number[] | null,
-        group_ids: number[] | null,
-        label_ids: number[] | null,
-        order_by: ModelOrderBy,
-        text_search: string | null,
-        page: number,
-        page_size: number,
-        flags: ModelFlags | null
-    ): Promise<Model[]> {
+    async getModels(filter : ModelFilter, page : number, pageSize : number): Promise<Model[]> {
         let models = Array.from(mockModels.values());
+        let model_ids = filter.modelIds;
+        let group_ids = filter.groupIds;
+        let label_ids = filter.labelIds;
+        let order_by = filter.orderBy;
+        let text_search = filter.textSearch;
+        let flags = filter.flags;
+        let page_size = pageSize;
+        let file_types = filter.fileTypes;
 
         // Filter by model IDs
         if (model_ids) {
@@ -52,6 +51,10 @@ export class DemoModelApi implements IModelApi {
             if (flags.favorite !== undefined) {
                 models = models.filter(m => m.flags.favorite === flags.favorite);
             }
+        }
+
+        if (file_types) {
+            models = models.filter(m => file_types.includes(m.blob.filetype));
         }
 
         // Sort models

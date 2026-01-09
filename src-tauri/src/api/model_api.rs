@@ -6,6 +6,7 @@ use crate::TauriAppState;
 use crate::error::ApplicationError;
 use crate::tauri_import_state::import_state_new_tauri;
 use db::blob_db;
+use db::model::FileType;
 use db::model::{Blob, ModelFlags, User};
 use db::model_db::{self, ModelFilterOptions, ModelOrderBy};
 use itertools::Itertools;
@@ -72,6 +73,7 @@ pub async fn get_models(
     model_ids: Option<Vec<i64>>,
     group_ids: Option<Vec<i64>>,
     label_ids: Option<Vec<i64>>,
+    file_types: Option<Vec<FileType>>,
     order_by: Option<String>,
     text_search: Option<String>,
     model_flags: Option<ModelFlags>,
@@ -90,6 +92,7 @@ pub async fn get_models(
                 .map(|s| ModelOrderBy::from_str(&s).unwrap_or(ModelOrderBy::AddedDesc)),
             model_flags,
             text_search,
+            file_types,
             page,
             page_size,
         },

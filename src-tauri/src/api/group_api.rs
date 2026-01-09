@@ -2,7 +2,7 @@ use std::{str::FromStr, time::Instant};
 
 use db::{
     group_db::{self, GroupOrderBy},
-    model::{ModelGroup, ModelGroupMeta, User},
+    model::{FileType, ModelGroup, ModelGroupMeta, User},
     random_hex_32, time_now,
 };
 use tauri::State;
@@ -19,6 +19,7 @@ pub async fn get_groups(
     page: u32,
     page_size: u32,
     include_ungrouped_models: Option<bool>,
+    file_types: Option<Vec<FileType>>,
     state: State<'_, TauriAppState>,
 ) -> Result<Vec<ModelGroup>, ApplicationError> {
     let instant = Instant::now();
@@ -35,6 +36,7 @@ pub async fn get_groups(
             page_size,
             include_ungrouped_models: include_ungrouped_models.unwrap_or(false),
             allow_incomplete_groups: false,
+            file_types: file_types,
         },
     )
     .await?;

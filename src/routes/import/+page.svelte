@@ -24,7 +24,7 @@
     import { countWriter } from "$lib/utils";
     import Flame from "@lucide/svelte/icons/flame";
     import {globalImportSettings, importState, resetImportState } from "$lib/import.svelte";
-    import { type Group, GroupOrderBy, IGroupApi } from "$lib/api/shared/group_api";
+    import { defaultGroupFilter, type Group, GroupOrderBy, IGroupApi } from "$lib/api/shared/group_api";
     import { ImportStatus, ITauriImportApi } from "$lib/api/shared/tauri_import_api";
     import { getContainer } from "$lib/api/dependency_injection";
     import { configuration } from "$lib/configuration.svelte";
@@ -117,7 +117,13 @@
         let importedModelIds = importState.imported_models.map((res) => res.model_ids).flat();
 
         untrack(async () => {
-            importedGroups = await groupApi.getGroups(importedModelIds, null, null, GroupOrderBy.NameDesc, null, 1, importedModelIds.length, true);
+            let filter = {
+                ...defaultGroupFilter(),
+                modelIds: importedModelIds,
+                includeUngroupedModels: true,
+                orderBy: GroupOrderBy.NameDesc,
+            };
+            importedGroups = await groupApi.getGroups(filter, 1, importedModelIds.length);
         });
     })
 </script>

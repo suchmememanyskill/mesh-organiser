@@ -2,7 +2,7 @@ use std::{cmp::Reverse, u32};
 use itertools::{Itertools, join};
 use indexmap::IndexMap;
 use sqlx::Row;
-use crate::{DbError, PaginatedResponse, db_context::DbContext, model::{Model, ModelFlags, ModelGroup, ModelGroupMeta, ResourceMeta, User}, model_db::{self, ModelFilterOptions}, random_hex_32, resource_db, util::time_now};
+use crate::{DbError, PaginatedResponse, db_context::DbContext, model::{FileType, Model, ModelFlags, ModelGroup, ModelGroupMeta, ResourceMeta, User}, model_db::{self, ModelFilterOptions}, random_hex_32, resource_db, util::time_now};
 use strum::EnumString;
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -24,6 +24,7 @@ pub struct GroupFilterOptions
     pub label_ids: Option<Vec<i64>>,
     pub order_by: Option<GroupOrderBy>,
     pub text_search: Option<String>,
+    pub file_types: Option<Vec<FileType>>,
     pub page : u32,
     pub page_size : u32,
     pub include_ungrouped_models : bool,
@@ -98,6 +99,7 @@ pub async fn get_groups(db: &DbContext, user : &User, options : GroupFilterOptio
         text_search: options.text_search,
         page: 1,
         page_size: u32::MAX,
+        file_types: options.file_types,
         ..Default::default()
     }).await?;
 

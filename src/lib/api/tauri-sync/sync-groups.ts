@@ -1,8 +1,8 @@
 import { currentUser } from "$lib/configuration.svelte";
 import { globalSyncState, resetSyncState, SyncStage, SyncStep } from "$lib/sync.svelte";
 import { getContainer } from "../dependency_injection";
-import { GroupOrderBy, IGroupApi, type Group } from "../shared/group_api";
-import { IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
+import { defaultGroupFilter, GroupOrderBy, IGroupApi, type Group, type GroupFilter } from "../shared/group_api";
+import { defaultModelFilter, IModelApi, ModelOrderBy, type Model, type ModelFilter } from "../shared/model_api";
 import { ITauriImportApi } from "../shared/tauri_import_api";
 import { runGeneratorWithLimit } from "../web/web_import";
 import { computeDifferences, forceApplyFieldToObject, type DiffableItem, type ResourceSet } from "./algorhitm";
@@ -82,11 +82,22 @@ export async function syncGroups(serverModelApi : IModelApi, serverGroupApi : IG
     const localModelApi = getContainer().require<IModelApi>(IModelApi);
     const localGroupApi = getContainer().require<IGroupApi>(IGroupApi);
 
-    let serverModels = await serverModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
-    let localModels = await localModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+    let modelFilter : ModelFilter = {
+        ...defaultModelFilter(),
+        orderBy: ModelOrderBy.ModifiedDesc
+    };
 
-    let serverGroups = await serverGroupApi.getGroups(null, null, null, GroupOrderBy.ModifiedDesc, null, 1, 9999999, false);
-    let localGroups = await localGroupApi.getGroups(null, null, null, GroupOrderBy.ModifiedDesc, null, 1, 9999999, false);
+    let serverModels = await serverModelApi.getModels(modelFilter, 1, 9999999);
+    let localModels = await localModelApi.getModels(modelFilter, 1, 9999999);
+
+    let groupFilter : GroupFilter = {
+        ...defaultGroupFilter(),
+        orderBy: GroupOrderBy.ModifiedDesc,
+        includeUngroupedModels: false
+    }
+
+    let serverGroups = await serverGroupApi.getGroups(groupFilter, 1, 9999999);
+    let localGroups = await localGroupApi.getGroups(groupFilter, 1, 9999999);
 
     let modifiedServerGroups = forceApplyFieldToObject(serverGroups, fieldExtractor);
     let modifiedLocalGroups = forceApplyFieldToObject(localGroups, fieldExtractor);

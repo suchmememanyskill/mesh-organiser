@@ -21,8 +21,10 @@
     import { IsMobile } from "$lib/hooks/is-mobile.svelte";
     import Button, { buttonVariants } from "../ui/button/button.svelte";
     import Undo2 from "@lucide/svelte/icons/undo-2";
-    import { split } from "three/tsl";
-    import { on } from "svelte/events";
+    import type { FileType } from "$lib/api/shared/blob_api";
+    import FileTypeFilter from "./file-type-filter.svelte";
+    import SortFilter from "./sort-filter.svelte";
+    import UiSizeFilter from "./ui-size-filter.svelte";
 
     interface GroupWithModels {
         meta: Group,
@@ -35,6 +37,7 @@
     }
 
     const props: {groupStream : IGroupStreamManager, default_show_multiselect_all? : boolean, onDelete?: Function } = $props();
+    let fileTypes = $state<FileType[]>([]);
     let loadedGroups = $state<Group[]>([]);
     let selected = $state.raw<Group[]>([]);
     const selectedSet = $derived(new Set(selected.map(x => x.meta.id)));
@@ -108,17 +111,6 @@
     };
 
     const size = $derived(sizes[configuration.size_option_groups]);
-
-    const readableOrders = {
-        "date-asc": "Added (Asc)",
-        "date-desc": "Added (Desc)",
-        "name-asc": "Name (A->Z)",
-        "name-desc": "Name (Z->A)",
-        "modified-asc": "Modified (Asc)",
-        "modified-desc": "Modified (Desc)",
-    };
-
-    const readableOrder = $derived(readableOrders[configuration.order_option_groups]);
     props.groupStream.setOrderBy(convertOrderOptionGroupsToEnum(configuration.order_option_groups));
 
     const interval = setInterval(handleScroll, 1000);
@@ -313,40 +305,14 @@
 <div class="flex flex-row h-full">
     {#if showLeftSide}
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
-        <div class="flex flex-row gap-5 justify-center px-5 py-3">
+        <div class="flex flex-row gap-3 justify-center px-5 py-3">
             <Input oninput={onSearchInput} class="border-primary" placeholder="Search..." />
+
+            <FileTypeFilter bind:value={fileTypes} onchange={x => {props.groupStream.setFileTypes(x); resetGroupSet(); }} />
+
+            <SortFilter bind:value={configuration.order_option_groups} subset="groups" onchange={x => {props.groupStream.setOrderBy(convertOrderOptionGroupsToEnum(x)); resetGroupSet();}} />
     
-            <Select.Root type="single" name="Sort" onValueChange={x => { props.groupStream.setOrderBy(convertOrderOptionGroupsToEnum(x as OrderOptionGroups)); resetGroupSet();}} bind:value={configuration.order_option_groups}>
-                <Select.Trigger class="border-primary">
-                    {readableOrder}
-                </Select.Trigger>
-                <Select.Content>
-                    <Select.Group>
-                        <Select.GroupHeading>Sort options</Select.GroupHeading>
-                        {#each Object.entries(readableOrders) as order}
-                            <Select.Item value={order[0]} label={order[1]}
-                                >{order[1]}</Select.Item
-                            >
-                        {/each}
-                    </Select.Group>
-                </Select.Content>
-            </Select.Root>
-    
-            <Select.Root type="single" name="Size" bind:value={configuration.size_option_groups}>
-                <Select.Trigger class="border-primary">
-                    {configuration.size_option_groups.replaceAll("_", " ")}
-                </Select.Trigger>
-                <Select.Content>
-                    <Select.Group>
-                        <Select.GroupHeading>Size options</Select.GroupHeading>
-                        {#each Object.entries(sizes) as size_entry}
-                            <Select.Item value={size_entry[0]} label={size_entry[0].replaceAll("_", " ")}
-                                >{size_entry[0].replaceAll("_", " ")}</Select.Item
-                            >
-                        {/each}
-                    </Select.Group>
-                </Select.Content>
-            </Select.Root>
+            <UiSizeFilter bind:value={configuration.size_option_groups} />
         </div>
 
         {#if effectiveSplitSetting === "no_split"}

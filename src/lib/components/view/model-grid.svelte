@@ -12,6 +12,10 @@
     import { onMount, untrack } from "svelte";
     import Button, { buttonVariants } from "../ui/button/button.svelte";
     import Undo2 from "@lucide/svelte/icons/undo-2";
+    import FileTypeFilter from "./file-type-filter.svelte";
+    import { FileType } from "$lib/api/shared/blob_api";
+    import SortFilter from "./sort-filter.svelte";
+    import UiSizeFilter from "./ui-size-filter.svelte";
 
     interface Function {
         (models : Model[]): void;
@@ -22,6 +26,7 @@
     }
 
     const props: { modelStream : IModelStreamManager, default_show_multiselect_all? : boolean, initialEditMode? : boolean, onRemoveGroupDelete?: boolean, onDelete?: Function, onEmpty?: EmptyFunction} = $props();
+    let fileTypes = $state<FileType[]>([]);
     let loadedModels = $state<Model[]>([]);
     let allModels = $state<Model[]>([]);
     let allModelsWithFallback = $derived(allModels.length > 0 ? allModels : loadedModels);
@@ -63,18 +68,6 @@
 
     let debouncedSetNewSearchText = debounce(setNewSearchText, 200);
 
-    const readableOrders = {
-        "date-asc": "Added (Asc)",
-        "date-desc": "Added (Desc)",
-        "name-asc": "Name (A->Z)",
-        "name-desc": "Name (Z->A)",
-        "size-asc": "Size (Asc)",
-        "size-desc": "Size (Desc)",
-        "modified-asc": "Modified (Asc)",
-        "modified-desc": "Modified (Desc)",
-    };
-
-    const readableOrder = $derived(readableOrders[configuration.order_option_models]);
     props.modelStream.setOrderBy(convertOrderOptionModelsToEnum(configuration.order_option_models));
 
     function onSearchInput(e : Event)
@@ -124,40 +117,14 @@
 <div class="flex flex-row h-full">
     {#if showLeftSide}
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
-        <div class="flex flex-row gap-5 justify-center px-5 py-3">
-            <Input oninput={onSearchInput} class="border-primary" placeholder="Search..." />
+        <div class="flex flex-row gap-3 justify-center px-5 py-3">
+            <Input oninput={onSearchInput} class="border-primary grow" placeholder="Search..." />
     
-            <Select.Root type="single" name="Sort" onValueChange={x => {props.modelStream.setOrderBy(convertOrderOptionModelsToEnum(x as OrderOptionModels)); resetModelSet();}} bind:value={configuration.order_option_models}>
-                <Select.Trigger class="border-primary">
-                    {readableOrder}
-                </Select.Trigger>
-                <Select.Content>
-                    <Select.Group>
-                        <Select.GroupHeading>Sort options</Select.GroupHeading>
-                        {#each Object.entries(readableOrders) as order}
-                            <Select.Item value={order[0]} label={order[1]}
-                                >{order[1]}</Select.Item
-                            >
-                        {/each}
-                    </Select.Group>
-                </Select.Content>
-            </Select.Root>
+            <FileTypeFilter bind:value={fileTypes} onchange={x => {props.modelStream.setFileTypes(x); resetModelSet(); }} />
+
+            <SortFilter bind:value={configuration.order_option_models} subset="models" onchange={x => {props.modelStream.setOrderBy(convertOrderOptionModelsToEnum(x as OrderOptionModels)); resetModelSet();}} />
     
-            <Select.Root type="single" name="Size" bind:value={configuration.size_option_models}>
-                <Select.Trigger class="border-primary">
-                    {configuration.size_option_models.replaceAll("_", " ")}
-                </Select.Trigger>
-                <Select.Content>
-                    <Select.Group>
-                        <Select.GroupHeading>Size options</Select.GroupHeading>
-                        {#each SizeOptionModelsAsList as entry}
-                            <Select.Item value={entry} label={entry.replaceAll("_", " ")}
-                                >{entry.replaceAll("_", " ")}</Select.Item
-                            >
-                        {/each}
-                    </Select.Group>
-                </Select.Content>
-            </Select.Root>
+            <UiSizeFilter bind:value={configuration.size_option_models} />
         </div>
 
         <ModelGridInner bind:value={selected} itemSize={configuration.size_option_models} availableModels={loadedModels} endOfListReached={fetchNextModelSet} />

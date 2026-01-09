@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createModelInstance, type Model, type IModelApi, type ModelFlags, type ModelOrderBy } from "../shared/model_api";
+import { createModelInstance, type Model, type IModelApi, type ModelFlags, type ModelOrderBy, type ModelFilter } from "../shared/model_api";
 import { parseRawBlob, type RawBlob } from "./blob";
 import { parseRawGroupMeta, type RawGroupMeta } from "./group";
 import { parseRawLabelMeta, type RawLabelMeta } from "./label";
@@ -61,16 +61,17 @@ export function parseRawModel(raw: RawModel): Model {
 }
 
 export class ModelApi implements IModelApi {
-    async getModels(model_ids: number[] | null, group_ids: number[] | null, label_ids: number[] | null, order_by: ModelOrderBy, text_search: string | null, page: number, page_size: number, flags: ModelFlags|null): Promise<Model[]> {
+    async getModels(filter : ModelFilter, page : number, pageSize : number): Promise<Model[]> {
         let models = await invoke<RawModel[]>("get_models", {
-            modelIds: model_ids,
-            groupIds: group_ids,
-            labelIds: label_ids,
-            orderBy: order_by,
-            textSearch: text_search,
-            modelFlags: convertModelFlagsToRaw(flags),
+            modelIds: filter.modelIds,
+            groupIds: filter.groupIds,
+            labelIds: filter.labelIds,
+            orderBy: filter.orderBy,
+            textSearch: filter.textSearch,
+            modelFlags: convertModelFlagsToRaw(filter.flags),
+            fileTypes: filter.fileTypes,
             page: page,
-            pageSize: page_size,
+            pageSize: pageSize,
         });
 
         return models.map(model => parseRawModel(model));

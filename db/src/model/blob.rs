@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Clone, PartialEq, Eq)]
 pub enum FileType {
@@ -183,5 +183,15 @@ impl FileType {
             FileType::Threemf => true,
             _ => false
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for FileType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        Ok(FileType::from_extension(s))
     }
 }

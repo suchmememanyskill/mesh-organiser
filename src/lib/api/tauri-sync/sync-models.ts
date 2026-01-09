@@ -2,7 +2,7 @@ import { currentUser } from "$lib/configuration.svelte";
 import { globalSyncState, resetSyncState, SyncStage, SyncStep } from "$lib/sync.svelte";
 import { invoke } from "@tauri-apps/api/core";
 import { getContainer } from "../dependency_injection";
-import { IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
+import { defaultModelFilter, IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
 import type { UploadResult, DirectoryScanModel } from "../tauri-online/tauri_import";
 import { importState } from "$lib/import.svelte";
 import { ImportStatus, ITauriImportApi } from "../shared/tauri_import_api";
@@ -118,8 +118,11 @@ export async function syncModels(serverModelApi : IModelApi, serverGroupApi : IG
     const localGroupApi = getContainer().require<IGroupApi>(IGroupApi);
     const localImportApi = getContainer().require<ITauriImportApi>(ITauriImportApi);
 
-    let serverModels = await serverModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
-    let localModels = await localModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+    let filter = defaultModelFilter();
+    filter.orderBy = ModelOrderBy.ModifiedDesc;
+
+    let serverModels = await serverModelApi.getModels(filter, 1, 9999999);
+    let localModels = await localModelApi.getModels(filter, 1, 9999999);
 
     let syncState = computeDifferences(localModels, serverModels, lastSynced);
     let removeGroupFromModelsLocal = [];

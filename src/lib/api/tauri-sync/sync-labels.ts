@@ -2,7 +2,7 @@ import { currentUser } from "$lib/configuration.svelte";
 import { globalSyncState, resetSyncState, SyncStage, SyncStep } from "$lib/sync.svelte";
 import { getContainer } from "../dependency_injection";
 import { ILabelApi, type Label } from "../shared/label_api";
-import { IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
+import { defaultModelFilter, IModelApi, ModelOrderBy, type Model } from "../shared/model_api";
 import { computeDifferences, forceApplyFieldToObject, type DiffableItem, type ResourceSet } from "./algorhitm";
 
 async function stepUploadToRemote(toUpload: Label[], localApi : ILabelApi, remoteApi : ILabelApi, localModelApi : IModelApi, remoteModels: Model[], isDownload : boolean) : Promise<void> {
@@ -16,7 +16,11 @@ async function stepUploadToRemote(toUpload: Label[], localApi : ILabelApi, remot
         let keywords = await localApi.getKeywordsForLabel(label.meta);
         remoteApi.setKeywordsOnLabel(newLabel, keywords);
 
-        let localModelsForLabel = await localModelApi.getModels(null, null, [label.meta.id], ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+        let filter = defaultModelFilter();
+        filter.orderBy = ModelOrderBy.ModifiedDesc;
+        filter.labelIds = [label.meta.id]
+
+        let localModelsForLabel = await localModelApi.getModels(filter, 1, 9999999);
         let relatedRemoteModels = remoteModels.filter(x => localModelsForLabel.some(y => y.uniqueGlobalId === x.uniqueGlobalId));
         await remoteApi.addLabelToModels(newLabel, relatedRemoteModels);
 
@@ -41,8 +45,16 @@ async function stepSyncToRemote(toSync: ResourceSet<Label>[], localApi : ILabelA
         let keywords = await localApi.getKeywordsForLabel(localLabel.meta);
         await remoteApi.setKeywordsOnLabel(remoteLabel.meta, keywords);
 
-        let localModelsForLabel = await localModelApi.getModels(null, null, [localLabel.meta.id], ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
-        let remoteModelsForLabel = await remoteModelApi.getModels(null, null, [remoteLabel.meta.id], ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+        let localModelsForLabelFilter = defaultModelFilter();
+        localModelsForLabelFilter.orderBy = ModelOrderBy.ModifiedDesc;
+        localModelsForLabelFilter.labelIds = [localLabel.meta.id];
+
+        let remoteModelsForLabelFilter = defaultModelFilter();
+        remoteModelsForLabelFilter.orderBy = ModelOrderBy.ModifiedDesc;
+        remoteModelsForLabelFilter.labelIds = [remoteLabel.meta.id];
+
+        let localModelsForLabel = await localModelApi.getModels(localModelsForLabelFilter, 1, 9999999);
+        let remoteModelsForLabel = await remoteModelApi.getModels(remoteModelsForLabelFilter, 1, 9999999);
         await remoteApi.removeLabelFromModels(remoteLabel.meta, remoteModelsForLabel);
         let relatedRemoteModels = remoteModels.filter(x => localModelsForLabel.some(y => y.uniqueGlobalId === x.uniqueGlobalId));
         await remoteApi.addLabelToModels(remoteLabel.meta, relatedRemoteModels);
@@ -82,8 +94,11 @@ export async function syncLabels(serverModelApi : IModelApi, serverLabelApi : IL
     const localModelApi = getContainer().require<IModelApi>(IModelApi);
     const localLabelApi = getContainer().require<ILabelApi>(ILabelApi);
 
-    let serverModels = await serverModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
-    let localModels = await localModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+    let filter = defaultModelFilter();
+    filter.orderBy = ModelOrderBy.ModifiedDesc;
+
+    let serverModels = await serverModelApi.getModels(filter, 1, 9999999);
+    let localModels = await localModelApi.getModels(filter, 1, 9999999);
 
     let serverLabels = await serverLabelApi.getLabels(false);
     let localLabels = await localLabelApi.getLabels(false);

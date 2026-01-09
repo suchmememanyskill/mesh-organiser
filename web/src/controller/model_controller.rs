@@ -44,7 +44,7 @@ pub fn router() -> Router<WebAppState> {
 
 mod get {
     use axum_extra::extract::Query;
-    use db::{model::User, share_db};
+    use db::{model::{FileType, User}, share_db};
 
     use super::*;
 
@@ -62,6 +62,7 @@ mod get {
         pub model_flags: ModelFlags,
         pub page: u32,
         pub page_size: u32,
+        pub file_types: Vec<FileType>,
     }
 
     async fn get_models_inner(
@@ -85,6 +86,7 @@ mod get {
                 text_search: params.text_search,
                 page: params.page,
                 page_size: params.page_size,
+                file_types: if params.file_types.is_empty() { None } else { Some(params.file_types) },
             },
         )
         .await?;

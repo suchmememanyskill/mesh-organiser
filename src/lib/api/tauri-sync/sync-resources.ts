@@ -1,7 +1,7 @@
 import { currentUser } from "$lib/configuration.svelte";
 import { globalSyncState, resetSyncState, SyncStage, SyncStep } from "$lib/sync.svelte";
 import { getContainer } from "../dependency_injection";
-import { GroupOrderBy, IGroupApi, type Group, type GroupMeta } from "../shared/group_api";
+import { defaultGroupFilter, GroupOrderBy, IGroupApi, type Group, type GroupFilter, type GroupMeta } from "../shared/group_api";
 import { IResourceApi, type ResourceMeta } from "../shared/resource_api";
 import type { ResourceApi } from "../tauri/resource";
 import { computeDifferences, type ResourceSet } from "./algorhitm";
@@ -73,8 +73,14 @@ export async function syncResources(serverGroupApi : IGroupApi, serverResourceAp
     const localGroupApi = getContainer().require<IGroupApi>(IGroupApi);
     const localResourceApi = getContainer().require<IResourceApi>(IResourceApi);
 
-    let serverGroups = (await (serverGroupApi.getGroups(null, null, null, GroupOrderBy.ModifiedDesc, null, 1, 9999999, false))).map(x => x.meta);
-    let localGroups = (await (localGroupApi.getGroups(null, null, null, GroupOrderBy.ModifiedDesc, null, 1, 9999999, false))).map(x => x.meta);
+    let filter : GroupFilter = {
+        ...defaultGroupFilter(),
+        orderBy: GroupOrderBy.ModifiedDesc,
+        includeUngroupedModels: false
+    }
+
+    let serverGroups = (await (serverGroupApi.getGroups(filter, 1, 9999999))).map(x => x.meta);
+    let localGroups = (await (localGroupApi.getGroups(filter, 1, 9999999))).map(x => x.meta);
 
     let serverResources = await serverResourceApi.getResources();
     let localResources = await localResourceApi.getResources();

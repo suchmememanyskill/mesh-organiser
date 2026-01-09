@@ -1,4 +1,4 @@
-import type { Blob } from "./blob_api";
+import { FileType, type Blob } from "./blob_api";
 import type { GroupMeta } from "./group_api";
 import type { LabelMeta } from "./label_api";
 
@@ -70,23 +70,46 @@ export enum ModelOrderBy {
     ModifiedDesc = "ModifiedDesc",
 }
 
+export interface ModelFilter
+{
+    modelIds : number[]|null;
+    groupIds : number[]|null;
+    labelIds : number[]|null;
+    orderBy: ModelOrderBy;
+    textSearch: string|null;
+    flags: ModelFlags|null;
+    fileTypes: FileType[]|null;
+}
+
+export function defaultModelFilter() : ModelFilter {
+    return {
+        modelIds: null,
+        groupIds: null,
+        labelIds: null,
+        orderBy: ModelOrderBy.ModifiedDesc,
+        textSearch: null,
+        flags: null,
+        fileTypes: null,
+    };
+}
+
 export const IModelApi = Symbol('IModelApi');
 
 export interface IModelApi {
-    getModels(model_ids : number[]|null, group_ids : number[]|null, label_ids : number[]|null, order_by: ModelOrderBy, text_search: string|null, page : number, page_size : number, flags: ModelFlags|null) : Promise<Model[]>;
+    getModels(filter : ModelFilter, page : number, pageSize : number) : Promise<Model[]>;
     editModel(model : Model, editTimestamp?: boolean, editGlobalId?: boolean) : Promise<void>;
     deleteModel(model : Model) : Promise<void>;
     deleteModels(models : Model[]) : Promise<void>;
     getModelCount(flags: ModelFlags|null) : Promise<number>;
 }
 
-export async function* modelStream(modelApi: IModelApi, modelIds : number[]|null, groupIds : number[]|null, labelIds : number[]|null, orderBy: ModelOrderBy, textSearch: string|null, flags: ModelFlags|null, pageSize: number = 50) : AsyncGenerator<Model[]> {
+export async function* modelStream(modelApi : IModelApi, filter : ModelFilter, pageSize: number = 50) : AsyncGenerator<Model[]> {
     let page = 1;
     let prefetchNextTask : Promise<Model[]>|null = null;
 
     while (true) {
         if (prefetchNextTask === null) {
-            prefetchNextTask = modelApi.getModels(modelIds, groupIds, labelIds, orderBy, textSearch, page, pageSize, flags);
+            prefetchNextTask = modelApi.getModels(filter, page, pageSize);
         }
 
         const models = await prefetchNextTask;
@@ -95,7 +118,7 @@ export async function* modelStream(modelApi: IModelApi, modelIds : number[]|null
         }
 
         page += 1;
-        prefetchNextTask = modelApi.getModels(modelIds, groupIds, labelIds, orderBy, textSearch, page, pageSize, flags);
+        prefetchNextTask = modelApi.getModels(filter, page, pageSize);
 
         yield models;
     }
@@ -104,6 +127,7 @@ export async function* modelStream(modelApi: IModelApi, modelIds : number[]|null
 export interface IModelStreamManager {
     setSearchText(text: string|null) : void;
     setOrderBy(order_by: ModelOrderBy) : void;
+    setFileTypes(fileTypes : FileType[]) : void;
     fetch() : Promise<Model[]>;
     getAll() : Promise<Model[]>;
 }
@@ -111,6 +135,7 @@ export interface IModelStreamManager {
 export class PredefinedModelStreamManager implements IModelStreamManager {
     private models: Model[];
     private textSearch: string|null = null;
+    private fileTypes: FileType[];
     private orderBy: ModelOrderBy = ModelOrderBy.AddedDesc;
     private pageSize: number;
     private fetchIndex: number = 0;
@@ -118,6 +143,12 @@ export class PredefinedModelStreamManager implements IModelStreamManager {
     constructor(models: Model[], pageSize: number = 50) {
         this.models = models;
         this.pageSize = pageSize;
+        this.fileTypes = [];
+    }
+
+    setFileTypes(fileTypes: FileType[]): void {
+        this.fileTypes = [...new Set(fileTypes)];
+        this.fetchIndex = 0;
     }
 
     setSearchText(text: string | null): void {
@@ -131,6 +162,7 @@ export class PredefinedModelStreamManager implements IModelStreamManager {
     }
 
     async fetch(): Promise<Model[]> {
+        let filetypeKeys = Object.keys(FileType);
         if (this.fetchIndex >= this.models.length) {
             return [];
         }
@@ -139,6 +171,11 @@ export class PredefinedModelStreamManager implements IModelStreamManager {
             model.name.toLowerCase().includes(this.textSearch!) ||
             (model.description?.toLowerCase().includes(this.textSearch!) ?? false)
         );
+
+        filter = (this.fileTypes.length <= 0 || this.fileTypes.length === filetypeKeys.length) ? filter :
+            filter.filter(model => 
+                model.blob.filetype in filetypeKeys
+            );
 
         let sort = filter.sort((a, b) => {
             switch (this.orderBy) {
@@ -171,37 +208,43 @@ export class PredefinedModelStreamManager implements IModelStreamManager {
 }
 
 export class ModelStreamManager implements IModelStreamManager {
+    private filter: ModelFilter;
     private modelApi: IModelApi;
-    private modelIds: number[]|null;
-    private groupIds: number[]|null;
-    private labelIds: number[]|null;
-    private orderBy: ModelOrderBy = ModelOrderBy.AddedDesc;
-    private textSearch: string|null = null;
-    private flags: ModelFlags|null;
     private pageSize: number;
     private generator: AsyncGenerator<Model[]>|null = null;
 
-    constructor(modelApi: IModelApi, modelIds: number[]|null, groupIds: number[]|null, labelIds: number[]|null, flags: ModelFlags|null, pageSize: number = 50) {
+    constructor(modelApi: IModelApi, filter: ModelFilter, pageSize: number = 50) {
         this.modelApi = modelApi;
-        this.modelIds = modelIds;
-        this.groupIds = groupIds;
-        this.labelIds = labelIds;
-        this.flags = flags;
+        this.filter = filter;
         this.pageSize = pageSize;
         this.generateGenerator();
     }
-
+    
     private generateGenerator() {
-        this.generator = modelStream(this.modelApi, this.modelIds, this.groupIds, this.labelIds, this.orderBy, this.textSearch, this.flags, this.pageSize);
+        let filetypeKeys = Object.keys(FileType);
+
+        if (this.filter.fileTypes != null)
+        {
+            if (this.filter.fileTypes.length <= 0 || this.filter.fileTypes.length === filetypeKeys.length) {
+                this.filter.fileTypes = null;
+            }
+        }
+
+        this.generator = modelStream(this.modelApi, this.filter, this.pageSize);
     }
 
     setSearchText(text: string | null): void {
-        this.textSearch = text;
+        this.filter.textSearch = text;
         this.generateGenerator();
     }
 
     setOrderBy(order_by: ModelOrderBy): void {
-        this.orderBy = order_by;
+        this.filter.orderBy = order_by;
+        this.generateGenerator();
+    }
+
+    setFileTypes(fileTypes: FileType[]): void {
+        this.filter.fileTypes = [...new Set(fileTypes)];
         this.generateGenerator();
     }
 

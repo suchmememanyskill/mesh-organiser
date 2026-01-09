@@ -1,7 +1,7 @@
 <script lang="ts">
     import { page } from '$app/state';
     import { getContainer } from '$lib/api/dependency_injection';
-    import { GroupOrderBy, IGroupApi, PredefinedGroupStreamManager, type Group } from '$lib/api/shared/group_api';
+    import { defaultGroupFilter, GroupOrderBy, IGroupApi, PredefinedGroupStreamManager, type Group } from '$lib/api/shared/group_api';
     import { IModelApi } from '$lib/api/shared/model_api';
     import { IShareApi, type Share } from '$lib/api/shared/share_api';
     import GroupGrid from '$lib/components/view/group-grid.svelte';
@@ -17,7 +17,11 @@
 
     onMount(async () => {
         share = await shareApi.getShare(shareId);
-        groups = await groupApi.getGroups(share.modelIds, null, null, GroupOrderBy.CreatedAsc, null, 1, share.modelIds.length, true);
+        let filter = defaultGroupFilter();
+        filter.modelIds = share.modelIds;
+        filter.orderBy = GroupOrderBy.CreatedAsc;
+        filter.includeUngroupedModels = true;
+        groups = await groupApi.getGroups(filter, 1, share.modelIds.length);
     });
 </script>
 

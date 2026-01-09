@@ -6,7 +6,7 @@
     
     let group = $derived.by(() => {
         let slug = parseInt(page.params.slug!);
-        return createGroupMetaInstance(slug, '', '', '');
+        return createGroupMetaInstance(slug, '', '', '', '');
     })
 </script>
 

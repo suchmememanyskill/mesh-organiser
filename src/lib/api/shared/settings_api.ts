@@ -5,6 +5,7 @@ export type SizeOptionModels = "Grid_Small" | "Grid_Medium" | "Grid_Large" | "Li
 export const SizeOptionModelsAsList = ["Grid_Small", "Grid_Medium", "Grid_Large", "List_Small", "List_Medium", "List_Large"] as SizeOptionModels[];
 export type OrderOptionModels = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "size-asc" | "size-desc" | "modified-asc" | "modified-desc";
 export type OrderOptionGroups = "date-asc" | "date-desc" | "name-asc" | "name-desc" | "modified-asc" | "modified-desc";
+export type OrderOptionsAll = OrderOptionModels | OrderOptionGroups;
 export type StartupPages = "" | "models" | "import" | "groups" | "favorites" | "print-history" | "projects";
 
 export interface Configuration {

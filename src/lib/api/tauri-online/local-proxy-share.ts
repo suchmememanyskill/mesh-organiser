@@ -1,5 +1,5 @@
 import { toast } from "svelte-sonner";
-import { ModelOrderBy, type IModelApi, type Model } from "../shared/model_api";
+import { defaultModelFilter, ModelOrderBy, type IModelApi, type Model } from "../shared/model_api";
 import { HttpMethod, type IServerRequestApi } from "../shared/server_request_api";
 import { createShareInstance, type IShareApi, type Share } from "../shared/share_api";
 import { WebShareApi } from "../web/share";
@@ -16,8 +16,10 @@ export class TauriProxyShareApi extends WebShareApi {
 
     async getShares(): Promise<Share[]> {
         let shares = await super.getShares();
-        const localModels = await this.localModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
-        const remoteModels = await this.remoteModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+        let filter = defaultModelFilter();
+        filter.orderBy = ModelOrderBy.ModifiedDesc;
+        const localModels = await this.localModelApi.getModels(filter, 1, 9999999);
+        const remoteModels = await this.remoteModelApi.getModels(filter, 1, 9999999);
 
         for (let share of shares) {
             const remoteGlobalIds = share.modelIds.map(id => remoteModels.find(m => m.id === id)?.uniqueGlobalId).filter(id => id !== undefined) as string[];
@@ -39,7 +41,9 @@ export class TauriProxyShareApi extends WebShareApi {
     }
 
     async addModelsToShare(share: Share, models: Model[]): Promise<void> {
-        let allRemoteModels = await this.remoteModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+        let filter = defaultModelFilter();
+        filter.orderBy = ModelOrderBy.ModifiedDesc;
+        let allRemoteModels = await this.remoteModelApi.getModels(filter, 1, 9999999);
         let remoteModels = allRemoteModels.filter(remoteModel => models.some(localModel => localModel.uniqueGlobalId === remoteModel.uniqueGlobalId));
 
         if (remoteModels.length !== models.length) {
@@ -50,7 +54,9 @@ export class TauriProxyShareApi extends WebShareApi {
     }
 
     async setModelsOnShare(share: Share, models: Model[]): Promise<void> {
-        let allRemoteModels = await this.remoteModelApi.getModels(null, null, null, ModelOrderBy.ModifiedDesc, null, 1, 9999999, null);
+        let filter = defaultModelFilter();
+        filter.orderBy = ModelOrderBy.ModifiedDesc;
+        let allRemoteModels = await this.remoteModelApi.getModels(filter, 1, 9999999);
         let remoteModels = allRemoteModels.filter(remoteModel => models.some(localModel => localModel.uniqueGlobalId === remoteModel.uniqueGlobalId));
 
         if (remoteModels.length !== models.length) {

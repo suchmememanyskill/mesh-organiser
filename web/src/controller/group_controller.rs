@@ -37,7 +37,7 @@ pub fn router() -> Router<WebAppState> {
 
 mod get {
     use axum_extra::extract::Query;
-    use db::{share_db, user_db};
+    use db::{model::FileType, share_db, user_db};
 
     use super::*;
 
@@ -55,6 +55,7 @@ mod get {
         pub page: u32,
         pub page_size: u32,
         pub include_ungrouped_models: Option<bool>,
+        pub file_types: Vec<FileType>,
     }
 
     pub async fn get_groups(
@@ -84,6 +85,7 @@ mod get {
                 page_size: params.page_size,
                 include_ungrouped_models: params.include_ungrouped_models.unwrap_or(false),
                 allow_incomplete_groups: false,
+                file_types: if params.file_types.is_empty() { None } else { Some(params.file_types) },
             },
         )
         .await?;
@@ -119,6 +121,7 @@ mod get {
                 page_size: params.page_size,
                 include_ungrouped_models: params.include_ungrouped_models.unwrap_or(true),
                 allow_incomplete_groups: true,
+                file_types: if params.file_types.is_empty() { None } else { Some(params.file_types) },
             }
         ).await?;
 

@@ -1,10 +1,10 @@
 use indexmap::IndexMap;
-use itertools::join;
+use itertools::{Itertools, join};
 use serde::de;
 use sqlx::{Execute, QueryBuilder, query};
 use sqlx::Row;
 use strum::EnumString;
-use crate::model::Blob;
+use crate::model::{Blob, FileType};
 use crate::util::{random_hex_32, time_now};
 use crate::{DbError, PaginatedResponse, db_context::DbContext, label_db, model::{Label, LabelMeta, Model, ModelFlags, ModelGroup, ModelGroupMeta, User, convert_label_meta_list_to_map}};
 
@@ -43,6 +43,7 @@ pub struct ModelFilterOptions {
     pub order_by: Option<ModelOrderBy>, 
     pub text_search: Option<String>,
     pub model_flags: Option<ModelFlags>,
+    pub file_types: Option<Vec<FileType>>,
     pub page : u32,
     pub page_size : u32,
 }
@@ -84,6 +85,16 @@ pub async fn get_models(db: &DbContext, user : &User, options : ModelFilterOptio
     if let Some(model_flags) = options.model_flags
     {
         seperated.push(format!("(models.model_flags & {}) = {}", model_flags.bits(), model_flags.bits()));
+    }
+
+    if let Some(file_types ) = options.file_types {
+        if file_types.is_empty() || file_types.iter().any(|f| f.is_unsupported()) {
+            return Err(DbError::InvalidArgument("Unsupported file type was used as a filter".to_string()));
+        }
+
+        let mut extensions = file_types.iter().map(|f| f.from_zip().to_extension()).collect::<Vec<String>>();
+        extensions.extend(file_types.iter().map(|f| f.to_zip().to_extension()));
+        seperated.push(format!("blob_filetype IN ('{}')", join(extensions.iter().unique(), "','")));
     }
 
     if let Some(text_search) = options.text_search
