@@ -25,6 +25,8 @@
     import { countWriter } from "$lib/utils";
     import Download from "@lucide/svelte/icons/download";
     import ExportModelsButton from "./export-models-button.svelte";
+    import type { OrderOptionsResources } from "$lib/api/shared/settings_api";
+    import SortFilter from "./sort-filter.svelte";
 
     const props: { resources: ResourceMeta[] } = $props();
     let selected = $state.raw<ResourceMeta|null>(null);
@@ -39,17 +41,13 @@
 
     interface SearchFilters {
         search: string;
-        order:
-            | "date-asc"
-            | "date-desc"
-            | "name-asc"
-            | "name-desc";
+        order: OrderOptionsResources;
         limit: number;
     }
 
     const currentFilter = $state<SearchFilters>({
         search: "",
-        order: "date-desc",
+        order: "modified-desc",
         limit: 100,
     });
 
@@ -62,15 +60,6 @@
             }
         }
     }
-
-    const readableOrders = {
-        "date-asc": "Date (Asc)",
-        "date-desc": "Date (Desc)",
-        "name-asc": "Name (Asc)",
-        "name-desc": "Name (Desc)",
-    };
-
-    const readableOrder = $derived(readableOrders[currentFilter.order]);
 
     const filteredCollection = $derived.by(() => {
         let search_lower = currentFilter.search.toLowerCase();
@@ -98,6 +87,16 @@
                         return a.name.localeCompare(b.name);
                     case "name-desc":
                         return b.name.localeCompare(a.name);
+                    case "modified-asc":
+                        return (
+                            new Date(a.lastModified).getTime() -
+                            new Date(b.lastModified).getTime()
+                        );
+                    case "modified-desc":
+                        return (
+                            new Date(b.lastModified).getTime() -
+                            new Date(a.lastModified).getTime()
+                        );
                     default:
                         return 0;
                 }
@@ -166,24 +165,10 @@
 
 <div class="flex flex-row h-full">
     <div class="flex flex-col gap-1 flex-1" style="min-width: 0;">
-        <div class="grid grid-cols-2 gap-5 justify-center px-5 py-3">
+        <div class="flex flex-row gap-3 justify-center px-5 py-3">
             <Input bind:value={currentFilter.search} class="border-primary" placeholder="Search" />
-    
-            <Select.Root type="single" name="Sort" bind:value={currentFilter.order}>
-                <Select.Trigger class="border-primary">
-                    {readableOrder}
-                </Select.Trigger>
-                <Select.Content>
-                    <Select.Group>
-                        <Select.GroupHeading>Sort options</Select.GroupHeading>
-                        {#each Object.entries(readableOrders) as order}
-                            <Select.Item value={order[0]} label={order[1]}
-                                >{order[1]}</Select.Item
-                            >
-                        {/each}
-                    </Select.Group>
-                </Select.Content>
-            </Select.Root>
+
+            <SortFilter bind:value={currentFilter.order} subset="resources" />
         </div>
 
         <div class="overflow-y-scroll h-full flex flex-row gap-2 flex-wrap outline-0 content-start" bind:this={scrollContainer} onscroll={handleScroll}>

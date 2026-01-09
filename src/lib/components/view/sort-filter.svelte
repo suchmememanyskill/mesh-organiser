@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as Select from "$lib/components/ui/select/index.js";
     import type { ClassValue } from "svelte/elements";
-    import { type OrderOptionGroups, type OrderOptionModels } from "$lib/api/shared/settings_api";
+    import { type OrderOptionGroups, type OrderOptionModels, type OrderOptionsResources } from "$lib/api/shared/settings_api";
     import ArrowDownWideNarrow from "@lucide/svelte/icons/arrow-down-wide-narrow";
     import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
 
@@ -11,7 +11,8 @@
 
     type Props = 
         | { value: OrderOptionModels, subset : "models", class? : ClassValue, onchange?: Function<OrderOptionModels> }
-        | { value: OrderOptionGroups, subset : "groups", class? : ClassValue, onchange?: Function<OrderOptionGroups> };
+        | { value: OrderOptionGroups, subset : "groups", class? : ClassValue, onchange?: Function<OrderOptionGroups> }
+        | { value: OrderOptionsResources, subset : "resources", class? : ClassValue, onchange?: Function<OrderOptionsResources> };
 
     let { value = $bindable(), onchange = () => {}, ...restProps} : Props = $props();
 
@@ -27,7 +28,7 @@
     };
 
     const filteredOrders : { [key: string]: string } = $derived.by(() => {
-        if (restProps.subset === "groups") {
+        if (restProps.subset === "groups" || restProps.subset === "resources") {
             let localOrders = {...readableOrders} as { [key: string]: string };
             delete localOrders["size-asc"];
             delete localOrders["size-desc"];
