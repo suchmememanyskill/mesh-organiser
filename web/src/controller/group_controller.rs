@@ -55,6 +55,7 @@ mod get {
         pub page: u32,
         pub page_size: u32,
         pub include_ungrouped_models: Option<bool>,
+        #[serde(default)]
         pub file_types: Vec<FileType>,
     }
 

@@ -62,6 +62,7 @@ mod get {
         pub model_flags: ModelFlags,
         pub page: u32,
         pub page_size: u32,
+        #[serde(default)]
         pub file_types: Vec<FileType>,
     }
 
