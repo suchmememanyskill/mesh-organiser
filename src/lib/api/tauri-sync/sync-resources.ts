@@ -46,7 +46,7 @@ async function stepSyncToRemote(toSync: ResourceSet<ResourceMeta>[], localApi : 
         }
 
         for (const group of relatedRemoteGroups) {
-            await remoteApi.setResourceOnGroup(localResource, group.id);
+            await remoteApi.setResourceOnGroup(remoteResource, group.id);
         }
 
         localResource.id = remoteResource.id;
