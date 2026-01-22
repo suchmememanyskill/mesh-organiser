@@ -6,8 +6,8 @@
     let modelApi = getContainer().require<IModelApi>(IModelApi)
     let filter = defaultModelFilter();
     filter.flags = {
-        favorite: true,
-        printed: false,
+        favorite: false,
+        printed: true,
     };
 </script>
 
