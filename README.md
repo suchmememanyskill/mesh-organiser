@@ -9,7 +9,7 @@ Competes with your downloads folder for storing 3d models. Available both as a d
 Download for:
 - [Windows](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.1.1/Mesh.Organiser_2.1.1_x64_en-US.msi) (.msi)
 - Macos
-    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.1.1/Mesh.Organiser_2.1.1.dmg)
+    - [aarch64/Arm based chips (M-line)](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.1.1/Mesh.Organiser_2.1.1_aarch64.dmg)
     - [x64/Intel based chips](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.1.1/Mesh.Organiser_2.1.1_x64.dmg)
 - Linux
     - [Debian/Ubuntu](https://github.com/suchmememanyskill/mesh-organiser/releases/download/v2.1.1/Mesh.Organiser_2.1.1_amd64.deb) (.deb)
