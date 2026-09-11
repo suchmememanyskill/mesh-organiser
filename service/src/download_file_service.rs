@@ -191,6 +191,7 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ServiceError> {
         .to_string();
 
     let mut source_uri: Option<String> = None;
+    let fallback_filename = current_filename.clone();
     let desired_filename: String = if url.contains("makerworld") {
         source_uri = Some(
             makerworld_model_page_url(url, &response_url)
@@ -217,6 +218,11 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ServiceError> {
     };
 
     let cleansed_desired = cleanse_evil_from_name(&desired_filename);
+    let cleansed_desired = if cleansed_desired.is_empty() {
+        fallback_filename
+    } else {
+        cleansed_desired
+    };
     let current_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
     if cleansed_desired != current_name {
         let new_path = ensure_unique_file_full_filename(&temp_dir, &cleansed_desired);

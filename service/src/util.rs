@@ -39,10 +39,18 @@ pub fn prettify_file_name(file: &Path, is_dir: bool) -> String {
 
 #[must_use]
 pub fn cleanse_evil_from_name(name: &str) -> String {
-    String::from(
-        name.replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], " ")
-            .trim(),
-    )
+    let cleansed = name
+        .replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], " ")
+        .trim()
+        .to_string();
+
+    // "." or ".." contain no separator to strip above, but `Path::join` still
+    // treats them as directory traversal (escaping into the parent dir).
+    if !cleansed.is_empty() && cleansed.chars().all(|c| c == '.') {
+        return String::new();
+    }
+
+    cleansed
 }
 
 /// Opens the given path in the system file explorer.
@@ -321,6 +329,14 @@ mod tests {
     #[test]
     fn test_cleanse_evil_trim_outer_whitespace() {
         assert_eq!(cleanse_evil_from_name("  x  "), "x");
+    }
+
+    #[test]
+    fn test_cleanse_evil_rejects_dot_only_names() {
+        // No separators to strip, but ".." still escapes `Path::join` into the parent dir.
+        assert_eq!(cleanse_evil_from_name(".."), "");
+        assert_eq!(cleanse_evil_from_name("."), "");
+        assert_eq!(cleanse_evil_from_name("..."), "");
     }
 
     // ---- prettify_file_name ----
