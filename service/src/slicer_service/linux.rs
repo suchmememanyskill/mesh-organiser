@@ -64,7 +64,7 @@ impl Slicer {
 fn get_flatpak_slicer_package(slicer: &Slicer) -> String {
     match slicer {
         Slicer::PrusaSlicer => "com.prusa3d.PrusaSlicer",
-        Slicer::OrcaSlicer => "io.github.softfever.OrcaSlicer",
+        Slicer::OrcaSlicer => "com.orcaslicer.OrcaSlicer",
         Slicer::Cura => "com.ultimaker.cura",
         Slicer::BambuStudio => "com.bambulab.BambuStudio",
         _ => "",
