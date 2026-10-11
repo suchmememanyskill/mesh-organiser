@@ -35,7 +35,7 @@ fn get_content_disposition_filename(response : &Response) -> Option<String> {
     }
 }
 
-pub async fn download_file(url: &str) -> Result<DownloadResult, ServiceError> {
+pub async fn download_file(url: &str, filename: Option<&str>) -> Result<DownloadResult, ServiceError> {
     let response = reqwest::get(url).await?;
     let mut source_uri: Option<String> = None;
 
@@ -47,13 +47,6 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ServiceError> {
         )));
     }
 
-    let redirect_url_filename = match response.url().path_segments() {
-        Some(segments) => String::from(decode(segments.last().unwrap_or("model.stl")).unwrap()),
-        None => String::from("model.stl"),
-    };
-
-    
-
     let temp_dir = env::temp_dir().join(format!(
         "meshorganiser_download_action_{}",
         Utc::now().timestamp_nanos_opt().unwrap()
@@ -64,11 +57,17 @@ pub async fn download_file(url: &str) -> Result<DownloadResult, ServiceError> {
     let mut file_name = url.split('/').last().unwrap_or("model.stl");
     let mut tmp: String;
 
-    if url.contains("makerworld") {
+    if let Some(filename) = filename {
+        file_name = filename;
+    } else if url.contains("makerworld") {
         file_name = url.split("name=").last().unwrap_or("model.stl");
         source_uri = Some(String::from("https://makerworld.com"));
     } else if url.contains("thingiverse") {
-        file_name = &redirect_url_filename;
+        tmp = match response.url().path_segments() {
+            Some(segments) => String::from(decode(segments.last().unwrap_or("model.stl")).unwrap()),
+            None => String::from("model.stl"),
+        };
+        file_name = &tmp;
         source_uri = Some(String::from("https://www.thingiverse.com/"));
     } else if url.starts_with("https://files.printables.com/media/prints/") {
         let id = String::from(url[42..].split("/").next().unwrap());

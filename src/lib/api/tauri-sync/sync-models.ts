@@ -7,7 +7,7 @@ import type { UploadResult, DirectoryScanModel } from "../tauri-online/tauri_imp
 import { importState } from "$lib/import.svelte";
 import { ImportStatus, ITauriImportApi } from "../shared/tauri_import_api";
 import { IGroupApi } from "../shared/group_api";
-import type { IBlobApi } from "../shared/blob_api";
+import { fileTypeToPlainFileExtension, type IBlobApi } from "../shared/blob_api";
 import { downloadFile } from "../tauri/tauri_import";
 import { computeDifferences, type ResourceSet } from "./algorhitm";
 import { runGeneratorWithLimit } from "../web/web_import";
@@ -47,7 +47,12 @@ async function stepUpload(toUpload: Model[], serverModelApi : IModelApi, serverG
 
 async function downloadSingleModel(serverModel: Model, serverBlobApi: IBlobApi, localModelApi : IModelApi, localImportApi : ITauriImportApi) : Promise<void> {
     let downloadUrl = await serverBlobApi.getBlobDownloadUrl(serverModel.blob);
-    let download = await downloadFile(downloadUrl);
+    // The server download returns unpacked bytes for zipped blob types.
+    let extension = fileTypeToPlainFileExtension(serverModel.blob.filetype);
+    if (!extension) {
+        throw new Error(`Unsupported file type for syncing model "${serverModel.name}": ${serverModel.blob.filetype}`);
+    }
+    let download = await downloadFile(downloadUrl, `model${extension}`);
 
     // TODO: This isn't great
     let localImportState = await localImportApi.startImportProcess([download.path], {
@@ -57,7 +62,10 @@ async function downloadSingleModel(serverModel: Model, serverBlobApi: IBlobApi, 
         import_as_path: false,
     });
 
-    let id = localImportState.imported_models[0].model_ids[0];
+    let id = localImportState.imported_models[0]?.model_ids[0];
+    if (localImportState.status === ImportStatus.Failure || id === undefined) {
+        throw new Error(`Failed to import synced model "${serverModel.name}": ${localImportState.failure_reason ?? "No model was imported"}`);
+    }
     serverModel.id = id;
     await localModelApi.editModel(serverModel, true, true);
     globalSyncState.processedItems += 1;
